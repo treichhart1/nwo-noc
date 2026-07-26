@@ -1,11 +1,31 @@
+# Environment
 .env
-*.log
+.env.*
+
+# Python
 __pycache__/
-*.py[cod]
+*.pyc
+*.pyo
 .pytest_cache/
-.venv/
-backend/.coverage
-frontend/node_modules/
-frontend/dist/
+
+# Node
+node_modules/
+dist/
+
+# Logs
+*.log
+
+# Databases
+*.sqlite
+
+# Coverage
+coverage/
+.coverage
+
+# IDE
+.vscode/
+.idea/
+
+# OS
 .DS_Store
-backups/
+Thumbs.db
