@@ -1,93 +1,127 @@
-# NWO NOC v3.1.0 — WISP Operations
+# NWO NOC
 
-A WISP-only network operations platform for Northwest Ohio Broadband.
+A modern Network Operations Center (NOC) platform designed for Wireless Internet Service Providers (WISPs).
 
-## v3.1 capabilities
+## Overview
 
-- UISP device synchronization and WISP device assignment
-- Towers, POPs, sectors, licensed microwave, wireless and fiber paths
-- GIS map and topology
-- Operations dashboard
-- Incident lifecycle: open, acknowledge, resolve and reopen
-- Customer-impact tracking
-- Scheduled maintenance windows
-- Device telemetry ingestion and history API
-- Audit logging
-- PostgreSQL migrations through `0003_operations`
-- Safer backup and restore scripts that refuse to import into a non-empty database
+NWO NOC provides a centralized platform for monitoring, managing, and operating wireless broadband networks.
 
-## Safe upgrade from v2.3
+The project is being developed specifically for WISP operations with support for:
 
-Keep v2.3 running until the script creates a verified backup. From the extracted v3 directory:
+- Tower management
+- POP management
+- Backhaul monitoring
+- Fiber infrastructure
+- Customer equipment
+- GIS mapping
+- MikroTik integration
+- UISP integration
+- AI-assisted troubleshooting
+- Inventory management
+- Incident management
+- Network topology visualization
+
+---
+
+## Current Features
+
+- Device management
+- Site management
+- Backhaul management
+- Sector management
+- Live monitoring
+- Alert dashboard
+- Incident tracking
+- Maintenance windows
+- REST API
+- Docker deployment
+
+---
+
+## Planned Features
+
+### Operations
+
+- Root cause analysis
+- Customer impact engine
+- Revenue impact calculations
+- Dependency graph
+- Intelligent alert suppression
+
+### Integrations
+
+- MikroTik RouterOS API
+- UISP synchronization
+- SNMP polling
+- Syslog collection
+
+### GIS
+
+- Interactive tower map
+- Fiber routes
+- Microwave paths
+- Customer mapping
+
+### AI
+
+- Automated troubleshooting
+- Capacity forecasting
+- Predictive maintenance
+- Network recommendations
+
+---
+
+## Technology Stack
+
+Backend
+
+- Python
+- FastAPI
+- SQLAlchemy
+- Alembic
+
+Frontend
+
+- React
+- TypeScript
+- Vite
+
+Infrastructure
+
+- Docker
+- PostgreSQL
+- Redis
+
+---
+
+## Installation
 
 ```bash
-chmod +x scripts/*.sh
-./scripts/upgrade-from-v2.3.sh ~/nwo-noc-v2.3.0-wisp-foundation
-```
+git clone <repository>
 
-The script backs up v2.3, copies `.env`, stops v2.3, creates a clean v3 database, restores the backup, runs Alembic migrations, builds the containers and checks `/health`.
+cd nwo-noc
 
-## Fresh installation
-
-```bash
-cp .env.example .env
-nano .env
 docker compose up -d --build
-curl http://localhost:8000/health
 ```
 
-Frontend defaults to `http://SERVER-IP:8090`.
+---
 
-## Database backup
+## Project Status
 
-```bash
-./scripts/backup.sh
-```
+Current Version
 
-## Restore into a clean v3 database
+v3.1.0
 
-```bash
-docker compose down -v
-docker compose up -d db
-./scripts/restore.sh backups/nwo-noc-YYYYMMDD-HHMMSS.sql.gz
-docker compose up -d --build
-```
+Current Sprint
 
-The restore script deliberately refuses to restore over existing tables.
+Sprint 1 – Project Foundation
 
-## Telemetry API
+---
 
-Authenticated ingestion endpoint:
+## License
 
-```text
-POST /api/devices/{device_id}/telemetry
-```
+Private Internal Project
 
-History endpoint:
+Copyright © 2026 Tim Reichhart
 
-```text
-GET /api/devices/{device_id}/telemetry?hours=24
-```
-
-## Upgrade from v3.0
-
-1. Back up the current database.
-2. Copy your existing `.env` into this v3.1 directory.
-3. Stop the old stack and build this release:
-
-```bash
-docker compose down
-docker compose up -d --build
-```
-
-The backend automatically applies migration `0004_live_monitoring`. Confirm the database contains exactly one Alembic revision row:
-
-```bash
-docker compose exec db psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT * FROM alembic_version;"
-```
-
-Expected revision: `0004_live_monitoring`.
-
-### Enabling monitoring
-
-Open **Devices**, select a device, enable **TCP reachability monitoring**, and set a reachable management host and TCP port. Common ports include 443 for HTTPS, 80 for HTTP, 8291 for MikroTik WinBox, and 22 for SSH. The worker checks due devices every 15 seconds and honors each device's configured interval. A device is marked down after two consecutive failed checks.
+All Rights Reserved.
