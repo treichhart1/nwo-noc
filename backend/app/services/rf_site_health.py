@@ -1,10 +1,12 @@
 """Bounded read-only RF summaries grouped by assigned NOC site."""
 from collections import defaultdict
 
+from datetime import datetime, timezone
+
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.models.entities import Device, Site
+from app.models.entities import Device, Site, TelemetrySample
 from app.services.rf_diagnostics import get_rf_diagnostics
 
 
@@ -36,6 +38,23 @@ def get_rf_site_health(db: Session, *, max_devices: int = 250) -> dict:
             continue
         report = get_rf_diagnostics(db, device.id, max_samples=24)
         status = report["freshness"]["status"]
+        # Diagnostics exclude future timestamps from trend analysis.
+        # Identify future-only latest samples without marking them missing.
+        if status == "missing":
+            latest = db.scalar(
+                select(TelemetrySample.sampled_at)
+                .where(
+                    TelemetrySample.device_id == device.id,
+                    TelemetrySample.raw_data["rf_metrics_v1"].is_not(None),
+                )
+                .order_by(TelemetrySample.sampled_at.desc(), TelemetrySample.id.desc())
+                .limit(1)
+            )
+            if latest is not None:
+                if latest.tzinfo is None:
+                    latest = latest.replace(tzinfo=timezone.utc)
+                if latest > datetime.now(timezone.utc):
+                    status = "future"
         site["devices"] += 1
         site[status] += 1
         if report["degradation"]["degraded"]:
