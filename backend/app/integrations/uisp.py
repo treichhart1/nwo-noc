@@ -1,5 +1,8 @@
 from datetime import datetime, timezone
 import httpx
+import logging
+
+log = logging.getLogger(__name__)
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from app.core.config import settings
@@ -89,11 +92,16 @@ def sync_uisp(db: Session):
         state.last_error = None
         state.last_item_count = count
         db.commit()
+        if rf_result is not None:
+            log.info("RF collection completed: received=%d staged=%d skipped=%d",
+                     rf_result["received"], rf_result["staged"], rf_result["skipped"])
         result = {"ok": True, "imported": count}
         if rf_result is not None:
             result["rf_collection"] = rf_result
         return result
     except Exception as exc:
+        if settings.rf_collection_enabled:
+            log.warning("RF-enabled UISP sync failed; see UISP integration status")
         db.rollback()
         state = get_integration(db)
         state.status = "error"
