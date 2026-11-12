@@ -9,6 +9,7 @@ from app.models.entities import User, RFCollectionRun
 from app.services.rf_diagnostics import get_rf_diagnostics
 from app.services.rf_collection_health import get_rf_collection_health
 from app.services.rf_collection_reliability import collection_reliability
+from app.services.rf_site_health import get_rf_site_health
 
 router = APIRouter(prefix="/api", tags=["RF diagnostics"])
 
@@ -65,3 +66,11 @@ def rf_collection_reliability(
     _user: User = Depends(current_user),
 ):
     return collection_reliability(db, days=days)
+
+
+@router.get("/rf/site-health")
+def rf_site_health(
+    db: Session = Depends(get_db),
+    _user: User = Depends(current_user),
+):
+    return get_rf_site_health(db)
