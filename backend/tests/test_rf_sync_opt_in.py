@@ -49,3 +49,20 @@ def test_enabled_sync_stages_once_with_configured_bounds():
     fetch.assert_called_once()
     db.flush.assert_called_once()
     db.commit.assert_called_once()
+
+
+def test_rf_pruning_failure_does_not_claim_rolled_back_samples():
+    db = Mock()
+    db.begin_nested.return_value = MagicMock()
+    with patch("app.integrations.uisp.get_integration", return_value=Mock()), \
+         patch("app.integrations.uisp.httpx.get", return_value=_response()), \
+         patch("app.integrations.uisp.stage_uisp_rf_batch", return_value={"received": 1, "staged": 1, "skipped": 0}), \
+         patch("app.integrations.uisp.prune_rf_collection_history", side_effect=RuntimeError("test failure")), \
+         patch.object(settings, "uisp_base_url", "https://uisp.example"), \
+         patch.object(settings, "uisp_token", "test-token"), \
+         patch.object(settings, "rf_collection_enabled", True), \
+         patch.object(settings, "rf_history_pruning_enabled", True):
+        result = sync_uisp(db)
+    assert result["ok"] is True
+    assert result["rf_collection"] == {"ok": False, "status": "failed"}
+    db.commit.assert_called_once()
