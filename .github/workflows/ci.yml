@@ -210,3 +210,36 @@ jobs:
             exit 1
           fi
           echo "Offline staging lint and negative-control check passed; runtime isolation not verified"
+
+  rf-release-acceptance:
+    name: RF offline release acceptance
+    runs-on: ubuntu-latest
+    needs:
+      - backend
+      - database-migrations
+      - rf-postgres-integration
+      - compose-validation
+    if: ${{ always() }}
+    steps:
+      - name: Require all RF release dependencies to pass
+        env:
+          BACKEND_RESULT: ${{ needs.backend.result }}
+          MIGRATIONS_RESULT: ${{ needs.database-migrations.result }}
+          RF_RESULT: ${{ needs.rf-postgres-integration.result }}
+          COMPOSE_RESULT: ${{ needs.compose-validation.result }}
+        run: |
+          for name in BACKEND_RESULT MIGRATIONS_RESULT RF_RESULT COMPOSE_RESULT; do
+            result="${!name}"
+            if [ "$result" != "success" ]; then
+              echo "::error::$name is $result, expected success"
+              exit 1
+            fi
+          done
+          echo "RF offline CI acceptance passed; staging and production are NOT approved."
+          {
+            echo "## RF offline acceptance"
+            echo "All required backend, database migration, RF PostgreSQL, and Compose checks passed."
+            echo ""
+            echo "**Scope:** synthetic/disposable CI only. No live UISP/MikroTik integration or staging validation."
+            echo "**Release status:** not approved for production."
+          } >> "$GITHUB_STEP_SUMMARY"
