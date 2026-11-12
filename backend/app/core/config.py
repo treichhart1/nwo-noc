@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     admin_email: str = "admin@nwohiobb.local"
     uisp_base_url: str = ""
     uisp_token: str = ""
-    uisp_verify_tls: bool = False
+    uisp_verify_tls: bool = True
     uisp_sync_interval_seconds: int = 300
     cors_origins: str = "http://localhost:8090"
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=False, extra="ignore")
