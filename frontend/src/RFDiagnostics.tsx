@@ -8,6 +8,7 @@ type RFReport={
   degradation:{degraded:boolean;reasons:string[];consecutive_counts:Record<string,number>};
   trends:{status:string;declining_metrics:string[];metrics:Record<string,RFMetric>}
 }
+type CollectionHealth={enabled:boolean;uisp_status:string;last_uisp_sync_at:string|null;enabled_uisp_devices:number;rf_devices_fresh:number;rf_devices_stale:number;rf_devices_missing:number;rf_devices_future:number;last_batch_note:string}
 type DeviceOption={id:number;name:string;site_name?:string}
 
 const labels:Record<string,string>={rssi_dbm:"RSSI (dBm)",snr_db:"SNR (dB)",ccq_percent:"CCQ (%)"}
@@ -19,6 +20,9 @@ export default function RFDiagnostics({devices}:{devices:DeviceOption[]}){
   const [report,setReport]=useState<RFReport|null>(null)
   const [loading,setLoading]=useState(false)
   const [error,setError]=useState("")
+  const [health,setHealth]=useState<CollectionHealth|null>(null)
+  const [healthError,setHealthError]=useState("")
+  useEffect(()=>{let active=true;request("/rf/collection-health").then((data:CollectionHealth)=>{if(active)setHealth(data)}).catch((e:Error)=>{if(active)setHealthError(e.message)});return()=>{active=false}},[])
   useEffect(()=>{
     if(!deviceId){setReport(null);setError("");return}
     let cancelled=false
@@ -31,6 +35,8 @@ export default function RFDiagnostics({devices}:{devices:DeviceOption[]}){
   },[deviceId,hours])
   return <section className="panel">
     <div className="panelHead"><div><h2>RF diagnostics</h2><p className="muted">Read-only RF health and historical trends. No automatic radio changes or alerts.</p></div></div>
+    {health&&<div className="panel"><h3>Collection health</h3><p>RF collection: <strong>{health.enabled?"Enabled":"Disabled"}</strong> · UISP: {health.uisp_status}</p><p>Fresh: {health.rf_devices_fresh} · Stale: {health.rf_devices_stale} · Missing: {health.rf_devices_missing} · Future timestamps: {health.rf_devices_future}</p><p className="muted">Last UISP sync: {health.last_uisp_sync_at?new Date(health.last_uisp_sync_at).toLocaleString():"Not available"}</p><p className="muted">{health.last_batch_note}</p></div>}
+    {healthError&&<p className="error" role="alert">Collection health unavailable: {healthError}</p>}
     <div className="form2">
       <label>Device<select value={deviceId} onChange={e=>setDeviceId(e.target.value)}>
         <option value="">Select a device…</option>
