@@ -16,9 +16,9 @@ def test_dashboard_rejects_anonymous_access():
 
 def test_dashboard_synthetic_operational_summary_is_read_only():
     db = Mock()
-    # Total, active, unauthorized, offline, mapped, sites, links,
-    # sectors, subscriber count: exact scalar query order in dashboard().
-    db.scalar.side_effect = [10, 6, 2, 3, 8, 2, 1, 4, 25]
+    # Device counters come from one aggregate row; remaining scalars are sites, links, sectors, subscribers.
+    db.execute.return_value.one.return_value = (10, 6, 2, 3, 8)
+    db.scalar.side_effect = [2, 1, 4, 25]
     db.scalars.return_value = []
     app.dependency_overrides[current_user] = lambda: Mock(role="operator")
     app.dependency_overrides[get_db] = lambda: db
@@ -49,7 +49,8 @@ def test_dashboard_synthetic_operational_summary_is_read_only():
 
 def test_dashboard_empty_inventory_is_healthy_and_read_only():
     db = Mock()
-    db.scalar.side_effect = [0] * 9
+    db.execute.return_value.one.return_value = (0, 0, 0, 0, 0)
+    db.scalar.side_effect = [0] * 4
     db.scalars.return_value = []
     app.dependency_overrides[current_user] = lambda: Mock(role="operator")
     app.dependency_overrides[get_db] = lambda: db
