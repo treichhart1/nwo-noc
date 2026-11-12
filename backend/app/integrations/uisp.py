@@ -4,6 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.models.entities import Device, Integration
+from app.integrations.uisp_rf_collection import stage_uisp_rf_batch
 
 def parse_dt(value):
     if not value:
@@ -73,12 +74,25 @@ def sync_uisp(db: Session):
             device.last_seen = parse_dt(overview.get("lastSeen"))
             device.raw_data = raw
             count += 1
+        rf_result = None
+        if settings.rf_collection_enabled:
+            # The worker already schedules UISP sync. Reuse that single fetch;
+            # never introduce a second polling loop or network request.
+            db.flush()
+            rf_result = stage_uisp_rf_batch(
+                db, payload,
+                min_interval_seconds=settings.rf_collection_min_interval_seconds,
+                max_devices=settings.rf_collection_max_devices,
+            )
         state.status = "connected"
         state.last_sync_at = datetime.now(timezone.utc)
         state.last_error = None
         state.last_item_count = count
         db.commit()
-        return {"ok": True, "imported": count}
+        result = {"ok": True, "imported": count}
+        if rf_result is not None:
+            result["rf_collection"] = rf_result
+        return result
     except Exception as exc:
         db.rollback()
         state = get_integration(db)
