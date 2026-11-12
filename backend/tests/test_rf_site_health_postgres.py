@@ -1,0 +1,56 @@
+"""Site RF accuracy and bounded-load tests against disposable PostgreSQL."""
+from datetime import datetime, timedelta, timezone
+
+from app.models.entities import Device, Site
+from app.services.rf_persistence import store_rf_sample
+from app.services.rf_site_health import get_rf_site_health
+from test_rf_postgres_integration import postgres_db
+
+
+def test_site_summary_accuracy_and_assignment(postgres_db):
+    db = postgres_db
+    now = datetime.now(timezone.utc)
+    site = Site(name="RF Site CI")
+    db.add(site)
+    db.flush()
+    fresh = Device(source="uisp", external_id="rf-site-fresh", name="Fresh", enabled=True, wisp_site_id=site.id)
+    stale = Device(source="uisp", external_id="rf-site-stale", name="Stale", enabled=True, wisp_site_id=site.id)
+    missing = Device(source="uisp", external_id="rf-site-missing", name="Missing", enabled=True, wisp_site_id=site.id)
+    degraded = Device(source="uisp", external_id="rf-site-degraded", name="Degraded", enabled=True, wisp_site_id=site.id)
+    unassigned = Device(source="uisp", external_id="rf-site-unassigned", name="Unassigned", enabled=True)
+    disabled = Device(source="uisp", external_id="rf-site-disabled", name="Disabled", enabled=False, wisp_site_id=site.id)
+    db.add_all([fresh, stale, missing, degraded, unassigned, disabled])
+    db.flush()
+    store_rf_sample(db, fresh, {"rssi_dbm": -62}, sampled_at=now - timedelta(minutes=1))
+    store_rf_sample(db, stale, {"rssi_dbm": -65}, sampled_at=now - timedelta(hours=2))
+    for minutes in (3, 2, 1):
+        store_rf_sample(db, degraded, {"rssi_dbm": -90, "snr_db": 8, "ccq_percent": 40}, sampled_at=now - timedelta(minutes=minutes))
+    store_rf_sample(db, unassigned, {"rssi_dbm": -90}, sampled_at=now)
+    store_rf_sample(db, disabled, {"rssi_dbm": -90}, sampled_at=now)
+    db.flush()
+    result = get_rf_site_health(db)
+    assert result["truncated"] is False
+    assert result["processed_devices"] == 4
+    assert result["sites"] == [{
+        "site_id": site.id, "site_name": "RF Site CI",
+        "devices": 4, "fresh": 2, "stale": 1,
+        "missing": 1, "future": 0, "degraded": 1,
+    }]
+
+
+def test_site_summary_caps_inventory_and_flags_partial_results(postgres_db):
+    db = postgres_db
+    site = Site(name="RF Scale CI")
+    db.add(site)
+    db.flush()
+    db.add_all([
+        Device(source="uisp", external_id=f"rf-site-scale-{i}", name=f"Radio {i}",
+               enabled=True, wisp_site_id=site.id)
+        for i in range(260)
+    ])
+    db.flush()
+    result = get_rf_site_health(db)
+    assert result["processed_devices"] == 250
+    assert result["truncated"] is True
+    assert result["sites"][0]["devices"] == 250
+    assert result["sites"][0]["missing"] == 250
