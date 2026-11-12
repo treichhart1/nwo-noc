@@ -6,6 +6,7 @@ from app.api.deps import current_user
 from app.core.database import get_db
 from app.models.entities import User
 from app.services.rf_diagnostics import get_rf_diagnostics
+from app.services.rf_collection_health import get_rf_collection_health
 
 router = APIRouter(prefix="/api", tags=["RF diagnostics"])
 
@@ -24,3 +25,11 @@ def device_rf_diagnostics(
         )
     except LookupError as exc:
         raise HTTPException(status_code=404, detail="Device not found") from exc
+
+
+@router.get("/rf/collection-health")
+def rf_collection_health(
+    db: Session = Depends(get_db),
+    _user: User = Depends(current_user),
+):
+    return get_rf_collection_health(db)
