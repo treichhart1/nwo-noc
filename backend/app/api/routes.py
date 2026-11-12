@@ -54,12 +54,16 @@ def me(user: User = Depends(current_user)):
 
 @router.get("/dashboard", response_model=DashboardOut)
 def dashboard(db: Session = Depends(get_db), _=Depends(current_user)):
-    total = db.scalar(select(func.count()).select_from(Device)) or 0
-    active = db.scalar(select(func.count()).select_from(Device).where(Device.status.in_(["active", "online", "connected"]))) or 0
-    unauthorized = db.scalar(select(func.count()).select_from(Device).where(Device.authorized.is_(False))) or 0
-    offline = db.scalar(select(func.count()).select_from(Device).where(Device.status.in_(OFFLINE))) or 0
+    # One aggregate scan for device counters instead of five separate count queries.
+    counts = db.execute(select(
+        func.count(Device.id),
+        func.count(Device.id).filter(Device.status.in_(("active", "online", "connected"))),
+        func.count(Device.id).filter(Device.authorized.is_(False)),
+        func.count(Device.id).filter(Device.status.in_(OFFLINE)),
+        func.count(Device.id).filter(Device.latitude.is_not(None), Device.longitude.is_not(None)),
+    )).one()
+    total, active, unauthorized, offline, mapped = (int(value or 0) for value in counts)
     warning = max(total - active - offline, 0)
-    mapped = db.scalar(select(func.count()).select_from(Device).where(Device.latitude.is_not(None), Device.longitude.is_not(None))) or 0
     sites = db.scalar(select(func.count()).select_from(Site)) or 0
     links = db.scalar(select(func.count()).select_from(NetworkLink)) or 0
     sectors = db.scalar(select(func.count()).select_from(Sector)) or 0
