@@ -4,6 +4,7 @@ import {request} from "./lib/api"
 type RFMetric={baseline:number,recent:number,change:number,declining:boolean,observations:number}
 type RFReport={
   device_id:number;device_name:string;rf_sample_count:number;lookback_hours:number;
+  freshness:{status:"fresh"|"stale"|"missing"|"future";last_sampled_at:string|null;age_seconds:number|null;stale_after_seconds:number};
   degradation:{degraded:boolean;reasons:string[];consecutive_counts:Record<string,number>};
   trends:{status:string;declining_metrics:string[];metrics:Record<string,RFMetric>}
 }
@@ -45,8 +46,10 @@ export default function RFDiagnostics({devices}:{devices:DeviceOption[]}){
     {report&&<div>
       <h3>{report.device_name}</h3>
       <p className="muted">{report.rf_sample_count} RF samples in the selected window</p>
+      <p role="status"><strong>Telemetry freshness:</strong> {report.freshness.status.toUpperCase()}{report.freshness.last_sampled_at?` · Last sample: ${new Date(report.freshness.last_sampled_at).toLocaleString()}`:" · No RF samples available"}</p>
+      {report.freshness.status!=="fresh"&&<p className="error" role="alert">RF readings are {report.freshness.status}; do not interpret the signal condition as current health.</p>}
       {report.rf_sample_count===0?<p>No RF telemetry is available for this device yet.</p>:<>
-        <p><strong>Current condition:</strong> {report.degradation.degraded?"Sustained threshold degradation detected":"No sustained threshold degradation detected"}</p>
+        <p><strong>Last recorded signal condition (not live):</strong> {report.degradation.degraded?"Sustained threshold degradation detected":"No sustained threshold degradation detected"}</p>
         {report.degradation.reasons.length>0&&<p role="status">Warnings: {report.degradation.reasons.map(x=>warnings[x]||x).join(", ")}</p>}
         <p><strong>Historical trend:</strong> {report.trends.status.replaceAll("_"," ")}</p>
         {report.trends.status==="insufficient_data"&&<p className="muted">More valid measurements and time coverage are needed for trend analysis.</p>}
