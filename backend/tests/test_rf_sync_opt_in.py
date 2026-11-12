@@ -1,5 +1,5 @@
 """RF collection must remain opt-in and reuse the existing UISP sync."""
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, MagicMock, patch
 
 from app.core.config import settings
 from app.integrations.uisp import sync_uisp
@@ -32,6 +32,7 @@ def test_disabled_sync_never_stages_rf():
 
 def test_enabled_sync_stages_once_with_configured_bounds():
     db = Mock()
+    db.begin_nested.return_value = MagicMock()
     with patch("app.integrations.uisp.get_integration", return_value=Mock()), \
          patch("app.integrations.uisp.httpx.get", return_value=_response()) as fetch, \
          patch("app.integrations.uisp.stage_uisp_rf_batch", return_value={"received": 0, "staged": 0, "skipped": 0}) as stage, \
