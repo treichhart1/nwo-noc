@@ -14,6 +14,7 @@ from app.models.entities import Device, RFCollectionRun, TelemetrySample
 from app.services.rf_collection_reliability import collection_reliability, prune_rf_collection_history
 from app.services.rf_diagnostics import get_rf_diagnostics
 from app.services.rf_persistence import store_rf_sample
+from app.services.rf_collection_health import get_rf_collection_health
 
 
 @pytest.fixture
@@ -116,3 +117,25 @@ def test_postgres_diagnostics_caps_history_to_requested_samples(postgres_db):
     report = get_rf_diagnostics(db, device.id, now=now, max_samples=12)
     assert report["rf_sample_count"] == 12
     assert report["freshness"]["status"] == "fresh"
+
+
+def test_postgres_collection_health_latest_sample_and_missing(postgres_db):
+    db = postgres_db
+    now = datetime.now(timezone.utc)
+    fresh = Device(source="uisp", external_id="rf-ci-health-fresh", name="Fresh", enabled=True)
+    stale = Device(source="uisp", external_id="rf-ci-health-stale", name="Stale", enabled=True)
+    missing = Device(source="uisp", external_id="rf-ci-health-missing", name="Missing", enabled=True)
+    disabled = Device(source="uisp", external_id="rf-ci-health-disabled", name="Disabled", enabled=False)
+    db.add_all([fresh, stale, missing, disabled])
+    db.flush()
+    store_rf_sample(db, fresh, {"rssi_dbm": -72}, sampled_at=now - timedelta(hours=3))
+    store_rf_sample(db, fresh, {"rssi_dbm": -65}, sampled_at=now - timedelta(minutes=1))
+    store_rf_sample(db, stale, {"rssi_dbm": -77}, sampled_at=now - timedelta(hours=2))
+    store_rf_sample(db, disabled, {"rssi_dbm": -60}, sampled_at=now)
+    db.flush()
+    report = get_rf_collection_health(db, now=now)
+    assert report["enabled_uisp_devices"] == 3
+    assert report["rf_devices_fresh"] == 1
+    assert report["rf_devices_stale"] == 1
+    assert report["rf_devices_missing"] == 1
+    assert report["rf_devices_future"] == 0
