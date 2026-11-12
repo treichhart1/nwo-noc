@@ -9,6 +9,7 @@ def test_api_docs_disabled_in_default_configuration(monkeypatch):
     monkeypatch.delenv("API_DOCS_ENABLED", raising=False)
     settings = Settings(
         _env_file=None,
+        app_env="test",
         secret_key="test-only-secret",
         database_url="postgresql+psycopg://user:password@localhost:5432/test",
         admin_password="test-only-password",

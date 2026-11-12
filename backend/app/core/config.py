@@ -1,3 +1,4 @@
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
@@ -23,6 +24,21 @@ class Settings(BaseSettings):
     rf_history_max_delete_per_run: int = 500
     cors_origins: str = "http://localhost:8090"
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=False, extra="ignore")
+
+    @model_validator(mode="after")
+    def validate_production_security(self):
+        if self.app_env.lower() == "production":
+            if not self.uisp_verify_tls:
+                raise ValueError("Production requires UISP TLS certificate verification")
+            if self.api_docs_enabled:
+                raise ValueError("Production API documentation must remain disabled")
+            if not self.secret_key.strip() or self.secret_key.startswith("replace-") or len(self.secret_key) < 32:
+                raise ValueError("Production SECRET_KEY must be at least 32 characters and not a placeholder")
+            if not self.admin_password.strip() or self.admin_password in {"ChangeThisPassword123!", "replace-admin-password"}:
+                raise ValueError("Production ADMIN_PASSWORD must not use the example placeholder")
+            if "*" in self.cors_origin_list:
+                raise ValueError("Production CORS origins must not contain a wildcard")
+        return self
 
     @property
     def cors_origin_list(self):
