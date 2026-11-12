@@ -11,7 +11,7 @@ NOW = datetime(2026, 11, 12, tzinfo=timezone.utc)
 
 
 def _device():
-    device = Device(source="uisp", external_id="radio-1", name="Radio")
+    device = Device(source="uisp", external_id="radio-1", name="Radio", enabled=True)
     device.id = 12
     return device
 
