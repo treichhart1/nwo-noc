@@ -106,6 +106,7 @@ def sync_uisp(db: Session):
                 # An invalid RF batch/configuration must not abort the
                 # independent UISP inventory refresh. No secrets in logs.
                 rf_failed = True
+                rf_result = None  # The savepoint rolled back any staged RF samples.
                 log.warning("RF collection failed; UISP inventory sync continues")
                 db.add(RFCollectionRun(
                     started_at=datetime.now(timezone.utc), status="failed",
