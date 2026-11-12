@@ -49,7 +49,7 @@ def test_reliability_endpoint_auth_and_bounds():
     assert TestClient(app).get("/api/rf/collection-reliability").status_code == 401
     db = Mock()
     db.execute.return_value.all.return_value = []
-    app.dependency_overrides[current_user] = lambda: Mock()
+    app.dependency_overrides[current_user] = lambda: Mock(role="admin")
     app.dependency_overrides[get_db] = lambda: db
     try:
         assert TestClient(app).get("/api/rf/collection-reliability").status_code == 200
