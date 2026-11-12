@@ -79,6 +79,5 @@ export default function RFDiagnostics({devices}:{devices:DeviceOption[]}){
         </article>)}</div>
       </>}
     </div>}
-  </section>
-
+  </section></>
 }
