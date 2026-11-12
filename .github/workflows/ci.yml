@@ -180,14 +180,4 @@ jobs:
           cp .env.example .env
           docker compose config --quiet
           docker compose config --format json > /tmp/noc-compose.json
-          python3 - <<'PY'
-          import json
-          with open('/tmp/noc-compose.json', encoding='utf-8') as handle:
-              compose = json.load(handle)
-          for name in ('backend', 'frontend'):
-              published = compose['services'][name].get('ports', [])
-              assert published, f'{name} has no published port to validate'
-              for port in published:
-                  assert port.get('host_ip') == '127.0.0.1', (name, port)
-          print('NOC backend/frontend ports are localhost-only')
-          PY
+          python3 scripts/validate_compose_network.py /tmp/noc-compose.json
