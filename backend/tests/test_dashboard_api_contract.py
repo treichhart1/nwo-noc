@@ -37,7 +37,7 @@ def test_dashboard_synthetic_operational_summary_is_read_only():
             "links": 1,
             "sectors": 4,
             "subscribers": 25,
-            "health_score": 70,
+            "health_score": 60,
             "integrations": [],
         }
         db.commit.assert_not_called()
