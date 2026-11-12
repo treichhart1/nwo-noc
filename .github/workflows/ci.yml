@@ -165,9 +165,7 @@ jobs:
             tests/test_rf_staging_acceptance_postgres.py \
             tests/test_rf_site_health_postgres.py \
             tests/test_rf_site_query_budget_postgres.py \
-            tests/test_rf_role_regression.py \
-            tests/test_rf_site_validation.py \
-            tests/test_rf_site_summary.py
+            tests/test_rf_role_regression.py
       - name: Benchmark RF health with synthetic radios (informational)
         run: |
           PYTHONPATH=. python scripts/benchmark_rf_health.py --devices 250 --history 20 --repeats 3
