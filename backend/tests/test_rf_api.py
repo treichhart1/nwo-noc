@@ -54,3 +54,15 @@ def test_authenticated_read_only_response():
         db.add.assert_not_called()
     finally:
         app.dependency_overrides.clear()
+
+
+def test_rf_collection_health_requires_authentication():
+    assert TestClient(app).get("/api/rf/collection-health").status_code == 401
+
+
+def test_rf_collection_history_requires_authentication():
+    assert TestClient(app).get("/api/rf/collection-history").status_code == 401
+
+
+def test_rf_collection_reliability_requires_authentication():
+    assert TestClient(app).get("/api/rf/collection-reliability").status_code == 401
