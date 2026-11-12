@@ -78,7 +78,26 @@ jobs:
       - name: Apply all migrations
         run: alembic upgrade head
       - name: Confirm migration state is current
-        run: alembic current --check-heads
+        run: |
+          python - <<'PY'
+          from alembic.config import Config
+          from alembic.runtime.migration import MigrationContext
+          from alembic.script import ScriptDirectory
+          from sqlalchemy import create_engine
+          from app.core.config import settings
+
+          config = Config("alembic.ini")
+          script = ScriptDirectory.from_config(config)
+          engine = create_engine(settings.database_url)
+          with engine.connect() as connection:
+              current = set(MigrationContext.configure(connection).get_current_heads())
+          expected = set(script.get_heads())
+          assert current == expected, (
+              f"Database migration heads {sorted(current)} do not match "
+              f"repository heads {sorted(expected)}"
+          )
+          print("Database migration heads match repository heads")
+          PY
       - name: Detect missing schema migrations
         run: alembic check
       - name: Verify migration is idempotent
