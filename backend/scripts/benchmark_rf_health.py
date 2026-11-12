@@ -28,7 +28,7 @@ def benchmark(*, devices=500, history=20, repeats=5):
             name = connection.exec_driver_sql("SELECT current_database()").scalar_one()
             if name != "nwo_noc":
                 raise RuntimeError("Refusing to benchmark unexpected database name")
-            transaction = connection.begin()
+            # SELECT starts an implicit transaction in SQLAlchemy 2.x.\n            # End it before starting the isolated benchmark transaction.\n            connection.rollback()\n            transaction = connection.begin()
             try:
                 with Session(bind=connection, join_transaction_mode="create_savepoint") as db:
                     now = datetime.now(timezone.utc)
