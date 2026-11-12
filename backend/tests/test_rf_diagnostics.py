@@ -19,7 +19,7 @@ def sample(minutes, metrics, sample_id):
 
 def test_combines_degradation_and_trends_without_writes():
     db = Mock()
-    db.get.return_value = Mock(name="device", **{"name": "Willowdell radio"})
+    db.get.return_value = Mock(**{"name": "Willowdell radio"})
     rows = [
         sample((5 - i) * 10, {"rssi_dbm": v}, i + 1)
         for i, v in enumerate([-60, -61, -62, -80, -81, -82])
@@ -36,7 +36,7 @@ def test_combines_degradation_and_trends_without_writes():
 
 def test_skips_non_rf_samples():
     db = Mock()
-    db.get.return_value = Mock(name="device", **{"name": "Radio"})
+    db.get.return_value = Mock(**{"name": "Radio"})
     row = sample(5, {}, 1)
     row.raw_data = {"other": 1}
     db.scalars.return_value.all.return_value = [row]
