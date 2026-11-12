@@ -196,6 +196,7 @@ class MaintenanceWindow(Base):
 
 class TelemetrySample(Base):
     __tablename__ = "telemetry_samples"
+    __table_args__ = (Index("ix_telemetry_samples_device_sampled_id", "device_id", "sampled_at", "id"),)
     id: Mapped[int] = mapped_column(primary_key=True)
     device_id: Mapped[int] = mapped_column(ForeignKey("devices.id", ondelete="CASCADE"), index=True)
     sampled_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, index=True)
