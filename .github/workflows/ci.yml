@@ -137,6 +137,26 @@ jobs:
       - run: pip install -r requirements.txt -r requirements-dev.txt
       - name: Migrate disposable PostgreSQL database
         run: alembic upgrade head
+      - name: Validate RF staging preflight in safe and unsafe modes
+        env:
+          APP_ENV: staging
+          RF_COLLECTION_ENABLED: "false"
+          RF_HISTORY_PRUNING_ENABLED: "false"
+          UISP_VERIFY_TLS: "true"
+        run: |
+          python scripts/rf_staging_preflight.py
+          if RF_COLLECTION_ENABLED=true python scripts/rf_staging_preflight.py; then
+            echo "Unsafe RF collection configuration unexpectedly passed"
+            exit 1
+          fi
+          if UISP_VERIFY_TLS=false python scripts/rf_staging_preflight.py; then
+            echo "Disabled UISP TLS verification unexpectedly passed"
+            exit 1
+          fi
+          if APP_ENV=production python scripts/rf_staging_preflight.py; then
+            echo "Production environment unexpectedly passed staging gate"
+            exit 1
+          fi
       - name: Run real PostgreSQL RF integration tests
         run: python -m pytest -q tests/test_rf_postgres_integration.py tests/test_rf_end_to_end_postgres.py
       - name: Benchmark RF health with synthetic radios (informational)
