@@ -1,9 +1,7 @@
 """Bounded read-only RF summaries grouped by assigned NOC site."""
-from collections import defaultdict
-
 from datetime import datetime, timezone
 
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.orm import Session
 
 from app.models.entities import Device, Site, TelemetrySample
@@ -32,29 +30,42 @@ def get_rf_site_health(db: Session, *, max_devices: int = 250) -> dict:
         }
         for site_id, name in sites
     }
+    # Batch future-only timestamp lookup rather than one query per missing radio.
+    # Keep diagnostics bounded to 24 samples per device and do not change its
+    # degradation or trend interpretation.
+    missing_ids = []
+    device_reports = []
     for device in devices:
-        site = summary.get(device.wisp_site_id)
-        if site is None:
+        if device.wisp_site_id not in summary:
             continue
         report = get_rf_diagnostics(db, device.id, max_samples=24)
-        status = report["freshness"]["status"]
-        # Diagnostics exclude future timestamps from trend analysis.
-        # Identify future-only latest samples without marking them missing.
-        if status == "missing":
-            latest = db.scalar(
-                select(TelemetrySample.sampled_at)
-                .where(
-                    TelemetrySample.device_id == device.id,
-                    TelemetrySample.raw_data["rf_metrics_v1"].is_not(None),
-                )
-                .order_by(TelemetrySample.sampled_at.desc(), TelemetrySample.id.desc())
-                .limit(1)
+        device_reports.append((device, report))
+        if report["freshness"]["status"] == "missing":
+            missing_ids.append(device.id)
+
+    future_ids = set()
+    if missing_ids:
+        latest_rows = db.execute(
+            select(TelemetrySample.device_id, func.max(TelemetrySample.sampled_at))
+            .where(
+                TelemetrySample.device_id.in_(missing_ids),
+                TelemetrySample.raw_data["rf_metrics_v1"].is_not(None),
             )
+            .group_by(TelemetrySample.device_id)
+        ).all()
+        current = datetime.now(timezone.utc)
+        for device_id, latest in latest_rows:
             if latest is not None:
                 if latest.tzinfo is None:
                     latest = latest.replace(tzinfo=timezone.utc)
-                if latest > datetime.now(timezone.utc):
-                    status = "future"
+                if latest > current:
+                    future_ids.add(device_id)
+
+    for device, report in device_reports:
+        site = summary[device.wisp_site_id]
+        status = report["freshness"]["status"]
+        if status == "missing" and device.id in future_ids:
+            status = "future"
         site["devices"] += 1
         site[status] += 1
         if report["degradation"]["degraded"]:
