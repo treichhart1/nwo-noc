@@ -6,7 +6,7 @@ log = logging.getLogger(__name__)
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from app.core.config import settings
-from app.models.entities import Device, Integration
+from app.models.entities import Device, Integration, RFCollectionRun
 from app.integrations.uisp_rf_collection import stage_uisp_rf_batch
 
 def parse_dt(value):
@@ -87,6 +87,12 @@ def sync_uisp(db: Session):
                 min_interval_seconds=settings.rf_collection_min_interval_seconds,
                 max_devices=settings.rf_collection_max_devices,
             )
+        if rf_result is not None:
+            db.add(RFCollectionRun(
+                started_at=datetime.now(timezone.utc), status="success",
+                received=rf_result["received"], staged=rf_result["staged"],
+                skipped=rf_result["skipped"],
+            ))
         state.status = "connected"
         state.last_sync_at = datetime.now(timezone.utc)
         state.last_error = None
@@ -104,6 +110,11 @@ def sync_uisp(db: Session):
             log.warning("RF-enabled UISP sync failed; see UISP integration status")
         db.rollback()
         state = get_integration(db)
+        if settings.rf_collection_enabled:
+            db.add(RFCollectionRun(
+                started_at=datetime.now(timezone.utc), status="failed",
+                received=0, staged=0, skipped=0,
+            ))
         state.status = "error"
         state.last_sync_at = datetime.now(timezone.utc)
         state.last_error = str(exc)

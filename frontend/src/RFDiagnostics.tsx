@@ -9,6 +9,7 @@ type RFReport={
   trends:{status:string;declining_metrics:string[];metrics:Record<string,RFMetric>}
 }
 type CollectionHealth={enabled:boolean;uisp_status:string;last_uisp_sync_at:string|null;enabled_uisp_devices:number;rf_devices_fresh:number;rf_devices_stale:number;rf_devices_missing:number;rf_devices_future:number;last_batch_note:string}
+type CollectionRun={id:number;started_at:string;status:string;received:number;staged:number;skipped:number}
 type DeviceOption={id:number;name:string;site_name?:string}
 
 const labels:Record<string,string>={rssi_dbm:"RSSI (dBm)",snr_db:"SNR (dB)",ccq_percent:"CCQ (%)"}
@@ -22,6 +23,9 @@ export default function RFDiagnostics({devices}:{devices:DeviceOption[]}){
   const [error,setError]=useState("")
   const [health,setHealth]=useState<CollectionHealth|null>(null)
   const [healthError,setHealthError]=useState("")
+  const [history,setHistory]=useState<CollectionRun[]>([])
+  const [historyError,setHistoryError]=useState("")
+  useEffect(()=>{let active=true;request("/rf/collection-history?limit=20").then((runs:CollectionRun[])=>{if(active)setHistory(runs)}).catch((e:Error)=>{if(active)setHistoryError(e.message)});return()=>{active=false}},[])
   useEffect(()=>{let active=true;request("/rf/collection-health").then((data:CollectionHealth)=>{if(active)setHealth(data)}).catch((e:Error)=>{if(active)setHealthError(e.message)});return()=>{active=false}},[])
   useEffect(()=>{
     if(!deviceId){setReport(null);setError("");return}
@@ -37,6 +41,11 @@ export default function RFDiagnostics({devices}:{devices:DeviceOption[]}){
     <div className="panelHead"><div><h2>RF diagnostics</h2><p className="muted">Read-only RF health and historical trends. No automatic radio changes or alerts.</p></div></div>
     {health&&<div className="panel"><h3>Collection health</h3><p>RF collection: <strong>{health.enabled?"Enabled":"Disabled"}</strong> · UISP: {health.uisp_status}</p><p>Fresh: {health.rf_devices_fresh} · Stale: {health.rf_devices_stale} · Missing: {health.rf_devices_missing} · Future timestamps: {health.rf_devices_future}</p><p className="muted">Last UISP sync: {health.last_uisp_sync_at?new Date(health.last_uisp_sync_at).toLocaleString():"Not available"}</p><p className="muted">{health.last_batch_note}</p></div>}
     {healthError&&<p className="error" role="alert">Collection health unavailable: {healthError}</p>}
+    <div className="panel"><h3>Recent RF collection runs</h3>
+      {historyError&&<p className="error" role="alert">Collection history unavailable: {historyError}</p>}
+      {!historyError&&history.length===0&&<p className="muted">No RF collection runs recorded yet.</p>}
+      {history.map(run=><p key={run.id}><strong>{run.status}</strong> · {new Date(run.started_at).toLocaleString()} · Received {run.received} · Staged {run.staged} · Skipped {run.skipped}</p>)}
+    </div>
     <div className="form2">
       <label>Device<select value={deviceId} onChange={e=>setDeviceId(e.target.value)}>
         <option value="">Select a device…</option>

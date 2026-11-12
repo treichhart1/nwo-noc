@@ -229,3 +229,15 @@ class MonitorEvent(Base):
     message: Mapped[str] = mapped_column(Text)
     acknowledged: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, index=True)
+
+
+class RFCollectionRun(Base):
+    """Sanitized RF ingestion history; never store tokens or device payloads."""
+    __tablename__ = "rf_collection_runs"
+    __table_args__ = (Index("ix_rf_collection_runs_started_at", "started_at"),)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    status: Mapped[str] = mapped_column(String(20))
+    received: Mapped[int] = mapped_column(Integer, default=0)
+    staged: Mapped[int] = mapped_column(Integer, default=0)
+    skipped: Mapped[int] = mapped_column(Integer, default=0)
