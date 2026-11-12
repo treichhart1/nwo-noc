@@ -14,6 +14,9 @@ class Settings(BaseSettings):
     uisp_token: str = ""
     uisp_verify_tls: bool = True
     uisp_sync_interval_seconds: int = 300
+    rf_collection_enabled: bool = False
+    rf_collection_min_interval_seconds: int = 300
+    rf_collection_max_devices: int = 1000
     cors_origins: str = "http://localhost:8090"
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=False, extra="ignore")
 
