@@ -7,7 +7,7 @@ import os
 from datetime import datetime, timedelta, timezone
 
 import pytest
-from sqlalchemy import create_engine, select
+from sqlalchemy import create_engine, select, inspect
 from sqlalchemy.orm import Session
 
 from app.models.entities import Device, RFCollectionRun, TelemetrySample
@@ -89,3 +89,30 @@ def test_postgres_rf_history_retention_and_reliability(postgres_db):
     assert summary["total_runs"] == 1
     assert summary["successful_runs"] == 1
     assert summary["success_rate_percent"] == 100.0
+
+
+def test_postgres_rf_composite_index_exists(postgres_db):
+    indexes = inspect(postgres_db.get_bind()).get_indexes("telemetry_samples")
+    expected = next(
+        (item for item in indexes if item["name"] == "ix_telemetry_samples_device_sampled_id"),
+        None,
+    )
+    assert expected is not None
+    assert expected["column_names"] == ["device_id", "sampled_at", "id"]
+
+
+def test_postgres_diagnostics_caps_history_to_requested_samples(postgres_db):
+    db = postgres_db
+    now = datetime.now(timezone.utc)
+    device = Device(source="uisp", external_id="rf-ci-postgres-bounded", name="Bounded RF", enabled=True)
+    db.add(device)
+    db.flush()
+    for index in range(80):
+        store_rf_sample(
+            db, device, {"rssi_dbm": -60 - index % 15},
+            sampled_at=now - timedelta(minutes=index),
+        )
+    db.flush()
+    report = get_rf_diagnostics(db, device.id, now=now, max_samples=12)
+    assert report["rf_sample_count"] == 12
+    assert report["freshness"]["status"] == "fresh"
