@@ -32,8 +32,6 @@ def test_site_summary_query_count_is_bounded_and_explicit(postgres_db):
 
     assert report["processed_devices"] == 40
     assert report["sites"][0]["missing"] == 40
-    # Current implementation uses 2 inventory queries, up to 40 device
-    # lookups, 40 bounded history queries and 1 grouped future lookup.
-    # Identity-map hits may eliminate device lookups; upper bound guards
-    # against regressions until the bulk history rewrite is implemented.
-    assert len(statements) <= 83
+    # Two inventory queries, one ranked history query and one grouped
+    # future-only query. Query count must not scale with radio count.
+    assert len(statements) == 4
