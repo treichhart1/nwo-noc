@@ -70,7 +70,6 @@ def stage_uisp_rf_batch(
                 TelemetrySample.device_id == device.id,
                 TelemetrySample.sampled_at >= cutoff,
                 TelemetrySample.sampled_at <= now,
-                TelemetrySample.raw_data.has_key("rf_metrics_v1"),
             ).limit(1)
         )
         if recent is not None:
