@@ -108,3 +108,33 @@ def test_staging_repeated_uisp_sync_respects_collection_interval(postgres_db):
     assert len(db.scalars(select(TelemetrySample).where(
         TelemetrySample.device_id == radio.id,
     )).all()) == 1
+
+
+def test_rf_collection_failure_recovers_on_next_sync(postgres_db):
+    """A failed RF savepoint must preserve inventory and permit clean retry."""
+    db = postgres_db
+    with patch("app.integrations.uisp.httpx.get", return_value=SimulatedUISPResponse()), \
+         patch.object(settings, "uisp_base_url", "https://uisp.invalid"), \
+         patch.object(settings, "uisp_token", "ci-placeholder-only"), \
+         patch.object(settings, "rf_collection_enabled", True), \
+         patch.object(settings, "rf_history_pruning_enabled", False):
+        with patch("app.integrations.uisp.stage_uisp_rf_batch",
+                   side_effect=RuntimeError("simulated RF failure")):
+            failed = sync_uisp(db)
+        assert failed["ok"] is True
+        assert failed["imported"] == 2
+        assert failed["rf_collection"] == {"ok": False, "status": "failed"}
+        radio = db.scalar(select(Device).where(Device.external_id == "rf-e2e-ci-radio"))
+        assert radio is not None
+        assert db.scalars(select(TelemetrySample).where(
+            TelemetrySample.device_id == radio.id,
+        )).all() == []
+        recovered = sync_uisp(db)
+        repeated = sync_uisp(db)
+    assert recovered["rf_collection"]["staged"] == 1
+    assert repeated["rf_collection"]["staged"] == 0
+    assert len(db.scalars(select(TelemetrySample).where(
+        TelemetrySample.device_id == radio.id,
+    )).all()) == 1
+    runs = db.scalars(select(RFCollectionRun).order_by(RFCollectionRun.id)).all()
+    assert [run.status for run in runs[-3:]] == ["failed", "success", "success"]
