@@ -138,3 +138,34 @@ def test_rf_collection_failure_recovers_on_next_sync(postgres_db):
     )).all()) == 1
     runs = db.scalars(select(RFCollectionRun).order_by(RFCollectionRun.id)).all()
     assert [run.status for run in runs[-3:]] == ["failed", "success", "success"]
+
+
+def test_rf_partial_staging_rolls_back_before_retry(postgres_db):
+    """Failure after RF sample insertion must not persist a partial batch."""
+    db = postgres_db
+    from app.integrations.uisp_rf_collection import stage_uisp_rf_batch
+    def interrupted_stage(session, payload, **kwargs):
+        stage_uisp_rf_batch(session, payload, **kwargs)
+        session.flush()  # Force a database write inside the RF savepoint.
+        raise RuntimeError("simulated interruption after RF insert")
+
+    with patch("app.integrations.uisp.httpx.get", return_value=SimulatedUISPResponse()), \
+         patch.object(settings, "uisp_base_url", "https://uisp.invalid"), \
+         patch.object(settings, "uisp_token", "ci-placeholder-only"), \
+         patch.object(settings, "rf_collection_enabled", True), \
+         patch.object(settings, "rf_history_pruning_enabled", False):
+        with patch("app.integrations.uisp.stage_uisp_rf_batch",
+                   side_effect=interrupted_stage):
+            interrupted = sync_uisp(db)
+        assert interrupted["ok"] is True
+        assert interrupted["rf_collection"] == {"ok": False, "status": "failed"}
+        radio = db.scalar(select(Device).where(Device.external_id == "rf-e2e-ci-radio"))
+        assert radio is not None
+        assert db.scalars(select(TelemetrySample).where(
+            TelemetrySample.device_id == radio.id,
+        )).all() == []
+        retried = sync_uisp(db)
+        assert retried["rf_collection"]["staged"] == 1
+    assert len(db.scalars(select(TelemetrySample).where(
+        TelemetrySample.device_id == radio.id,
+    )).all()) == 1
