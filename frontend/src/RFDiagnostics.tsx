@@ -9,6 +9,7 @@ type RFReport={
   trends:{status:string;declining_metrics:string[];metrics:Record<string,RFMetric>}
 }
 type CollectionHealth={enabled:boolean;uisp_status:string;last_uisp_sync_at:string|null;enabled_uisp_devices:number;rf_devices_fresh:number;rf_devices_stale:number;rf_devices_missing:number;rf_devices_future:number;last_batch_note:string}
+type Reliability={window_days:number;total_runs:number;successful_runs:number;failed_runs:number;success_rate_percent:number|null}
 type CollectionRun={id:number;started_at:string;status:string;received:number;staged:number;skipped:number}
 type DeviceOption={id:number;name:string;site_name?:string}
 
@@ -25,6 +26,8 @@ export default function RFDiagnostics({devices}:{devices:DeviceOption[]}){
   const [healthError,setHealthError]=useState("")
   const [history,setHistory]=useState<CollectionRun[]>([])
   const [historyError,setHistoryError]=useState("")
+  const [reliability,setReliability]=useState<Reliability|null>(null)
+  useEffect(()=>{let active=true;request("/rf/collection-reliability?days=7").then((data:Reliability)=>{if(active)setReliability(data)}).catch(()=>{});return()=>{active=false}},[])
   useEffect(()=>{let active=true;request("/rf/collection-history?limit=20").then((runs:CollectionRun[])=>{if(active)setHistory(runs)}).catch((e:Error)=>{if(active)setHistoryError(e.message)});return()=>{active=false}},[])
   useEffect(()=>{let active=true;request("/rf/collection-health").then((data:CollectionHealth)=>{if(active)setHealth(data)}).catch((e:Error)=>{if(active)setHealthError(e.message)});return()=>{active=false}},[])
   useEffect(()=>{
@@ -41,6 +44,7 @@ export default function RFDiagnostics({devices}:{devices:DeviceOption[]}){
     <div className="panelHead"><div><h2>RF diagnostics</h2><p className="muted">Read-only RF health and historical trends. No automatic radio changes or alerts.</p></div></div>
     {health&&<div className="panel"><h3>Collection health</h3><p>RF collection: <strong>{health.enabled?"Enabled":"Disabled"}</strong> · UISP: {health.uisp_status}</p><p>Fresh: {health.rf_devices_fresh} · Stale: {health.rf_devices_stale} · Missing: {health.rf_devices_missing} · Future timestamps: {health.rf_devices_future}</p><p className="muted">Last UISP sync: {health.last_uisp_sync_at?new Date(health.last_uisp_sync_at).toLocaleString():"Not available"}</p><p className="muted">{health.last_batch_note}</p></div>}
     {healthError&&<p className="error" role="alert">Collection health unavailable: {healthError}</p>}
+    {reliability&&<div className="panel"><h3>Collection reliability · 7 days</h3><p>{reliability.total_runs} runs · {reliability.successful_runs} succeeded · {reliability.failed_runs} failed · Success rate: {reliability.success_rate_percent===null?"No data":`${reliability.success_rate_percent}%`}</p></div>}
     <div className="panel"><h3>Recent RF collection runs</h3>
       {historyError&&<p className="error" role="alert">Collection history unavailable: {historyError}</p>}
       {!historyError&&history.length===0&&<p className="muted">No RF collection runs recorded yet.</p>}
