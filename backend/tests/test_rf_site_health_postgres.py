@@ -56,3 +56,33 @@ def test_site_summary_caps_inventory_and_flags_partial_results(postgres_db):
     assert result["truncated"] is True
     assert result["sites"][0]["devices"] == 250
     assert result["sites"][0]["missing"] == 250
+
+
+def test_future_lookup_is_batched_for_missing_radios(postgres_db):
+    """Missing radios should not each trigger a separate future-only query."""
+    from sqlalchemy import event
+    db = postgres_db
+    site = Site(name="RF Batch CI")
+    db.add(site)
+    db.flush()
+    db.add_all([
+        Device(source="uisp", external_id=f"rf-batch-{i}", name=f"Missing {i}",
+               enabled=True, wisp_site_id=site.id)
+        for i in range(40)
+    ])
+    db.flush()
+    counts = {"grouped": 0}
+    engine = db.get_bind().engine
+
+    def record(_conn, _cursor, statement, _params, _context, _executemany):
+        if "GROUP BY" in statement.upper() and "telemetry_samples" in statement:
+            counts["grouped"] += 1
+
+    event.listen(engine, "before_cursor_execute", record)
+    try:
+        result = get_rf_site_health(db)
+    finally:
+        event.remove(engine, "before_cursor_execute", record)
+    assert result["processed_devices"] == 40
+    assert result["sites"][0]["missing"] == 40
+    assert counts["grouped"] == 1
