@@ -15,16 +15,27 @@ def get_rf_collection_health(db: Session, *, now: datetime | None = None) -> dic
     device_count = db.scalar(select(func.count()).select_from(Device).where(
         Device.source == "uisp", Device.enabled.is_(True),
     )) or 0
-    # Aggregate latest explicitly tagged RF samples, never raw UISP device payloads.
+    # Per-device indexed lookup avoids grouping the entire telemetry history.
+    # Only timestamps are returned; no raw payloads or secrets leave the DB.
+    latest_rf_at = (
+        select(TelemetrySample.sampled_at)
+        .where(
+            TelemetrySample.device_id == Device.id,
+            TelemetrySample.raw_data["rf_metrics_v1"].is_not(None),
+        )
+        .order_by(TelemetrySample.sampled_at.desc(), TelemetrySample.id.desc())
+        .limit(1)
+        .correlate(Device)
+        .scalar_subquery()
+    )
     rows = db.execute(
-        select(TelemetrySample.device_id, func.max(TelemetrySample.sampled_at))
-        .join(Device, Device.id == TelemetrySample.device_id)
-        .where(Device.source == "uisp", Device.enabled.is_(True),
-               TelemetrySample.raw_data["rf_metrics_v1"].is_not(None))
-        .group_by(TelemetrySample.device_id)
+        select(Device.id, latest_rf_at)
+        .where(Device.source == "uisp", Device.enabled.is_(True))
     ).all()
     counts = {"fresh": 0, "stale": 0, "future": 0}
     for _, sampled_at in rows:
+        if sampled_at is None:
+            continue
         # PostgreSQL returns aware UTC timestamps; SQLite may return naive UTC.
         if sampled_at.tzinfo is None:
             sampled_at = sampled_at.replace(tzinfo=timezone.utc)
