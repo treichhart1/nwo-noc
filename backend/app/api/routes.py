@@ -66,7 +66,8 @@ def dashboard(db: Session = Depends(get_db), _=Depends(current_user)):
     subscribers = db.scalar(select(func.coalesce(func.sum(Site.customer_count), 0))) or 0
     integrations = list(db.scalars(select(Integration).order_by(Integration.name)))
     # Unauthorized radios are inventory/configuration work, not downtime. Health measures reachability only.
-    health = round(((total - offline) / total) * 100) if total else 100
+    # Only confirmed active devices contribute to health; unknown status is not healthy.
+    health = round((active / total) * 100) if total else 100
     return DashboardOut(total_devices=total, active_devices=active, unauthorized_devices=unauthorized,
         offline_devices=offline, warning_devices=warning, mapped_devices=mapped, sites=sites, links=links,
         sectors=sectors, subscribers=subscribers, health_score=health, integrations=integrations)
