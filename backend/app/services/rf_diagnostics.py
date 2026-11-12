@@ -54,7 +54,14 @@ def get_rf_diagnostics(
         metrics = raw.get("rf_metrics_v1")
         if not isinstance(metrics, dict):
             continue
-        history.append({"sampled_at": row.sampled_at, "metrics": metrics})
+        # SQLAlchemy/SQLite may return naive UTC timestamps despite timezone=True.
+        # Database timestamps are stored as UTC; normalize before trend analysis.
+        sampled_at = row.sampled_at
+        if sampled_at.tzinfo is None or sampled_at.utcoffset() is None:
+            sampled_at = sampled_at.replace(tzinfo=timezone.utc)
+        else:
+            sampled_at = sampled_at.astimezone(timezone.utc)
+        history.append({"sampled_at": sampled_at, "metrics": metrics})
 
     # Samples at the same timestamp are possible during retries. Keep the
     # last persisted sample per timestamp to satisfy strict chronological order.
