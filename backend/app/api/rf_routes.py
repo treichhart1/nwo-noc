@@ -8,6 +8,7 @@ from app.core.database import get_db
 from app.models.entities import User, RFCollectionRun
 from app.services.rf_diagnostics import get_rf_diagnostics
 from app.services.rf_collection_health import get_rf_collection_health
+from app.services.rf_collection_reliability import collection_reliability
 
 router = APIRouter(prefix="/api", tags=["RF diagnostics"])
 
@@ -55,3 +56,12 @@ def rf_collection_history(
         "staged": run.staged,
         "skipped": run.skipped,
     } for run in runs]
+
+
+@router.get("/rf/collection-reliability")
+def rf_collection_reliability(
+    days: int = Query(7, ge=1, le=30),
+    db: Session = Depends(get_db),
+    _user: User = Depends(current_user),
+):
+    return collection_reliability(db, days=days)
