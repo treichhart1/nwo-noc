@@ -181,3 +181,24 @@ jobs:
           docker compose config --quiet
           docker compose config --format json > /tmp/noc-compose.json
           python3 scripts/validate_compose_network.py /tmp/noc-compose.json
+      - name: Validate offline staging egress policy and synthetic staging config
+        run: |
+          python3 scripts/validate_staging_egress_policy.py docs/noc-75x-staging-egress-policy.json
+          cat > /tmp/noc-ci-staging.env <<'EOF'
+          APP_ENV=staging
+          BIND_ADDRESS=127.0.0.1
+          RF_COLLECTION_ENABLED=false
+          RF_HISTORY_PRUNING_ENABLED=false
+          API_DOCS_ENABLED=false
+          UISP_VERIFY_TLS=true
+          CORS_ORIGINS=http://127.0.0.1:8090
+          DATABASE_URL=postgresql+psycopg://ci:ci@db:5432/staging
+          REDIS_URL=redis://redis:6379/0
+          EOF
+          python3 scripts/validate_staging_isolation.py --compose-json /tmp/noc-compose.json --env-file /tmp/noc-ci-staging.env
+          sed 's/^RF_COLLECTION_ENABLED=false$/RF_COLLECTION_ENABLED=true/' /tmp/noc-ci-staging.env > /tmp/noc-ci-unsafe.env
+          if python3 scripts/validate_staging_isolation.py --compose-json /tmp/noc-compose.json --env-file /tmp/noc-ci-unsafe.env; then
+            echo "Unsafe staging RF configuration unexpectedly passed"
+            exit 1
+          fi
+          echo "Offline staging lint and negative-control check passed; runtime isolation not verified"
