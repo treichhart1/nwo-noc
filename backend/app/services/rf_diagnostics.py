@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from app.models.entities import Device, TelemetrySample
 from app.services.rf_degradation import RFThresholds, evaluate_rf_degradation
 from app.services.rf_trends import RFTrendConfig, analyze_rf_trends
+from app.services.rf_freshness import evaluate_rf_freshness
 
 
 def get_rf_diagnostics(
@@ -21,6 +22,7 @@ def get_rf_diagnostics(
     max_samples: int = 288,
     thresholds: RFThresholds | None = None,
     trend_config: RFTrendConfig | None = None,
+    stale_after_seconds: int = 900,
 ) -> dict:
     """Return diagnostics for a single device using a bounded history query."""
     if not isinstance(device_id, int) or isinstance(device_id, bool) or device_id < 1:
@@ -60,6 +62,10 @@ def get_rf_diagnostics(
     for sample in history:
         unique[sample["sampled_at"]] = sample
     history = [unique[key] for key in sorted(unique)]
+    freshness = evaluate_rf_freshness(
+        history[-1]["sampled_at"] if history else None,
+        now=timestamp, stale_after_seconds=stale_after_seconds,
+    )
     degradation = evaluate_rf_degradation(
         [sample["metrics"] for sample in history], thresholds
     )
@@ -69,6 +75,7 @@ def get_rf_diagnostics(
         "device_name": device.name,
         "lookback_hours": lookback_hours,
         "rf_sample_count": len(history),
+        "freshness": freshness,
         "degradation": degradation,
         "trends": trends,
     }
