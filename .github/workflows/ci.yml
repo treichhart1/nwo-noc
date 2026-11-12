@@ -139,6 +139,8 @@ jobs:
         run: alembic upgrade head
       - name: Run real PostgreSQL RF integration tests
         run: python -m pytest -q tests/test_rf_postgres_integration.py tests/test_rf_end_to_end_postgres.py
+      - name: Benchmark RF health with synthetic radios (informational)
+        run: PYTHONPATH=. python scripts/benchmark_rf_health.py --devices 250 --history 20 --repeats 3
 
   compose-validation:
     runs-on: ubuntu-latest
