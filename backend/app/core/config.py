@@ -3,6 +3,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     app_name: str = "NWO NOC"
     app_env: str = "production"
+    api_docs_enabled: bool = False
     secret_key: str
     access_token_expire_minutes: int = 720
     database_url: str
