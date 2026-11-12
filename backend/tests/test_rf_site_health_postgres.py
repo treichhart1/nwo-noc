@@ -86,3 +86,25 @@ def test_future_lookup_is_batched_for_missing_radios(postgres_db):
     assert result["processed_devices"] == 40
     assert result["sites"][0]["missing"] == 40
     assert counts["grouped"] == 1
+
+
+def test_bulk_site_history_matches_bounded_device_diagnostics(postgres_db):
+    from app.services.rf_diagnostics import get_rf_diagnostics
+    db = postgres_db
+    site = Site(name="RF Bulk Parity CI")
+    db.add(site)
+    db.flush()
+    radio = Device(source="uisp", external_id="rf-bulk-parity", name="Bulk parity",
+                   enabled=True, wisp_site_id=site.id)
+    db.add(radio)
+    db.flush()
+    now = datetime.now(timezone.utc)
+    for i in range(30):
+        store_rf_sample(db, radio, {"rssi_dbm": -90 if i < 3 else -60},
+                        sampled_at=now - timedelta(minutes=i + 1))
+    db.flush()
+    single = get_rf_diagnostics(db, radio.id, max_samples=24)
+    bulk = get_rf_site_health(db)
+    site_result = next(s for s in bulk["sites"] if s["site_id"] == site.id)
+    assert site_result[single["freshness"]["status"]] == 1
+    assert site_result["degraded"] == int(single["degradation"]["degraded"])
