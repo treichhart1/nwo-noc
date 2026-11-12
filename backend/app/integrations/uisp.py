@@ -79,27 +79,38 @@ def sync_uisp(db: Session):
             device.raw_data = raw
             count += 1
         rf_result = None
+        rf_failed = False
         if settings.rf_collection_enabled:
-            # The worker already schedules UISP sync. Reuse that single fetch;
-            # never introduce a second polling loop or network request.
+            # Inventory is flushed first so RF work can be rolled back
+            # independently using a database savepoint.
             db.flush()
-            rf_result = stage_uisp_rf_batch(
-                db, payload,
-                min_interval_seconds=settings.rf_collection_min_interval_seconds,
-                max_devices=settings.rf_collection_max_devices,
-            )
-        if rf_result is not None:
-            db.add(RFCollectionRun(
-                started_at=datetime.now(timezone.utc), status="success",
-                received=rf_result["received"], staged=rf_result["staged"],
-                skipped=rf_result["skipped"],
-            ))
-        if settings.rf_collection_enabled and settings.rf_history_pruning_enabled:
-            prune_rf_collection_history(
-                db,
-                retention_days=settings.rf_history_retention_days,
-                max_delete=settings.rf_history_max_delete_per_run,
-            )
+            try:
+                with db.begin_nested():
+                    rf_result = stage_uisp_rf_batch(
+                        db, payload,
+                        min_interval_seconds=settings.rf_collection_min_interval_seconds,
+                        max_devices=settings.rf_collection_max_devices,
+                    )
+                    db.add(RFCollectionRun(
+                        started_at=datetime.now(timezone.utc), status="success",
+                        received=rf_result["received"], staged=rf_result["staged"],
+                        skipped=rf_result["skipped"],
+                    ))
+                    if settings.rf_history_pruning_enabled:
+                        prune_rf_collection_history(
+                            db,
+                            retention_days=settings.rf_history_retention_days,
+                            max_delete=settings.rf_history_max_delete_per_run,
+                        )
+            except Exception:
+                # An invalid RF batch/configuration must not abort the
+                # independent UISP inventory refresh. No secrets in logs.
+                rf_failed = True
+                log.warning("RF collection failed; UISP inventory sync continues")
+                db.add(RFCollectionRun(
+                    started_at=datetime.now(timezone.utc), status="failed",
+                    received=0, staged=0, skipped=0,
+                ))
         state.status = "connected"
         state.last_sync_at = datetime.now(timezone.utc)
         state.last_error = None
@@ -111,6 +122,8 @@ def sync_uisp(db: Session):
         result = {"ok": True, "imported": count}
         if rf_result is not None:
             result["rf_collection"] = rf_result
+        elif rf_failed:
+            result["rf_collection"] = {"ok": False, "status": "failed"}
         return result
     except Exception as exc:
         if settings.rf_collection_enabled:
