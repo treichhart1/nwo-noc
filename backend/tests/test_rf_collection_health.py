@@ -15,7 +15,7 @@ def test_collection_health_requires_auth():
 
 def test_collection_health_never_exposes_credentials_or_raw_payload():
     db = Mock()
-    db.scalar.side_effect = [None, 2]
+    db.scalar.side_effect = [None, 2, None]
     db.execute.return_value.all.return_value = [
         (1, datetime(2026, 11, 12, 16, tzinfo=timezone.utc)),
     ]
@@ -31,7 +31,7 @@ def test_collection_health_never_exposes_credentials_or_raw_payload():
 
 def test_collection_health_authenticated_route():
     db = Mock()
-    db.scalar.side_effect = [None, 0]
+    db.scalar.side_effect = [None, 0, None]
     db.execute.return_value.all.return_value = []
     app.dependency_overrides[current_user] = lambda: Mock()
     app.dependency_overrides[get_db] = lambda: db
@@ -42,3 +42,26 @@ def test_collection_health_authenticated_route():
         db.commit.assert_not_called()
     finally:
         app.dependency_overrides.clear()
+
+
+def test_collection_health_includes_persisted_latest_success_counts():
+    db = Mock()
+    run = Mock(status="success", received=12, staged=7, skipped=5)
+    run.started_at = datetime(2026, 11, 12, 16, tzinfo=timezone.utc)
+    db.scalar.side_effect = [None, 0, run]
+    db.execute.return_value.all.return_value = []
+    report = get_rf_collection_health(db, now=run.started_at)
+    assert report["last_batch_counts"] == {"received": 12, "staged": 7, "skipped": 5}
+    assert report["last_batch_status"] == "success"
+    db.commit.assert_not_called()
+
+
+def test_collection_health_failed_run_has_no_misleading_counts():
+    db = Mock()
+    run = Mock(status="failed")
+    run.started_at = datetime(2026, 11, 12, 16, tzinfo=timezone.utc)
+    db.scalar.side_effect = [None, 0, run]
+    db.execute.return_value.all.return_value = []
+    report = get_rf_collection_health(db, now=run.started_at)
+    assert report["last_batch_counts"] is None
+    assert report["last_batch_status"] == "failed"

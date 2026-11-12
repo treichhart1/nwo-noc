@@ -5,7 +5,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
-from app.models.entities import Device, Integration, TelemetrySample
+from app.models.entities import Device, Integration, TelemetrySample, RFCollectionRun
 from app.services.rf_freshness import evaluate_rf_freshness
 
 
@@ -30,6 +30,14 @@ def get_rf_collection_health(db: Session, *, now: datetime | None = None) -> dic
             sampled_at = sampled_at.replace(tzinfo=timezone.utc)
         state = evaluate_rf_freshness(sampled_at, now=current)["status"]
         counts[state] += 1
+    last_run = db.scalar(select(RFCollectionRun).order_by(
+        RFCollectionRun.started_at.desc(), RFCollectionRun.id.desc(),
+    ).limit(1))
+    last_counts = ({
+        "received": last_run.received,
+        "staged": last_run.staged,
+        "skipped": last_run.skipped,
+    } if last_run and last_run.status == "success" else None)
     return {
         "enabled": settings.rf_collection_enabled,
         "uisp_status": integration.status if integration else "not_configured",
@@ -39,6 +47,7 @@ def get_rf_collection_health(db: Session, *, now: datetime | None = None) -> dic
         "rf_devices_stale": counts["stale"],
         "rf_devices_future": counts["future"],
         "rf_devices_missing": max(0, device_count - sum(counts.values())),
-        "last_batch_counts": None,
-        "last_batch_note": "Per-batch staged/skipped counts are logged; historical batch totals are not persisted.",
+        "last_batch_counts": last_counts,
+        "last_batch_status": last_run.status if last_run else None,
+        "last_batch_at": last_run.started_at.isoformat() if last_run else None,
     }
