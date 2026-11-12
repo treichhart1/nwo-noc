@@ -66,7 +66,7 @@ def test_simulated_uisp_to_authenticated_diagnostics(postgres_db):
     # Test actual HTTP route serialization and authentication while reusing
     # the same isolated PostgreSQL session.
     app.dependency_overrides[get_db] = lambda: db
-    app.dependency_overrides[current_user] = lambda: object()
+    app.dependency_overrides[current_user] = lambda: type("AuthorizedUser", (), {"role": "admin"})()
     try:
         response = TestClient(app).get(f"/api/devices/{radio.id}/rf-diagnostics")
         assert response.status_code == 200, response.text

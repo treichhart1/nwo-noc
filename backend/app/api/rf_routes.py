@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, Path, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 
-from app.api.deps import current_user
+from app.api.rf_permissions import require_rf_reader
 from app.core.database import get_db
 from app.models.entities import User, RFCollectionRun
 from app.services.rf_diagnostics import get_rf_diagnostics
@@ -20,7 +20,7 @@ def device_rf_diagnostics(
     lookback_hours: int = Query(24, ge=1, le=168),
     max_samples: int = Query(288, ge=6, le=1000),
     db: Session = Depends(get_db),
-    _user: User = Depends(current_user),
+    _user: User = Depends(require_rf_reader),
 ):
     try:
         return get_rf_diagnostics(
@@ -33,7 +33,7 @@ def device_rf_diagnostics(
 @router.get("/rf/collection-health")
 def rf_collection_health(
     db: Session = Depends(get_db),
-    _user: User = Depends(current_user),
+    _user: User = Depends(require_rf_reader),
 ):
     return get_rf_collection_health(db)
 
@@ -42,7 +42,7 @@ def rf_collection_health(
 def rf_collection_history(
     limit: int = Query(25, ge=1, le=100),
     db: Session = Depends(get_db),
-    _user: User = Depends(current_user),
+    _user: User = Depends(require_rf_reader),
 ):
     runs = db.scalars(
         select(RFCollectionRun)
@@ -63,7 +63,7 @@ def rf_collection_history(
 def rf_collection_reliability(
     days: int = Query(7, ge=1, le=30),
     db: Session = Depends(get_db),
-    _user: User = Depends(current_user),
+    _user: User = Depends(require_rf_reader),
 ):
     return collection_reliability(db, days=days)
 
@@ -71,6 +71,6 @@ def rf_collection_reliability(
 @router.get("/rf/site-health")
 def rf_site_health(
     db: Session = Depends(get_db),
-    _user: User = Depends(current_user),
+    _user: User = Depends(require_rf_reader),
 ):
     return get_rf_site_health(db)

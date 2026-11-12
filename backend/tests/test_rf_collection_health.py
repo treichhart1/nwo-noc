@@ -33,7 +33,7 @@ def test_collection_health_authenticated_route():
     db = Mock()
     db.scalar.side_effect = [None, 0, None]
     db.execute.return_value.all.return_value = []
-    app.dependency_overrides[current_user] = lambda: Mock()
+    app.dependency_overrides[current_user] = lambda: Mock(role="admin")
     app.dependency_overrides[get_db] = lambda: db
     try:
         response = TestClient(app).get("/api/rf/collection-health")

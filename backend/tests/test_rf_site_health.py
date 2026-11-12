@@ -23,7 +23,7 @@ def test_authenticated_empty_site_health_is_read_only():
     db = Mock()
     db.execute.return_value.all.return_value = []
     db.scalars.return_value.all.return_value = []
-    app.dependency_overrides[current_user] = lambda: Mock()
+    app.dependency_overrides[current_user] = lambda: Mock(role="admin")
     app.dependency_overrides[get_db] = lambda: db
     try:
         response = TestClient(app).get("/api/rf/site-health")

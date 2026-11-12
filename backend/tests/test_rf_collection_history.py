@@ -17,7 +17,7 @@ def test_history_is_bounded_and_read_only():
     run = Mock(id=7, status="success", received=5, staged=3, skipped=2)
     run.started_at = datetime(2026, 11, 12, tzinfo=timezone.utc)
     db.scalars.return_value.all.return_value = [run]
-    app.dependency_overrides[current_user] = lambda: Mock()
+    app.dependency_overrides[current_user] = lambda: Mock(role="admin")
     app.dependency_overrides[get_db] = lambda: db
     try:
         response = TestClient(app).get("/api/rf/collection-history?limit=20")
