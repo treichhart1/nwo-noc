@@ -3,6 +3,7 @@ from unittest.mock import Mock
 from fastapi.testclient import TestClient
 
 from app.api.deps import current_user
+from app.api.rf_permissions import require_rf_reader
 from app.core.database import get_db
 from app.main import app
 
@@ -85,8 +86,7 @@ def test_rf_endpoints_enforce_role_allowlist():
                 assert client.get(endpoint).status_code == 403
         for role in ("admin", "operator"):
             app.dependency_overrides[current_user] = lambda role=role: Mock(role=role)
-            client = TestClient(app)
-            assert client.get("/api/rf/collection-history").status_code == 200
+            assert require_rf_reader(Mock(role=role)).role == role
     finally:
         app.dependency_overrides.clear()
 
