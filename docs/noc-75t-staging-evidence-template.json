@@ -1,0 +1,9 @@
+{
+  "offline_configuration_review_passed": false,
+  "isolated_staging_environment_confirmed": false,
+  "database_backup_and_restore_verified": false,
+  "staging_migrations_verified": false,
+  "rf_collection_and_pruning_disabled": false,
+  "uisp_integration_isolated_or_mocked": false,
+  "operator_review_completed": false
+}
