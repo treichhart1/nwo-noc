@@ -87,3 +87,24 @@ def test_end_to_end_api_rejects_unauthenticated_requests(postgres_db):
         assert TestClient(app).get("/api/devices/1/rf-diagnostics").status_code == 401
     finally:
         app.dependency_overrides.clear()
+
+
+def test_staging_repeated_uisp_sync_respects_collection_interval(postgres_db):
+    """Two successful UISP syncs should not duplicate RF samples."""
+    db = postgres_db
+    with patch("app.integrations.uisp.httpx.get", return_value=SimulatedUISPResponse()) as fetch, \
+         patch.object(settings, "uisp_base_url", "https://uisp.invalid"), \
+         patch.object(settings, "uisp_token", "ci-placeholder-only"), \
+         patch.object(settings, "rf_collection_enabled", True), \
+         patch.object(settings, "rf_collection_min_interval_seconds", 300), \
+         patch.object(settings, "rf_history_pruning_enabled", False):
+        first = sync_uisp(db)
+        second = sync_uisp(db)
+    assert first["rf_collection"]["staged"] == 1
+    assert second["rf_collection"]["staged"] == 0
+    assert second["rf_collection"]["skipped"] == 2
+    assert fetch.call_count == 2
+    radio = db.scalar(select(Device).where(Device.external_id == "rf-e2e-ci-radio"))
+    assert len(db.scalars(select(TelemetrySample).where(
+        TelemetrySample.device_id == radio.id,
+    )).all()) == 1
