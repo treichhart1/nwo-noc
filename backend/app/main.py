@@ -6,7 +6,7 @@ from app.api.rf_routes import router as rf_router
 from app.core.config import settings
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
-app = FastAPI(title=settings.app_name, version="3.0.0", docs_url="/docs", redoc_url="/redoc")
+app = FastAPI(title=settings.app_name, version="3.0.0", docs_url="/docs" if settings.api_docs_enabled else None, redoc_url="/redoc" if settings.api_docs_enabled else None, openapi_url="/openapi.json" if settings.api_docs_enabled else None)
 app.add_middleware(CORSMiddleware, allow_origins=settings.cors_origin_list, allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
 @app.get("/health")
