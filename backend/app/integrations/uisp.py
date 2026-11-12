@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.models.entities import Device, Integration, RFCollectionRun
 from app.integrations.uisp_rf_collection import stage_uisp_rf_batch
+from app.services.rf_collection_reliability import prune_rf_collection_history
 
 def parse_dt(value):
     if not value:
@@ -93,6 +94,12 @@ def sync_uisp(db: Session):
                 received=rf_result["received"], staged=rf_result["staged"],
                 skipped=rf_result["skipped"],
             ))
+        if settings.rf_collection_enabled and settings.rf_history_pruning_enabled:
+            prune_rf_collection_history(
+                db,
+                retention_days=settings.rf_history_retention_days,
+                max_delete=settings.rf_history_max_delete_per_run,
+            )
         state.status = "connected"
         state.last_sync_at = datetime.now(timezone.utc)
         state.last_error = None
