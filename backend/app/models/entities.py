@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, BigInteger, JSON, String, Text, UniqueConstraint
+from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, BigInteger, JSON, String, Text, Index, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 from app.core.database import Base
 
@@ -30,8 +30,9 @@ class Integration(Base):
 
 class Site(Base):
     __tablename__ = "sites"
+    __table_args__ = (Index("ix_sites_name", "name"),)
     id: Mapped[int] = mapped_column(primary_key=True)
-    name: Mapped[str] = mapped_column(String(255), unique=True, index=True)
+    name: Mapped[str] = mapped_column(String(255), unique=True)
     site_type: Mapped[str] = mapped_column(String(40), default="tower")
     status: Mapped[str] = mapped_column(String(30), default="active")
     address: Mapped[str | None] = mapped_column(String(255), nullable=True)
@@ -74,8 +75,8 @@ class Device(Base):
     firmware_version: Mapped[str | None] = mapped_column(String(120), nullable=True)
     site_id: Mapped[str | None] = mapped_column(String(120), nullable=True)
     site_name: Mapped[str | None] = mapped_column(String(255), index=True, nullable=True)
-    wisp_site_id: Mapped[int | None] = mapped_column(ForeignKey("sites.id"), nullable=True, index=True)
-    parent_device_id: Mapped[int | None] = mapped_column(ForeignKey("devices.id"), nullable=True)
+    wisp_site_id: Mapped[int | None] = mapped_column(ForeignKey("sites.id", ondelete="SET NULL"), nullable=True, index=True)
+    parent_device_id: Mapped[int | None] = mapped_column(ForeignKey("devices.id", ondelete="SET NULL"), nullable=True)
     latitude: Mapped[float | None] = mapped_column(Float, nullable=True)
     longitude: Mapped[float | None] = mapped_column(Float, nullable=True)
     signal: Mapped[float | None] = mapped_column(Float, nullable=True)
@@ -164,9 +165,9 @@ class Incident(Base):
     title: Mapped[str] = mapped_column(String(255), index=True)
     severity: Mapped[str] = mapped_column(String(30), default="warning", index=True)
     status: Mapped[str] = mapped_column(String(30), default="open", index=True)
-    site_id: Mapped[int | None] = mapped_column(ForeignKey("sites.id"), nullable=True, index=True)
-    device_id: Mapped[int | None] = mapped_column(ForeignKey("devices.id"), nullable=True, index=True)
-    link_id: Mapped[int | None] = mapped_column(ForeignKey("network_links.id"), nullable=True, index=True)
+    site_id: Mapped[int | None] = mapped_column(ForeignKey("sites.id", ondelete="SET NULL"), nullable=True, index=True)
+    device_id: Mapped[int | None] = mapped_column(ForeignKey("devices.id", ondelete="SET NULL"), nullable=True, index=True)
+    link_id: Mapped[int | None] = mapped_column(ForeignKey("network_links.id", ondelete="SET NULL"), nullable=True, index=True)
     customer_impact: Mapped[int] = mapped_column(Integer, default=0)
     summary: Mapped[str | None] = mapped_column(Text, nullable=True)
     root_cause: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -174,7 +175,7 @@ class Incident(Base):
     started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
     acknowledged_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    created_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
+    created_by: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
 
@@ -183,13 +184,13 @@ class MaintenanceWindow(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     title: Mapped[str] = mapped_column(String(255))
     status: Mapped[str] = mapped_column(String(30), default="scheduled", index=True)
-    site_id: Mapped[int | None] = mapped_column(ForeignKey("sites.id"), nullable=True, index=True)
-    link_id: Mapped[int | None] = mapped_column(ForeignKey("network_links.id"), nullable=True, index=True)
+    site_id: Mapped[int | None] = mapped_column(ForeignKey("sites.id", ondelete="SET NULL"), nullable=True, index=True)
+    link_id: Mapped[int | None] = mapped_column(ForeignKey("network_links.id", ondelete="SET NULL"), nullable=True, index=True)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     starts_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
     ends_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     expected_customer_impact: Mapped[int] = mapped_column(Integer, default=0)
-    created_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
+    created_by: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
 
