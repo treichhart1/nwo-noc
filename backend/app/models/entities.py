@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, BigInteger, JSON, String, Text, UniqueConstraint
+from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, BigInteger, JSON, String, Text, Index, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 from app.core.database import Base
 
@@ -30,6 +30,7 @@ class Integration(Base):
 
 class Site(Base):
     __tablename__ = "sites"
+    __table_args__ = (Index("ix_sites_name", "name"),)
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(255), unique=True)
     site_type: Mapped[str] = mapped_column(String(40), default="tower")
