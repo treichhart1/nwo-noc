@@ -1,5 +1,6 @@
 import {useEffect,useState} from "react"
 import {request} from "./lib/api"
+import RFSiteHealth from "./RFSiteHealth"
 
 type RFMetric={baseline:number,recent:number,change:number,declining:boolean,observations:number}
 type RFReport={
@@ -40,7 +41,7 @@ export default function RFDiagnostics({devices}:{devices:DeviceOption[]}){
       .finally(()=>{if(!cancelled)setLoading(false)})
     return()=>{cancelled=true}
   },[deviceId,hours])
-  return <section className="panel">
+  return <><RFSiteHealth/><section className="panel">
     <div className="panelHead"><div><h2>RF diagnostics</h2><p className="muted">Read-only RF health and historical trends. No automatic radio changes or alerts.</p></div></div>
     {health&&<div className="panel"><h3>Collection health</h3><p>RF collection: <strong>{health.enabled?"Enabled":"Disabled"}</strong> · UISP: {health.uisp_status}</p><p>Fresh: {health.rf_devices_fresh} · Stale: {health.rf_devices_stale} · Missing: {health.rf_devices_missing} · Future timestamps: {health.rf_devices_future}</p><p className="muted">Last UISP sync: {health.last_uisp_sync_at?new Date(health.last_uisp_sync_at).toLocaleString():"Not available"}</p><p className="muted">{health.last_batch_note}</p></div>}
     {healthError&&<p className="error" role="alert">Collection health unavailable: {healthError}</p>}
@@ -79,4 +80,5 @@ export default function RFDiagnostics({devices}:{devices:DeviceOption[]}){
       </>}
     </div>}
   </section>
+
 }
