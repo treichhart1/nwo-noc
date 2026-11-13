@@ -27,6 +27,9 @@ test('unified RF filters, shared incident assignment and closure, recommendation
  await page.getByRole('button',{name:'Apply RF filters',exact:true}).click()
  await expect(panel).toContainText('1 matching devices')
  await expect(panel).toContainText('noise_snr_pattern')
+ await expect(panel).toContainText('suspected interference')
+ await page.getByText('Historical RF comparisons for this device page (30d)',{exact:true}).click()
+ await expect(page.getByRole('region',{name:'RF historical comparisons',exact:true})).toContainText('Baseline median')
  const key=`rf-analytics:device:${analytics.device_ids.interference}`
  await page.getByRole('button',{name:`Acknowledge ${key}`,exact:true}).click()
  await expect(panel).toContainText('this observed evidence acknowledged')
@@ -56,8 +59,12 @@ test('unified RF filters, shared incident assignment and closure, recommendation
  await page.getByRole('group',{name:'RF operations views'}).getByRole('button',{name:'network',exact:true}).click()
  await page.getByRole('button',{name:`Troubleshoot #${analytics.device_ids.interference}`,exact:true}).click()
  const rec=page.getByRole('region',{name:'RF troubleshooting',exact:true})
+ await expect(rec.getByRole('button',{name:/Review recommendation #/}).first()).toBeVisible()
+ // Reproduce the stale-card window deterministically; users must only be able to open the filtered results.
+ await page.route(url=>url.origin==='http://127.0.0.1:18090'&&url.pathname==='/api/rf/troubleshooting',async route=>{if(new URL(route.request().url()).searchParams.get('status')==='new')await new Promise(resolve=>setTimeout(resolve,300));await route.continue()})
  await rec.getByLabel('Recommendation filter',{exact:true}).selectOption('new')
  await rec.getByRole('button',{name:/Review recommendation #/}).first().click()
+ await expect(rec.getByRole('article',{name:'Recommendation detail'})).toContainText('· new ·')
  await rec.getByLabel('Next recommendation status',{exact:true}).selectOption('acknowledged')
  await rec.getByRole('button',{name:'Save operator review',exact:true}).click()
  await expect(rec.getByRole('article',{name:'Recommendation detail'})).toContainText('acknowledged')

@@ -218,3 +218,18 @@ def test_foundation_availability_survives_in_unified_link_view(postgres_db,vendo
     project(db);detail=link_detail(db,link.id,now=NOW)['endpoints'][0]
     assert detail['series'][0]['metric_status']['noise_floor_dbm']=='unsupported'
     assert detail['series'][0]['metric_status']['signal_dbm']=='fresh'
+
+
+def test_rehearsal_history_spans_chart_buckets_without_rewriting_source(postgres_db,monkeypatch):
+    from app.rf_operations_rehearsal import append_link_history
+    from app.core.config import settings
+    db=postgres_db;a,z,link=seed_microwave(db);link.name='Synthetic NOC88 chart fixture';db.flush()
+    original=db.scalar(select(func.count()).select_from(TelemetrySample));original_max_id=db.scalar(select(func.max(TelemetrySample.id)));latest=db.scalar(select(func.max(TelemetrySample.sampled_at)))
+    monkeypatch.setattr(settings,'offline_mode',True);monkeypatch.setattr(settings,'app_env','staging');monkeypatch.setattr(settings,'synthetic_monitoring_enabled',True)
+    assert append_link_history(db,now=NOW)==4
+    assert db.scalar(select(func.count()).select_from(TelemetrySample))==original+4
+    assert db.scalar(select(func.max(TelemetrySample.sampled_at)))==latest
+    generated=list(db.scalars(select(TelemetrySample).where(TelemetrySample.id>original_max_id)))
+    assert len(generated)==4 and all(r.raw_data['rf_microwave_v1']['measurements']['uptime_seconds'] is None for r in generated)
+    project(db);detail=link_detail(db,link.id,now=NOW)['endpoints'][0]
+    assert len({b['sampled_at'] for b in detail['buckets']})>=4
