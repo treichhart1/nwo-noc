@@ -1,3 +1,4 @@
+from typing import Literal
 from pydantic import Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -39,6 +40,10 @@ class Settings(BaseSettings):
     rf_microwave_thresholds: dict = Field(default_factory=dict)
     rf_analytics_projection_enabled: bool = False
     rf_analytics_policy: dict = Field(default_factory=dict)
+    rf_explanation_provider: Literal['disabled','local_ollama'] = 'disabled'
+    rf_explanation_admin_approved: bool = False
+    rf_explanation_model: str = Field(default='local-rf',pattern=r'^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,79}$')
+    rf_troubleshooting_temperature_warning_c: float = Field(default=80,ge=40,le=150,allow_inf_nan=False)
     rf_analytics_retention_enabled: bool = False
     rf_analytics_retention_days: int = Field(90,ge=31,le=365)
     rf_analytics_retention_batch: int = Field(1000,ge=1,le=5000)
@@ -59,6 +64,8 @@ class Settings(BaseSettings):
         MicrowaveThresholds(**self.rf_microwave_thresholds)
         from app.services.rf_analytics_policy import AnalyticsPolicy
         AnalyticsPolicy(**self.rf_analytics_policy)
+        if self.rf_explanation_provider!='disabled' and (self.offline_mode or not self.rf_explanation_admin_approved):
+            raise ValueError('Local explanation requires explicit administrator approval and is forbidden in offline mode')
         if self.rf_microwave_enabled and (self.offline_mode or not self.integrations_admin_approved or not self.rf_microwave_config_file):
             raise ValueError('Microwave activation requires online administrator approval and private configuration')
         if self.rf_snmp_enabled and (self.offline_mode or not self.integrations_admin_approved or not self.rf_snmp_config_file):
