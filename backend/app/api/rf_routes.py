@@ -1,16 +1,19 @@
 """Authenticated, read-only RF diagnostics endpoints."""
+from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Depends, HTTPException, Path, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 
 from app.api.rf_permissions import require_rf_reader
 from app.core.database import get_db
-from app.models.entities import User, RFCollectionRun, Device
+from app.models.entities import User, RFCollectionRun, Device, TelemetrySample
 from app.services.rf_diagnostics import get_rf_diagnostics
 from app.services.rf_collection_health import get_rf_collection_health
 from app.services.rf_collection_reliability import collection_reliability
 from app.services.rf_site_health import get_rf_site_health
 from app.services.rf_self_healing import RFObservation, propose
+from app.services.rf_degradation import evaluate_rf_degradation
+from app.services.rf_metrics import normalize_rf_metrics
 
 router = APIRouter(prefix="/api", tags=["RF diagnostics"])
 
@@ -83,30 +86,67 @@ def rf_self_healing_preview(
     db: Session = Depends(get_db),
     _user: User = Depends(require_rf_reader),
 ):
-    """Read-only, fail-closed simulation. No approval or execution is possible here.
+    """Bounded, read-only preview from explicitly tagged, fresh RF samples.
 
-    RF diagnostic metrics are deliberately not mapped from reachability latency
-    or generic device signal fields: they are not equivalent to fresh RF samples.
-    Until validated RF sample integration is implemented, this always blocks.
+    Only a sustained three-sample degradation and independently fresh, confirmed
+    reachability can produce a pending *simulation*. No action is executable.
     """
     device = db.get(Device, device_id)
     if device is None:
         raise HTTPException(status_code=404, detail="Device not found")
-    proposal = propose(RFObservation(
-        device_id=device.id,
-        checked_at=None,
-        status="unknown",
-        rssi_dbm=None,
-        snr_db=None,
-        ccq_percent=None,
-    ))
+    now = datetime.now(timezone.utc)
+    rows = db.scalars(
+        select(TelemetrySample)
+        .where(
+            TelemetrySample.device_id == device_id,
+            TelemetrySample.sampled_at >= now - timedelta(minutes=15),
+            TelemetrySample.sampled_at <= now,
+        )
+        .order_by(TelemetrySample.sampled_at.desc(), TelemetrySample.id.desc())
+        .limit(20)
+    ).all()
+    valid = []
+    for row in rows:
+        raw = row.raw_data if isinstance(row.raw_data, dict) else {}
+        metrics = raw.get("rf_metrics_v1")
+        if not isinstance(metrics, dict):
+            continue
+        normalized = normalize_rf_metrics(metrics)
+        if not all(normalized.get(k) is not None for k in ("rssi_dbm", "snr_db", "ccq_percent")):
+            continue
+        sampled_at = row.sampled_at
+        if sampled_at.tzinfo is None:
+            sampled_at = sampled_at.replace(tzinfo=timezone.utc)
+        valid.append((sampled_at.astimezone(timezone.utc), normalized))
+    valid.sort(key=lambda item: item[0])
+    recent = valid[-3:]
+    degraded = len(recent) == 3 and evaluate_rf_degradation([item[1] for item in recent])["degraded"]
+    reachability_fresh = (
+        device.monitor_enabled is True
+        and device.monitor_status == "up"
+        and device.monitor_last_checked_at is not None
+    )
+    if reachability_fresh:
+        checked = device.monitor_last_checked_at
+        if checked.tzinfo is None:
+            checked = checked.replace(tzinfo=timezone.utc)
+        reachability_fresh = now - timedelta(minutes=15) <= checked <= now
+    if degraded and reachability_fresh:
+        sampled_at, metrics = recent[-1]
+        observation = RFObservation(device_id, sampled_at, "up",
+                                    metrics["rssi_dbm"], metrics["snr_db"], metrics["ccq_percent"])
+    else:
+        observation = RFObservation(device_id, None, "unknown", None, None, None)
+    proposal = propose(observation, now=now)
     return {
         "device_id": device.id,
         "device_name": device.name,
         "mode": "simulation_only",
         "execution_enabled": False,
         "decision": proposal.decision.value,
-        "reason": proposal.reason,
+        "reason": proposal.reason if degraded and reachability_fresh else (
+            "Three valid recent RF samples with sustained degradation and fresh confirmed reachability required"
+        ),
         "recommendation": proposal.recommendation,
-        "requires_validated_rf_telemetry": True,
+        "requires_validated_rf_telemetry": not (degraded and reachability_fresh),
     }
