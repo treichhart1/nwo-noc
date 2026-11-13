@@ -95,3 +95,42 @@ class Runtime:
             self.db_failed = (
                 True  # No heartbeat is published when the database probe fails.
             )
+
+
+class LegacyTasks:
+    """At most one TCP/UISP/legacy MikroTik task each; never block RF claims.
+
+    Their existing advisory locks remain authoritative across processes. Each
+    task owns its session; the main thread owns heartbeats independently.
+    """
+
+    def __init__(self, *, factory=SessionLocal):
+        from concurrent.futures import ThreadPoolExecutor
+
+        self.factory = factory
+        self.pool = ThreadPoolExecutor(max_workers=3)
+        self.pending = {}
+
+    def submit(self, name, fn):
+        if name not in {"tcp", "uisp", "mikrotik"}:
+            raise ValueError("Unknown legacy task")
+        previous = self.pending.get(name)
+        if previous is not None and not previous.done():
+            return False
+        self.pending[name] = self.pool.submit(self.one, fn)
+        return True
+
+    def one(self, fn):
+        try:
+            with self.factory() as db:
+                return fn(db)
+        except Exception:
+            import logging
+
+            logging.getLogger("nwo-noc.worker").warning(
+                "Read-only background collection failed; inspect sanitized monitoring status"
+            )
+            return {"result": "collection_failed"}
+
+    def close(self):
+        self.pool.shutdown(wait=True)

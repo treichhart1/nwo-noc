@@ -599,3 +599,38 @@ def test_concurrent_claims_do_not_overlap_and_collectors_are_isolated(
         with engine.begin() as c:
             c.execute(text(f'DROP SCHEMA "{schema}" CASCADE'))
         engine.dispose()
+
+
+def test_slow_legacy_collector_cannot_block_other_tasks_or_duplicate_itself(caplog):
+    from contextlib import contextmanager
+    from threading import Event
+    from app.services.worker_runtime import LegacyTasks
+
+    @contextmanager
+    def factory():
+        yield None
+
+    started = Event()
+    release = Event()
+    other = Event()
+
+    def slow(db):
+        started.set()
+        assert release.wait(3)
+
+    def failed(db):
+        raise ConnectionError("credential-canary-never-log")
+
+    tasks = LegacyTasks(factory=factory)
+    try:
+        assert tasks.submit("tcp", slow) and started.wait(1)
+        assert not tasks.submit("tcp", slow)
+        assert tasks.submit("uisp", lambda db: other.set()) and other.wait(1)
+        assert tasks.submit("mikrotik", failed)
+        assert tasks.pending["mikrotik"].result(timeout=1) == {
+            "result": "collection_failed"
+        }
+    finally:
+        release.set()
+        tasks.close()
+    assert "credential-canary-never-log" not in caplog.text
