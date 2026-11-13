@@ -96,7 +96,7 @@ class Recovery(unittest.TestCase):
         before = self.status()
         self.manage("stop", "db")
         try:
-            time.sleep(3)
+            time.sleep(12)
         finally:
             self.manage("up", "-d", "--wait", "db")
         s, elapsed = self.wait(

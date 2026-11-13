@@ -634,3 +634,99 @@ def test_slow_legacy_collector_cannot_block_other_tasks_or_duplicate_itself(capl
         release.set()
         tasks.close()
     assert "credential-canary-never-log" not in caplog.text
+
+
+def test_operator_incident_correlation_deduplicates_and_requires_new_evidence(
+    postgres_db,
+):
+    from fastapi.testclient import TestClient
+    from app.main import app
+    from app.core.database import get_db
+    from app.api.deps import current_user
+    from app.models.entities import User, Incident
+
+    db = postgres_db
+    user = User(
+        username="noc92-tech",
+        email="noc92-tech@synthetic.invalid",
+        password_hash="not-a-login-hash",
+        role="operator",
+        is_active=True,
+    )
+    parent = Device(
+        source="synthetic",
+        external_id="parent",
+        name="Synthetic upstream",
+        enabled=True,
+    )
+    child = Device(
+        source="synthetic",
+        external_id="child",
+        name="Synthetic downstream",
+        enabled=True,
+    )
+    db.add_all([user, parent, child])
+    db.flush()
+    child.parent_device_id = parent.id
+    at = datetime.now(timezone.utc) - timedelta(seconds=30)
+    alerts = [
+        MonitoringAlert(
+            device_id=d.id,
+            series="radio",
+            rule="wireless_outage",
+            category="rf",
+            severity="critical",
+            state="active",
+            first_seen_at=at,
+            updated_at=at,
+            evidence={"observed_at": at.isoformat()},
+        )
+        for d in (parent, child)
+    ]
+    db.add_all(alerts)
+    db.flush()
+    app.dependency_overrides[get_db] = lambda: db
+    app.dependency_overrides[current_user] = lambda: user
+    try:
+        with TestClient(app) as c:
+            first = c.post(
+                f"/api/monitoring/reliability/alerts/{alerts[1].id}/incident"
+            )
+            assert first.status_code == 200, first.text
+            ident = first.json()["incident_id"]
+            incident = db.get(Incident, ident)
+            assert (
+                incident.device_id == parent.id
+                and first.json()["execution_enabled"] is False
+            )
+            repeated = c.post(
+                f"/api/monitoring/reliability/alerts/{alerts[0].id}/incident"
+            )
+            assert (
+                repeated.status_code == 200 and repeated.json()["incident_id"] == ident
+            )
+            assert db.scalar(select(func.count(Incident.id))) == 1
+            incident.status = "closed"
+            incident.closed_at = datetime.now(timezone.utc)
+            db.commit()
+            assert (
+                c.post(
+                    f"/api/monitoring/reliability/alerts/{alerts[0].id}/incident"
+                ).status_code
+                == 409
+            )
+            alerts[0].evidence = {"observed_at": datetime.now(timezone.utc).isoformat()}
+            db.flush()
+            new = c.post(f"/api/monitoring/reliability/alerts/{alerts[0].id}/incident")
+            assert new.status_code == 200 and new.json()["incident_id"] != ident
+            assert db.get(Incident, ident).status == "closed"
+            assert (
+                db.scalar(
+                    select(func.count(AuditLog.id)).where(
+                        AuditLog.action == "incident.monitoring_context"
+                    )
+                )
+                == 3
+            )
+    finally:
+        app.dependency_overrides.clear()

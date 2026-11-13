@@ -3,6 +3,7 @@
 import logging
 import time
 from sqlalchemy import text
+from sqlalchemy.exc import SQLAlchemyError
 from app.core.config import settings
 from app.core.database import SessionLocal
 from app.integrations.uisp import sync_uisp
@@ -37,6 +38,11 @@ def main():
             if settings.rf_scheduler_enabled:
                 try:
                     runner.tick()
+                except SQLAlchemyError:
+                    runtime.db_failed = True
+                    log.warning(
+                        "Monitoring database delivery interrupted; durable work retained"
+                    )
                 except Exception:
                     log.warning(
                         "Scheduled delivery unavailable; durable leases and outbox retained for recovery"
