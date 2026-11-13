@@ -37,7 +37,7 @@ def point_state(point,now,cfg):
         if value is not None and value<limit:flags.append(name)
     if point.utilization_percent is not None and point.utilization_percent>=cfg.utilization_enter:flags.append('high_utilization')
     if point.radio_state in {'down','degraded'}:flags.append('reported_'+point.radio_state)
-    known=point.radio_state in {'up','down','degraded'} or any(getattr(point,k) is not None for k in ('signal_dbm','snr_db','capacity_mbps'))
+    known=point.radio_state in {'down','degraded'} or any(getattr(point,k) is not None for k in ('signal_dbm','snr_db','capacity_mbps'))
     return {'state':'degraded_observation' if flags else 'no_threshold_exception_observed' if known else 'unknown',
         'freshness':fresh,'flags':flags}
 

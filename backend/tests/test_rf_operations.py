@@ -17,6 +17,8 @@ def test_missing_values_are_not_zero_and_configured_freshness_is_respected():
     p=RFAnalyticsPoint(sampled_at=NOW,valid=True)
     assert point_state(p,NOW,AnalyticsPolicy())['state']=='unknown'
     assert health([])['state']=='unknown'
+    p.radio_state='up'
+    assert point_state(p,NOW,AnalyticsPolicy())['state']=='unknown'  # Connectivity alone is not RF metric coverage.
     p.signal_dbm=-85
     assert 'weak_signal' in point_state(p,NOW,AnalyticsPolicy())['flags']
     p.sampled_at=NOW-timedelta(seconds=120)
