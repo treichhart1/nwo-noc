@@ -147,3 +147,5 @@ projection/retention and query limits:
 [NOC-89 historical RF analytics](docs/NOC-89-historical-rf-analytics.md).
 
 NOC-90 adds [evidence-based RF troubleshooting and human review](docs/NOC-90-rf-troubleshooting.md), with deterministic facts, safe checks, audited notes/lifecycle and disabled-by-default constrained local explanations. No equipment commands or remediation are executed.
+
+NOC-91 adds [unified RF operations and shared technician investigations](docs/NOC-91-rf-operations.md), with explicit coverage/freshness, site/link context, incident assignments and cursor audit history. The dashboard reads stored telemetry and performs no equipment operations.

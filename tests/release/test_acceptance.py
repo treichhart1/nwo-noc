@@ -127,7 +127,7 @@ print('TEST-NET outbound denied')'''
         self.manage('restart','backend','frontend','worker')
         for _ in range(60):
             try:
-                if self.request('/api/auth/me')[0]==200 and self.manage('exec','-T','worker','python','-m','app.worker_health',check=False).returncode==0: return
+                if self.request('/api/auth/me')[0]==200 and self.request('/api/rf/operations')[0]==200 and self.manage('exec','-T','worker','python','-m','app.worker_health',check=False).returncode==0: return
             except (OSError,urllib.error.URLError): pass
             time.sleep(1)
         self.fail('Services did not recover after Redis failure/restart')
@@ -137,7 +137,7 @@ print('TEST-NET outbound denied')'''
         self.manage('up','-d','--no-deps','--force-recreate','backend')
         for _ in range(60):
             try:
-                if self.request('/api/operations/readiness')[0]==200 and self.manage('exec','-T','worker','python','-m','app.worker_health',check=False).returncode==0:
+                if self.request('/api/operations/readiness')[0]==200 and self.request('/api/rf/operations')[0]==200 and self.manage('exec','-T','worker','python','-m','app.worker_health',check=False).returncode==0:
                     return
             except (OSError,urllib.error.URLError): pass
             time.sleep(1)

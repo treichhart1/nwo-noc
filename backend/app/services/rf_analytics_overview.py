@@ -78,7 +78,7 @@ def analytics_overview(db,*,window='24h',site_id=None,vendor=None,device_id=None
         if vendor:reports=[r for r in reports if r['vendor']==vendor]
         if link_id is not None:reports=[r for r in reports if r['link_id']==link_id]
         if window in {'7d','30d'}:recurrence=recurring_periods(db,frame,cfg)
-    incidents=list(db.scalars(select(Incident).where(Incident.status!='resolved')))
+    incidents=list(db.scalars(select(Incident).where(Incident.status.not_in(('resolved','closed')))))
     alerts,suppressed,towers=correlate_reports(reports,topology,links,incidents,recurrence)
     checkpoint=db.get(RFAnalyticsCheckpoint,'rf-v1')
     by_device={d.id:d for d in chosen}

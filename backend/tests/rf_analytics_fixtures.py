@@ -27,7 +27,7 @@ def device(db,*,name='Synthetic analytics radio',vendor='Cambium',external_id='n
     db.add(d);db.flush();return d
 
 
-def seed_radio(db,d,*,now=NOW,scenario='healthy'):
+def seed_radio(db,d,*,now=NOW,scenario='healthy',profile='epmp-4600-mib-v1'):
     times=historical_times(now);states={};local=now.astimezone(ZoneInfo('America/New_York'))
     if scenario=='recurring':
         for day in range(1,8):
@@ -46,7 +46,7 @@ def seed_radio(db,d,*,now=NOW,scenario='healthy'):
             if scenario=='outages':data.update(radio_status=1 if int((now-when).total_seconds()/60)%2 else 2)
             if scenario=='missing':data.update(rssi_dbm=None,snr_db=None,noise_floor_dbm=None)
         if states.get(when):data.update(rssi_dbm=-85,radio_status=2)
-        stage_radio(db,d,radio_observation('epmp-4600-mib-v1',at=when,**data))
+        stage_radio(db,d,radio_observation(profile,at=when,**data))
     return len(set(times))
 
 

@@ -154,6 +154,7 @@ class Sector(Base):
 
 class AuditLog(Base):
     __tablename__ = "audit_logs"
+    __table_args__ = (Index("ix_audit_entity_cursor", "entity_type", "entity_id", "id"),)
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
     action: Mapped[str] = mapped_column(String(120))
@@ -165,6 +166,7 @@ class AuditLog(Base):
 
 class Incident(Base):
     __tablename__ = "incidents"
+    __table_args__ = (Index("ix_incidents_status_started_id", "status", "started_at", "id"),)
     id: Mapped[int] = mapped_column(primary_key=True)
     title: Mapped[str] = mapped_column(String(255), index=True)
     severity: Mapped[str] = mapped_column(String(30), default="warning", index=True)
@@ -172,6 +174,10 @@ class Incident(Base):
     site_id: Mapped[int | None] = mapped_column(ForeignKey("sites.id", ondelete="SET NULL"), nullable=True, index=True)
     device_id: Mapped[int | None] = mapped_column(ForeignKey("devices.id", ondelete="SET NULL"), nullable=True, index=True)
     link_id: Mapped[int | None] = mapped_column(ForeignKey("network_links.id", ondelete="SET NULL"), nullable=True, index=True)
+    assigned_to_user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+    findings: Mapped[str | None] = mapped_column(Text, nullable=True)
+    closed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    revision: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
     customer_impact: Mapped[int] = mapped_column(Integer, default=0)
     summary: Mapped[str | None] = mapped_column(Text, nullable=True)
     root_cause: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -351,3 +357,22 @@ class RFRecommendationNote(Base):
     episode: Mapped[int] = mapped_column(Integer)
     body: Mapped[str] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class IncidentNote(Base):
+    __tablename__ = "incident_notes"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    incident_id: Mapped[int] = mapped_column(ForeignKey("incidents.id", ondelete="CASCADE"), index=True)
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    body: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class RFAlertReview(Base):
+    """Acknowledges an observed analytics alert, not future unseen telemetry."""
+    __tablename__ = "rf_alert_reviews"
+    alert_key: Mapped[str] = mapped_column(String(120), primary_key=True)
+    observed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    acknowledged_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    incident_id: Mapped[int | None] = mapped_column(ForeignKey("incidents.id", ondelete="SET NULL"), nullable=True, index=True)
