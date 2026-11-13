@@ -29,3 +29,6 @@ coverage/
 # OS
 .DS_Store
 Thumbs.db
+
+# Local release-validation evidence
+work/

@@ -29,7 +29,7 @@ def test_preview_blocks_without_validated_rf_samples():
     assert result["execution_enabled"] is False
     assert result["mode"] == "simulation_only"
     assert result["requires_validated_rf_telemetry"] is True
-    assert "three valid recent RF samples" in result["reason"].lower()
+    assert "three valid recent rf samples" in result["reason"].lower()
 
 
 def test_preview_unknown_device_is_not_found():
@@ -73,3 +73,23 @@ def test_stale_reachability_blocks_even_with_degraded_rf_samples():
                              monitor_status="up", monitor_last_checked_at=now - timedelta(minutes=30))
     result = rf_self_healing_preview(device_id=42, db=FakeDB(device, rows), _user=SimpleNamespace(role="operator"))
     assert result["decision"] == "blocked"
+
+
+@pytest.mark.parametrize("interruption", [None, {}, {"snr_db": "bad"},
+    {"rssi_dbm": -65, "snr_db": 30, "ccq_percent": 95},
+    {"rssi_dbm": -65, "snr_db": 18, "ccq_percent": 75},
+    {"rssi_dbm": -130, "snr_db": 10, "ccq_percent": 45}])
+@pytest.mark.parametrize("position", [0, 1, 2])
+def test_invalid_healthy_or_mild_sample_breaks_simulation_streak(interruption, position):
+    from datetime import datetime, timedelta, timezone
+    now = datetime.now(timezone.utc)
+    rows = [SimpleNamespace(sampled_at=now - timedelta(minutes=n),
+        raw_data={"rf_metrics_v1": {"rssi_dbm": -65, "snr_db": 10, "ccq_percent": 45}})
+        for n in (1, 2, 3, 4)]
+    rows[position].raw_data = {"rf_metrics_v1": interruption}
+    device = SimpleNamespace(id=42, name="Test AP", monitor_enabled=True,
+        monitor_status="up", monitor_last_checked_at=now - timedelta(minutes=1))
+    result = rf_self_healing_preview(device_id=42, db=FakeDB(device, rows),
+        _user=SimpleNamespace(role="operator"))
+    assert result["decision"] == "blocked"
+    assert result["execution_enabled"] is False
