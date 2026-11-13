@@ -15,6 +15,7 @@ test('RF troubleshooting evidence, deduplication, operator notes, lifecycle and 
  const evaluation=page.waitForResponse(r=>r.url().endsWith('/api/rf/troubleshooting/evaluate')&&r.request().method()==='POST')
  await page.getByRole('button',{name:'Evaluate stored evidence',exact:true}).click()
  const evaluated=await evaluation;expect(evaluated.status(),await evaluated.text()).toBe(200)
+ await expect(page.getByRole('button',{name:'Evaluate stored evidence',exact:true})).toBeEnabled()
  const review=panel.getByRole('button',{name:/Review recommendation #/})
  await expect(review.first()).toBeVisible();const count=await review.count()
  await page.getByRole('button',{name:'Evaluate stored evidence',exact:true}).click()
