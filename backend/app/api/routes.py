@@ -1,10 +1,11 @@
+from app.core.config import settings
 from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy import distinct, func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
-from app.api.deps import current_user
+from app.api.deps import current_user, require_operator
 from app.core.database import get_db
 from app.core.security import create_access_token, verify_password
 from app.integrations.uisp import sync_uisp
@@ -95,7 +96,7 @@ def device(device_id: int, db: Session = Depends(get_db), _=Depends(current_user
     return item
 
 @router.patch("/devices/{device_id}", response_model=DeviceOut)
-def patch_device(device_id: int, payload: DevicePatch, request: Request, db: Session = Depends(get_db), user: User = Depends(current_user)):
+def patch_device(device_id: int, payload: DevicePatch, request: Request, db: Session = Depends(get_db), user: User = Depends(require_operator)):
     item = db.get(Device, device_id)
     if not item: raise HTTPException(status_code=404, detail="Device not found")
     changes = payload.model_dump(exclude_unset=True)
@@ -114,7 +115,7 @@ def sites(db: Session = Depends(get_db), _=Depends(current_user)):
     return sorted([site_out(s, device_rows) for s in site_rows], key=lambda x: (x.offline_count == 0, x.name.lower()))
 
 @router.post("/sites", response_model=SiteOut, status_code=201)
-def create_site(payload: SiteCreate, request: Request, db: Session = Depends(get_db), user: User = Depends(current_user)):
+def create_site(payload: SiteCreate, request: Request, db: Session = Depends(get_db), user: User = Depends(require_operator)):
     item = Site(**payload.model_dump())
     db.add(item)
     try: db.flush()
@@ -131,7 +132,7 @@ def get_site(site_id: int, db: Session = Depends(get_db), _=Depends(current_user
     return site_out(item, list(db.scalars(select(Device))))
 
 @router.put("/sites/{site_id}", response_model=SiteOut)
-def update_site(site_id: int, payload: SiteUpdate, request: Request, db: Session = Depends(get_db), user: User = Depends(current_user)):
+def update_site(site_id: int, payload: SiteUpdate, request: Request, db: Session = Depends(get_db), user: User = Depends(require_operator)):
     item = db.get(Site, site_id)
     if not item: raise HTTPException(status_code=404, detail="Site not found")
     changes = payload.model_dump()
@@ -142,7 +143,7 @@ def update_site(site_id: int, payload: SiteUpdate, request: Request, db: Session
     return site_out(item, list(db.scalars(select(Device))))
 
 @router.delete("/sites/{site_id}", status_code=204)
-def delete_site(site_id: int, request: Request, db: Session = Depends(get_db), user: User = Depends(current_user)):
+def delete_site(site_id: int, request: Request, db: Session = Depends(get_db), user: User = Depends(require_operator)):
     item = db.get(Site, site_id)
     if not item: raise HTTPException(status_code=404, detail="Site not found")
     if db.scalar(select(func.count()).select_from(NetworkLink).where(or_(NetworkLink.a_site_id == site_id, NetworkLink.z_site_id == site_id))):
@@ -162,7 +163,7 @@ def links(db: Session = Depends(get_db), _=Depends(current_user)):
     return result
 
 @router.post("/links", response_model=NetworkLinkOut, status_code=201)
-def create_link(payload: NetworkLinkCreate, request: Request, db: Session = Depends(get_db), user: User = Depends(current_user)):
+def create_link(payload: NetworkLinkCreate, request: Request, db: Session = Depends(get_db), user: User = Depends(require_operator)):
     if payload.a_site_id == payload.z_site_id: raise HTTPException(status_code=422, detail="A and Z sites must be different")
     a,z=db.get(Site,payload.a_site_id),db.get(Site,payload.z_site_id)
     if not a or not z: raise HTTPException(status_code=404, detail="One or both link sites were not found")
@@ -176,7 +177,7 @@ def create_link(payload: NetworkLinkCreate, request: Request, db: Session = Depe
     return NetworkLinkOut(**data,a_site_name=a.name,z_site_name=z.name)
 
 @router.put("/links/{link_id}", response_model=NetworkLinkOut)
-def update_link(link_id:int,payload:NetworkLinkCreate,request:Request,db:Session=Depends(get_db),user:User=Depends(current_user)):
+def update_link(link_id:int,payload:NetworkLinkCreate,request:Request,db:Session=Depends(get_db),user:User=Depends(require_operator)):
     item=db.get(NetworkLink,link_id)
     if not item: raise HTTPException(status_code=404,detail="Link not found")
     if payload.a_site_id == payload.z_site_id: raise HTTPException(status_code=422, detail="A and Z sites must be different")
@@ -188,7 +189,7 @@ def update_link(link_id:int,payload:NetworkLinkCreate,request:Request,db:Session
     return NetworkLinkOut(**data,a_site_name=a.name if a else None,z_site_name=z.name if z else None)
 
 @router.delete("/links/{link_id}", status_code=204)
-def delete_link(link_id:int,request:Request,db:Session=Depends(get_db),user:User=Depends(current_user)):
+def delete_link(link_id:int,request:Request,db:Session=Depends(get_db),user:User=Depends(require_operator)):
     item=db.get(NetworkLink,link_id)
     if not item: raise HTTPException(status_code=404,detail="Link not found")
     audit(db,user,request,"link.delete","network_link",str(item.id),{"name":item.name}); db.delete(item); db.commit()
@@ -202,7 +203,7 @@ def sectors(db:Session=Depends(get_db),_=Depends(current_user)):
     return result
 
 @router.post("/sectors", response_model=SectorOut, status_code=201)
-def create_sector(payload:SectorCreate,request:Request,db:Session=Depends(get_db),user:User=Depends(current_user)):
+def create_sector(payload:SectorCreate,request:Request,db:Session=Depends(get_db),user:User=Depends(require_operator)):
     site=db.get(Site,payload.site_id)
     if not site: raise HTTPException(status_code=404,detail="Site not found")
     item=Sector(**payload.model_dump()); db.add(item)
@@ -213,7 +214,7 @@ def create_sector(payload:SectorCreate,request:Request,db:Session=Depends(get_db
     data={c.name:getattr(item,c.name) for c in item.__table__.columns}; return SectorOut(**data,site_name=site.name)
 
 @router.delete("/sectors/{sector_id}", status_code=204)
-def delete_sector(sector_id:int,request:Request,db:Session=Depends(get_db),user:User=Depends(current_user)):
+def delete_sector(sector_id:int,request:Request,db:Session=Depends(get_db),user:User=Depends(require_operator)):
     item=db.get(Sector,sector_id)
     if not item: raise HTTPException(status_code=404,detail="Sector not found")
     audit(db,user,request,"sector.delete","sector",str(item.id),{"name":item.name}); db.delete(item); db.commit()
@@ -249,7 +250,9 @@ def integrations(db: Session = Depends(get_db), _=Depends(current_user)):
     return list(db.scalars(select(Integration).order_by(Integration.name)))
 
 @router.post("/integrations/uisp/sync")
-def trigger_sync(request: Request, db: Session = Depends(get_db), user: User = Depends(current_user)):
+def trigger_sync(request: Request, db: Session = Depends(get_db), user: User = Depends(require_operator)):
+    if settings.offline_mode:
+        raise HTTPException(status_code=403, detail="External integrations disabled in offline mode")
     try:
         result=sync_uisp(db)
         # Attach synced devices to existing WISP site records by exact site name.
@@ -300,7 +303,7 @@ def list_incidents(status: str | None = None, limit: int = Query(200, ge=1, le=1
     return [incident_out(x, db) for x in rows]
 
 @router.post("/incidents", response_model=IncidentOut, status_code=201)
-def create_incident(payload: IncidentCreate, request: Request, db: Session = Depends(get_db), user: User = Depends(current_user)):
+def create_incident(payload: IncidentCreate, request: Request, db: Session = Depends(get_db), user: User = Depends(require_operator)):
     data = payload.model_dump()
     data["started_at"] = data.get("started_at") or datetime.now(timezone.utc)
     item = Incident(**data, created_by=user.id)
@@ -310,7 +313,7 @@ def create_incident(payload: IncidentCreate, request: Request, db: Session = Dep
     return incident_out(item, db)
 
 @router.patch("/incidents/{incident_id}", response_model=IncidentOut)
-def update_incident(incident_id: int, payload: IncidentUpdate, request: Request, db: Session = Depends(get_db), user: User = Depends(current_user)):
+def update_incident(incident_id: int, payload: IncidentUpdate, request: Request, db: Session = Depends(get_db), user: User = Depends(require_operator)):
     item = db.get(Incident, incident_id)
     if not item:
         raise HTTPException(status_code=404, detail="Incident not found")
@@ -329,7 +332,7 @@ def update_incident(incident_id: int, payload: IncidentUpdate, request: Request,
     return incident_out(item, db)
 
 @router.delete("/incidents/{incident_id}", status_code=204)
-def delete_incident(incident_id: int, request: Request, db: Session = Depends(get_db), user: User = Depends(current_user)):
+def delete_incident(incident_id: int, request: Request, db: Session = Depends(get_db), user: User = Depends(require_operator)):
     item = db.get(Incident, incident_id)
     if not item:
         raise HTTPException(status_code=404, detail="Incident not found")
@@ -348,7 +351,7 @@ def list_maintenance(db: Session = Depends(get_db), _=Depends(current_user)):
     return result
 
 @router.post("/maintenance", response_model=MaintenanceOut, status_code=201)
-def create_maintenance(payload: MaintenanceCreate, request: Request, db: Session = Depends(get_db), user: User = Depends(current_user)):
+def create_maintenance(payload: MaintenanceCreate, request: Request, db: Session = Depends(get_db), user: User = Depends(require_operator)):
     if payload.ends_at <= payload.starts_at:
         raise HTTPException(status_code=422, detail="Maintenance end time must be after start time")
     item=MaintenanceWindow(**payload.model_dump(), created_by=user.id); db.add(item); db.flush()
@@ -359,7 +362,7 @@ def create_maintenance(payload: MaintenanceCreate, request: Request, db: Session
     return MaintenanceOut(**data,site_name=site.name if site else None,link_name=link.name if link else None)
 
 @router.patch("/maintenance/{maintenance_id}/status", response_model=MaintenanceOut)
-def update_maintenance_status(maintenance_id:int,status:str,request:Request,db:Session=Depends(get_db),user:User=Depends(current_user)):
+def update_maintenance_status(maintenance_id:int,status:str,request:Request,db:Session=Depends(get_db),user:User=Depends(require_operator)):
     if status not in {"scheduled","in_progress","completed","cancelled"}:
         raise HTTPException(status_code=422,detail="Invalid maintenance status")
     item=db.get(MaintenanceWindow,maintenance_id)
@@ -370,7 +373,7 @@ def update_maintenance_status(maintenance_id:int,status:str,request:Request,db:S
     return MaintenanceOut(**data,site_name=site.name if site else None,link_name=link.name if link else None)
 
 @router.post("/devices/{device_id}/telemetry", response_model=TelemetryOut, status_code=201)
-def ingest_telemetry(device_id:int,payload:TelemetryCreate,db:Session=Depends(get_db),_=Depends(current_user)):
+def ingest_telemetry(device_id:int,payload:TelemetryCreate,db:Session=Depends(get_db),_=Depends(require_operator)):
     device=db.get(Device,device_id)
     if not device: raise HTTPException(status_code=404,detail="Device not found")
     data=payload.model_dump(); data["sampled_at"]=data.get("sampled_at") or datetime.now(timezone.utc)
@@ -411,7 +414,7 @@ def monitoring_summary(db: Session = Depends(get_db), _=Depends(current_user)):
         average_latency_ms=round(float(avg), 2) if avg is not None else None, unacknowledged_events=events, last_check_at=last)
 
 @router.post("/devices/{device_id}/monitor/check", response_model=MonitorCheckOut)
-def run_monitor_check(device_id: int, db: Session = Depends(get_db), _=Depends(current_user)):
+def run_monitor_check(device_id: int, db: Session = Depends(get_db), _=Depends(require_operator)):
     device = db.get(Device, device_id)
     if not device: raise HTTPException(status_code=404, detail="Device not found")
     return check_device(db, device, force=True)
@@ -435,7 +438,7 @@ def monitor_events(acknowledged: bool | None = None, limit: int = Query(200, ge=
     return result
 
 @router.patch("/monitoring/events/{event_id}/acknowledge", response_model=MonitorEventOut)
-def acknowledge_monitor_event(event_id: int, db: Session = Depends(get_db), _=Depends(current_user)):
+def acknowledge_monitor_event(event_id: int, db: Session = Depends(get_db), _=Depends(require_operator)):
     item = db.get(MonitorEvent, event_id)
     if not item: raise HTTPException(status_code=404, detail="Monitoring event not found")
     item.acknowledged = True; db.commit(); db.refresh(item)

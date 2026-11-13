@@ -14,3 +14,9 @@ def current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_
     if not user or not user.is_active:
         raise HTTPException(status_code=401, detail="Invalid or expired session")
     return user
+
+
+def require_operator(user: User = Depends(current_user)):
+    if user.role not in {"admin", "operator"}:
+        raise HTTPException(status_code=403, detail="Operator access required")
+    return user

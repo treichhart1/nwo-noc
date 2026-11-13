@@ -125,3 +125,6 @@ Private Internal Project
 Copyright © 2026 Tim Reichhart
 
 All Rights Reserved.
+
+For isolated Ubuntu 24.04 installation, automated release/browser acceptance,
+backup recovery and rollback, see [NOC-84 installation and recovery](docs/NOC-84-installation-and-recovery.md).

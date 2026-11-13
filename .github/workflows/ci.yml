@@ -220,6 +220,7 @@ jobs:
     name: RF offline release acceptance
     runs-on: ubuntu-24.04
     needs:
+      - clean-install-acceptance
       - frontend
       - backend
       - database-migrations
@@ -229,13 +230,14 @@ jobs:
     steps:
       - name: Require all RF release dependencies to pass
         env:
+          INSTALL_RESULT: ${{ needs.clean-install-acceptance.result }}
           FRONTEND_RESULT: ${{ needs.frontend.result }}
           BACKEND_RESULT: ${{ needs.backend.result }}
           MIGRATIONS_RESULT: ${{ needs.database-migrations.result }}
           RF_RESULT: ${{ needs.rf-postgres-integration.result }}
           COMPOSE_RESULT: ${{ needs.compose-validation.result }}
         run: |
-          for name in FRONTEND_RESULT BACKEND_RESULT MIGRATIONS_RESULT RF_RESULT COMPOSE_RESULT; do
+          for name in INSTALL_RESULT FRONTEND_RESULT BACKEND_RESULT MIGRATIONS_RESULT RF_RESULT COMPOSE_RESULT; do
             result="${!name}"
             if [ "$result" != "success" ]; then
               echo "::error::$name is $result, expected success"
@@ -250,3 +252,44 @@ jobs:
             echo "**Scope:** synthetic/disposable CI only. No live UISP/MikroTik integration or staging validation."
             echo "**Release status:** not approved for production."
           } >> "$GITHUB_STEP_SUMMARY"
+
+  clean-install-acceptance:
+    name: Ubuntu 24.04 isolated installation and recovery
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Build application images
+        run: |
+          docker build -t noc84-backend:rc backend
+          docker build -t noc84-frontend:rc frontend
+      - name: Rehearse Ubuntu installation in a fresh userspace container
+        run: scripts/release/rehearse-ubuntu.sh "$RUNNER_TEMP/noc84-state"
+      - name: Start loopback access to internal-only stack
+        run: |
+          nohup python3 scripts/release/access.py "$RUNNER_TEMP/noc84-state" > "$RUNNER_TEMP/noc84-access.log" 2>&1 &
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:18090/health; then exit 0; fi
+            sleep 1
+          done
+          exit 1
+      - name: API, worker, isolation, restart and backup recovery acceptance
+        env:
+          NOC_ACCEPTANCE_STATE: ${{ runner.temp }}/noc84-state
+        run: python3 tests/release/test_acceptance.py
+      - name: Browser acceptance with synthetic data
+        env:
+          NOC_ACCEPTANCE_STATE: ${{ runner.temp }}/noc84-state
+        run: |
+          cd frontend
+          npm ci --no-audit --no-fund
+          npx playwright install --with-deps chromium
+          npx playwright test
+      - name: Stop isolated acceptance services, retain volumes
+        if: always()
+        run: scripts/release/manage.sh "$RUNNER_TEMP/noc84-state" down

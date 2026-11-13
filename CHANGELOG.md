@@ -1,5 +1,10 @@
 ## 3.2.1-rc.1 (unreleased)
 
+- NOC-84: isolated Ubuntu bootstrap/installation, runtime/browser acceptance,
+  guarded backup/restore, offline configuration/monitoring and bundled map assets.
+- Require operator/admin roles for mutating APIs; add worker Redis heartbeat health.
+- Add Ubuntu container rehearsal and recovery/browser checks to CI release gate.
+
 - Reconcile RF-81's corrected test with the NOC-82 audit stack.
 - Require three consecutive severe RF samples for simulation preview; invalid,
   healthy, and mild intervening samples block a proposal.

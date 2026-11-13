@@ -49,6 +49,12 @@ services:
     restart: unless-stopped
     env_file: .env
     command: python -m app.worker
+    healthcheck:
+      test: ["CMD", "python", "-m", "app.worker_health"]
+      interval: 15s
+      timeout: 5s
+      retries: 4
+      start_period: 30s
     depends_on:
       backend:
         condition: service_healthy

@@ -1,0 +1,73 @@
+# Standalone nonproduction acceptance stack; never combine with a live .env.
+name: ${NOC_PROJECT:-noc84-acceptance}
+x-app: &app
+  image: ${NOC_BACKEND_IMAGE:-noc84-backend:rc}
+  env_file: ${NOC_ENV_FILE:?Set NOC_ENV_FILE to generated isolated environment}
+  networks: [isolated]
+  restart: unless-stopped
+  security_opt: [no-new-privileges:true]
+  cap_drop: [ALL]
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: nwo_noc
+      POSTGRES_USER: noc_test
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Generate isolated configuration first}
+    volumes: [database:/var/lib/postgresql/data]
+    networks: [isolated]
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U noc_test -d nwo_noc']
+      interval: 2s
+      timeout: 3s
+      retries: 30
+  redis:
+    image: redis:7-alpine
+    networks: [isolated]
+    command: [redis-server, --appendonly, 'yes']
+    volumes: [redis_data:/data]
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+  migrate:
+    <<: *app
+    restart: 'no'
+    command: [alembic, upgrade, head]
+    depends_on:
+      db: {condition: service_healthy}
+  backend:
+    <<: *app
+    command: [sh, -ec, 'python -m app.seed && exec uvicorn app.main:app --host 0.0.0.0 --port 8000']
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+      redis: {condition: service_healthy}
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3)"]
+      interval: 3s
+      timeout: 5s
+      retries: 30
+  worker:
+    <<: *app
+    command: [python, -m, app.worker]
+    depends_on:
+      backend: {condition: service_healthy}
+    healthcheck:
+      test: [CMD, python, -m, app.worker_health]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+  frontend:
+    image: ${NOC_FRONTEND_IMAGE:-noc84-frontend:rc}
+    networks: [isolated]
+    depends_on:
+      backend: {condition: service_healthy}
+    security_opt: [no-new-privileges:true]
+    restart: unless-stopped
+networks:
+  isolated:
+    internal: true
+volumes:
+  database:
+  redis_data:

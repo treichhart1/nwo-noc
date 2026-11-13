@@ -52,11 +52,11 @@ export default function RFDiagnostics({devices}:{devices:DeviceOption[]}){
       {history.map(run=><p key={run.id}><strong>{run.status}</strong> · {new Date(run.started_at).toLocaleString()} · Received {run.received} · Staged {run.staged} · Skipped {run.skipped}</p>)}
     </div>
     <div className="form2">
-      <label>Device<select value={deviceId} onChange={e=>setDeviceId(e.target.value)}>
+      <label>Device<select aria-label="Device" value={deviceId} onChange={e=>setDeviceId(e.target.value)}>
         <option value="">Select a device…</option>
         {devices.map(d=><option key={d.id} value={d.id}>{d.name}{d.site_name?` — ${d.site_name}`:""}</option>)}
       </select></label>
-      <label>History<select value={hours} onChange={e=>setHours(Number(e.target.value))}>
+      <label>History<select aria-label="History" value={hours} onChange={e=>setHours(Number(e.target.value))}>
         <option value={6}>6 hours</option><option value={24}>24 hours</option><option value={72}>3 days</option><option value={168}>7 days</option>
       </select></label>
     </div>
