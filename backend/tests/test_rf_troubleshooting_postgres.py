@@ -23,6 +23,9 @@ def test_projected_scenarios_deduplicate(postgres_db,scenario,expected):
     for r in rows:
         assert r.evidence['execution_enabled'] is False and r.evidence['root_cause']=='unconfirmed'
         for f in r.evidence['facts']:assert db.get(TelemetrySample,f['source_id'])
+    db.expire_all()
+    for r in rows:
+        assert r.evidence['priority']['score']>=0 and r.evidence['inventory']['device_id']==d.id
     count=db.scalar(select(func.count()).select_from(Rec))
     evaluate(db,[d.id],user_id=None,now=NOW)
     assert db.scalar(select(func.count()).select_from(Rec))==count and all(r.episode==1 for r in rows)
@@ -88,7 +91,9 @@ def test_operator_api(postgres_db):
             assert c.post(f'/api/rf/troubleshooting/{ident}/explanation').json()['status']=='disabled'
             assert c.patch(f'/api/rf/troubleshooting/{ident}',json={'status':'reviewed','note':'synthetic review'}).status_code==200
             assert c.get(f'/api/rf/troubleshooting/{ident}').json()['notes'][0]['body']=='synthetic review'
-            assert c.get('/api/rf/troubleshooting?limit=1').status_code==200
+            listing=c.get('/api/rf/troubleshooting?limit=1');assert listing.status_code==200
+            assert listing.json()['items'][0]['evidence']['inventory']['device_id']==d.id
+            assert listing.json()['items'][0]['evidence']['priority']['score']>=0
             assert c.post('/api/rf/troubleshooting/evaluate',json={'device_ids':[999999]}).status_code==404
     finally:app.dependency_overrides.clear()
 

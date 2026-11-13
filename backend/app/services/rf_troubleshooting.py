@@ -1,5 +1,6 @@
 """Bounded explicit evaluation of stored evidence. Never imports a collector."""
 from datetime import datetime,timezone
+from copy import deepcopy
 from sqlalchemy import select,text,or_
 from app.models.entities import (Device,NetworkLink,Incident,TelemetrySample,MonitorCheck,AuditLog,
     RFRecommendation as Recommendation,RFRecommendationNote as Note)
@@ -163,7 +164,7 @@ def evaluate(db,ids,*,user_id,now=None):
         for item in items:
             key=f"device:{ident}:{item['scope']}:{item['rule']}";active.add(key);row=existing.get(key)
             if row is None:
-                row=Recommendation(problem_key=key,device_id=ident,rule=item['rule'],evidence=item,
+                row=Recommendation(problem_key=key,device_id=ident,rule=item['rule'],evidence={},
                     first_seen_at=now,episode_started_at=now,updated_at=now);db.add(row);db.flush();audit(db,user_id,row,'created')
             elif row.recovery_observed_at:
                 row.episode+=1;row.status='new';row.resolution=None;row.episode_started_at=now
@@ -174,7 +175,7 @@ def evaluate(db,ids,*,user_id,now=None):
                 'incident_results_truncated':len(incidents)>100}
             item['priority']=priority(item['rule'],duration_seconds=age,recurrences=row.episode-1,
                 downstream_devices=len(child_ids),confidence=item['confidence'],incident_ids=incidents)
-            row.evidence=item;row.evidence_state='active';row.updated_at=now
+            row.evidence=deepcopy(item);row.evidence_state='active';row.updated_at=now
             audit(db,user_id,row,'evaluated',{'rule':row.rule,'evidence_state':'active'});output.append(row)
         for key,row in existing.items():
             if key in active:continue

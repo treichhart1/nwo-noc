@@ -56,7 +56,7 @@ class LocalOllamaProvider:
                     'format':Plan.model_json_schema(),'system':'Return only a JSON plan selecting all supplied evidence IDs and reordering all allowed check IDs. Do not diagnose or propose actions.',
                     'prompt':json.dumps(evidence,allow_nan=False),'options':{'temperature':0,'num_predict':512}}) as response:
                 response.raise_for_status();body=bytearray()
-                for chunk in response.iter_bytes():
+                for chunk in response.iter_bytes(chunk_size=4096):
                     body.extend(chunk)
                     if time.monotonic()>deadline:raise TimeoutError('Local provider time budget exceeded')
                     if len(body)>32768:raise ValueError('Provider response too large')
