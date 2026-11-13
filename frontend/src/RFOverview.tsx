@@ -11,10 +11,12 @@ export default function RFOverview({openDiagnostics}:{openDiagnostics:()=>void})
   const [error,setError]=useState("")
   useEffect(()=>{
     let active=true
-    request("/rf/collection-health")
+    const refresh=()=>request("/rf/collection-health")
       .then((value:RFHealth)=>{if(active){setHealth(value);setError("")}})
-      .catch(()=>{if(active)setError("RF health unavailable")})
-    return()=>{active=false}
+      .catch(()=>{if(active){setHealth(null);setError("RF health unavailable")}})
+    void refresh()
+    const interval=setInterval(()=>{void refresh()},60000)
+    return()=>{active=false;clearInterval(interval)}
   },[])
   return <section className="panel">
     <div className="panelHead">
