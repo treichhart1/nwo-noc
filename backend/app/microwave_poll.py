@@ -34,7 +34,11 @@ async def poll_microwave(db,config,credentials,*,transport=None):
     if db.get_bind().dialect.name=='postgresql' and not db.scalar(text('SELECT pg_try_advisory_xact_lock(:key)'),{'key':871000+device.id}):raise IntegrationFailure('overlap_skipped')
     last=db.scalar(select(AuditLog).where(AuditLog.action.in_(['microwave.read_only_poll','rf.read_only_poll']),AuditLog.entity_id==str(device.id))
                    .order_by(AuditLog.created_at.desc()).limit(1))
+    from app.models.entities import MonitoringAttempt,MonitoringJob
+    scheduled=db.scalar(select(MonitoringAttempt.started_at).join(MonitoringJob,MonitoringJob.key==MonitoringAttempt.job_key)
+        .where(MonitoringJob.device_id==device.id,MonitoringJob.kind.in_(('radio','microwave'))).order_by(MonitoringAttempt.started_at.desc()).limit(1))
     now=datetime.now(timezone.utc)
+    if scheduled and (now-(scheduled.replace(tzinfo=timezone.utc) if scheduled.tzinfo is None else scheduled)).total_seconds()<config.policy.min_interval_seconds:raise IntegrationFailure('rate_limited')
     if last:
         when=last.created_at.replace(tzinfo=timezone.utc) if last.created_at.tzinfo is None else last.created_at
         if (now-when).total_seconds()<config.policy.min_interval_seconds:raise IntegrationFailure('rate_limited')

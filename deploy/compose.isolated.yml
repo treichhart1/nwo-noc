@@ -51,6 +51,7 @@ services:
   worker:
     <<: *app
     command: [python, -m, app.worker]
+    volumes: [monitoring_spool:/var/lib/nwo-noc/monitoring]
     depends_on:
       backend: {condition: service_healthy}
     healthcheck:
@@ -71,3 +72,5 @@ networks:
 volumes:
   database:
   redis_data:
+
+  monitoring_spool:

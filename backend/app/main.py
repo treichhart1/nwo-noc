@@ -23,3 +23,5 @@ from app.api.rf_troubleshooting_routes import router as troubleshooting_router
 app.include_router(troubleshooting_router)
 from app.api.rf_operations_routes import router as rf_operations_router
 app.include_router(rf_operations_router)
+from app.api.monitoring_reliability_routes import router as monitoring_reliability_router
+app.include_router(monitoring_reliability_router)

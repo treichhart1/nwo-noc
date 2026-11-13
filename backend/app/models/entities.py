@@ -376,3 +376,78 @@ class RFAlertReview(Base):
     acknowledged_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
     user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     incident_id: Mapped[int | None] = mapped_column(ForeignKey("incidents.id", ondelete="SET NULL"), nullable=True, index=True)
+
+
+class MonitoringJob(Base):
+    __tablename__ = "monitoring_jobs"
+    __table_args__ = (Index("ix_monitoring_jobs_due", "enabled", "next_due_at"),)
+    key: Mapped[str] = mapped_column(String(100), primary_key=True)
+    device_id: Mapped[int] = mapped_column(ForeignKey("devices.id", ondelete="CASCADE"))
+    kind: Mapped[str] = mapped_column(String(20))
+    enabled: Mapped[bool] = mapped_column(Boolean, default=True)
+    interval_seconds: Mapped[int] = mapped_column(Integer, default=60)
+    timeout_seconds: Mapped[int] = mapped_column(Integer, default=10)
+    lease_seconds: Mapped[int] = mapped_column(Integer, default=120)
+    fixture: Mapped[dict] = mapped_column(JSON, default=dict)
+    state: Mapped[str] = mapped_column(String(20), default="ready")
+    next_due_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    slot_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    lease_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    lease_token: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    failures: Mapped[int] = mapped_column(Integer, default=0)
+    successes: Mapped[int] = mapped_column(Integer, default=0)
+    last_success_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_valid_sample_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_error: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class MonitoringAttempt(Base):
+    __tablename__ = "monitoring_attempts"
+    __table_args__ = (Index("ix_monitoring_attempts_job_started", "job_key", "started_at"),)
+    token: Mapped[str] = mapped_column(String(36), primary_key=True)
+    job_key: Mapped[str] = mapped_column(ForeignKey("monitoring_jobs.key", ondelete="CASCADE"))
+    worker_id: Mapped[str] = mapped_column(String(80))
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    result: Mapped[str] = mapped_column(String(40), default="running")
+    duration_ms: Mapped[float | None] = mapped_column(Float, nullable=True)
+
+
+class MonitoringReceipt(Base):
+    __tablename__ = "monitoring_receipts"
+    __table_args__ = (UniqueConstraint("job_key", "slot_at", name="uq_monitoring_receipt_slot"),)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    job_key: Mapped[str] = mapped_column(ForeignKey("monitoring_jobs.key", ondelete="CASCADE"))
+    slot_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    sample_id: Mapped[int] = mapped_column(ForeignKey("telemetry_samples.id", ondelete="CASCADE"))
+    accepted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    replayed: Mapped[bool] = mapped_column(Boolean, default=False)
+
+
+class MonitoringAlert(Base):
+    __tablename__ = "monitoring_alerts"
+    __table_args__ = (UniqueConstraint("device_id", "series", "rule", name="uq_monitoring_alert_rule"),Index("ix_monitoring_alerts_state", "state"),)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    device_id: Mapped[int] = mapped_column(ForeignKey("devices.id", ondelete="CASCADE"))
+    series: Mapped[str] = mapped_column(String(40))
+    rule: Mapped[str] = mapped_column(String(40))
+    category: Mapped[str] = mapped_column(String(20))
+    severity: Mapped[str] = mapped_column(String(20))
+    state: Mapped[str] = mapped_column(String(20))
+    episode: Mapped[int] = mapped_column(Integer, default=1)
+    first_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    cleared_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    evidence: Mapped[dict] = mapped_column(JSON)
+    incident_id: Mapped[int | None] = mapped_column(ForeignKey("incidents.id", ondelete="SET NULL"), nullable=True)
+
+
+class MonitoringWorker(Base):
+    __tablename__ = "monitoring_workers"
+    id: Mapped[str] = mapped_column(String(80), primary_key=True)
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    heartbeat_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    redis_state: Mapped[str] = mapped_column(String(20), default="unknown")
+    phase: Mapped[str] = mapped_column(String(30), default="starting")
+    spool_pending: Mapped[int] = mapped_column(Integer, default=0)

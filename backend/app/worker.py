@@ -1,59 +1,41 @@
-import logging
-import time
+import logging,time
 from app.core.config import settings
 from app.core.database import SessionLocal
 from app.integrations.uisp import sync_uisp
 from app.integrations.mikrotik import collect_mikrotik
 from app.services.monitoring import run_due_checks
-from redis import Redis
+from app.services.monitoring_scheduler import Runner
+from app.services.worker_runtime import Runtime
 from sqlalchemy import text
-
 logging.basicConfig(level=logging.INFO)
-log = logging.getLogger("nwo-noc.worker")
+log=logging.getLogger('nwo-noc.worker')
 
 def main():
-    interval = 15
-    last_uisp_sync = 0.0
-    last_mikrotik_sync = 0.0
-    last_heartbeat = 0.0
-    def heartbeat():
-        nonlocal last_heartbeat
-        current = time.monotonic()
-        if current - last_heartbeat >= 10:
-            Redis.from_url(settings.redis_url, socket_timeout=3).set("noc:worker:heartbeat", str(time.time()), ex=60)
-            last_heartbeat = current
+    runtime=Runtime();runner=Runner(runtime.id);last_tcp=last_uisp=last_mikrotik=0.
     while True:
-        database_ok = False
+        now=time.monotonic();database_ok=False
         try:
             with SessionLocal() as db:
-                db.execute(text("SELECT 1"))
-                heartbeat()
-                result = run_due_checks(db, progress=heartbeat)
-                database_ok = True
-                if result["checked"]:
-                    log.info("Monitoring result: %s", result)
+                db.execute(text('SELECT 1'));database_ok=True
+                if now-last_tcp>=15:
+                    last_tcp=now;result=run_due_checks(db,progress=runtime.heartbeat)
+                    if result['checked']:log.info('Monitoring batch checked=%s',result['checked'])
+            runtime.heartbeat()
         except Exception:
-            log.exception("Scheduled monitoring failed")
-        try:
-            if not database_ok:
-                raise RuntimeError("Database checks failed; heartbeat withheld")
-            Redis.from_url(settings.redis_url, socket_timeout=3).set("noc:worker:heartbeat", str(time.time()), ex=60)
-        except Exception:
-            log.exception("Worker heartbeat failed; check Redis connectivity")
-        now = time.monotonic()
-        if settings.uisp_enabled and settings.integrations_admin_approved and not settings.offline_mode and now-last_uisp_sync>=max(settings.uisp_sync_interval_seconds,60):
-            heartbeat()
-            last_uisp_sync=now
+            runtime.db_failed=True
+            log.warning('Monitoring database/batch unavailable; retrying without publishing a healthy probe')
+        if database_ok and settings.rf_scheduler_enabled:
+            try:runner.tick()
+            except Exception:log.warning('Scheduled delivery unavailable; durable leases and outbox retained for recovery')
+        if database_ok and settings.uisp_enabled and settings.integrations_admin_approved and not settings.offline_mode and now-last_uisp>=max(settings.uisp_sync_interval_seconds,60):
+            last_uisp=now
             try:
-                with SessionLocal() as db:log.info("Read-only UISP sync result: %s",sync_uisp(db,progress=heartbeat))
-            except Exception:log.warning("Read-only UISP synchronization failed; inspect sanitized integration status")
-        if settings.mikrotik_enabled and settings.integrations_admin_approved and not settings.offline_mode and now-last_mikrotik_sync>=max(settings.mikrotik_sync_interval_seconds,60):
-            heartbeat()
-            last_mikrotik_sync=now
+                with SessionLocal() as db:sync_uisp(db,progress=runtime.heartbeat)
+            except Exception:log.warning('Read-only UISP synchronization failed; inspect sanitized integration status')
+        if database_ok and not settings.rf_scheduler_enabled and settings.mikrotik_enabled and settings.integrations_admin_approved and not settings.offline_mode and now-last_mikrotik>=max(settings.mikrotik_sync_interval_seconds,60):
+            last_mikrotik=now
             try:
-                with SessionLocal() as db:log.info("Read-only MikroTik collection result: %s",collect_mikrotik(db))
-            except Exception:log.warning("Read-only MikroTik collection failed; inspect sanitized integration status")
-        time.sleep(interval)
-
-if __name__ == "__main__":
-    main()
+                with SessionLocal() as db:collect_mikrotik(db)
+            except Exception:log.warning('Read-only MikroTik collection failed; inspect sanitized integration status')
+        time.sleep(.2 if settings.rf_scheduler_enabled else 15)
+if __name__=='__main__':main()
