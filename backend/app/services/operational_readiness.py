@@ -1,6 +1,6 @@
 """Read-only operational correlation. No polling or remediation is performed."""
 from datetime import datetime, timedelta, timezone
-from sqlalchemy import select, func
+from sqlalchemy import select, func, and_, or_
 from app.models.entities import Device, Site, NetworkLink, MaintenanceWindow, TelemetrySample, Incident
 from app.services.rf_degradation import evaluate_rf_degradation
 from app.services.rf_metrics import normalize_rf_metrics
@@ -16,9 +16,10 @@ def snapshot(db, *, now=None):
     active=list(db.scalars(select(Incident).where(Incident.status!='resolved')))
     ranked=select(TelemetrySample.id.label('sample_id'),func.row_number().over(
         partition_by=TelemetrySample.device_id,order_by=(TelemetrySample.sampled_at.desc(),TelemetrySample.id.desc())).label('rn')
-    ).where(TelemetrySample.sampled_at>=now-timedelta(minutes=15),TelemetrySample.sampled_at<=now).subquery()
+    ).where(or_(and_(TelemetrySample.sampled_at>=now-timedelta(minutes=15),TelemetrySample.sampled_at<=now),
+        and_(TelemetrySample.sampled_at>=now-timedelta(days=7),TelemetrySample.raw_data['rf_microwave_v1'].is_not(None)))).subquery()
     samples=list(db.scalars(select(TelemetrySample).join(ranked,ranked.c.sample_id==TelemetrySample.id)
-        .where(ranked.c.rn<=20).order_by(TelemetrySample.sampled_at,TelemetrySample.id)))
+        .where(ranked.c.rn<=41).order_by(TelemetrySample.sampled_at,TelemetrySample.id)))
     history={};by_id={d.id:d for d in devices}
     for sample in samples: history.setdefault(sample.device_id,[]).append(sample)
     monitored=[d for d in devices if d.monitor_enabled]
@@ -52,11 +53,32 @@ def snapshot(db, *, now=None):
             seen.add(parent);parent=suppressed[parent]
         if parent in seen:
             cycles.update(seen);suppressed.pop(min(seen),None)
-    alerts=[];rf_degraded=[];rf_healthy=[];missing=[]
+    alerts=[];rf_degraded=[];rf_healthy=[];missing=[];microwave_records=[]
     for d in devices:
         all_rows=history.get(d.id,[])
         rows=all_rows[-3:]
         if not rows: missing.append(d.id);continue
+        if any(isinstance(s.raw_data,dict) and 'rf_microwave_v1' in s.raw_data for s in rows):
+            from app.services.microwave_history import parse_microwave_row,validate_association
+            from app.services.microwave_diagnostics import analyze_microwave
+            from app.services.microwave_policy import MicrowaveThresholds
+            from app.core.config import settings
+            observations=[];link_id=None
+            for row in all_rows:
+                try:
+                    observation=parse_microwave_row(row);association=row.raw_data['microwave_link_id']
+                    matched_link=next((l for l in links if l.id==association),None)
+                    validate_association(d,matched_link,observation.profile)
+                    if association!=link_id:observations=[]
+                    link_id=association;observations.append(observation)
+                except (ValueError,KeyError,TypeError):observations=[];link_id=None
+            report=analyze_microwave(observations,now=now,thresholds=MicrowaveThresholds(**settings.rf_microwave_thresholds))
+            if observations:
+                microwave_records.append({'device_id':d.id,'link_id':link_id,'report':report,'observation':observations[-1]})
+            if report['state']=='unknown':missing.append(d.id)
+            elif report['state']=='healthy':rf_healthy.append(d.id)
+            else:rf_degraded.append(d.id)
+            continue
         if any(isinstance(s.raw_data,dict) and 'rf_radio_v2' in s.raw_data for s in rows):
             from app.services.radio_history import analyze_radio, RadioThresholds
             from app.services.radio_observation import RadioObservation
@@ -98,7 +120,11 @@ def snapshot(db, *, now=None):
                 alerts.append(dict(key=f'rf:{d.id}',kind='rf_degraded',severity='warning',device_id=d.id,
                     site_id=d.wisp_site_id,name=d.name,observed_at=rows[-1].sampled_at.isoformat(),
                     action='Review sustained RSSI/SNR/CCQ degradation; remediation is simulation-only'))
-    roots=down-set(suppressed)-maintained
+    from app.services.microwave_topology import correlate_microwave
+    microwave,microwave_alerts,microwave_impacted,microwave_healthy_links=correlate_microwave(microwave_records,devices,links,
+        down=down,up=up,maintained=maintained,maintenance_links=maintenance_links,maintenance_sites=maintenance_sites,global_maintenance=global_maintenance)
+    alerts=[a for a in alerts if a.get('device_id') not in microwave_impacted]+microwave_alerts
+    roots=down-set(suppressed)-maintained-microwave_impacted
     for device_id in sorted(roots):
         d=by_id[device_id]
         alerts.append(dict(key=f'device:{d.id}',kind='device_down',severity='critical',device_id=d.id,
@@ -108,6 +134,8 @@ def snapshot(db, *, now=None):
     for link in links:
         endpoints=[i for i in (link.a_device_id,link.z_device_id) if i]
         state='unknown' if len(endpoints)!=2 or any(i not in fresh for i in endpoints) else 'down' if any(i in down for i in endpoints) else 'up'
+        microwave_view=next((m for m in microwave if m['id']==link.id),None)
+        if microwave_view and microwave_view['state'] in {'outage','degraded'}:state='down' if microwave_view['state']=='outage' else 'degraded'
         if state=='up' and any(i in rf_degraded for i in endpoints):state='degraded'
         capacity_degraded=False;capacity_known=False
         if state=='up' and link.capacity_mbps and link.capacity_mbps>0:
@@ -121,7 +149,7 @@ def snapshot(db, *, now=None):
             if capacity_degraded:state='degraded'
         in_maintenance=global_maintenance or link.id in maintenance_links or link.a_site_id in maintenance_sites or link.z_site_id in maintenance_sites
         link_states.append(dict(id=link.id,name=link.name,state=state,maintenance=in_maintenance,capacity_degraded=capacity_degraded,capacity_known=capacity_known))
-        if capacity_degraded and not in_maintenance:
+        if capacity_degraded and not in_maintenance and microwave_view is None:
             alerts.append(dict(key=f'link:{link.id}',kind='capacity_degraded',severity='warning',link_id=link.id,
                 site_id=link.z_site_id,name=link.name,observed_at=now.isoformat(),
                 action='Review three consecutive PHY rates below 50% of configured backhaul capacity'))
@@ -137,7 +165,8 @@ def snapshot(db, *, now=None):
         missing_checks=sum(d.monitor_last_checked_at is None for d in monitored),
         rf_degraded=len(rf_degraded),rf_missing_or_stale=len(missing),
         last_successful_check=max(successful).isoformat() if successful else None,
-        active_incidents=len(active),root_outages=len(roots),suppressed_downstream=len(suppressed),
+        active_incidents=len(active),root_outages=len(roots),suppressed_downstream=len(set(suppressed)|(down & microwave_impacted)),
+        microwave=microwave,microwave_healthy_link_ids=sorted(microwave_healthy_links),
         maintenance_suppressed=len(down & maintained),topology_cycles=sorted(cycles),
         alerts=sorted(alerts,key=lambda a:a['key']),sites=site_states,links=link_states,
         rf_healthy_device_ids=sorted(rf_healthy),healthy_device_ids=sorted(up),down_device_ids=sorted(down),rf_degraded_device_ids=sorted(rf_degraded))

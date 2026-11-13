@@ -106,6 +106,9 @@ class SNMPPolicy(BaseModel):
 
 class PysnmpGET:
     """No public operation argument: only get_cmd is imported/called."""
+    def __init__(self, *, version_oids=()):
+        self.version_oids = frozenset(version_oids)
+
     async def get(self, address, credentials, oids, timeout):
         from pysnmp.hlapi.v3arch.asyncio import (SnmpEngine, UsmUserData, UdpTransportTarget, ContextData,
             ObjectType, ObjectIdentity, get_cmd, usmHMAC192SHA256AuthProtocol, usmAesCfb128Protocol)
@@ -129,6 +132,13 @@ class PysnmpGET:
                 key = str(oid)
                 if isinstance(value, (NoSuchObject, NoSuchInstance, EndOfMibView)): result[key] = 'unsupported'
                 elif isinstance(value, (Integer, Integer32, Counter32, Counter64, Gauge32, TimeTicks, Unsigned32)): result[key] = int(value)
+                elif key in self.version_oids:
+                    # Only explicit firmware OIDs can return a restricted version
+                    # scalar. Never retain arbitrary names, credentials or JSON.
+                    import re
+                    try: text = value.asOctets().decode('ascii') if len(value.asOctets()) <= 40 else ''
+                    except (AttributeError, UnicodeError): text = ''
+                    result[key] = text if re.fullmatch(r'\d{1,4}(?:\.\d{1,4}){1,4}(?:-(?:rc|build)\d{1,6})?', text) else None
                 else: result[key] = None  # No arbitrary OctetStrings retained.
             return result
         finally:

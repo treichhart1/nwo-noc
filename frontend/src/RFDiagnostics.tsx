@@ -2,6 +2,7 @@ import {useEffect,useState} from "react"
 import {request} from "./lib/api"
 import RFFoundation from "./RFFoundation"
 import RadioTelemetry from "./RadioTelemetry"
+import MicrowaveTelemetry from "./MicrowaveTelemetry"
 import RFSiteHealth from "./RFSiteHealth"
 
 type RFMetric={baseline:number,recent:number,change:number,declining:boolean,observations:number}
@@ -67,6 +68,7 @@ export default function RFDiagnostics({devices}:{devices:DeviceOption[]}){
     {!deviceId&&<p className="muted">Choose a radio to inspect its RF telemetry.</p>}
     <RFFoundation deviceId={deviceId}/>
     <RadioTelemetry deviceId={deviceId}/>
+    <MicrowaveTelemetry deviceId={deviceId}/>
     {report&&<div>
       <h3>{report.device_name}</h3>
       <p className="muted">{report.rf_sample_count} RF samples in the selected window</p>

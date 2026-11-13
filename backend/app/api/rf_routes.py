@@ -182,3 +182,13 @@ def device_rf_radio_history(device_id: int = Path(..., ge=1), limit: int = Query
     from app.services.radio_history import radio_history, RadioThresholds
     try: return radio_history(db, device_id, limit=limit, thresholds=RadioThresholds(**settings.rf_radio_thresholds))
     except LookupError: raise HTTPException(status_code=404, detail='Device not found') from None
+
+
+@router.get('/devices/{device_id}/microwave-history')
+def device_microwave_history(device_id: int = Path(...,ge=1),limit: int = Query(288,ge=1,le=1000),
+                              db: Session = Depends(get_db),_user: User = Depends(require_rf_reader)):
+    from app.core.config import settings
+    from app.services.microwave_history import microwave_history
+    from app.services.microwave_policy import MicrowaveThresholds
+    try:return microwave_history(db,device_id,limit=limit,thresholds=MicrowaveThresholds(**settings.rf_microwave_thresholds))
+    except LookupError:raise HTTPException(status_code=404,detail='Device not found') from None
