@@ -5,11 +5,12 @@ from sqlalchemy import select
 
 from app.api.rf_permissions import require_rf_reader
 from app.core.database import get_db
-from app.models.entities import User, RFCollectionRun
+from app.models.entities import User, RFCollectionRun, Device
 from app.services.rf_diagnostics import get_rf_diagnostics
 from app.services.rf_collection_health import get_rf_collection_health
 from app.services.rf_collection_reliability import collection_reliability
 from app.services.rf_site_health import get_rf_site_health
+from app.services.rf_self_healing import RFObservation, propose
 
 router = APIRouter(prefix="/api", tags=["RF diagnostics"])
 
@@ -74,3 +75,38 @@ def rf_site_health(
     _user: User = Depends(require_rf_reader),
 ):
     return get_rf_site_health(db)
+
+
+@router.get("/devices/{device_id}/rf-self-healing/preview")
+def rf_self_healing_preview(
+    device_id: int = Path(..., ge=1),
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_rf_reader),
+):
+    """Read-only, fail-closed simulation. No approval or execution is possible here.
+
+    RF diagnostic metrics are deliberately not mapped from reachability latency
+    or generic device signal fields: they are not equivalent to fresh RF samples.
+    Until validated RF sample integration is implemented, this always blocks.
+    """
+    device = db.get(Device, device_id)
+    if device is None:
+        raise HTTPException(status_code=404, detail="Device not found")
+    proposal = propose(RFObservation(
+        device_id=device.id,
+        checked_at=None,
+        status="unknown",
+        rssi_dbm=None,
+        snr_db=None,
+        ccq_percent=None,
+    ))
+    return {
+        "device_id": device.id,
+        "device_name": device.name,
+        "mode": "simulation_only",
+        "execution_enabled": False,
+        "decision": proposal.decision.value,
+        "reason": proposal.reason,
+        "recommendation": proposal.recommendation,
+        "requires_validated_rf_telemetry": True,
+    }
