@@ -19,11 +19,28 @@ from app.services.monitoring_policy import ReliabilityPolicy
 def correlate(alerts, devices, links, now):
     by_id = {d.id: d for d in devices}
     out = []
+    stale_seconds = ReliabilityPolicy(**settings.rf_reliability_policy).stale_seconds
+
+    def fresh(alert):
+        try:
+            observed = (
+                utc(alert.updated_at)
+                if alert.category == "monitoring"
+                else datetime.fromisoformat(alert.evidence["observed_at"])
+            )
+            return (
+                observed.tzinfo is not None
+                and 0 <= (now - observed).total_seconds() <= stale_seconds
+            )
+        except (KeyError, TypeError, ValueError):
+            return False
+
     active = {
         a.device_id: a
         for a in alerts
         if a.state == "active"
         and a.category == "rf"
+        and fresh(a)
         and a.rule == "wireless_outage"
         and a.series in {"radio", "microwave"}
     }
@@ -35,7 +52,12 @@ def correlate(alerts, devices, links, now):
             seen.add(p.parent_device_id)
             parents.append(p.parent_device_id)
             p = by_id.get(p.parent_device_id)
-        upstream = next((active[i] for i in parents if i in active), None)
+        current = fresh(a)
+        upstream = (
+            next((active[i] for i in parents if i in active), None)
+            if current and a.state == "active"
+            else None
+        )
         incoming = [l for l in links if l.z_device_id == a.device_id]
         alternate = [
             l.id for l in incoming if upstream and l.a_device_id != upstream.device_id
@@ -51,6 +73,8 @@ def correlate(alerts, devices, links, now):
                 else "independent_evidence"
             )
         )
+        if not current:
+            relation = "insufficient_fresh_evidence"
         out.append(
             {
                 "id": a.id,
@@ -59,7 +83,7 @@ def correlate(alerts, devices, links, now):
                 "rule": a.rule,
                 "category": a.category,
                 "severity": a.severity,
-                "state": a.state,
+                "state": a.state if current else "unknown",
                 "episode": a.episode,
                 "first_seen_at": a.first_seen_at,
                 "updated_at": a.updated_at,
@@ -200,8 +224,12 @@ def health(db, *, now=None, offset=0, limit=50):
         "topology_complete": complete,
         "alerts": correlated[:100],
         "alerts_truncated": len(correlated) > 100,
-        "active_alerts": sum(a.state == "active" for a in alerts),
-        "unknown_alerts": sum(a.state == "unknown" for a in alerts),
+        "active_alerts": (
+            sum(a["state"] == "active" for a in correlated) if complete else None
+        ),
+        "unknown_alerts": (
+            sum(a["state"] == "unknown" for a in correlated) if complete else None
+        ),
         "jobs": [
             {
                 "key": j.key,

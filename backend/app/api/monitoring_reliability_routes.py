@@ -91,6 +91,10 @@ def open_incident(
         view = next((a for a in data["alerts"] if a["id"] == ident), None)
         if view is None:
             raise LookupError()
+        if view["state"] != "active":
+            raise ValueError(
+                "Monitoring evidence is stale or unconfirmed; refresh before opening an investigation"
+            )
         target = view["probable_parent_alert_id"] or ident
         row = db.scalar(
             select(MonitoringAlert)

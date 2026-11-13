@@ -312,7 +312,7 @@ def test_redundancy_and_monitoring_not_rf_root():
             episode=1,
             first_seen_at=NOW,
             updated_at=NOW,
-            evidence={},
+            evidence={"observed_at": NOW.isoformat()},
             incident_id=None,
         )
 
@@ -328,6 +328,16 @@ def test_redundancy_and_monitoring_not_rf_root():
         )[1]["correlation"]
         == "multiple_paths_uncertain"
     )
+    alerts[0].evidence = {"observed_at": (NOW - timedelta(hours=1)).isoformat()}
+    assert correlate(alerts, devices, [], NOW)[1]["probable_parent_alert_id"] is None
+    assert correlate(alerts, devices, [], NOW)[0]["state"] == "unknown"
+    alerts[0].evidence = {"observed_at": NOW.isoformat()}
+    alerts[1].evidence = {"observed_at": (NOW + timedelta(seconds=1)).isoformat()}
+    assert (
+        correlate(alerts, devices, [], NOW)[1]["correlation"]
+        == "insufficient_fresh_evidence"
+    )
+    alerts[1].evidence = {"observed_at": NOW.isoformat()}
     alerts[0].category = "monitoring"
     assert correlate(alerts, devices, [], NOW)[1]["probable_parent_alert_id"] is None
 
