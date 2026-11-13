@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 class ORMModel(BaseModel):
@@ -221,7 +222,7 @@ class IncidentCreate(BaseModel):
 class IncidentUpdate(BaseModel):
     title: str | None = None
     severity: str | None = None
-    status: str | None = None
+    status: Literal["open", "acknowledged", "resolved"] | None = None
     site_id: int | None = None
     device_id: int | None = None
     link_id: int | None = None

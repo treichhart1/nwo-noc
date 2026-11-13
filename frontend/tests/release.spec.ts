@@ -23,7 +23,10 @@ for (const title of ['Dashboard','Towers & POPs','Devices','Topology','Operation
     await expect(page.locator('h1')).toHaveText(title)
     await expect(page.locator('.error')).toHaveCount(0)
     if(title==='Devices') await expect(page.getByText('NOC84 Synthetic Radio',{exact:true})).toBeVisible()
-    if(title==='Dashboard') await expect(page.getByRole('heading',{name:'Monitoring attention'})).toBeVisible()
+    if(title==='Dashboard') {
+      await expect(page.getByRole('heading',{name:'Monitoring attention'})).toBeVisible()
+      await expect(page.getByRole('region',{name:'Operational readiness'})).toContainText('Last successful check:')
+    }
   })
 }
 test('RF diagnostics displays synthetic telemetry',async({page})=>{

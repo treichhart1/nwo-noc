@@ -1,5 +1,10 @@
 ## 3.2.1-rc.1 (unreleased)
 
+- NOC-85: fresh-check correlation and operational dashboard; root/maintenance
+  suppression, synthetic incident lifecycle and 40-site WISP fixtures.
+- Batch concurrent monitoring with transaction-level deduplication, stable outage
+  timestamps, no false initial recovery, and actual worker scale/restart checks.
+
 - NOC-84: isolated Ubuntu bootstrap/installation, runtime/browser acceptance,
   guarded backup/restore, offline configuration/monitoring and bundled map assets.
 - Require operator/admin roles for mutating APIs; add worker Redis heartbeat health.
