@@ -179,7 +179,9 @@ jobs:
             tests/test_dashboard_postgres_scale.py \
             tests/test_operations_postgres.py \
             tests/test_monitoring_postgres.py \
-            tests/test_operational_readiness_postgres.py
+            tests/test_operational_readiness_postgres.py \
+            tests/test_read_only_integrations_postgres.py \
+            tests/test_vendor_rf_postgres.py
       - name: Measure synthetic WISP operational readiness at 250/500/1000 devices
         env:
           APP_ENV: staging
@@ -333,6 +335,13 @@ jobs:
           (cd frontend && npx playwright test operational.spec.ts)
           NOC_PROJECT=noc84-wisp-test scripts/release/manage.sh "$NOC_ACCEPTANCE_STATE" exec -T backend python -m app.wisp_rehearsal recover > "$RUNNER_TEMP/noc85-recovered.json"
           python3 -c 'import json,sys; v=json.load(open(sys.argv[1])); assert v["fresh_up"]==400 and v["active_incidents"]==0' "$RUNNER_TEMP/noc85-recovered.json"
+      - name: Validate four-vendor normalized RF foundation without device connections
+        env:
+          NOC86_RF_BROWSER: "true"
+          NOC_ACCEPTANCE_STATE: ${{ runner.temp }}/noc85-wisp-state
+        run: |
+          NOC_PROJECT=noc84-wisp-test scripts/release/manage.sh "$NOC_ACCEPTANCE_STATE" exec -T backend python -m app.rf_vendor_rehearsal > "$NOC_ACCEPTANCE_STATE/rf-vendor-devices.json"
+          (cd frontend && npx playwright test vendor-rf.spec.ts)
       - name: Stop isolated acceptance services, retain volumes
         if: always()
         run: |

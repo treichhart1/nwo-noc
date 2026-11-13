@@ -20,3 +20,9 @@ def require_operator(user: User = Depends(current_user)):
     if user.role not in {"admin", "operator"}:
         raise HTTPException(status_code=403, detail="Operator access required")
     return user
+
+
+def require_admin(user: User = Depends(current_user)):
+    if user.role != "admin":
+        raise HTTPException(status_code=403,detail="Administrator access required")
+    return user

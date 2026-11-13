@@ -40,7 +40,11 @@ class SimulatedUISPResponse:
 
 def test_simulated_uisp_to_authenticated_diagnostics(postgres_db):
     db = postgres_db
-    with patch("app.integrations.uisp.httpx.get", return_value=SimulatedUISPResponse()) as fetch, \
+    with patch("app.integrations.uisp.fetch_snapshot", return_value={'devices':SimulatedUISPResponse().json(), 'errors':[]}) as fetch, \
+         patch.object(settings, "uisp_enabled", True), \
+         patch.object(settings, "integrations_admin_approved", True), \
+         patch.object(settings, "offline_mode", False), \
+         patch.object(settings, "uisp_allowed_origins", "https://uisp.example,https://uisp.invalid"), \
          patch.object(settings, "uisp_base_url", "https://uisp.invalid"), \
          patch.object(settings, "uisp_token", "ci-placeholder-only"), \
          patch.object(settings, "rf_collection_enabled", True), \
@@ -92,7 +96,11 @@ def test_end_to_end_api_rejects_unauthenticated_requests(postgres_db):
 def test_staging_repeated_uisp_sync_respects_collection_interval(postgres_db):
     """Two successful UISP syncs should not duplicate RF samples."""
     db = postgres_db
-    with patch("app.integrations.uisp.httpx.get", return_value=SimulatedUISPResponse()) as fetch, \
+    with patch("app.integrations.uisp.fetch_snapshot", return_value={'devices':SimulatedUISPResponse().json(), 'errors':[]}) as fetch, \
+         patch.object(settings, "uisp_enabled", True), \
+         patch.object(settings, "integrations_admin_approved", True), \
+         patch.object(settings, "offline_mode", False), \
+         patch.object(settings, "uisp_allowed_origins", "https://uisp.example,https://uisp.invalid"), \
          patch.object(settings, "uisp_base_url", "https://uisp.invalid"), \
          patch.object(settings, "uisp_token", "ci-placeholder-only"), \
          patch.object(settings, "rf_collection_enabled", True), \
@@ -113,7 +121,11 @@ def test_staging_repeated_uisp_sync_respects_collection_interval(postgres_db):
 def test_rf_collection_failure_recovers_on_next_sync(postgres_db):
     """A failed RF savepoint must preserve inventory and permit clean retry."""
     db = postgres_db
-    with patch("app.integrations.uisp.httpx.get", return_value=SimulatedUISPResponse()), \
+    with patch("app.integrations.uisp.fetch_snapshot", return_value={'devices':SimulatedUISPResponse().json(), 'errors':[]}), \
+         patch.object(settings, "uisp_enabled", True), \
+         patch.object(settings, "integrations_admin_approved", True), \
+         patch.object(settings, "offline_mode", False), \
+         patch.object(settings, "uisp_allowed_origins", "https://uisp.example,https://uisp.invalid"), \
          patch.object(settings, "uisp_base_url", "https://uisp.invalid"), \
          patch.object(settings, "uisp_token", "ci-placeholder-only"), \
          patch.object(settings, "rf_collection_enabled", True), \
@@ -149,7 +161,11 @@ def test_rf_partial_staging_rolls_back_before_retry(postgres_db):
         session.flush()  # Force a database write inside the RF savepoint.
         raise RuntimeError("simulated interruption after RF insert")
 
-    with patch("app.integrations.uisp.httpx.get", return_value=SimulatedUISPResponse()), \
+    with patch("app.integrations.uisp.fetch_snapshot", return_value={'devices':SimulatedUISPResponse().json(), 'errors':[]}), \
+         patch.object(settings, "uisp_enabled", True), \
+         patch.object(settings, "integrations_admin_approved", True), \
+         patch.object(settings, "offline_mode", False), \
+         patch.object(settings, "uisp_allowed_origins", "https://uisp.example,https://uisp.invalid"), \
          patch.object(settings, "uisp_base_url", "https://uisp.invalid"), \
          patch.object(settings, "uisp_token", "ci-placeholder-only"), \
          patch.object(settings, "rf_collection_enabled", True), \

@@ -100,7 +100,7 @@ def snapshot(db, *, now=None):
         state='unknown' if not members else 'down' if all(i in down for i in members) else 'degraded' if any(i in down or i in rf_degraded for i in members) else 'up' if all(i in up for i in members) else 'unknown'
         site_states.append(dict(id=site.id,name=site.name,state=state,maintenance=global_maintenance or site.id in maintenance_sites))
     successful=[d.monitor_last_up_at for d in monitored if d.monitor_last_up_at and d.monitor_last_up_at<=now]
-    return dict(generated_at=now.isoformat(),mode='read_only',execution_enabled=False,
+    return dict(generated_at=now.isoformat(),correlation_confidence='probable_not_confirmed',mode='read_only',execution_enabled=False,
         total_devices=len(devices),synthetic_devices=sum(d.source=='synthetic' for d in devices),monitored_devices=len(monitored),fresh_up=len(up),fresh_down=len(down),
         stale_checks=sum(d.id not in fresh and d.monitor_last_checked_at is not None for d in monitored),
         missing_checks=sum(d.monitor_last_checked_at is None for d in monitored),

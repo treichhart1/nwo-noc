@@ -69,3 +69,10 @@ def test_synthetic_monitoring_never_uses_socket(monkeypatch):
     monkeypatch.setattr(monitoring.socket,'create_connection',lambda *a,**k:pytest.fail('network call'))
     assert monitoring.tcp_check('198.18.0.1',443,1)==(True,1.0,None)
     assert monitoring.tcp_check('192.0.2.1',443,1)[0] is False
+
+
+@pytest.mark.parametrize('key',['UISP_TOKEN_FILE','MIKROTIK_PASSWORD_FILE'])
+def test_acceptance_rejects_external_credential_file_references(tmp_path,key):
+    target=load('configure').generate(tmp_path/'state')
+    target.write_text(target.read_text()+f'{key}=/not-read/secret\n')
+    with pytest.raises(ValueError):load('validate_config').validate(target)

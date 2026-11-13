@@ -27,7 +27,7 @@ def extract_uisp_rf_metrics(device: Mapping[str, Any]) -> dict[str, float]:
     allowed = (
         "rssi_dbm", "signal_dbm", "noise_floor_dbm", "snr_db",
         "ccq_percent", "frequency_mhz", "channel_width_mhz",
-        "tx_rate_mbps", "rx_rate_mbps", "temperature_c",
+        "tx_rate_mbps", "rx_rate_mbps", "link_capacity_mbps", "temperature_c",
         "uptime_seconds",
     )
     explicit: dict[str, Any] = {}

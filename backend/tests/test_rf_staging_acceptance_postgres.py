@@ -12,7 +12,11 @@ from test_rf_postgres_integration import postgres_db
 
 def test_offline_staging_keeps_rf_disabled_and_inventory_intact(postgres_db):
     db = postgres_db
-    with patch("app.integrations.uisp.httpx.get", return_value=SimulatedUISPResponse()) as fetch, \
+    with patch("app.integrations.uisp.fetch_snapshot", return_value={'devices':SimulatedUISPResponse().json(), 'errors':[]}) as fetch, \
+         patch.object(settings, "uisp_enabled", True), \
+         patch.object(settings, "integrations_admin_approved", True), \
+         patch.object(settings, "offline_mode", False), \
+         patch.object(settings, "uisp_allowed_origins", "https://uisp.example,https://uisp.invalid"), \
          patch.object(settings, "uisp_base_url", "https://uisp.invalid"), \
          patch.object(settings, "uisp_token", "ci-placeholder-only"), \
          patch.object(settings, "rf_collection_enabled", False), \

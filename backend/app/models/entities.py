@@ -22,6 +22,10 @@ class Integration(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(80), unique=True)
     status: Mapped[str] = mapped_column(String(40), default="not_configured")
+    last_attempt_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_success_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_received_count: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    last_skipped_count: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
     last_sync_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     last_error: Mapped[str | None] = mapped_column(Text, nullable=True)
     last_item_count: Mapped[int] = mapped_column(Integer, default=0)
@@ -217,6 +221,7 @@ class MonitorCheck(Base):
     device_id: Mapped[int] = mapped_column(ForeignKey("devices.id", ondelete="CASCADE"), index=True)
     status: Mapped[str] = mapped_column(String(30), index=True)
     latency_ms: Mapped[float | None] = mapped_column(Float, nullable=True)
+    source: Mapped[str] = mapped_column(String(40), default="tcp", server_default="tcp")
     error: Mapped[str | None] = mapped_column(Text, nullable=True)
     checked_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, index=True)
 
@@ -242,3 +247,21 @@ class RFCollectionRun(Base):
     received: Mapped[int] = mapped_column(Integer, default=0)
     staged: Mapped[int] = mapped_column(Integer, default=0)
     skipped: Mapped[int] = mapped_column(Integer, default=0)
+
+
+class IntegrationBinding(Base):
+    """Durable source identity and sanitized provenance; no credentials/raw JSON."""
+    __tablename__ = "integration_bindings"
+    __table_args__ = (UniqueConstraint("integration", "kind", "external_id", name="uq_integration_binding"),)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    integration: Mapped[str] = mapped_column(ForeignKey("integrations.name"))
+    kind: Mapped[str] = mapped_column(String(20))
+    external_id: Mapped[str] = mapped_column(String(120))
+    device_id: Mapped[int | None] = mapped_column(ForeignKey("devices.id", ondelete="CASCADE"), nullable=True)
+    site_id: Mapped[int | None] = mapped_column(ForeignKey("sites.id", ondelete="CASCADE"), nullable=True)
+    link_id: Mapped[int | None] = mapped_column(ForeignKey("network_links.id", ondelete="CASCADE"), nullable=True)
+    sector_id: Mapped[int | None] = mapped_column(ForeignKey("sectors.id", ondelete="CASCADE"), nullable=True)
+    observed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    received_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    digest: Mapped[str] = mapped_column(String(64))
+    values: Mapped[dict] = mapped_column(JSON, default=dict)

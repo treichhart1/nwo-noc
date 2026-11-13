@@ -16,7 +16,7 @@ def generate(directory):
         DATABASE_URL=f'postgresql+psycopg://noc_test:{password}@db:5432/nwo_noc',
         REDIS_URL='redis://redis:6379/0', UISP_BASE_URL='', UISP_TOKEN='',
         UISP_VERIFY_TLS='true', RF_COLLECTION_ENABLED='false', RF_HISTORY_PRUNING_ENABLED='false',
-        API_DOCS_ENABLED='false', CORS_ORIGINS='http://127.0.0.1:18090')
+        UISP_ENABLED='false', MIKROTIK_ENABLED='false', INTEGRATIONS_ADMIN_APPROVED='false', API_DOCS_ENABLED='false', CORS_ORIGINS='http://127.0.0.1:18090')
     target = path / 'acceptance.env'
     with open(target, 'x', opener=lambda p, f: os.open(p, f, 0o600)) as handle:
         handle.write(''.join(f'{key}={value}\n' for key, value in values.items()))

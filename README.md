@@ -131,3 +131,6 @@ backup recovery and rollback, see [NOC-84 installation and recovery](docs/NOC-84
 
 Synthetic WISP operational validation, correlation rules and measured scale results:
 [NOC-85 operational readiness](docs/NOC-85-operational-readiness.md).
+
+Read-only UISP/RouterOS contracts, activation guards, secret handling and synthetic
+validation: [NOC-86 integration readiness](docs/NOC-86-read-only-integrations.md).

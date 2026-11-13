@@ -5,7 +5,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy import and_, distinct, func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
-from app.api.deps import current_user, require_operator
+from app.api.deps import current_user, require_operator, require_admin
 from app.core.database import get_db
 from app.core.security import create_access_token, verify_password
 from app.integrations.uisp import sync_uisp
@@ -261,7 +261,7 @@ def integrations(db: Session = Depends(get_db), _=Depends(current_user)):
     return list(db.scalars(select(Integration).order_by(Integration.name)))
 
 @router.post("/integrations/uisp/sync")
-def trigger_sync(request: Request, db: Session = Depends(get_db), user: User = Depends(require_operator)):
+def trigger_sync(request: Request, db: Session = Depends(get_db), user: User = Depends(require_admin)):
     if settings.offline_mode:
         raise HTTPException(status_code=403, detail="External integrations disabled in offline mode")
     try:
@@ -272,7 +272,10 @@ def trigger_sync(request: Request, db: Session = Depends(get_db), user: User = D
             if d.site_name in sites and not d.wisp_site_id: d.wisp_site_id=sites[d.site_name]
         audit(db,user,request,"uisp.sync","integration","uisp",result); db.commit(); return result
     except Exception as exc:
-        raise HTTPException(status_code=502,detail=f"UISP synchronization failed: {exc}") from exc
+        from app.integrations.read_only import IntegrationFailure
+        if isinstance(exc,IntegrationFailure):
+            raise HTTPException(status_code=403 if exc.code=='disabled' else 502,detail=exc.code) from None
+        raise HTTPException(status_code=502,detail="Read-only UISP synchronization failed; inspect sanitized integration status") from exc
 
 
 def incident_out(item: Incident, db: Session) -> IncidentOut:
@@ -465,3 +468,35 @@ def operational_readiness(db: Session = Depends(get_db), _=Depends(require_opera
     view = snapshot(db)
     # Raw IDs used internally for simulations are not needed by operators.
     return {key:value for key,value in view.items() if not key.endswith('_device_ids')}
+
+
+@router.get('/integrations/read-only-status')
+def read_only_integration_status(db: Session = Depends(get_db), _=Depends(current_user)):
+    from app.services.integration_status import integration_status
+    return integration_status(db)
+
+
+@router.post('/integrations/mikrotik/collect')
+def trigger_mikrotik_collect(db: Session = Depends(get_db), _=Depends(require_admin)):
+    from app.integrations.mikrotik import collect_mikrotik
+    from app.integrations.read_only import IntegrationFailure
+    try:return collect_mikrotik(db)
+    except IntegrationFailure as exc:
+        raise HTTPException(status_code=403 if exc.code=='disabled' else 502,detail=exc.code) from None
+
+
+@router.get('/devices/{device_id}/mikrotik-observation')
+def mikrotik_observation(device_id: int, db: Session = Depends(get_db), _=Depends(require_operator)):
+    import hashlib,json,hmac
+    from app.models.entities import IntegrationBinding
+    provenance=db.scalar(select(IntegrationBinding).where(IntegrationBinding.integration=='mikrotik',
+        IntegrationBinding.kind=='device',IntegrationBinding.device_id==device_id))
+    if provenance is None:raise HTTPException(status_code=404,detail='No validated MikroTik observation')
+    sample=db.scalar(select(TelemetrySample).where(TelemetrySample.device_id==device_id,
+        TelemetrySample.sampled_at==provenance.observed_at,
+        TelemetrySample.raw_data['mikrotik_v1'].is_not(None)).order_by(TelemetrySample.id.desc()).limit(1))
+    if sample is None:raise HTTPException(status_code=404,detail='No validated MikroTik observation')
+    observation=sample.raw_data['mikrotik_v1']
+    digest=hashlib.sha256(json.dumps(observation,sort_keys=True).encode()).hexdigest()
+    if not hmac.compare_digest(digest,provenance.digest):raise HTTPException(status_code=404,detail='Unvalidated observation')
+    return {'device_id':device_id,'sampled_at':sample.sampled_at,'read_only':True,'observation':observation}

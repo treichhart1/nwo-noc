@@ -1,5 +1,14 @@
 ## 3.2.1-rc.1 (unreleased)
 
+- Extend NOC-86 with typed RF observations, explicit-unit Ubiquiti/Cambium/Racom/
+  Aviat export collectors, availability/provenance and RF dashboard details.
+- Preserve legacy RF diagnostics and block unsupported RouterOS 6 REST fallback.
+
+- NOC-86: default-disabled GET-only UISP/RouterOS integrations, exact HTTPS
+  allowlists, bounded retries/pagination, secret files and credential-free status.
+- Add source bindings, guarded reconciliation/provenance and integration migration
+  0007; retain RF savepoint and operational acceptance coverage.
+
 - NOC-85: fresh-check correlation and operational dashboard; root/maintenance
   suppression, synthetic incident lifecycle and 40-site WISP fixtures.
 - Batch concurrent monitoring with transaction-level deduplication, stable outage

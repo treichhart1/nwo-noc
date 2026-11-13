@@ -17,7 +17,7 @@ test.beforeEach(async ({page})=>{
   await page.getByRole('button',{name:'Sign in',exact:true}).click()
   await expect(page.locator('h1')).toHaveText('Dashboard')
 })
-for (const title of ['Dashboard','Towers & POPs','Devices','Topology','Operations','Alert Center','Incidents','Network Map']) {
+for (const title of ['Dashboard','Towers & POPs','Devices','Topology','Operations','Alert Center','Incidents','Network Map','Settings']) {
   test(`renders ${title}`,async({page})=>{
     await page.locator('nav').getByRole('button',{name:new RegExp('^'+title)}).click()
     await expect(page.locator('h1')).toHaveText(title)
@@ -33,10 +33,25 @@ test('RF diagnostics displays synthetic telemetry',async({page})=>{
   await page.locator('nav').getByRole('button',{name:'RF Diagnostics',exact:true}).click()
   await page.getByLabel('Device',{exact:true}).selectOption({label:'NOC84 Synthetic Radio'})
   await expect(page.getByText('3 RF samples in the selected window')).toBeVisible()
+  const foundation=page.getByRole('region',{name:'RF monitoring foundation'})
+  await expect(foundation).toContainText('Noise floor (dBm)')
+  await expect(foundation).toContainText('Link capacity (Mbps)')
+  await expect(foundation).toContainText('Not available')
+  await expect(foundation).toContainText('legacy-unit-tagged-v1')
   await expect(page.locator('.error')).toHaveCount(0)
 })
 test('logout clears session',async({page})=>{
   await page.getByRole('button',{name:'Log out'}).click()
   await expect(page.getByRole('button',{name:'Sign in',exact:true})).toBeVisible()
   expect(await page.evaluate(()=>localStorage.getItem('nwo_token'))).toBeNull()
+})
+
+test('integration status is disabled and credential-free',async({page})=>{
+ await page.locator('nav').getByRole('button',{name:'Settings',exact:true}).click()
+ const panel=page.getByRole('region',{name:'Read-only integration status'})
+ await expect(panel.getByRole('heading',{name:'UISP',exact:true})).toBeVisible()
+ await expect(panel.getByRole('heading',{name:'MIKROTIK',exact:true})).toBeVisible()
+ await expect(panel).toContainText('Disabled')
+ await expect(panel).toContainText('Last successful synchronization: Never')
+ expect(await panel.innerText()).not.toContain(env.ADMIN_PASSWORD)
 })

@@ -3,6 +3,7 @@ import time
 from app.core.config import settings
 from app.core.database import SessionLocal
 from app.integrations.uisp import sync_uisp
+from app.integrations.mikrotik import collect_mikrotik
 from app.services.monitoring import run_due_checks
 from redis import Redis
 from sqlalchemy import text
@@ -13,6 +14,7 @@ log = logging.getLogger("nwo-noc.worker")
 def main():
     interval = 15
     last_uisp_sync = 0.0
+    last_mikrotik_sync = 0.0
     last_heartbeat = 0.0
     def heartbeat():
         nonlocal last_heartbeat
@@ -39,12 +41,18 @@ def main():
         except Exception:
             log.exception("Worker heartbeat failed; check Redis connectivity")
         now = time.monotonic()
-        if settings.uisp_base_url and settings.uisp_token and now - last_uisp_sync >= max(settings.uisp_sync_interval_seconds, 60):
+        if settings.uisp_enabled and settings.integrations_admin_approved and not settings.offline_mode and now-last_uisp_sync>=max(settings.uisp_sync_interval_seconds,60):
+            heartbeat()
+            last_uisp_sync=now
             try:
-                with SessionLocal() as db:
-                    log.info("Scheduled sync result: %s", sync_uisp(db)); last_uisp_sync = now
-            except Exception:
-                log.exception("Scheduled UISP sync failed")
+                with SessionLocal() as db:log.info("Read-only UISP sync result: %s",sync_uisp(db,progress=heartbeat))
+            except Exception:log.warning("Read-only UISP synchronization failed; inspect sanitized integration status")
+        if settings.mikrotik_enabled and settings.integrations_admin_approved and not settings.offline_mode and now-last_mikrotik_sync>=max(settings.mikrotik_sync_interval_seconds,60):
+            heartbeat()
+            last_mikrotik_sync=now
+            try:
+                with SessionLocal() as db:log.info("Read-only MikroTik collection result: %s",collect_mikrotik(db))
+            except Exception:log.warning("Read-only MikroTik collection failed; inspect sanitized integration status")
         time.sleep(interval)
 
 if __name__ == "__main__":

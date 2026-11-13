@@ -159,3 +159,17 @@ def rf_self_healing_preview(
         "recommendation": proposal.recommendation,
         "requires_validated_rf_telemetry": not (degraded and reachability_fresh),
     }
+
+
+@router.get('/rf/vendor-profiles')
+def vendor_rf_profiles(_user: User = Depends(require_rf_reader)):
+    from app.integrations.vendor_rf import profiles_status
+    return {'profiles':profiles_status(),'execution_enabled':False,'read_only':True}
+
+
+@router.get('/devices/{device_id}/rf-observation')
+def device_rf_observation(device_id: int = Path(...,ge=1), db: Session = Depends(get_db),
+                          _user: User = Depends(require_rf_reader)):
+    from app.services.vendor_rf_observations import latest_observation
+    try:return latest_observation(db,device_id)
+    except LookupError:raise HTTPException(status_code=404,detail='Device not found') from None
