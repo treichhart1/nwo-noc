@@ -158,9 +158,12 @@ def test_alert_acknowledgment_and_incident_reuse(client,postgres_db,monkeypatch)
     db=postgres_db;d=device(db);seed_radio(db,d,scenario='interference');project(db)
     from app.api import rf_operations_routes as routes
     real=routes.overview
-    monkeypatch.setattr(routes,'overview',lambda *a,**kw:real(*a,**kw,now=NOW))
+    seen=[]
+    def observed(*args,**kw):
+        seen.append(kw.get('window'));return real(*args,**kw,now=NOW)
+    monkeypatch.setattr(routes,'overview',observed)
     a=overview(db,now=NOW)['alerts'][0]
-    body={'alert_key':a['key'],'observed_at':a['observed_at'],'operation':'acknowledge'}
+    body={'alert_key':a['key'],'observed_at':a['observed_at'],'operation':'acknowledge','window':'30d'}
     assert client.post('/api/rf/operations/alerts/review',json=body).status_code==200
     assert overview(db,now=NOW)['alerts'][0]['review']['new_evidence_since_review'] is False
     body['operation']='open_incident'
@@ -168,6 +171,7 @@ def test_alert_acknowledgment_and_incident_reuse(client,postgres_db,monkeypatch)
     second=client.post('/api/rf/operations/alerts/review',json=body)
     assert first.json()['incident']['id']==second.json()['incident']['id']
     assert db.scalar(select(func.count()).select_from(Incident))==1
+    assert seen and set(seen)=={'30d'}
     assert db.scalar(select(func.count()).select_from(AuditLog).where(AuditLog.entity_type=='rf_alert'))==3
     body['observed_at']=(NOW-timedelta(minutes=3)).isoformat()
     assert client.post('/api/rf/operations/alerts/review',json=body).status_code==409

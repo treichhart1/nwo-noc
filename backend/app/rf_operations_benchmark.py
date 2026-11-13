@@ -90,7 +90,7 @@ def measure(size):
             'overview_selects':queries,'overview_service_ms':round(service_ms,2),'api_median_ms':round(median(api_times),2),
             'api_max_ms':round(max(api_times),2),'legacy_incident_list_api_ms':round(incident_ms,2),'legacy_incident_list_selects':incident_selects,'link_chart_api_ms':round(chart_ms,2),'concurrent_operators':4,
             'concurrent_max_ms':round(max(concurrent),2),'reconnection_api_ms':round(reconnect_ms,2),
-            'network_equipment_requests':0,'fixture':'48 direct synthetic projection points per device across 30d; 5000 synthetic incidents',
+            'authentication':'synthetic role dependency; real JWT/authorization tested separately','network_equipment_requests':0,'fixture':'48 direct synthetic projection points per device across 30d; 5000 synthetic incidents',
             'limits':'synthetic API/query checks; not dense ingestion, cold-cache production SLA or field accuracy'}
     finally:
         # Only this random, newly created namespace is removed; public data is untouched.

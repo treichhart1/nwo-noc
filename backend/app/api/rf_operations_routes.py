@@ -66,6 +66,7 @@ class Review(BaseModel):
     alert_key:str=Field(pattern=r'^rf-analytics:(device|link):[1-9][0-9]{0,9}$')
     observed_at:datetime
     operation:Literal['acknowledge','open_incident']
+    window:Window='24h'
     @field_validator('observed_at')
     @classmethod
     def aware(cls,value):
@@ -78,7 +79,7 @@ def review(body:Review,db=Depends(get_db),user=Depends(require_operator)):
     def change():
         if not db.scalar(text('SELECT pg_try_advisory_xact_lock(910001)')):raise ValueError('Another alert review is in progress; retry after refreshing')
         kind,raw=body.alert_key.split(':')[1:];ident=int(raw)
-        context=overview(db,**({'device_id':ident} if kind=='device' else {'link_id':ident}),limit=100)
+        context=overview(db,**({'device_id':ident} if kind=='device' else {'link_id':ident}),limit=100,window=body.window)
         alert=next((a for a in context['alerts']+context['suppressed_alerts'] if a['key']==body.alert_key),None)
         if not alert:raise ValueError('Alert is no longer active in current stored evidence; refresh before reviewing')
         observed=datetime.fromisoformat(alert['observed_at'])
@@ -98,18 +99,19 @@ def review(body:Review,db=Depends(get_db),user=Depends(require_operator)):
                     if ended and observed<=utc(ended):raise ValueError('Revalidate new evidence after the prior investigation before opening another incident')
                 device=db.get(Device,ident) if kind=='device' else None
                 link=db.get(NetworkLink,ident) if kind=='link' else None
+                if device is None and link is None:raise LookupError()
                 incident=Incident(title=f'RF investigation: {body.alert_key}',severity=alert['severity'],
                     device_id=device.id if device else None,site_id=device.wisp_site_id if device else link.a_site_id,
                     link_id=link.id if link else None,created_by=user.id,summary='Operator-reviewed RF evidence. Root cause unconfirmed. '+', '.join(alert['patterns']))
                 db.add(incident);db.flush()
                 db.add(AuditLog(user_id=user.id,action='incident.create',entity_type='incident',entity_id=str(incident.id),
-                    details={'source_alert_key':body.alert_key,'observed_at':observed.isoformat(),'execution_enabled':False}))
+                    details={'source_alert_key':body.alert_key,'observed_at':observed.isoformat(),'window':body.window,'execution_enabled':False}))
             row.incident_id=incident.id
         db.add(AuditLog(user_id=user.id,action='rf.alert.'+body.operation,entity_type='rf_alert',entity_id=body.alert_key,
-            details={'observed_at':observed.isoformat(),'incident_id':row.incident_id}))
+            details={'observed_at':observed.isoformat(),'window':body.window,'incident_id':row.incident_id}))
         db.flush()
         return {'alert_key':body.alert_key,'acknowledged_at':row.acknowledged_at,'observed_at':row.observed_at,
-            'incident':incident_out(incident) if incident else None,'execution_enabled':False}
+            'incident':incident_out(incident) if incident else None,'window':body.window,'execution_enabled':False}
     return run(db,change,write=True)
 
 
