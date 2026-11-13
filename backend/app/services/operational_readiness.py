@@ -18,7 +18,7 @@ def snapshot(db, *, now=None):
         partition_by=TelemetrySample.device_id,order_by=(TelemetrySample.sampled_at.desc(),TelemetrySample.id.desc())).label('rn')
     ).where(TelemetrySample.sampled_at>=now-timedelta(minutes=15),TelemetrySample.sampled_at<=now).subquery()
     samples=list(db.scalars(select(TelemetrySample).join(ranked,ranked.c.sample_id==TelemetrySample.id)
-        .where(ranked.c.rn<=3).order_by(TelemetrySample.sampled_at,TelemetrySample.id)))
+        .where(ranked.c.rn<=20).order_by(TelemetrySample.sampled_at,TelemetrySample.id)))
     history={};by_id={d.id:d for d in devices}
     for sample in samples: history.setdefault(sample.device_id,[]).append(sample)
     monitored=[d for d in devices if d.monitor_enabled]
@@ -54,8 +54,39 @@ def snapshot(db, *, now=None):
             cycles.update(seen);suppressed.pop(min(seen),None)
     alerts=[];rf_degraded=[];rf_healthy=[];missing=[]
     for d in devices:
-        rows=history.get(d.id,[])
+        all_rows=history.get(d.id,[])
+        rows=all_rows[-3:]
         if not rows: missing.append(d.id);continue
+        if any(isinstance(s.raw_data,dict) and 'rf_radio_v2' in s.raw_data for s in rows):
+            from app.services.radio_history import analyze_radio, RadioThresholds
+            from app.services.radio_observation import RadioObservation
+            from app.core.config import settings
+            observations=[];invalid=False
+            for row in all_rows:
+                try:
+                    observation=RadioObservation.model_validate((row.raw_data or {})['rf_radio_v2'])
+                    if observation.observed_at!=row.sampled_at:raise ValueError()
+                    observations.append(observation)
+                except (KeyError,ValueError,TypeError):
+                    # A missing/invalid sample breaks the consecutive history.
+                    observations=[];invalid=True
+                else:invalid=False
+            try:report=analyze_radio(observations,now=now,thresholds=RadioThresholds(**settings.rf_radio_thresholds))
+            except ValueError:report={'state':'unknown','reasons':[]}
+            if invalid or report['state']=='unknown':missing.append(d.id)
+            if not invalid and report['state']=='healthy':rf_healthy.append(d.id)
+            if not invalid and report['state']=='degraded':
+                rf_degraded.append(d.id)
+                parent=d.parent_device_id;seen={d.id};upstream=False
+                while parent in by_id and parent not in seen:
+                    seen.add(parent)
+                    if parent in down or parent in maintained:upstream=True;break
+                    parent=by_id[parent].parent_device_id
+                if d.id in up and d.id not in maintained and not upstream:
+                    alerts.append(dict(key=f'rf:{d.id}',kind='rf_degraded',severity='warning',device_id=d.id,
+                        site_id=d.wisp_site_id,name=d.name,observed_at=rows[-1].sampled_at.isoformat(),
+                        reasons=report['reasons'],action='Review sustained radio telemetry; upstream cause is unconfirmed and remediation is simulation-only'))
+            continue
         metrics=[normalize_rf_metrics((s.raw_data or {}).get('rf_metrics_v1',{}))
                  if isinstance(s.raw_data,dict) and isinstance(s.raw_data.get('rf_metrics_v1'),dict) else {} for s in rows]
         if not any(metrics): missing.append(d.id)
@@ -82,7 +113,7 @@ def snapshot(db, *, now=None):
         if state=='up' and link.capacity_mbps and link.capacity_mbps>0:
             capacity_known=True
             for device_id in endpoints:
-                rows=history.get(device_id,[])
+                rows=history.get(device_id,[])[-3:]
                 rates=[normalize_rf_metrics((r.raw_data or {}).get('rf_metrics_v1',{})).get('tx_rate_mbps')
                        if isinstance(r.raw_data,dict) and isinstance(r.raw_data.get('rf_metrics_v1'),dict) else None for r in rows]
                 capacity_known = capacity_known and len(rates)==3 and all(rate is not None for rate in rates)

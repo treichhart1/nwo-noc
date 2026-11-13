@@ -12,3 +12,5 @@ python-multipart==0.0.20
 httpx==0.28.1
 redis==6.2.0
 email-validator==2.2.0
+
+pysnmp==7.1.32

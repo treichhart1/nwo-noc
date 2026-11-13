@@ -41,6 +41,7 @@ def latest_observation(db,device_id,*,now=None):
     if device is None:raise LookupError('device_not_found')
     sample=db.scalar(select(TelemetrySample).where(TelemetrySample.device_id==device_id,
         or_(TelemetrySample.raw_data['rf_observation_v1'].is_not(None),
+            TelemetrySample.raw_data['rf_radio_v2'].is_not(None),
             TelemetrySample.raw_data['rf_metrics_v1'].is_not(None)))
         .order_by(TelemetrySample.sampled_at.desc(),TelemetrySample.id.desc()).limit(1))
     if sample is None:return {'device_id':device_id,'available':False,'reason':'missing','read_only':True}
@@ -48,7 +49,12 @@ def latest_observation(db,device_id,*,now=None):
     timestamp=sample.sampled_at
     if timestamp.tzinfo is None:timestamp=timestamp.replace(tzinfo=timezone.utc)
     try:
-        if 'rf_observation_v1' in raw:
+        if 'rf_radio_v2' in raw:
+            from app.services.radio_observation import RadioObservation
+            observation=RadioObservation.model_validate(raw['rf_radio_v2'])
+            if observation.observed_at!=timestamp or normalize_rf_metrics(observation.measurements.model_dump(exclude_none=True))!=(raw.get('rf_metrics_v1') or {}):
+                raise ValueError('metric mismatch')
+        elif 'rf_observation_v1' in raw:
             observation=NormalizedRFTelemetry.model_validate(raw['rf_observation_v1'])
             if observation.observed_at!=timestamp:raise ValueError('timestamp mismatch')
             if observation.measurements.model_dump(exclude_none=True)!=(raw.get('rf_metrics_v1') or {}):

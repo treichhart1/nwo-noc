@@ -134,3 +134,7 @@ Synthetic WISP operational validation, correlation rules and measured scale resu
 
 Read-only UISP/RouterOS contracts, activation guards, secret handling and synthetic
 validation: [NOC-86 integration readiness](docs/NOC-86-read-only-integrations.md).
+
+Ubiquiti/Cambium RF collection contracts, SNMPv3 safety, historical diagnostics,
+synthetic validation and real-device prerequisites:
+[NOC-87 radio telemetry](docs/NOC-87-radio-telemetry.md).
