@@ -4,6 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.routes import router
 from app.api.rf_routes import router as rf_router
+from app.api.rf_analytics_routes import router as rf_analytics_router
 from app.core.config import settings
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
@@ -16,3 +17,4 @@ def health():
 
 app.include_router(router)
 app.include_router(rf_router)
+app.include_router(rf_analytics_router)

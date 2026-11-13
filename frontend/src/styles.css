@@ -6,3 +6,5 @@
 
 .monitorBox{margin:16px 0;padding:14px;border:1px solid var(--line);border-radius:14px;background:rgba(255,255,255,.025)}
 .checkLine{display:flex!important;flex-direction:row!important;align-items:center;gap:9px;margin-bottom:12px}.checkLine input{width:auto!important}
+
+aside>div:first-child{min-height:0;overflow-y:auto}aside>.logout{flex-shrink:0}

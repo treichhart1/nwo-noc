@@ -141,3 +141,7 @@ synthetic validation and real-device prerequisites:
 
 Racom/Aviat carrier-level contracts, microwave history, hysteresis and backhaul
 correlation: [NOC-88 microwave monitoring](docs/NOC-88-microwave-monitoring.md).
+
+Historical comparisons, suspected interference, congestion, scores/confidence,
+projection/retention and query limits:
+[NOC-89 historical RF analytics](docs/NOC-89-historical-rf-analytics.md).

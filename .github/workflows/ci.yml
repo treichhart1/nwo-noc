@@ -183,7 +183,13 @@ jobs:
             tests/test_read_only_integrations_postgres.py \
             tests/test_vendor_rf_postgres.py \
             tests/test_radio_postgres.py \
-            tests/test_microwave_postgres.py
+            tests/test_microwave_postgres.py \
+            tests/test_rf_analytics_postgres.py
+      - name: Measure 30-day historical analytics at 250/500/1000 devices
+        env:
+          APP_ENV: staging
+          OFFLINE_MODE: "true"
+        run: PYTHONPATH=. python -m app.rf_analytics_benchmark
       - name: Measure synthetic WISP operational readiness at 250/500/1000 devices
         env:
           APP_ENV: staging
@@ -358,6 +364,13 @@ jobs:
         run: |
           NOC_PROJECT=noc84-wisp-test scripts/release/manage.sh "$NOC_ACCEPTANCE_STATE" exec -T backend python -m app.microwave_rehearsal > "$NOC_ACCEPTANCE_STATE/microwave-devices.json"
           (cd frontend && npx playwright test microwave.spec.ts)
+      - name: Validate historical RF analytics with synthetic baselines and evidence
+        env:
+          NOC89_ANALYTICS_BROWSER: "true"
+          NOC_ACCEPTANCE_STATE: ${{ runner.temp }}/noc85-wisp-state
+        run: |
+          NOC_PROJECT=noc84-wisp-test scripts/release/manage.sh "$NOC_ACCEPTANCE_STATE" exec -T backend python -m app.rf_analytics_rehearsal > "$NOC_ACCEPTANCE_STATE/analytics-devices.json"
+          (cd frontend && npx playwright test rf-analytics.spec.ts)
       - name: Stop isolated acceptance services, retain volumes
         if: always()
         run: |

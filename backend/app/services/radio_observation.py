@@ -14,6 +14,7 @@ class RadioMetrics(RFMeasurements):
     rx_throughput_mbps: float | None = Field(None, ge=0, le=1e6, strict=True)
     mcs_index: int | None = Field(None, ge=0, le=31, strict=True)
     subscriber_count: int | None = Field(None, ge=0, le=10000, strict=True)
+    utilization_percent: float | None = Field(None,ge=0,le=100,strict=True)
 
 
 class RadioCounters(BaseModel):

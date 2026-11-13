@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, BigInteger, JSON, String, Text, Index, UniqueConstraint
+from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, BigInteger, Numeric, JSON, String, Text, Index, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 from app.core.database import Base
 
@@ -265,3 +265,59 @@ class IntegrationBinding(Base):
     received_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
     digest: Mapped[str] = mapped_column(String(64))
     values: Mapped[dict] = mapped_column(JSON, default=dict)
+
+
+class RFAnalyticsPoint(Base):
+    """Rebuildable normalized projection; analytics never runs during collection."""
+    __tablename__ = "rf_analytics_points"
+    __table_args__ = (
+        UniqueConstraint("source_sample_id", "series_key", name="uq_rf_analytics_source_series"),
+        Index("ix_rf_analytics_device_series_time", "device_id", "series_key", "mapping_digest", "sampled_at"),
+        Index("ix_rf_analytics_time", "sampled_at"),
+        Index("ix_rf_analytics_site_time", "site_id", "sampled_at"),
+        Index("ix_rf_analytics_link_time", "link_id", "sampled_at"),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    source_sample_id: Mapped[int] = mapped_column(ForeignKey("telemetry_samples.id", ondelete="CASCADE"))
+    device_id: Mapped[int] = mapped_column(ForeignKey("devices.id", ondelete="CASCADE"))
+    site_id: Mapped[int | None] = mapped_column(ForeignKey("sites.id", ondelete="SET NULL"), nullable=True)
+    link_id: Mapped[int | None] = mapped_column(ForeignKey("network_links.id", ondelete="SET NULL"), nullable=True)
+    series_key: Mapped[str] = mapped_column(String(40))
+    vendor: Mapped[str] = mapped_column(String(20))
+    source_profile: Mapped[str] = mapped_column(String(64))
+    mapping_digest: Mapped[str] = mapped_column(String(64))
+    sampled_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    projected_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    valid: Mapped[bool] = mapped_column(Boolean)
+    radio_state: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    signal_dbm: Mapped[float | None] = mapped_column(Float, nullable=True)
+    remote_signal_dbm: Mapped[float | None] = mapped_column(Float, nullable=True)
+    snr_db: Mapped[float | None] = mapped_column(Float, nullable=True)
+    noise_floor_dbm: Mapped[float | None] = mapped_column(Float, nullable=True)
+    modulation_bits: Mapped[float | None] = mapped_column(Float, nullable=True)
+    mcs_index: Mapped[float | None] = mapped_column(Float, nullable=True)
+    capacity_mbps: Mapped[float | None] = mapped_column(Float, nullable=True)
+    tx_throughput_mbps: Mapped[float | None] = mapped_column(Float, nullable=True)
+    rx_throughput_mbps: Mapped[float | None] = mapped_column(Float, nullable=True)
+    tx_phy_mbps: Mapped[float | None] = mapped_column(Float, nullable=True)
+    rx_phy_mbps: Mapped[float | None] = mapped_column(Float, nullable=True)
+    utilization_percent: Mapped[float | None] = mapped_column(Float, nullable=True)
+    quality_percent: Mapped[float | None] = mapped_column(Float, nullable=True)
+    temperature_c: Mapped[float | None] = mapped_column(Float, nullable=True)
+    uptime_seconds: Mapped[float | None] = mapped_column(Float, nullable=True)
+    frequency_mhz: Mapped[float | None] = mapped_column(Float, nullable=True)
+    bandwidth_mhz: Mapped[float | None] = mapped_column(Float, nullable=True)
+    availability_percent: Mapped[float | None] = mapped_column(Float, nullable=True)
+    tx_errors: Mapped[int | None] = mapped_column(Numeric(20, 0), nullable=True)
+    rx_errors: Mapped[int | None] = mapped_column(Numeric(20, 0), nullable=True)
+    retries: Mapped[int | None] = mapped_column(Numeric(20, 0), nullable=True)
+    disconnects: Mapped[int | None] = mapped_column(Numeric(20, 0), nullable=True)
+
+
+class RFAnalyticsCheckpoint(Base):
+    __tablename__ = "rf_analytics_checkpoints"
+    name: Mapped[str] = mapped_column(String(40), primary_key=True)
+    last_source_id: Mapped[int] = mapped_column(BigInteger, default=0, server_default="0")
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    processed: Mapped[int] = mapped_column(BigInteger, default=0, server_default="0")
+    skipped: Mapped[int] = mapped_column(BigInteger, default=0, server_default="0")

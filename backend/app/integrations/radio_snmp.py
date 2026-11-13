@@ -15,9 +15,9 @@ BASE = {'rssi_dbm', 'snr_db', 'noise_floor_dbm', 'frequency_mhz', 'channel_width
         'tx_rate_mbps', 'rx_rate_mbps', 'link_capacity_mbps', 'uptime_seconds', 'radio_status',
         'ccq_percent', 'tx_errors', 'rx_errors', 'retries', 'disconnects'}
 CAPABILITIES = {
-    'airmax-ac-mib-v1': BASE | {'remote_rssi_dbm', 'gps_sync', 'tx_throughput_mbps', 'rx_throughput_mbps'},
+    'airmax-ac-mib-v1': BASE | {'remote_rssi_dbm', 'gps_sync', 'tx_throughput_mbps', 'rx_throughput_mbps','utilization_percent'},
     'airmax-legacy-mib-v1': BASE - {'link_capacity_mbps'},
-    'epmp-4600-mib-v1': BASE | {'remote_rssi_dbm', 'mcs_index', 'modulation', 'subscriber_count', 'temperature_c', 'tx_throughput_mbps', 'rx_throughput_mbps'},
+    'epmp-4600-mib-v1': BASE | {'remote_rssi_dbm', 'mcs_index', 'modulation', 'subscriber_count', 'temperature_c', 'tx_throughput_mbps', 'rx_throughput_mbps','utilization_percent'},
     'epmp-legacy-mib-v1': BASE | {'modulation', 'subscriber_count'},
 }
 UNITS = {'dbm': 1, 'db': 1, 'percent': 1, 'mhz': 1, 'hz': 1e-6, 'khz': .001,

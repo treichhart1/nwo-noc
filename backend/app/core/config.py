@@ -37,6 +37,11 @@ class Settings(BaseSettings):
     rf_microwave_enabled: bool = False
     rf_microwave_config_file: str = Field(default='',repr=False,exclude=True)
     rf_microwave_thresholds: dict = Field(default_factory=dict)
+    rf_analytics_projection_enabled: bool = False
+    rf_analytics_policy: dict = Field(default_factory=dict)
+    rf_analytics_retention_enabled: bool = False
+    rf_analytics_retention_days: int = Field(90,ge=31,le=365)
+    rf_analytics_retention_batch: int = Field(1000,ge=1,le=5000)
     rf_collection_min_interval_seconds: int = 300
     rf_collection_max_devices: int = 1000
     rf_history_pruning_enabled: bool = False
@@ -52,6 +57,8 @@ class Settings(BaseSettings):
         RadioThresholds(**self.rf_radio_thresholds)
         from app.services.microwave_policy import MicrowaveThresholds
         MicrowaveThresholds(**self.rf_microwave_thresholds)
+        from app.services.rf_analytics_policy import AnalyticsPolicy
+        AnalyticsPolicy(**self.rf_analytics_policy)
         if self.rf_microwave_enabled and (self.offline_mode or not self.integrations_admin_approved or not self.rf_microwave_config_file):
             raise ValueError('Microwave activation requires online administrator approval and private configuration')
         if self.rf_snmp_enabled and (self.offline_mode or not self.integrations_admin_approved or not self.rf_snmp_config_file):
