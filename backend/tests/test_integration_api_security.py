@@ -15,3 +15,8 @@ def test_collection_trigger_requires_admin(endpoint):
 @pytest.mark.parametrize('endpoint',['/api/integrations/read-only-status','/api/devices/1/mikrotik-observation'])
 def test_integration_views_require_authentication(endpoint):
     assert TestClient(app).get(endpoint).status_code==401
+
+
+@pytest.mark.parametrize('endpoint',['/api/rf/vendor-profiles','/api/devices/1/rf-observation'])
+def test_vendor_rf_foundation_requires_authentication(endpoint):
+    assert TestClient(app).get(endpoint).status_code==401

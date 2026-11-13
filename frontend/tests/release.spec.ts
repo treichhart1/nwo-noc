@@ -33,6 +33,11 @@ test('RF diagnostics displays synthetic telemetry',async({page})=>{
   await page.locator('nav').getByRole('button',{name:'RF Diagnostics',exact:true}).click()
   await page.getByLabel('Device',{exact:true}).selectOption({label:'NOC84 Synthetic Radio'})
   await expect(page.getByText('3 RF samples in the selected window')).toBeVisible()
+  const foundation=page.getByRole('region',{name:'RF monitoring foundation'})
+  await expect(foundation).toContainText('Noise floor (dBm)')
+  await expect(foundation).toContainText('Link capacity (Mbps)')
+  await expect(foundation).toContainText('Not available')
+  await expect(foundation).toContainText('legacy-unit-tagged-v1')
   await expect(page.locator('.error')).toHaveCount(0)
 })
 test('logout clears session',async({page})=>{

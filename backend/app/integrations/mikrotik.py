@@ -40,8 +40,18 @@ def one(payload):
     return payload
 
 
+
+def require_routeros7(payload):
+    resource=one(payload)
+    version=resource.get('version')
+    if not isinstance(version,str) or not version.strip():raise IntegrationFailure('invalid_response')
+    if not re.match(r'^7\.\d+(?:\.|\s|$)',version.strip()):
+        raise IntegrationFailure('unsupported')
+    return resource
+
+
 def normalize(payload,credentials=()):
-    identity=one(payload['identity']);resource=one(payload['resource'])
+    identity=one(payload['identity']);resource=require_routeros7(payload['resource'])
     if not isinstance(identity.get('name'),str) or not identity['name'] or not isinstance(resource.get('version'),str) or not resource['version'].strip():raise IntegrationFailure('invalid_response')
     interfaces=payload['interfaces']
     if not isinstance(interfaces,list) or len(interfaces)>4096:raise IntegrationFailure('invalid_response')
@@ -93,7 +103,9 @@ def collect_mikrotik(db,*,transport=None,now=None):
         payload={};errors=[]
         with ReadClient(policy,auth=(settings.mikrotik_username,secret(settings.mikrotik_password)),transport=transport) as client:
             for name,path in [('identity','/rest/system/identity'),('resource','/rest/system/resource'),('interfaces','/rest/interface'),('health','/rest/system/health'),('neighbors','/rest/routing/ospf/neighbor')]:
-                try:payload[name]=client.request(path)[0]
+                try:
+                    payload[name]=client.request(path)[0]
+                    if name=='resource':require_routeros7(payload[name])
                 except IntegrationFailure as exc:
                     if name not in {'health','neighbors'} or exc.code!='unsupported':raise
                     payload[name]=[];errors.append('unsupported')

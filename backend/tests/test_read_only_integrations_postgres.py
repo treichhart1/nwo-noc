@@ -213,3 +213,14 @@ def test_only_provenance_verified_observations_are_returned(postgres_db,configur
     sample=db.scalar(select(TelemetrySample));value=dict(sample.raw_data['mikrotik_v1']);value['password']=PASSWORD
     sample.raw_data={'mikrotik_v1':value};db.flush()
     with pytest.raises(HTTPException):mikrotik_observation(d.id,db,None)
+
+
+def test_routeros6_rejected_without_unsafe_protocol_fallback(postgres_db,configured,monkeypatch):
+    db=postgres_db;device(db,monkeypatch);requests=[]
+    def respond(req):
+        requests.append(req)
+        return httpx.Response(200,json={'name':'Synthetic ROS6'} if req.url.path.endswith('identity') else {'version':'6.49.15'})
+    with pytest.raises(IntegrationFailure,match='unsupported'):
+        collect_mikrotik(db,transport=httpx.MockTransport(respond),now=NOW)
+    assert len(requests)==2 and all(r.method=='GET' for r in requests)
+    assert db.scalar(select(func.count()).select_from(TelemetrySample))==0

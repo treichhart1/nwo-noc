@@ -201,3 +201,7 @@ UISP import rows also report progress to the worker's throttled heartbeat withou
 sharing database sessions across threads. Large imports still require deployment-
 specific timing/transaction budgets; the existing NOC-85 monitoring SLA and
 sharding limitations are not removed by these adapters.
+
+RF normalization/vendor export collectors and explicit RouterOS 7/6 behavior are
+covered by [NOC-86 RF foundation](NOC-86-RF-monitoring-foundation.md). Prepared
+vendor normalization must not be mistaken for enabled or live-tested wire access.

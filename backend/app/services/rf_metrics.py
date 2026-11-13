@@ -42,6 +42,7 @@ def normalize_rf_metrics(payload: Mapping[str, Any]) -> dict[str, float]:
         "ccq_percent": (("ccq_percent",), 0, 100),
         "frequency_mhz": (("frequency_mhz",), 100, 100000),
         "channel_width_mhz": (("channel_width_mhz",), 1, 5000),
+        "link_capacity_mbps": (("link_capacity_mbps",), 0, 1000000),
         "tx_rate_mbps": (("tx_rate_mbps",), 0, 1000000),
         "rx_rate_mbps": (("rx_rate_mbps",), 0, 1000000),
         "temperature_c": (("temperature_c",), -100, 200),
