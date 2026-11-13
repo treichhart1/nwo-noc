@@ -4,6 +4,7 @@ from datetime import datetime, timedelta, timezone
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 from app.models.entities import Device, MonitorCheck, MonitorEvent
+from app.core.config import settings
 
 UP = "up"
 DOWN = "down"
@@ -13,6 +14,8 @@ def _target(device: Device) -> tuple[str | None, int]:
     return (device.monitor_host or device.ip_address or device.hostname, device.monitor_port or 443)
 
 def tcp_check(host: str, port: int, timeout: int) -> tuple[bool, float | None, str | None]:
+    if settings.offline_mode and (host, port) != ("redis", 6379):
+        return False, None, "Offline mode permits only the synthetic Redis monitoring target"
     started = time.perf_counter()
     try:
         with socket.create_connection((host, port), timeout=timeout):

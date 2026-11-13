@@ -1,0 +1,3 @@
+FROM ubuntu:24.04
+COPY scripts/release/bootstrap-ubuntu.sh /bootstrap.sh
+RUN NOC_BOOTSTRAP_CONTAINER=1 bash /bootstrap.sh

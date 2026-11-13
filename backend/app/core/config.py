@@ -5,6 +5,7 @@ class Settings(BaseSettings):
     app_name: str = "NWO NOC"
     app_env: str = "production"
     api_docs_enabled: bool = False
+    offline_mode: bool = False
     secret_key: str
     access_token_expire_minutes: int = 720
     database_url: str
@@ -27,6 +28,9 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def validate_production_security(self):
+        if self.offline_mode:
+            if self.uisp_base_url or self.uisp_token or self.rf_collection_enabled or self.rf_history_pruning_enabled:
+                raise ValueError("OFFLINE_MODE requires empty UISP settings and RF collection/pruning disabled")
         if self.app_env.lower() == "production":
             if not self.uisp_verify_tls:
                 raise ValueError("Production requires UISP TLS certificate verification")
