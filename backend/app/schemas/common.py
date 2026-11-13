@@ -294,6 +294,7 @@ class OperationsSummary(BaseModel):
     degraded_links: int
     unassigned_devices: int
     stale_devices: int
+    never_checked_devices: int
 
 
 class MonitorCheckOut(ORMModel):
