@@ -18,3 +18,6 @@ def health():
 app.include_router(router)
 app.include_router(rf_router)
 app.include_router(rf_analytics_router)
+
+from app.api.rf_troubleshooting_routes import router as troubleshooting_router
+app.include_router(troubleshooting_router)

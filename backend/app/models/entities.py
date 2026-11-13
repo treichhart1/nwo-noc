@@ -321,3 +321,33 @@ class RFAnalyticsCheckpoint(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
     processed: Mapped[int] = mapped_column(BigInteger, default=0, server_default="0")
     skipped: Mapped[int] = mapped_column(BigInteger, default=0, server_default="0")
+
+
+class RFRecommendation(Base):
+    """Human workflow only. Evidence snapshots contain normalized allowlisted data."""
+    __tablename__ = "rf_recommendations"
+    __table_args__ = (UniqueConstraint("problem_key", name="uq_rf_recommendation_problem"),
+        Index("ix_rf_recommendations_status_updated", "status", "updated_at"),)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    problem_key: Mapped[str] = mapped_column(String(160))
+    device_id: Mapped[int] = mapped_column(ForeignKey("devices.id", ondelete="CASCADE"))
+    rule: Mapped[str] = mapped_column(String(60))
+    status: Mapped[str] = mapped_column(String(24), default="new")
+    evidence_state: Mapped[str] = mapped_column(String(16), default="active")
+    episode: Mapped[int] = mapped_column(Integer, default=1)
+    evidence: Mapped[dict] = mapped_column(JSON)
+    resolution: Mapped[str | None] = mapped_column(Text, nullable=True)
+    first_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    episode_started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    recovery_observed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class RFRecommendationNote(Base):
+    __tablename__ = "rf_recommendation_notes"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    recommendation_id: Mapped[int] = mapped_column(ForeignKey("rf_recommendations.id", ondelete="CASCADE"), index=True)
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    episode: Mapped[int] = mapped_column(Integer)
+    body: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)

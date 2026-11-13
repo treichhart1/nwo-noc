@@ -133,6 +133,8 @@ def series_reports(history,baselines,now,policy):
         output.append({'device_id':device,'series_key':series,'vendor':latest['vendor'],'link_id':latest['link_id'],
             'projected_site_id':latest['site_id'],
             'mapping_digest':latest['mapping_digest'],'source_profile':latest['source_profile'],
+            'source_references':{'latest_sample_id':latest['source_sample_id'],'latest_projection_id':latest['id'],
+                'recent_sample_ids':[p['source_sample_id'] for p in current]},
             'last_sampled_at':latest['sampled_at'].isoformat(),'latest':{k:latest.get(k) for k in METRICS+RATES}|{'radio_state':latest.get('radio_state')},
             'baseline':baseline,'analysis':report,'recent_points_evaluated':len(current),'recent_history_limit':128})
     return output
