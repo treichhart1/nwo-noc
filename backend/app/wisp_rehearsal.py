@@ -36,8 +36,9 @@ def main(action):
             for _ in range(2):
                 db.execute(update(Device).values(monitor_last_checked_at=now-timedelta(seconds=16)))
                 run_due_checks(db,now=now,probe=probe)
-            degraded_rf=devices[2].id;capacity=devices[3].id
-            rows=db.scalars(select(TelemetrySample).where(TelemetrySample.device_id.in_([degraded_rf,capacity])))
+            degraded_rf=devices[2].id;capacity=devices[11].id
+            # Reset the controlled fixture so repeated outage/recovery actions are reproducible.
+            rows=db.scalars(select(TelemetrySample))
             for row in rows:
                 row.raw_data={'rf_metrics_v1':dict(rssi_dbm=-90 if action=='outage' and row.device_id==degraded_rf else -60,
                     snr_db=8 if action=='outage' and row.device_id==degraded_rf else 30,
