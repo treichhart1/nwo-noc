@@ -17,8 +17,9 @@ def test_operational_summaries_require_authentication(endpoint):
 
 def test_monitoring_summary_tracks_unknown_and_unacknowledged_events():
     db = Mock()
-    # enabled, up, down, average latency, unacknowledged events, last check
-    db.scalar.side_effect = [12, 7, 3, 14.567, 4, None]
+    # One device aggregate plus one event-count query.
+    db.execute.return_value.one.return_value = (12, 7, 3, 14.567, None)
+    db.scalar.return_value = 4
     app.dependency_overrides[current_user] = lambda: Mock(role="operator")
     app.dependency_overrides[get_db] = lambda: db
     try:
@@ -33,7 +34,8 @@ def test_monitoring_summary_tracks_unknown_and_unacknowledged_events():
             "unacknowledged_events": 4,
             "last_check_at": None,
         }
-        assert db.scalar.call_count == 6
+        assert db.execute.call_count == 1
+        assert db.scalar.call_count == 1
         db.commit.assert_not_called()
         db.add.assert_not_called()
     finally:
