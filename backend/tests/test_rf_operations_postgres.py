@@ -68,8 +68,9 @@ def test_stale_invalid_missing_and_poll_failure_are_not_healthy(postgres_db):
     assert 'invalid' in overview(db,now=NOW+timedelta(hours=3))['inventory'][0]['rf_freshness']
 
 
-def test_link_context_charts_and_unavailable_measurements(postgres_db):
-    db=postgres_db;a,z,link=seed_microwave(db);project(db)
+@pytest.mark.parametrize('profile',['racom-ray3-mib-v1','aviat-multicarrier-mib-v1'])
+def test_link_context_charts_and_unavailable_measurements(postgres_db,profile):
+    db=postgres_db;a,z,link=seed_microwave(db,profile=profile);project(db)
     r=link_detail(db,link.id,now=NOW)
     assert r['endpoints'][0]['buckets'] and r['context']['links'][0]['health']['rf_degraded_observations']==1
     s=r['endpoints'][0]['series'][0]
@@ -204,3 +205,16 @@ def test_database_failure_static_error_and_recovery(client,monkeypatch):
     assert client.get('/api/rf/operations?limit=101').status_code==422
     assert client.get('/api/rf/operations?window=90d').status_code==422
     assert client.get('/api/rf/operations/sites/999999').status_code==404
+
+
+@pytest.mark.parametrize('vendor,profile',[('ubiquiti','ubiquiti-uisp-explicit-v1'),('cambium','cambium-unit-export-v1'),('racom','racom-unit-export-v1'),('aviat','aviat-unit-export-v1')])
+def test_foundation_availability_survives_in_unified_link_view(postgres_db,vendor,profile):
+    from app.services.rf_observation import NormalizedRFTelemetry,RFMeasurements
+    from app.services.vendor_rf_observations import stage_observation
+    db=postgres_db;a=device(db,vendor=vendor,external_id='a');z=device(db,vendor=vendor,external_id='z')
+    link=NetworkLink(name='Synthetic foundation link',a_site_id=a.wisp_site_id,z_site_id=z.wisp_site_id,a_device_id=a.id,z_device_id=z.id);db.add(link);db.flush()
+    stage_observation(db,a,NormalizedRFTelemetry(vendor=vendor,profile=profile,source_kind='synthetic_export',observed_at=NOW,received_at=NOW,
+        measurements=RFMeasurements(rssi_dbm=-60.0,snr_db=30.0),radio_status='up',unavailable={'noise_floor_dbm':'unsupported'}))
+    project(db);detail=link_detail(db,link.id,now=NOW)['endpoints'][0]
+    assert detail['series'][0]['metric_status']['noise_floor_dbm']=='unsupported'
+    assert detail['series'][0]['metric_status']['signal_dbm']=='fresh'

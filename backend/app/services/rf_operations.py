@@ -214,11 +214,15 @@ def metric_provenance(db,series):
         if 'rf_radio_v2' in raw:
             from app.services.radio_observation import RadioObservation
             obs=RadioObservation.model_validate(raw['rf_radio_v2']);unavailable=obs.unavailable
+        elif 'rf_observation_v1' in raw:
+            from app.services.rf_observation import NormalizedRFTelemetry
+            obs=NormalizedRFTelemetry.model_validate(raw['rf_observation_v1']);unavailable=obs.unavailable
         elif 'rf_microwave_v1' in raw:
             from app.services.microwave_model import MicrowaveObservation
             obs=MicrowaveObservation.model_validate(raw['rf_microwave_v1']);key=series['series_key'].split(':',1)[-1]
             carrier=obs.carriers[key];unavailable=carrier.unavailable;out['alarms']=carrier.alarms
-        else:unavailable={}
+        else:return out
+        if obs.observed_at!=utc(row.sampled_at):raise ValueError('Source timestamp mismatch')
         out['unavailable']={aliases.get(k,k):v for k,v in unavailable.items() if aliases.get(k,k) in METRICS}
     except (ValueError,KeyError,TypeError):out['unavailable']={k:'invalid' for k in METRICS}
     return out
