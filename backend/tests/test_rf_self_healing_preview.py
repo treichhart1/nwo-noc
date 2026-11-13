@@ -22,7 +22,7 @@ class FakeDB:
 
 
 def test_preview_blocks_without_validated_rf_samples():
-    db = FakeDB(SimpleNamespace(id=42, name="Test AP"))
+    db = FakeDB(SimpleNamespace(id=42, name="Test AP", monitor_enabled=False, monitor_status="unknown", monitor_last_checked_at=None))
     result = rf_self_healing_preview(device_id=42, db=db, _user=SimpleNamespace(role="operator"))
     assert db.reads == [42]
     assert result["decision"] == "blocked"
