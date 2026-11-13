@@ -19,6 +19,7 @@ def test_monitoring_summary_postgres_states_latency_and_query_budget(postgres_db
             ("up", 10.0), ("up", 20.0), ("down", None), ("unknown", None)
         ])
     ]
+    devices[3].monitor_last_checked_at = now - timedelta(minutes=30)
     devices.append(Device(source="synthetic", external_id="noc-77j-disabled",
                           name="Disabled monitor", monitor_enabled=False,
                           monitor_status="down", monitor_latency_ms=999.0))
@@ -45,7 +46,7 @@ def test_monitoring_summary_postgres_states_latency_and_query_budget(postgres_db
         event.remove(bind, "before_cursor_execute", track)
 
     assert summary.enabled_devices == 4
-    assert summary.stale_devices == 0
+    assert summary.stale_devices == 1
     assert summary.up_devices == 2
     assert summary.down_devices == 1
     assert summary.unknown_devices == 1
