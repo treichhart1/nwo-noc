@@ -119,6 +119,15 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 20
     defaults:
       run:
         working-directory: backend
@@ -169,7 +178,19 @@ jobs:
             tests/test_rf_release_regression.py \
             tests/test_dashboard_postgres_scale.py \
             tests/test_operations_postgres.py \
-            tests/test_monitoring_postgres.py
+            tests/test_monitoring_postgres.py \
+            tests/test_operational_readiness_postgres.py
+      - name: Measure synthetic WISP operational readiness at 250/500/1000 devices
+        env:
+          APP_ENV: staging
+          OFFLINE_MODE: "true"
+        run: PYTHONPATH=. python scripts/benchmark_operational_readiness.py
+      - name: Validate actual worker processes at 250/500/1000 synthetic devices
+        env:
+          APP_ENV: staging
+          OFFLINE_MODE: "true"
+          NOC85_TEST_REDIS_URL: redis://127.0.0.1:6379/0
+        run: PYTHONPATH=. python scripts/validate_worker_scale.py
       - name: Benchmark RF health with synthetic radios (informational)
         run: |
           PYTHONPATH=. python scripts/benchmark_rf_health.py --devices 250 --history 20 --repeats 3
@@ -273,6 +294,7 @@ jobs:
       - name: Start loopback access to internal-only stack
         run: |
           nohup python3 scripts/release/access.py "$RUNNER_TEMP/noc84-state" > "$RUNNER_TEMP/noc84-access.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/noc84-access.pid"
           for attempt in $(seq 1 30); do
             if curl --fail --silent http://127.0.0.1:18090/health; then exit 0; fi
             sleep 1
@@ -290,6 +312,31 @@ jobs:
           npm ci --no-audit --no-fund
           npx playwright install --with-deps chromium
           npx playwright test
+      - name: Validate 400-device rural WISP operational dashboard
+        env:
+          NOC85_WISP_BROWSER: "true"
+          NOC_ACCEPTANCE_STATE: ${{ runner.temp }}/noc85-wisp-state
+        run: |
+          python3 scripts/release/configure.py "$NOC_ACCEPTANCE_STATE"
+          printf 'SYNTHETIC_MONITORING_ENABLED=true\n' >> "$NOC_ACCEPTANCE_STATE/acceptance.env"
+          NOC_PROJECT=noc84-wisp-test scripts/release/rehearse-ubuntu.sh "$NOC_ACCEPTANCE_STATE"
+          NOC_PROJECT=noc84-wisp-test scripts/release/manage.sh "$NOC_ACCEPTANCE_STATE" stop worker
+          NOC_PROJECT=noc84-wisp-test scripts/release/manage.sh "$NOC_ACCEPTANCE_STATE" exec -T backend python -m app.wisp_rehearsal seed
+          NOC_PROJECT=noc84-wisp-test scripts/release/manage.sh "$NOC_ACCEPTANCE_STATE" exec -T backend python -m app.wisp_rehearsal outage
+          kill "$(cat "$RUNNER_TEMP/noc84-access.pid")"
+          NOC_PROJECT=noc84-wisp-test nohup python3 scripts/release/access.py "$NOC_ACCEPTANCE_STATE" > "$RUNNER_TEMP/noc85-access.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/noc85-access.pid"
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:18090/health; then break; fi
+            sleep 1
+          done
+          (cd frontend && npx playwright test operational.spec.ts)
+          NOC_PROJECT=noc84-wisp-test scripts/release/manage.sh "$NOC_ACCEPTANCE_STATE" exec -T backend python -m app.wisp_rehearsal recover > "$RUNNER_TEMP/noc85-recovered.json"
+          python3 -c 'import json,sys; v=json.load(open(sys.argv[1])); assert v["fresh_up"]==400 and v["active_incidents"]==0' "$RUNNER_TEMP/noc85-recovered.json"
       - name: Stop isolated acceptance services, retain volumes
         if: always()
-        run: scripts/release/manage.sh "$RUNNER_TEMP/noc84-state" down
+        run: |
+          scripts/release/manage.sh "$RUNNER_TEMP/noc84-state" down
+          if [ -f "$RUNNER_TEMP/noc85-wisp-state/acceptance.env" ]; then
+            NOC_PROJECT=noc84-wisp-test scripts/release/manage.sh "$RUNNER_TEMP/noc85-wisp-state" down
+          fi

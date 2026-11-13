@@ -13,12 +13,20 @@ log = logging.getLogger("nwo-noc.worker")
 def main():
     interval = 15
     last_uisp_sync = 0.0
+    last_heartbeat = 0.0
+    def heartbeat():
+        nonlocal last_heartbeat
+        current = time.monotonic()
+        if current - last_heartbeat >= 10:
+            Redis.from_url(settings.redis_url, socket_timeout=3).set("noc:worker:heartbeat", str(time.time()), ex=60)
+            last_heartbeat = current
     while True:
         database_ok = False
         try:
             with SessionLocal() as db:
                 db.execute(text("SELECT 1"))
-                result = run_due_checks(db)
+                heartbeat()
+                result = run_due_checks(db, progress=heartbeat)
                 database_ok = True
                 if result["checked"]:
                     log.info("Monitoring result: %s", result)

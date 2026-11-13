@@ -6,6 +6,7 @@ class Settings(BaseSettings):
     app_env: str = "production"
     api_docs_enabled: bool = False
     offline_mode: bool = False
+    synthetic_monitoring_enabled: bool = False
     secret_key: str
     access_token_expire_minutes: int = 720
     database_url: str
@@ -28,6 +29,8 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def validate_production_security(self):
+        if self.synthetic_monitoring_enabled and (not self.offline_mode or self.app_env != "staging"):
+            raise ValueError("Synthetic monitoring requires offline staging")
         if self.offline_mode:
             if self.uisp_base_url or self.uisp_token or self.rf_collection_enabled or self.rf_history_pruning_enabled:
                 raise ValueError("OFFLINE_MODE requires empty UISP settings and RF collection/pruning disabled")

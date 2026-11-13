@@ -128,3 +128,6 @@ All Rights Reserved.
 
 For isolated Ubuntu 24.04 installation, automated release/browser acceptance,
 backup recovery and rollback, see [NOC-84 installation and recovery](docs/NOC-84-installation-and-recovery.md).
+
+Synthetic WISP operational validation, correlation rules and measured scale results:
+[NOC-85 operational readiness](docs/NOC-85-operational-readiness.md).

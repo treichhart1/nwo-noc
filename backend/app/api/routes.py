@@ -2,7 +2,7 @@ from app.core.config import settings
 from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from fastapi.security import OAuth2PasswordRequestForm
-from sqlalchemy import distinct, func, or_, select
+from sqlalchemy import and_, distinct, func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from app.api.deps import current_user, require_operator
@@ -221,16 +221,27 @@ def delete_sector(sector_id:int,request:Request,db:Session=Depends(get_db),user:
     return Response(status_code=204)
 
 @router.get("/alerts", response_model=list[AlertOut])
-def alerts(limit: int = Query(100, ge=1, le=500), db: Session = Depends(get_db), _=Depends(current_user)):
-    items = list(db.scalars(select(Device).where(or_(Device.status.in_(OFFLINE), Device.authorized.is_(False))).order_by(Device.updated_at.desc()).limit(limit)))
-    result=[]
-    for item in items:
-        offline=normalized_status(item.status)=="offline"
-        result.append(AlertOut(id=f"device-{item.id}-{'offline' if offline else 'unauthorized'}",severity="critical" if offline else "warning",
-            title=f"{item.name} {'offline' if offline else 'requires authorization'}",
-            message=(f"Device is {item.status or 'unreachable'} at {item.site_name or 'an unassigned site'}." if offline else "UISP reports this device as unauthorized."),
-            device_id=item.id,device_name=item.name,site_name=item.site_name,created_at=item.updated_at))
-    return result
+def alerts(limit: int = Query(100, ge=1, le=500), db: Session = Depends(get_db), user=Depends(current_user)):
+    from app.services.operational_readiness import snapshot
+    view = snapshot(db)
+    site_names = {site['id']: site['name'] for site in view['sites']}
+    result = []
+    for item in view['alerts']:
+        if user.role not in {'admin','operator'} and item['kind'] in {'rf_degraded','capacity_degraded'}:
+            continue
+        result.append(AlertOut(id=item['key'],severity=item['severity'],title=f"{item['name']} {item['kind']}",
+            message=item['action'],device_id=item.get('device_id'),device_name=item['name'] if item.get('device_id') else None,
+            site_name=site_names.get(item.get('site_id')),created_at=item['observed_at']))
+    # Imported state remains informational for devices without active monitoring.
+    imported = db.scalars(select(Device).where(or_(Device.authorized.is_(False),
+        and_(Device.monitor_enabled.is_(False),Device.status.in_(OFFLINE)))).order_by(Device.updated_at.desc()).limit(limit))
+    for device in imported:
+        offline = device.authorized and normalized_status(device.status)=='offline'
+        result.append(AlertOut(id=f"inventory:{device.id}",severity='warning',
+            title=f"{device.name} imported offline" if offline else f"{device.name} requires authorization",
+            message='Imported inventory observation; verify current reachability before declaring an outage.' if offline else 'Imported inventory reports device unauthorized.',
+            device_id=device.id,device_name=device.name,site_name=device.site_name,created_at=device.updated_at))
+    return sorted(result,key=lambda item:(item.severity!='critical',str(item.id)))[:limit]
 
 @router.get("/topology", response_model=TopologyOut)
 def topology(db: Session = Depends(get_db), _=Depends(current_user)):
@@ -318,6 +329,8 @@ def update_incident(incident_id: int, payload: IncidentUpdate, request: Request,
     if not item:
         raise HTTPException(status_code=404, detail="Incident not found")
     changes = payload.model_dump(exclude_unset=True)
+    if "status" in changes and changes["status"] is None:
+        raise HTTPException(status_code=422, detail="Incident status cannot be null")
     old_status = item.status
     for key, value in changes.items():
         setattr(item, key, value)
@@ -444,3 +457,11 @@ def acknowledge_monitor_event(event_id: int, db: Session = Depends(get_db), _=De
     item.acknowledged = True; db.commit(); db.refresh(item)
     device = db.get(Device, item.device_id); data={c.name:getattr(item,c.name) for c in item.__table__.columns}
     return MonitorEventOut(**data, device_name=device.name if device else None, site_name=device.site_name if device else None)
+
+
+@router.get("/operations/readiness")
+def operational_readiness(db: Session = Depends(get_db), _=Depends(require_operator)):
+    from app.services.operational_readiness import snapshot
+    view = snapshot(db)
+    # Raw IDs used internally for simulations are not needed by operators.
+    return {key:value for key,value in view.items() if not key.endswith('_device_ids')}

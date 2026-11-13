@@ -70,7 +70,7 @@ class Acceptance(unittest.TestCase):
 
     def test_03_inventory_and_operations(self):
         for endpoint in ['devices','sites','links','sectors','monitoring/summary',
-                         'monitoring/events','incidents','alerts','topology','dashboard','operations/summary']:
+                         'monitoring/events','operations/readiness','incidents','alerts','topology','dashboard','operations/summary']:
             with self.subTest(endpoint=endpoint):
                 self.assertEqual(self.request('/api/'+endpoint)[0], 200)
         a = self.request('/api/sites', 'POST', {'name':'NOC84 API A '+self.run_id})[1]['id']
@@ -130,6 +130,17 @@ print('TEST-NET outbound denied')'''
             except (OSError,urllib.error.URLError): pass
             time.sleep(1)
         self.fail('Services did not recover after Redis failure/restart')
+
+    def test_09b_database_restart_recovery(self):
+        self.manage('restart','db','worker')
+        self.manage('up','-d','--no-deps','--force-recreate','backend')
+        for _ in range(60):
+            try:
+                if self.request('/api/operations/readiness')[0]==200 and self.manage('exec','-T','worker','python','-m','app.worker_health',check=False).returncode==0:
+                    return
+            except (OSError,urllib.error.URLError): pass
+            time.sleep(1)
+        self.fail('Database restart did not recover API and worker')
 
     def test_10_backup_restore(self):
         self.manage('stop','worker')

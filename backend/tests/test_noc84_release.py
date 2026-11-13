@@ -54,3 +54,18 @@ def test_offline_monitoring_never_dials_external_target(monkeypatch):
     monkeypatch.setattr(monitoring.settings, 'offline_mode', True)
     monkeypatch.setattr(monitoring.socket, 'create_connection', lambda *a, **k: pytest.fail('network call'))
     assert monitoring.tcp_check('192.0.2.1',443,1)[0] is False
+
+
+def test_synthetic_monitoring_requires_offline_staging():
+    with pytest.raises(ValueError):
+        Settings(_env_file=None,app_env='production',synthetic_monitoring_enabled=True,
+            secret_key='a'*40,admin_password='b'*40,database_url='postgresql+psycopg://local/db')
+
+
+def test_synthetic_monitoring_never_uses_socket(monkeypatch):
+    from app.services import monitoring
+    monkeypatch.setattr(monitoring.settings,'offline_mode',True)
+    monkeypatch.setattr(monitoring.settings,'synthetic_monitoring_enabled',True)
+    monkeypatch.setattr(monitoring.socket,'create_connection',lambda *a,**k:pytest.fail('network call'))
+    assert monitoring.tcp_check('198.18.0.1',443,1)==(True,1.0,None)
+    assert monitoring.tcp_check('192.0.2.1',443,1)[0] is False
