@@ -13,7 +13,7 @@ def snapshot(db, *, now=None):
     links=list(db.scalars(select(NetworkLink)))
     windows=list(db.scalars(select(MaintenanceWindow).where(
         MaintenanceWindow.status.in_(['scheduled','active']),MaintenanceWindow.starts_at<=now,MaintenanceWindow.ends_at>now)))
-    active=list(db.scalars(select(Incident).where(Incident.status!='resolved')))
+    active=list(db.scalars(select(Incident).where(Incident.status.not_in(('resolved','closed')))))
     ranked=select(TelemetrySample.id.label('sample_id'),func.row_number().over(
         partition_by=TelemetrySample.device_id,order_by=(TelemetrySample.sampled_at.desc(),TelemetrySample.id.desc())).label('rn')
     ).where(or_(and_(TelemetrySample.sampled_at>=now-timedelta(minutes=15),TelemetrySample.sampled_at<=now),

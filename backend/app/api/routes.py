@@ -292,9 +292,9 @@ def operations_summary(db: Session = Depends(get_db), _=Depends(current_user)):
     now = datetime.now(timezone.utc)
     stale_before = now - timedelta(minutes=15)
     open_incidents, critical_incidents, impacted_customers = db.execute(select(
-        func.count(Incident.id).filter(Incident.status != "resolved"),
-        func.count(Incident.id).filter(Incident.status != "resolved", Incident.severity == "critical"),
-        func.coalesce(func.sum(Incident.customer_impact).filter(Incident.status != "resolved"), 0),
+        func.count(Incident.id).filter(Incident.status.not_in(("resolved","closed"))),
+        func.count(Incident.id).filter(Incident.status.not_in(("resolved","closed")), Incident.severity == "critical"),
+        func.coalesce(func.sum(Incident.customer_impact).filter(Incident.status.not_in(("resolved","closed"))), 0),
     )).one()
     upcoming = db.scalar(select(func.count()).select_from(MaintenanceWindow).where(MaintenanceWindow.status == "scheduled", MaintenanceWindow.ends_at >= now)) or 0
     offline_sites, unassigned, stale = db.execute(select(
@@ -314,7 +314,13 @@ def list_incidents(status: str | None = None, limit: int = Query(200, ge=1, le=1
     if status:
         stmt = stmt.where(Incident.status == status)
     rows = list(db.scalars(stmt.order_by(Incident.status == "resolved", Incident.started_at.desc()).limit(limit)))
-    return [incident_out(x, db) for x in rows]
+    references={}
+    for name,model,field in [('site',Site,'site_id'),('device',Device,'device_id'),('link',NetworkLink,'link_id')]:
+        ids={getattr(i,field) for i in rows if getattr(i,field)}
+        references[name]=dict(db.execute(select(model.id,model.name).where(model.id.in_(ids))).all()) if ids else {}
+    return [IncidentOut(**{c.name:getattr(i,c.name) for c in i.__table__.columns},
+        site_name=references['site'].get(i.site_id),device_name=references['device'].get(i.device_id),
+        link_name=references['link'].get(i.link_id)) for i in rows]
 
 @router.post("/incidents", response_model=IncidentOut, status_code=201)
 def create_incident(payload: IncidentCreate, request: Request, db: Session = Depends(get_db), user: User = Depends(require_operator)):
@@ -328,22 +334,14 @@ def create_incident(payload: IncidentCreate, request: Request, db: Session = Dep
 
 @router.patch("/incidents/{incident_id}", response_model=IncidentOut)
 def update_incident(incident_id: int, payload: IncidentUpdate, request: Request, db: Session = Depends(get_db), user: User = Depends(require_operator)):
-    item = db.get(Incident, incident_id)
-    if not item:
-        raise HTTPException(status_code=404, detail="Incident not found")
-    changes = payload.model_dump(exclude_unset=True)
-    if "status" in changes and changes["status"] is None:
-        raise HTTPException(status_code=422, detail="Incident status cannot be null")
-    old_status = item.status
-    for key, value in changes.items():
-        setattr(item, key, value)
-    if changes.get("status") == "acknowledged" and not item.acknowledged_at:
-        item.acknowledged_at = datetime.now(timezone.utc)
-    if changes.get("status") == "resolved" and not item.resolved_at:
-        item.resolved_at = datetime.now(timezone.utc)
-    if old_status == "resolved" and changes.get("status") and changes["status"] != "resolved":
-        item.resolved_at = None
-    audit(db, user, request, "incident.update", "incident", str(item.id), changes)
+    item = db.scalar(select(Incident).where(Incident.id==incident_id).with_for_update())
+    if not item:raise HTTPException(404,"Incident not found")
+    if "status" in payload.model_fields_set and payload.status is None:raise HTTPException(422,"Incident status cannot be null")
+    from app.services.incident_workflow import apply_update
+    try:changes=apply_update(db,item,payload.model_dump(exclude_unset=True),user_id=user.id)
+    except ValueError as exc:
+        db.rollback();raise HTTPException(409,str(exc)) from None
+    audit(db,user,request,"incident.update","incident",str(item.id),changes)
     db.commit(); db.refresh(item)
     return incident_out(item, db)
 

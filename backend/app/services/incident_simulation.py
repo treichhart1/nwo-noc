@@ -16,7 +16,7 @@ def reconcile(db, *, now=None):
         db.execute(text('SELECT pg_advisory_xact_lock(850086)'))
     view=snapshot(db,now=now)
     alerts={a['key']:a for a in view['alerts']}
-    existing=list(db.scalars(select(Incident).where(Incident.summary.like('noc85-simulation:%'),Incident.status!='resolved')))
+    existing=list(db.scalars(select(Incident).where(Incident.summary.like('noc85-simulation:%'),Incident.status.not_in(('resolved','closed')))))
     known={i.summary.removeprefix('noc85-simulation:'):i for i in existing}
     created=closed=0
     for key,alert in alerts.items():
@@ -35,7 +35,7 @@ def reconcile(db, *, now=None):
             and incident.device_id in view['rf_healthy_device_ids']) or (
             key.startswith('link:') and any(l['id']==incident.link_id and l['state']=='up' and l['capacity_known'] and not l['maintenance'] for l in view['links']))
         if key not in alerts and confirmed:
-            incident.status='resolved';incident.resolved_at=now;incident.resolution='Synthetic confirmed recovery; no remediation executed'
+            incident.status='resolved';incident.revision+=1;incident.resolved_at=now;incident.resolution='Synthetic confirmed recovery; no remediation executed'
             db.add(AuditLog(action='incident.simulated_resolve',entity_type='incident',entity_id=str(incident.id),
                             details={'key':key,'simulation_only':True},created_at=now));closed+=1
     db.flush()

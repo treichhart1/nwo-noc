@@ -27,7 +27,7 @@ def device(db,*,name='Synthetic analytics radio',vendor='Cambium',external_id='n
     db.add(d);db.flush();return d
 
 
-def seed_radio(db,d,*,now=NOW,scenario='healthy'):
+def seed_radio(db,d,*,now=NOW,scenario='healthy',profile='epmp-4600-mib-v1'):
     times=historical_times(now);states={};local=now.astimezone(ZoneInfo('America/New_York'))
     if scenario=='recurring':
         for day in range(1,8):
@@ -46,16 +46,16 @@ def seed_radio(db,d,*,now=NOW,scenario='healthy'):
             if scenario=='outages':data.update(radio_status=1 if int((now-when).total_seconds()/60)%2 else 2)
             if scenario=='missing':data.update(rssi_dbm=None,snr_db=None,noise_floor_dbm=None)
         if states.get(when):data.update(rssi_dbm=-85,radio_status=2)
-        stage_radio(db,d,radio_observation('epmp-4600-mib-v1',at=when,**data))
+        stage_radio(db,d,radio_observation(profile,at=when,**data))
     return len(set(times))
 
 
-def seed_microwave(db,*,now=NOW):
-    a=device(db,name='Synthetic microwave analytics A',vendor='Racom',external_id='noc89-micro-a')
-    z=device(db,name='Synthetic microwave analytics Z',vendor='Racom',external_id='noc89-micro-z')
+def seed_microwave(db,*,now=NOW,profile='racom-ray3-mib-v1'):
+    a=device(db,name='Synthetic microwave analytics A',vendor='Aviat' if profile.startswith('aviat') else 'Racom',external_id='noc89-micro-a')
+    z=device(db,name='Synthetic microwave analytics Z',vendor='Aviat' if profile.startswith('aviat') else 'Racom',external_id='noc89-micro-z')
     z.parent_device_id=a.id
     link=NetworkLink(name='Synthetic analytics backhaul',a_site_id=a.wisp_site_id,z_site_id=z.wisp_site_id,a_device_id=a.id,z_device_id=z.id)
-    db.add(link);db.flush();m=microwave_mapping()
+    db.add(link);db.flush();m=microwave_mapping(profile)
     for i,when in enumerate(historical_times(now)):
         bad=when>=now-timedelta(minutes=7)
         stage_microwave(db,a,link,microwave_observation(when,m=m,

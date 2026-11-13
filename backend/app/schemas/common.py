@@ -226,9 +226,13 @@ class IncidentCreate(BaseModel):
     started_at: datetime | None = None
 
 class IncidentUpdate(BaseModel):
+    assigned_to_user_id: int | None = Field(default=None,ge=1)
+    expected_revision: int | None = Field(default=None,ge=1)
+    findings: str | None = Field(default=None,max_length=4000)
+    note: str | None = Field(default=None,max_length=4000)
     title: str | None = None
     severity: str | None = None
-    status: Literal["open", "acknowledged", "resolved"] | None = None
+    status: Literal["open", "acknowledged", "investigating", "resolved", "closed"] | None = None
     site_id: int | None = None
     device_id: int | None = None
     link_id: int | None = None
@@ -238,6 +242,10 @@ class IncidentUpdate(BaseModel):
     resolution: str | None = None
 
 class IncidentOut(ORMModel):
+    assigned_to_user_id: int | None = None
+    findings: str | None = None
+    closed_at: datetime | None = None
+    revision: int = 1
     id: int
     title: str
     severity: str
