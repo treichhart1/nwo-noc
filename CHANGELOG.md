@@ -1,5 +1,11 @@
 ## 3.2.1-rc.1 (unreleased)
 
+- NOC-87: add disabled, explicit SNMPv3 authPriv GET-only radio polling with
+  administrator-validated firmware/MIB maps; no guessed vendor OIDs or endpoints.
+- Add Ubiquiti airMAX AC/legacy and Cambium ePMP 4600/legacy capability profiles,
+  typed historical RF values/units, counter continuity, consecutive diagnostics,
+  synthetic incident correlation and radio history charts.
+
 - Extend NOC-86 with typed RF observations, explicit-unit Ubiquiti/Cambium/Racom/
   Aviat export collectors, availability/provenance and RF dashboard details.
 - Preserve legacy RF diagnostics and block unsupported RouterOS 6 REST fallback.

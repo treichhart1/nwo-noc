@@ -31,6 +31,9 @@ class Settings(BaseSettings):
     uisp_verify_tls: bool = True
     uisp_sync_interval_seconds: int = 300
     rf_collection_enabled: bool = False
+    rf_snmp_enabled: bool = False
+    rf_snmp_config_file: str = Field(default='', repr=False, exclude=True)
+    rf_radio_thresholds: dict = Field(default_factory=dict)
     rf_collection_min_interval_seconds: int = 300
     rf_collection_max_devices: int = 1000
     rf_history_pruning_enabled: bool = False
@@ -42,6 +45,10 @@ class Settings(BaseSettings):
     @model_validator(mode="after")
     def validate_production_security(self):
         import os,stat
+        from app.services.radio_policy import RadioThresholds
+        RadioThresholds(**self.rf_radio_thresholds)
+        if self.rf_snmp_enabled and (self.offline_mode or not self.integrations_admin_approved or not self.rf_snmp_config_file):
+            raise ValueError('SNMP RF activation requires online administrator approval and private configuration')
         for field in ("uisp_token","mikrotik_password"):
             path=getattr(self,field+"_file")
             if path:
