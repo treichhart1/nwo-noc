@@ -1,3 +1,13 @@
+## 3.2.1-rc.1 (unreleased)
+
+- Reconcile RF-81's corrected test with the NOC-82 audit stack.
+- Require three consecutive severe RF samples for simulation preview; invalid,
+  healthy, and mild intervening samples block a proposal.
+- Align API/health/frontend versions; pin release CI to Ubuntu 24.04 and require
+  frontend success in the final offline acceptance gate.
+- Use the npm lockfile in Docker and portable frontend validation.
+- Document isolated installation, rollback, dependency audit and validation limits.
+
 # Changelog
 
 ## 3.1.0

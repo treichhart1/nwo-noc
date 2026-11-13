@@ -12,7 +12,7 @@ from app.services.rf_collection_health import get_rf_collection_health
 from app.services.rf_collection_reliability import collection_reliability
 from app.services.rf_site_health import get_rf_site_health
 from app.services.rf_self_healing import RFObservation, propose
-from app.services.rf_degradation import evaluate_rf_degradation
+from app.services.rf_degradation import RFThresholds, evaluate_rf_degradation
 from app.services.rf_metrics import normalize_rf_metrics
 
 router = APIRouter(prefix="/api", tags=["RF diagnostics"])
@@ -106,21 +106,30 @@ def rf_self_healing_preview(
         .limit(20)
     ).all()
     valid = []
-    for row in rows:
+    # Never bridge an invalid sample when counting consecutive degradation.
+    for row in rows[:3]:
         raw = row.raw_data if isinstance(row.raw_data, dict) else {}
         metrics = raw.get("rf_metrics_v1")
         if not isinstance(metrics, dict):
-            continue
+            break
         normalized = normalize_rf_metrics(metrics)
         if not all(normalized.get(k) is not None for k in ("rssi_dbm", "snr_db", "ccq_percent")):
-            continue
+            break
+        if not (-120 <= normalized["rssi_dbm"] <= 0
+                and -20 <= normalized["snr_db"] <= 80
+                and 0 <= normalized["ccq_percent"] <= 100):
+            break
         sampled_at = row.sampled_at
         if sampled_at.tzinfo is None:
             sampled_at = sampled_at.replace(tzinfo=timezone.utc)
         valid.append((sampled_at.astimezone(timezone.utc), normalized))
     valid.sort(key=lambda item: item[0])
     recent = valid[-3:]
-    degraded = len(recent) == 3 and evaluate_rf_degradation([item[1] for item in recent])["degraded"]
+    # Diagnostics warn earlier; proposals require sustained severe SNR or CCQ.
+    degraded = len(recent) == 3 and evaluate_rf_degradation(
+        [item[1] for item in recent],
+        RFThresholds(minimum_rssi_dbm=-150, minimum_snr_db=15, minimum_ccq_percent=60),
+    )["degraded"]
     reachability_fresh = (
         device.monitor_enabled is True
         and device.monitor_status == "up"

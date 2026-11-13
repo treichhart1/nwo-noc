@@ -110,7 +110,7 @@ docker compose up -d --build
 
 Current Version
 
-v3.1.0
+v3.2.1-rc.1
 
 Current Sprint
 

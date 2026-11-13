@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   frontend:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: frontend
@@ -25,7 +25,7 @@ jobs:
       - run: npm run build
 
   backend:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: backend
@@ -45,7 +45,7 @@ jobs:
       - run: python -m pytest -q
 
   database-migrations:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     services:
       postgres:
         image: postgres:16-alpine
@@ -104,7 +104,7 @@ jobs:
         run: alembic upgrade head
 
   rf-postgres-integration:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     services:
       postgres:
         image: postgres:16-alpine
@@ -176,7 +176,7 @@ jobs:
           PYTHONPATH=. python scripts/benchmark_rf_health.py --devices 1000 --history 20 --repeats 3
 
   compose-validation:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - name: Validate Compose configuration without deployment
@@ -192,6 +192,8 @@ jobs:
           docker compose config --quiet
           docker compose config --format json > /tmp/noc-compose.json
           python3 scripts/validate_compose_network.py /tmp/noc-compose.json
+      - name: Build release images without starting services
+        run: docker compose build
       - name: Validate offline staging egress policy and synthetic staging config
         run: |
           python3 scripts/validate_staging_egress_policy.py docs/noc-75x-staging-egress-policy.json
@@ -216,8 +218,9 @@ jobs:
 
   rf-release-acceptance:
     name: RF offline release acceptance
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs:
+      - frontend
       - backend
       - database-migrations
       - rf-postgres-integration
@@ -226,12 +229,13 @@ jobs:
     steps:
       - name: Require all RF release dependencies to pass
         env:
+          FRONTEND_RESULT: ${{ needs.frontend.result }}
           BACKEND_RESULT: ${{ needs.backend.result }}
           MIGRATIONS_RESULT: ${{ needs.database-migrations.result }}
           RF_RESULT: ${{ needs.rf-postgres-integration.result }}
           COMPOSE_RESULT: ${{ needs.compose-validation.result }}
         run: |
-          for name in BACKEND_RESULT MIGRATIONS_RESULT RF_RESULT COMPOSE_RESULT; do
+          for name in FRONTEND_RESULT BACKEND_RESULT MIGRATIONS_RESULT RF_RESULT COMPOSE_RESULT; do
             result="${!name}"
             if [ "$result" != "success" ]; then
               echo "::error::$name is $result, expected success"
