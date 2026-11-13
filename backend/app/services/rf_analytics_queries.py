@@ -151,8 +151,9 @@ def analytics_detail(db,device_id,*,window='24h',now=None,policy=None):
         comparisons[key]=[{'series_key':series,'baseline':values.get(context_key(rows[-1]),{})} for (_,series),rows in history.items()]
         if key==window:active_baselines=values
     reports=series_reports(history,active_baselines,now,cfg);buckets,truncated=historical_buckets(db,frame,window)
-    lookup={(r['series_key'],r['mapping_digest']):r['baseline'] for r in reports}
-    for bucket in buckets:bucket['health_score']=score(bucket,lookup.get((bucket['series_key'],bucket['mapping_digest']),{}),cfg)
+    for bucket in buckets:
+        key=(device_id,bucket['series_key'],bucket['mapping_digest'],bucket['frequency_mhz'],bucket['bandwidth_mhz'],bucket['site_id'],bucket['link_id'])
+        bucket['health_score']=score(bucket,active_baselines.get(key,{}),cfg)
     recurrence=recurring_periods(db,frame,cfg) if window in {'7d','30d'} else []
     checkpoint=db.get(RFAnalyticsCheckpoint,'rf-v1')
     return {'device_id':device.id,'device_name':device.name,'window':window,'timezone':cfg.analysis_timezone,

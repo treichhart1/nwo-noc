@@ -96,6 +96,17 @@ def test_historical_score_respects_observed_connection_states(postgres_db,states
     if expected=='down':assert report['buckets'][-1]['health_score']['value']<=20
 
 
+def test_historical_bucket_score_uses_its_own_operating_context_baseline(postgres_db):
+    db=postgres_db;d=device(db)
+    for start,frequency,capacity in [(23,5800000000,100000000),(14,6000000000,500000000)]:
+        for i in range(24):stage_radio(db,d,observation('epmp-4600-mib-v1',at=NOW-timedelta(hours=start)+timedelta(minutes=i*20),frequency_mhz=frequency,link_capacity_mbps=capacity))
+    for i in range(6):stage_radio(db,d,observation('epmp-4600-mib-v1',at=NOW-timedelta(minutes=5-i),frequency_mhz=6000000000,link_capacity_mbps=500000000))
+    project(db);report=analytics_detail(db,d.id,now=NOW)
+    old=[b for b in report['buckets'] if b['frequency_mhz']==5800]
+    current=[b for b in report['buckets'] if b['frequency_mhz']==6000]
+    assert old and current and all(b['health_score']['value']==100 for b in old+current)
+
+
 def test_projection_failure_isolation_and_independent_source_collection(postgres_db,monkeypatch):
     db=postgres_db;d=device(db,vendor='Ubiquiti')
     from app.services import rf_analytics_projection
