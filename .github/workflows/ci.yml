@@ -179,7 +179,8 @@ jobs:
             tests/test_dashboard_postgres_scale.py \
             tests/test_operations_postgres.py \
             tests/test_monitoring_postgres.py \
-            tests/test_operational_readiness_postgres.py
+            tests/test_operational_readiness_postgres.py \
+            tests/test_read_only_integrations_postgres.py
       - name: Measure synthetic WISP operational readiness at 250/500/1000 devices
         env:
           APP_ENV: staging

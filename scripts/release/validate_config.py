@@ -16,6 +16,10 @@ def validate(path):
     for key, expected in required.items():
         if values.get(key) != expected:
             raise ValueError(f'{key} violates isolated acceptance policy')
+    for name in ['UISP_ENABLED','MIKROTIK_ENABLED','INTEGRATIONS_ADMIN_APPROVED']:
+        if values.get(name,'false').lower()!='false':raise ValueError(f'{name} must remain disabled for acceptance')
+    if any(values.get(name) for name in ['MIKROTIK_BASE_URL','MIKROTIK_PASSWORD','UISP_TOKEN_FILE','MIKROTIK_PASSWORD_FILE']):
+        raise ValueError('Acceptance must not contain MikroTik endpoints or credentials')
     db = urlsplit(values['DATABASE_URL'])
     if (db.scheme, db.hostname, db.port, db.path, db.username) != ('postgresql+psycopg', 'db', 5432, '/nwo_noc', 'noc_test'):
         raise ValueError('DATABASE_URL must address the isolated db service/nwo_noc as noc_test')

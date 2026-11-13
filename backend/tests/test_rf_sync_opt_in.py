@@ -19,8 +19,12 @@ def test_rf_collection_disabled_by_default():
 def test_disabled_sync_never_stages_rf():
     db = Mock()
     with patch("app.integrations.uisp.get_integration", return_value=Mock()), \
-         patch("app.integrations.uisp.httpx.get", return_value=_response()), \
+         patch("app.integrations.uisp.fetch_snapshot", return_value={'devices':[], 'errors':[]}), \
          patch("app.integrations.uisp.stage_uisp_rf_batch") as stage, \
+         patch.object(settings, "uisp_enabled", True), \
+         patch.object(settings, "integrations_admin_approved", True), \
+         patch.object(settings, "offline_mode", False), \
+         patch.object(settings, "uisp_allowed_origins", "https://uisp.example,https://uisp.invalid"), \
          patch.object(settings, "uisp_base_url", "https://uisp.example"), \
          patch.object(settings, "uisp_token", "test-token"), \
          patch.object(settings, "rf_collection_enabled", False):
@@ -34,8 +38,12 @@ def test_enabled_sync_stages_once_with_configured_bounds():
     db = Mock()
     db.begin_nested.return_value = MagicMock()
     with patch("app.integrations.uisp.get_integration", return_value=Mock()), \
-         patch("app.integrations.uisp.httpx.get", return_value=_response()) as fetch, \
+         patch("app.integrations.uisp.fetch_snapshot", return_value={'devices':[], 'errors':[]}) as fetch, \
          patch("app.integrations.uisp.stage_uisp_rf_batch", return_value={"received": 0, "staged": 0, "skipped": 0}) as stage, \
+         patch.object(settings, "uisp_enabled", True), \
+         patch.object(settings, "integrations_admin_approved", True), \
+         patch.object(settings, "offline_mode", False), \
+         patch.object(settings, "uisp_allowed_origins", "https://uisp.example,https://uisp.invalid"), \
          patch.object(settings, "uisp_base_url", "https://uisp.example"), \
          patch.object(settings, "uisp_token", "test-token"), \
          patch.object(settings, "rf_collection_enabled", True), \
@@ -55,9 +63,13 @@ def test_rf_pruning_failure_does_not_claim_rolled_back_samples():
     db = Mock()
     db.begin_nested.return_value = MagicMock()
     with patch("app.integrations.uisp.get_integration", return_value=Mock()), \
-         patch("app.integrations.uisp.httpx.get", return_value=_response()), \
+         patch("app.integrations.uisp.fetch_snapshot", return_value={'devices':[], 'errors':[]}), \
          patch("app.integrations.uisp.stage_uisp_rf_batch", return_value={"received": 1, "staged": 1, "skipped": 0}), \
          patch("app.integrations.uisp.prune_rf_collection_history", side_effect=RuntimeError("test failure")), \
+         patch.object(settings, "uisp_enabled", True), \
+         patch.object(settings, "integrations_admin_approved", True), \
+         patch.object(settings, "offline_mode", False), \
+         patch.object(settings, "uisp_allowed_origins", "https://uisp.example,https://uisp.invalid"), \
          patch.object(settings, "uisp_base_url", "https://uisp.example"), \
          patch.object(settings, "uisp_token", "test-token"), \
          patch.object(settings, "rf_collection_enabled", True), \

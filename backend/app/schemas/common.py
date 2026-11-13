@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import Literal
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 class ORMModel(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -21,6 +21,12 @@ class IntegrationOut(ORMModel):
     last_sync_at: datetime | None
     last_error: str | None
     last_item_count: int
+
+    @field_validator("last_error", mode="before")
+    @classmethod
+    def safe_last_error(cls,value):
+        from app.integrations.read_only import ERROR_CODES
+        return value if value is None or value in ERROR_CODES else "Integration error (details redacted)"
 
 class DeviceOut(ORMModel):
     id: int
@@ -298,6 +304,7 @@ class OperationsSummary(BaseModel):
 
 
 class MonitorCheckOut(ORMModel):
+    source: str = "tcp"
     id: int
     device_id: int
     status: str

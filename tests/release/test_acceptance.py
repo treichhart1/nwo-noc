@@ -70,7 +70,7 @@ class Acceptance(unittest.TestCase):
 
     def test_03_inventory_and_operations(self):
         for endpoint in ['devices','sites','links','sectors','monitoring/summary',
-                         'monitoring/events','operations/readiness','incidents','alerts','topology','dashboard','operations/summary']:
+                         'monitoring/events','operations/readiness','integrations/read-only-status','incidents','alerts','topology','dashboard','operations/summary']:
             with self.subTest(endpoint=endpoint):
                 self.assertEqual(self.request('/api/'+endpoint)[0], 200)
         a = self.request('/api/sites', 'POST', {'name':'NOC84 API A '+self.run_id})[1]['id']
@@ -91,6 +91,7 @@ class Acceptance(unittest.TestCase):
         self.assertEqual(result['mode'],'simulation_only')
         self.assertEqual(self.request(f'/api/devices/{self.device}/rf-self-healing/execute','POST',{})[0],404)
         self.assertEqual(self.request('/api/integrations/uisp/sync','POST',{})[0],403)
+        self.assertEqual(self.request('/api/integrations/mikrotik/collect','POST',{})[0],403)
 
     def test_06_database_migrations(self):
         self.manage('exec','-T','backend','alembic','check')

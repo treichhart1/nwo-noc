@@ -17,8 +17,12 @@ def _response():
 def test_rf_batch_failure_preserves_inventory_commit():
     db = Mock()
     with patch("app.integrations.uisp.get_integration", return_value=Mock()) as state, \
-         patch("app.integrations.uisp.httpx.get", return_value=_response()) as fetch, \
+         patch("app.integrations.uisp.fetch_snapshot", return_value={'devices':[],'errors':[]}) as fetch, \
          patch("app.integrations.uisp.stage_uisp_rf_batch", side_effect=ValueError("batch too large")), \
+         patch.object(settings, "uisp_enabled", True), \
+         patch.object(settings, "integrations_admin_approved", True), \
+         patch.object(settings, "offline_mode", False), \
+         patch.object(settings, "uisp_allowed_origins", "https://uisp.example"), \
          patch.object(settings, "uisp_base_url", "https://uisp.example"), \
          patch.object(settings, "uisp_token", "test-token"), \
          patch.object(settings, "rf_collection_enabled", True), \
@@ -26,7 +30,8 @@ def test_rf_batch_failure_preserves_inventory_commit():
         result = sync_uisp(db)
     assert result["ok"] is True
     assert result["rf_collection"]["status"] == "failed"
-    assert state.return_value.status == "connected"
+    assert state.return_value.status == "degraded"
+    assert state.return_value.last_error == "partial_sync"
     fetch.assert_called_once()
     db.commit.assert_called_once()
     db.rollback.assert_not_called()
@@ -37,9 +42,13 @@ def test_rf_pruning_failure_preserves_inventory_commit():
     db = Mock()
     counts = {"received": 1, "staged": 1, "skipped": 0}
     with patch("app.integrations.uisp.get_integration", return_value=Mock()), \
-         patch("app.integrations.uisp.httpx.get", return_value=_response()), \
+         patch("app.integrations.uisp.fetch_snapshot", return_value={'devices':[],'errors':[]}), \
          patch("app.integrations.uisp.stage_uisp_rf_batch", return_value=counts), \
          patch("app.integrations.uisp.prune_rf_collection_history", side_effect=ValueError("invalid retention")), \
+         patch.object(settings, "uisp_enabled", True), \
+         patch.object(settings, "integrations_admin_approved", True), \
+         patch.object(settings, "offline_mode", False), \
+         patch.object(settings, "uisp_allowed_origins", "https://uisp.example"), \
          patch.object(settings, "uisp_base_url", "https://uisp.example"), \
          patch.object(settings, "uisp_token", "test-token"), \
          patch.object(settings, "rf_collection_enabled", True), \
