@@ -386,13 +386,17 @@ def device_telemetry(device_id:int,hours:int=Query(24,ge=1,le=720),limit:int=Que
 
 @router.get("/monitoring/summary", response_model=MonitoringSummary)
 def monitoring_summary(db: Session = Depends(get_db), _=Depends(current_user)):
-    enabled = db.scalar(select(func.count()).select_from(Device).where(Device.monitor_enabled.is_(True))) or 0
-    up = db.scalar(select(func.count()).select_from(Device).where(Device.monitor_enabled.is_(True), Device.monitor_status == "up")) or 0
-    down = db.scalar(select(func.count()).select_from(Device).where(Device.monitor_enabled.is_(True), Device.monitor_status == "down")) or 0
+    # A single device aggregate replaces five separate device queries.
+    enabled, up, down, avg, last = db.execute(select(
+        func.count(Device.id).filter(Device.monitor_enabled.is_(True)),
+        func.count(Device.id).filter(Device.monitor_enabled.is_(True), Device.monitor_status == "up"),
+        func.count(Device.id).filter(Device.monitor_enabled.is_(True), Device.monitor_status == "down"),
+        func.avg(Device.monitor_latency_ms).filter(Device.monitor_enabled.is_(True), Device.monitor_status == "up"),
+        func.max(Device.monitor_last_checked_at).filter(Device.monitor_enabled.is_(True)),
+    )).one()
+    enabled, up, down = int(enabled or 0), int(up or 0), int(down or 0)
     unknown = max(enabled - up - down, 0)
-    avg = db.scalar(select(func.avg(Device.monitor_latency_ms)).where(Device.monitor_enabled.is_(True), Device.monitor_status == "up"))
     events = db.scalar(select(func.count()).select_from(MonitorEvent).where(MonitorEvent.acknowledged.is_(False))) or 0
-    last = db.scalar(select(func.max(Device.monitor_last_checked_at)).where(Device.monitor_enabled.is_(True)))
     return MonitoringSummary(enabled_devices=enabled, up_devices=up, down_devices=down, unknown_devices=unknown,
         average_latency_ms=round(float(avg), 2) if avg is not None else None, unacknowledged_events=events, last_check_at=last)
 
