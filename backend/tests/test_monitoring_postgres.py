@@ -47,6 +47,8 @@ def test_monitoring_summary_postgres_states_latency_and_query_budget(postgres_db
 
     assert summary.enabled_devices == 4
     assert summary.stale_devices == 1
+    assert summary.fresh_up_devices == 2
+    assert summary.fresh_down_devices == 1
     assert summary.up_devices == 2
     assert summary.down_devices == 1
     assert summary.unknown_devices == 1

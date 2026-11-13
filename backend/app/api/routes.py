@@ -392,7 +392,7 @@ def device_telemetry(device_id:int,hours:int=Query(24,ge=1,le=720),limit:int=Que
 def monitoring_summary(db: Session = Depends(get_db), _=Depends(current_user)):
     # A single device aggregate replaces five separate device queries.
     stale_before = datetime.now(timezone.utc) - timedelta(minutes=15)
-    enabled, up, down, avg, last, stale = db.execute(select(
+    enabled, up, down, avg, last, stale, fresh_up, fresh_down = db.execute(select(
         func.count(Device.id).filter(Device.monitor_enabled.is_(True)),
         func.count(Device.id).filter(Device.monitor_enabled.is_(True), Device.monitor_status == "up"),
         func.count(Device.id).filter(Device.monitor_enabled.is_(True), Device.monitor_status == "down"),
@@ -400,11 +400,13 @@ def monitoring_summary(db: Session = Depends(get_db), _=Depends(current_user)):
         func.max(Device.monitor_last_checked_at).filter(Device.monitor_enabled.is_(True)),
         func.count(Device.id).filter(Device.monitor_enabled.is_(True), or_(
             Device.monitor_last_checked_at.is_(None), Device.monitor_last_checked_at < stale_before)),
+        func.count(Device.id).filter(Device.monitor_enabled.is_(True), Device.monitor_status == "up", Device.monitor_last_checked_at >= stale_before),
+        func.count(Device.id).filter(Device.monitor_enabled.is_(True), Device.monitor_status == "down", Device.monitor_last_checked_at >= stale_before),
     )).one()
     enabled, up, down = int(enabled or 0), int(up or 0), int(down or 0)
     unknown = max(enabled - up - down, 0)
     events = db.scalar(select(func.count()).select_from(MonitorEvent).where(MonitorEvent.acknowledged.is_(False))) or 0
-    return MonitoringSummary(enabled_devices=enabled, stale_devices=int(stale or 0), up_devices=up, down_devices=down, unknown_devices=unknown,
+    return MonitoringSummary(enabled_devices=enabled, stale_devices=int(stale or 0), fresh_up_devices=int(fresh_up or 0), fresh_down_devices=int(fresh_down or 0), up_devices=up, down_devices=down, unknown_devices=unknown,
         average_latency_ms=round(float(avg), 2) if avg is not None else None, unacknowledged_events=events, last_check_at=last)
 
 @router.post("/devices/{device_id}/monitor/check", response_model=MonitorCheckOut)
