@@ -18,7 +18,7 @@ def test_operational_summaries_require_authentication(endpoint):
 def test_monitoring_summary_tracks_unknown_and_unacknowledged_events():
     db = Mock()
     # One device aggregate plus one event-count query.
-    db.execute.return_value.one.return_value = (12, 7, 3, 14.567, None, 2, 5, 2)
+    db.execute.return_value.one.return_value = (12, 7, 3, 14.567, None, 2, 5, 2, 1)
     db.scalar.return_value = 4
     app.dependency_overrides[current_user] = lambda: Mock(role="operator")
     app.dependency_overrides[get_db] = lambda: db
@@ -28,6 +28,7 @@ def test_monitoring_summary_tracks_unknown_and_unacknowledged_events():
         assert response.json() == {
             "enabled_devices": 12,
             "stale_devices": 2,
+            "never_checked_devices": 1,
             "fresh_up_devices": 5,
             "fresh_down_devices": 2,
             "up_devices": 7,
