@@ -186,7 +186,8 @@ jobs:
             tests/test_microwave_postgres.py \
             tests/test_rf_analytics_postgres.py \
             tests/test_rf_troubleshooting_postgres.py \
-            tests/test_rf_operations_postgres.py
+            tests/test_rf_operations_postgres.py \
+            tests/test_monitoring_reliability.py
       - name: Measure 30-day historical analytics at 250/500/1000 devices
         env:
           APP_ENV: staging
@@ -197,6 +198,13 @@ jobs:
           APP_ENV: staging
           OFFLINE_MODE: "true"
         run: PYTHONPATH=. python -m app.rf_operations_benchmark
+      - name: Measure durable RF polling and alert recovery at 250/500/1000 devices
+        env:
+          APP_ENV: staging
+          OFFLINE_MODE: "true"
+          SYNTHETIC_MONITORING_ENABLED: "true"
+          RF_SCHEDULER_ENABLED: "true"
+        run: PYTHONPATH=. python -m app.monitoring_benchmark
       - name: Measure synthetic WISP operational readiness at 250/500/1000 devices
         env:
           APP_ENV: staging
@@ -391,6 +399,17 @@ jobs:
         run: |
           NOC_PROJECT=noc84-wisp-test scripts/release/manage.sh "$NOC_ACCEPTANCE_STATE" exec -T backend python -m app.rf_operations_rehearsal > "$NOC_ACCEPTANCE_STATE/operations-devices.json"
           (cd frontend && npx playwright test rf-operations.spec.ts)
+      - name: Validate monitoring recovery after real Redis, database and worker interruptions
+        env:
+          NOC_PROJECT: noc84-wisp-test
+          NOC_ACCEPTANCE_STATE: ${{ runner.temp }}/noc85-wisp-state
+          NOC92_RECOVERY: "true"
+          NOC92_MONITORING_BROWSER: "true"
+        run: |
+          printf 'RF_SCHEDULER_ENABLED=true\n' >> "$NOC_ACCEPTANCE_STATE/acceptance.env"
+          scripts/release/manage.sh "$NOC_ACCEPTANCE_STATE" up -d --wait backend worker
+          python3 tests/release/test_monitoring_recovery.py
+          (cd frontend && npx playwright test monitoring-reliability.spec.ts)
       - name: Stop isolated acceptance services, retain volumes
         if: always()
         run: |

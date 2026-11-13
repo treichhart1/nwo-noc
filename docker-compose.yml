@@ -49,6 +49,8 @@ services:
     restart: unless-stopped
     env_file: .env
     command: python -m app.worker
+    volumes:
+      - monitoring_spool:/var/lib/nwo-noc/monitoring
     healthcheck:
       test: ["CMD", "python", "-m", "app.worker_health"]
       interval: 15s
@@ -71,3 +73,5 @@ services:
 volumes:
   postgres_data:
   redis_data:
+
+  monitoring_spool:

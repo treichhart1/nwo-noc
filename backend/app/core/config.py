@@ -31,6 +31,12 @@ class Settings(BaseSettings):
     mikrotik_sync_interval_seconds: int = 300
     uisp_verify_tls: bool = True
     uisp_sync_interval_seconds: int = 300
+    rf_scheduler_enabled: bool = False
+    rf_scheduler_spool_dir: str = '/var/lib/nwo-noc/monitoring'
+    rf_scheduler_manifest_file: str = Field(default='',repr=False,exclude=True)
+    rf_scheduler_concurrency: int = Field(8,ge=1,le=16)
+    rf_scheduler_batch_size: int = Field(32,ge=1,le=100)
+    rf_reliability_policy: dict = Field(default_factory=dict)
     rf_collection_enabled: bool = False
     rf_snmp_enabled: bool = False
     rf_snmp_config_file: str = Field(default='', repr=False, exclude=True)
@@ -58,6 +64,10 @@ class Settings(BaseSettings):
     @model_validator(mode="after")
     def validate_production_security(self):
         import os,stat
+        from app.services.monitoring_policy import ReliabilityPolicy
+        ReliabilityPolicy(**self.rf_reliability_policy)
+        if self.rf_scheduler_enabled and not ((self.offline_mode and self.app_env=='staging' and self.synthetic_monitoring_enabled) or (not self.offline_mode and self.integrations_admin_approved)):
+            raise ValueError('Monitoring scheduler requires offline synthetic staging or explicit online administrator approval')
         from app.services.radio_policy import RadioThresholds
         RadioThresholds(**self.rf_radio_thresholds)
         from app.services.microwave_policy import MicrowaveThresholds

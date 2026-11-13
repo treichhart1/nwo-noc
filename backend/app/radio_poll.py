@@ -12,14 +12,14 @@ from app.integrations.radio_snmp import MIBMapping, SNMPPolicy, SNMPCredentials,
 from app.services.radio_history import stage_radio
 
 
-def private_json(path):
+def private_json(path,*,max_bytes=65536):
     try:
         fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
         with os.fdopen(fd) as handle:
             info = os.fstat(handle.fileno())
-            if not stat.S_ISREG(info.st_mode) or info.st_mode & 0o077 or info.st_uid != os.geteuid() or info.st_size > 65536:
+            if not stat.S_ISREG(info.st_mode) or info.st_mode & 0o077 or info.st_uid != os.geteuid() or info.st_size > max_bytes:
                 raise ValueError()
-            return json.loads(handle.read(65537))
+            return json.loads(handle.read(max_bytes+1))
     except Exception: raise IntegrationFailure('configuration_invalid') from None
 
 
@@ -52,7 +52,11 @@ async def poll(db, config, credentials, *, transport=None):
             raise IntegrationFailure('overlap_skipped')
     last = db.scalar(select(AuditLog).where(AuditLog.action == 'rf.read_only_poll', AuditLog.entity_id == str(device.id))
                      .order_by(AuditLog.created_at.desc()).limit(1))
+    from app.models.entities import MonitoringAttempt,MonitoringJob
+    scheduled=db.scalar(select(MonitoringAttempt.started_at).join(MonitoringJob,MonitoringJob.key==MonitoringAttempt.job_key)
+        .where(MonitoringJob.device_id==device.id,MonitoringJob.kind.in_(('radio','microwave'))).order_by(MonitoringAttempt.started_at.desc()).limit(1))
     now = datetime.now(timezone.utc)
+    if scheduled and (now-(scheduled.replace(tzinfo=timezone.utc) if scheduled.tzinfo is None else scheduled)).total_seconds()<config.policy.min_interval_seconds:raise IntegrationFailure('rate_limited')
     if last:
         when = last.created_at.replace(tzinfo=timezone.utc) if last.created_at.tzinfo is None else last.created_at
         if (now-when).total_seconds() < config.policy.min_interval_seconds: raise IntegrationFailure('rate_limited')
