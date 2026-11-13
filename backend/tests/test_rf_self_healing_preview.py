@@ -29,7 +29,7 @@ def test_preview_blocks_without_validated_rf_samples():
     assert result["execution_enabled"] is False
     assert result["mode"] == "simulation_only"
     assert result["requires_validated_rf_telemetry"] is True
-    assert "three valid recent RF samples" in result["reason"].lower()
+    assert "three valid recent rf samples" in result["reason"].lower()
 
 
 def test_preview_unknown_device_is_not_found():
