@@ -319,6 +319,8 @@ class MonitorEventOut(ORMModel):
 class MonitoringSummary(BaseModel):
     enabled_devices: int
     stale_devices: int
+    fresh_up_devices: int
+    fresh_down_devices: int
     up_devices: int
     down_devices: int
     unknown_devices: int
