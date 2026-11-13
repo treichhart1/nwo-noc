@@ -1,5 +1,11 @@
 ## 3.2.1-rc.1 (unreleased)
 
+- NOC-89: add indexed historical RF analytics projection/migration 0008, bounded
+  PostgreSQL baselines/comparisons, suspected-interference/congestion evidence,
+  transparent scores/confidence, recurrence and filtered analytics charts.
+- Keep projection/retention separate from collection; provide synthetic-only
+  bounded retention, source preservation and 250/500/1000-device query checks.
+
 - NOC-88: add disabled GET-only SNMPv3 Racom Ray3/Aviat microwave contracts,
   dual/multi-carrier history, original values/units, engineered-reference fade
   checks, hysteresis diagnostics, topology correlation and backhaul charts.
