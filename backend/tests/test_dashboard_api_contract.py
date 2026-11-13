@@ -40,6 +40,10 @@ def test_dashboard_synthetic_operational_summary_is_read_only():
             "health_score": 60,
             "integrations": [],
         }
+        # Fixed query budget: one device aggregate + four scalar counts + integrations.
+        assert db.execute.call_count == 1
+        assert db.scalar.call_count == 4
+        assert db.scalars.call_count == 1
         db.commit.assert_not_called()
         db.add.assert_not_called()
         db.delete.assert_not_called()
@@ -61,6 +65,9 @@ def test_dashboard_empty_inventory_is_healthy_and_read_only():
         assert data["total_devices"] == 0
         assert data["health_score"] == 100
         assert data["warning_devices"] == 0
+        assert db.execute.call_count == 1
+        assert db.scalar.call_count == 4
+        assert db.scalars.call_count == 1
         db.commit.assert_not_called()
     finally:
         app.dependency_overrides.clear()
