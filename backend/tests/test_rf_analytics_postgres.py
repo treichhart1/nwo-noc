@@ -87,6 +87,15 @@ def test_sql_counter_rates_exact_reset_restart_and_duplicate_timestamps(postgres
     assert len(current_history(db,frame,[d.id])[(d.id,'radio')])==4
 
 
+@pytest.mark.parametrize('states,expected',[([2,2,2,2],'down'),([1,2,1,2],'degraded')])
+def test_historical_score_respects_observed_connection_states(postgres_db,states,expected):
+    db=postgres_db;d=device(db)
+    for i,state in enumerate(states):stage_radio(db,d,observation('epmp-4600-mib-v1',at=NOW+timedelta(seconds=i),radio_status=state))
+    project(db);report=analytics_detail(db,d.id,now=NOW+timedelta(seconds=4))
+    assert report['buckets'][-1]['radio_state']==expected and report['buckets'][-1]['health_score']['value']<100
+    if expected=='down':assert report['buckets'][-1]['health_score']['value']<=20
+
+
 def test_projection_failure_isolation_and_independent_source_collection(postgres_db,monkeypatch):
     db=postgres_db;d=device(db,vendor='Ubiquiti')
     from app.services import rf_analytics_projection

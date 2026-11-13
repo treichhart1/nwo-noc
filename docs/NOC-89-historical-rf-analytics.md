@@ -172,7 +172,9 @@ available factor or a cold baseline can still have low confidence. The score is
 not a failure probability, interference certainty or service-availability claim.
 Missing expected measurements are labelled partial telemetry, even if other
 available metrics look stable. Stale/future/invalid current data has no current
-score. Bucket scores summarize available mean measurements; they are not replayed
+score. Bucket scores also use consistently known connection state (all down/up, or
+mixed/degraded); incomplete state coverage remains unavailable. Bucket scores
+summarize available mean measurements; they are not replayed
 historical incident decisions or outage-duration estimates.
 
 The RF Analytics page provides site/vendor/device/link filters, paging, 1h/24h/

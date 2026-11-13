@@ -86,7 +86,14 @@ def current_history(db,frame,ids):
 def historical_buckets(db,frame,window):
     size=WINDOWS[window][2];bucket=(func.floor(func.extract('epoch',frame.c.sampled_at)/size)*size).label('bucket')
     keys=[frame.c.series_key,frame.c.mapping_digest,frame.c.frequency_mhz,frame.c.bandwidth_mhz,frame.c.site_id,frame.c.link_id,bucket]
+    valid_count=func.count().filter(frame.c.valid.is_(True))
+    known_count=func.count().filter(and_(frame.c.valid.is_(True),frame.c.radio_state.in_(['up','down','degraded'])))
+    down_count=func.count().filter(and_(frame.c.valid.is_(True),frame.c.radio_state=='down'))
+    up_count=func.count().filter(and_(frame.c.valid.is_(True),frame.c.radio_state=='up'))
+    bucket_state=case((and_(known_count>0,known_count==valid_count),
+        case((down_count==known_count,'down'),(up_count==known_count,'up'),else_='degraded')),else_=None)
     columns=[*keys,func.count().label('observations'),func.count().filter(frame.c.valid.is_(True)).label('valid_observations'),
+        bucket_state.label('radio_state'),
         func.sum(case((frame.c.radio_state=='down',1),else_=0)).label('observed_down_samples'),
         func.sum(frame.c.observed_down_transition).label('observed_down_transitions'),func.sum(frame.c.observed_restart).label('observed_restarts')]
     for name in METRICS+RATES:columns.append(func.avg(frame.c[name]).filter(frame.c.valid.is_(True)).label(name))
