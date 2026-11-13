@@ -30,6 +30,7 @@ def reconcile(db, *, now=None):
     for key,incident in known.items():
         # Missing, stale, suppressed or still-failing telemetry is never recovery.
         confirmed=(key.startswith('device:') and incident.device_id in view['healthy_device_ids']) or (
+            key.startswith('microwave:') and incident.link_id in view['microwave_healthy_link_ids']) or (
             key.startswith('rf:') and incident.device_id in view['healthy_device_ids']
             and incident.device_id in view['rf_healthy_device_ids']) or (
             key.startswith('link:') and any(l['id']==incident.link_id and l['state']=='up' and l['capacity_known'] and not l['maintenance'] for l in view['links']))

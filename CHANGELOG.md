@@ -1,5 +1,11 @@
 ## 3.2.1-rc.1 (unreleased)
 
+- NOC-88: add disabled GET-only SNMPv3 Racom Ray3/Aviat microwave contracts,
+  dual/multi-carrier history, original values/units, engineered-reference fade
+  checks, hysteresis diagnostics, topology correlation and backhaul charts.
+- Keep RF, Ethernet and collection failures distinct; retain uncertainty and
+  simulation-only incident/remediation behavior. No verified vendor OIDs ship.
+
 - NOC-87: add disabled, explicit SNMPv3 authPriv GET-only radio polling with
   administrator-validated firmware/MIB maps; no guessed vendor OIDs or endpoints.
 - Add Ubiquiti airMAX AC/legacy and Cambium ePMP 4600/legacy capability profiles,

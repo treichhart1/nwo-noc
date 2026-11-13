@@ -138,3 +138,6 @@ validation: [NOC-86 integration readiness](docs/NOC-86-read-only-integrations.md
 Ubiquiti/Cambium RF collection contracts, SNMPv3 safety, historical diagnostics,
 synthetic validation and real-device prerequisites:
 [NOC-87 radio telemetry](docs/NOC-87-radio-telemetry.md).
+
+Racom/Aviat carrier-level contracts, microwave history, hysteresis and backhaul
+correlation: [NOC-88 microwave monitoring](docs/NOC-88-microwave-monitoring.md).
