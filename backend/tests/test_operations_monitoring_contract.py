@@ -44,9 +44,9 @@ def test_monitoring_summary_tracks_unknown_and_unacknowledged_events():
 
 def test_operations_summary_counts_distinct_offline_sites():
     db = Mock()
-    # incidents, critical, customer impact, maintenance, links, unassigned, stale
-    db.scalar.side_effect = [5, 2, 41, 3, 1, 4, 6]
-    db.scalars.return_value.all.return_value = [10, 10, 12]
+    # Two aggregate rows (incidents, devices) plus maintenance and links.
+    db.execute.return_value.one.side_effect = [(5, 2, 41), (2, 4, 6)]
+    db.scalar.side_effect = [3, 1]
     app.dependency_overrides[current_user] = lambda: Mock(role="operator")
     app.dependency_overrides[get_db] = lambda: db
     try:
@@ -62,7 +62,9 @@ def test_operations_summary_counts_distinct_offline_sites():
             "unassigned_devices": 4,
             "stale_devices": 6,
         }
-        assert db.scalar.call_count == 7
+        assert db.execute.call_count == 2
+        assert db.scalar.call_count == 2
+        db.scalars.assert_not_called()
         db.commit.assert_not_called()
         db.add.assert_not_called()
     finally:

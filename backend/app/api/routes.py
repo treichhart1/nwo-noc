@@ -274,17 +274,21 @@ def incident_out(item: Incident, db: Session) -> IncidentOut:
 def operations_summary(db: Session = Depends(get_db), _=Depends(current_user)):
     now = datetime.now(timezone.utc)
     stale_before = now - timedelta(minutes=15)
-    open_incidents = db.scalar(select(func.count()).select_from(Incident).where(Incident.status != "resolved")) or 0
-    critical_incidents = db.scalar(select(func.count()).select_from(Incident).where(Incident.status != "resolved", Incident.severity == "critical")) or 0
-    impacted_customers = db.scalar(select(func.coalesce(func.sum(Incident.customer_impact), 0)).where(Incident.status != "resolved")) or 0
+    open_incidents, critical_incidents, impacted_customers = db.execute(select(
+        func.count(Incident.id).filter(Incident.status != "resolved"),
+        func.count(Incident.id).filter(Incident.status != "resolved", Incident.severity == "critical"),
+        func.coalesce(func.sum(Incident.customer_impact).filter(Incident.status != "resolved"), 0),
+    )).one()
     upcoming = db.scalar(select(func.count()).select_from(MaintenanceWindow).where(MaintenanceWindow.status == "scheduled", MaintenanceWindow.ends_at >= now)) or 0
-    offline_site_ids = db.scalars(select(Device.wisp_site_id).where(Device.wisp_site_id.is_not(None), Device.status.in_(OFFLINE)).distinct()).all()
+    offline_sites, unassigned, stale = db.execute(select(
+        func.count(distinct(Device.wisp_site_id)).filter(Device.wisp_site_id.is_not(None), Device.status.in_(OFFLINE)),
+        func.count(Device.id).filter(Device.wisp_site_id.is_(None)),
+        func.count(Device.id).filter(or_(Device.last_seen.is_(None), Device.last_seen < stale_before)),
+    )).one()
     degraded_links = db.scalar(select(func.count()).select_from(NetworkLink).where(NetworkLink.status.not_in(("active", "online")))) or 0
-    unassigned = db.scalar(select(func.count()).select_from(Device).where(Device.wisp_site_id.is_(None))) or 0
-    stale = db.scalar(select(func.count()).select_from(Device).where(or_(Device.last_seen.is_(None), Device.last_seen < stale_before))) or 0
     return OperationsSummary(open_incidents=open_incidents, critical_incidents=critical_incidents,
         impacted_customers=int(impacted_customers), upcoming_maintenance=upcoming,
-        offline_sites=len(set(offline_site_ids)), degraded_links=degraded_links,
+        offline_sites=int(offline_sites or 0), degraded_links=degraded_links,
         unassigned_devices=unassigned, stale_devices=stale)
 
 @router.get("/incidents", response_model=list[IncidentOut])
