@@ -215,7 +215,14 @@ jobs:
             tests/test_powercode_customers.py \
             tests/test_notifications.py \
             tests/test_notification_expansion.py \
-            tests/test_down_detector.py
+            tests/test_down_detector.py \
+            tests/test_tower_health.py
+      - name: Measure tower health at 40 POPs and 250/500/1000 devices
+        env:
+          APP_ENV: staging
+          OFFLINE_MODE: "true"
+          SYNTHETIC_MONITORING_ENABLED: "true"
+        run: python -m app.tower_health.benchmark
       - name: Measure synthetic Down Detector correlation at 250/500/1000 devices
         env:
           APP_ENV: staging
@@ -492,6 +499,18 @@ jobs:
           scripts/release/manage.sh "$NOC_ACCEPTANCE_STATE" restart db
           scripts/release/manage.sh "$NOC_ACCEPTANCE_STATE" up -d --wait db backend worker
           scripts/release/manage.sh "$NOC_ACCEPTANCE_STATE" exec -T backend python -m app.down_detector.rehearsal verify
+      - name: Validate tower dashboard and recorded-input recovery after PostgreSQL restart
+        env:
+          NOC_PROJECT: noc84-wisp-test
+          NOC_ACCEPTANCE_STATE: ${{ runner.temp }}/noc85-wisp-state
+          NOC98_TOWER_BROWSER: "true"
+        run: |
+          scripts/release/manage.sh "$NOC_ACCEPTANCE_STATE" exec -T backend python -m app.tower_health.rehearsal seed > "$NOC_ACCEPTANCE_STATE/tower-health-fixture.json"
+          (cd frontend && npx playwright test tower-health.spec.ts)
+          scripts/release/manage.sh "$NOC_ACCEPTANCE_STATE" exec -T backend python -m app.tower_health.rehearsal queue
+          scripts/release/manage.sh "$NOC_ACCEPTANCE_STATE" restart db
+          scripts/release/manage.sh "$NOC_ACCEPTANCE_STATE" up -d --wait db backend worker
+          scripts/release/manage.sh "$NOC_ACCEPTANCE_STATE" exec -T backend python -m app.tower_health.rehearsal verify
       - name: Validate immutable old-release upgrade, failed-upgrade rollback and matching restore
         run: scripts/release/rehearse-upgrade.sh "$RUNNER_TEMP/noc93-upgrade-state"
       - name: Stop isolated acceptance services, retain volumes

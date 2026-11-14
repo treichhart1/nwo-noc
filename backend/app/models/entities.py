@@ -466,3 +466,5 @@ from app.notifications.models import NotificationPolicy, NotificationTemplate, N
 from app.notifications.controls import NotificationControl,NotificationProviderConfig,NotificationCallback  # noqa: E402,F401
 
 from app.down_detector.models import OutageObservation,OutageState,OutageEpisode,OutageTimeline  # noqa: E402,F401
+
+from app.tower_health.models import TowerEvent,TowerSample,TowerReceipt,TowerDaily,TowerCurrent,TowerHistory,TowerFinding,TowerNote,TowerPolicyRow  # noqa: E402,F401
