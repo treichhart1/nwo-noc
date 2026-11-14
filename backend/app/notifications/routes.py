@@ -4,7 +4,7 @@ import json
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Path, Query
 from pydantic import Field, SecretStr
-from sqlalchemy import select, func
+from sqlalchemy import select, func, or_, cast
 from sqlalchemy.exc import SQLAlchemyError
 from app.models.entities import AuditLog, MaintenanceWindow
 from app.api.deps import require_admin
@@ -32,6 +32,7 @@ from app.notifications.service import (
     audit,
     policy,
     template,
+    TEMPLATE_KEYS,
     validate_template,
     lock,
     snapshot,
@@ -93,6 +94,15 @@ def view(p):
 
 @router.get("")
 def dashboard(
+    tower_id: int | None = Query(None, ge=1),
+    customer_id: int | None = Query(None, ge=1),
+    incident_id: int | None = Query(None, ge=1),
+    event_type: str | None = Query(None, max_length=40),
+    delivery_status: (
+        Literal["queued", "retry", "simulated", "dead_letter", "suppressed"] | None
+    ) = None,
+    since: datetime | None = None,
+    until: datetime | None = None,
     offset: int = Query(0, ge=0, le=100000),
     limit: int = Query(50, ge=1, le=100),
     db=Depends(get_db),
@@ -100,18 +110,77 @@ def dashboard(
 ):
     def load():
         p = policy(db)
+        statement = select(NotificationPlan)
+        if tower_id:
+            from sqlalchemy.dialects.postgresql import JSONB
+
+            statement = statement.where(
+                or_(
+                    NotificationPlan.target["site_id"].as_integer() == tower_id,
+                    cast(
+                        NotificationPlan.snapshot["context"]["targets"], JSONB
+                    ).contains([{"site_id": tower_id}]),
+                )
+            )
+        if customer_id:
+            statement = statement.where(
+                NotificationPlan.id.in_(
+                    select(NotificationRecipient.plan_id).where(
+                        NotificationRecipient.customer_id == customer_id
+                    )
+                )
+            )
+        if incident_id:
+            statement = statement.where(NotificationPlan.incident_id == incident_id)
+        if event_type:
+            statement = statement.where(
+                NotificationPlan.evidence["event_type"].as_string() == event_type
+            )
+        if delivery_status:
+            statement = statement.where(
+                NotificationPlan.id.in_(
+                    select(NotificationDelivery.plan_id).where(
+                        NotificationDelivery.state == delivery_status
+                    )
+                )
+            )
+        for value in (since, until):
+            if value and value.tzinfo is None:
+                raise ValueError("Date filters require an explicit time zone")
+        if since and until and since > until:
+            raise ValueError("Date filter range is reversed")
+        if since:
+            statement = statement.where(NotificationPlan.created_at >= since)
+        if until:
+            statement = statement.where(NotificationPlan.created_at <= until)
+        total = db.scalar(select(func.count()).select_from(statement.subquery()))
         plans = list(
             db.scalars(
-                select(NotificationPlan)
-                .order_by(NotificationPlan.id.desc())
+                statement.order_by(NotificationPlan.id.desc())
                 .offset(offset)
                 .limit(limit)
             )
         )
+        from app.notifications.controls import (
+            control_status,
+            NotificationProviderConfig,
+        )
+
         audit(db, user.id, "accessed", operation="dashboard", returned=len(plans))
         return {
             "items": [view(x) for x in plans],
-            "total": db.scalar(select(func.count(NotificationPlan.id))),
+            "total": total,
+            "controls": control_status(db),
+            "provider_configuration": [
+                {
+                    "channel": c.channel,
+                    "adapter": c.adapter,
+                    "sender_configured": bool(c.sender),
+                    "last_health": c.last_health,
+                    "last_health_at": c.last_health_at,
+                }
+                for c in db.scalars(select(NotificationProviderConfig))
+            ],
             "counts": dict(
                 db.execute(
                     select(NotificationDelivery.state, func.count()).group_by(
@@ -122,13 +191,16 @@ def dashboard(
             "policy": p.model_dump(),
             "templates": [
                 {"key": k, "body": template(db, k)[0], "revision": template(db, k)[1]}
-                for k in KINDS
+                for k in TEMPLATE_KEYS
             ],
             "maintenance": [
                 {
                     "id": m.id,
                     "title": m.title,
                     "target": m.target,
+                    "targets": m.targets or [m.target],
+                    "description": m.description,
+                    "advance_notice_minutes": m.advance_notice_minutes,
                     "starts_at": m.starts_at,
                     "ends_at": m.ends_at,
                     "status": m.status,
@@ -228,6 +300,8 @@ def detail(
                     "attempts": d.attempts,
                     "next_attempt_at": d.next_attempt_at,
                     "last_error": d.last_error,
+                    "provider_status": d.provider_status,
+                    "provider_status_at": d.provider_status_at,
                     "completed_at": d.completed_at,
                 }
                 for d in db.scalars(
@@ -310,7 +384,14 @@ def maintenance(
             for k in ("site_id", "device_id", "sector_id", "link_id")
             if getattr(body, k)
         }
-        target_for(db, target=Target(**target))
+        targets = (
+            [t.model_dump(exclude_none=True) for t in body.targets]
+            if body.targets
+            else [target]
+        )
+        for scope in targets:
+            target_for(db, target=Target(**scope))
+        target = targets[0]
         window = None
         if body.site_id or body.link_id:
             window = MaintenanceWindow(
@@ -328,6 +409,9 @@ def maintenance(
         row = NotificationMaintenance(
             operations_window_id=window.id if window else None,
             title=body.title,
+            targets=targets,
+            description=body.description,
+            advance_notice_minutes=body.advance_notice_minutes,
             target=target,
             starts_at=body.starts_at,
             ends_at=body.ends_at,
@@ -446,6 +530,10 @@ def update_template(
         "rescheduled",
         "cancelled",
         "restoration",
+        "backhaul",
+        "power",
+        "reminder",
+        "delay",
     ],
     body: TemplateBody,
     db=Depends(get_db),
@@ -490,6 +578,7 @@ def suppression(
                 row.reason = body.reason
             if body.reason == "opt_out":
                 a.sms_opt_out = True
+                a.opt_out_at = clock()
         elif row:
             db.delete(row)  # Clearing a hold never re-grants consent or opt-in.
         audit(
@@ -513,6 +602,9 @@ def drain(db=Depends(get_db), user=Depends(require_admin)):
 @router.post("/mock-test")
 def mock_test(db=Depends(get_db), user=Depends(require_admin)):
     def test():
+        from app.notifications.controls import require_processing
+
+        require_processing(db)
         if not settings.offline_mode or settings.app_env != "staging":
             raise ValueError("Mock tests require offline staging")
         sms = MockSender().send(
@@ -674,3 +766,272 @@ def resolve_local_time(
         return {"utc": next(iter(candidates)).isoformat(), "timezone": p.timezone}
 
     return tx(db, resolve)
+
+
+class Pause(SafeModel):
+    paused: bool = Field(strict=True)
+    confirm: bool = Field(strict=True)
+
+
+@router.put("/pause")
+def pause(body: Pause, db=Depends(get_db), user=Depends(require_admin)):
+    def save():
+        from app.notifications.controls import NotificationControl, control_status
+
+        if not body.confirm:
+            raise ValueError("Explicit operator confirmation required")
+        row = db.get(NotificationControl, 1)
+        if not row:
+            row = NotificationControl(id=1)
+            db.add(row)
+        row.paused = body.paused
+        row.updated_by = user.id
+        row.updated_at = clock()
+        db.flush()
+        audit(db, user.id, "pause_changed", paused=body.paused)
+        return control_status(db)
+
+    return tx(db, save)
+
+
+@router.post("/emergency-disable")
+def emergency(db=Depends(get_db), user=Depends(require_admin)):
+    from app.notifications.controls import emergency_disable, control_status
+
+    try:
+        emergency_disable()
+    except (OSError, ValueError):
+        raise HTTPException(
+            503,
+            "Unable to persist notification disable; stop the worker through the approved procedure",
+        ) from None
+    try:
+        audit(db, user.id, "emergency_disabled")
+        db.commit()
+        return control_status(db)
+    except SQLAlchemyError:
+        db.rollback()
+        raise HTTPException(
+            503,
+            "Notification disable is latched; storage audit unavailable. Do not remove the latch.",
+        ) from None
+
+
+class ProviderConfiguration(SafeModel):
+    account_reference: str | None = Field(None, pattern=r"^AC[a-fA-F0-9]{32}$")
+    adapter: Literal["mock", "twilio_mock", "slack_webhook_mock", "slack_api_mock"] = (
+        "mock"
+    )
+    sender: str | None = Field(None, max_length=80)
+    registration_reference: str | None = Field(
+        None, max_length=120, pattern=r"^[A-Za-z0-9_.:-]+$"
+    )
+    callback_secret: SecretStr | None = Field(None, max_length=512)
+
+
+@router.put("/providers/{channel}")
+def provider_config(
+    channel: Literal["sms", "slack"],
+    body: ProviderConfiguration,
+    db=Depends(get_db),
+    user=Depends(require_admin),
+):
+    def save():
+        from app.notifications.controls import NotificationProviderConfig
+        from app.customers.contracts import e164
+
+        if body.adapter == "twilio_mock" and (
+            not body.account_reference or not body.sender
+        ):
+            raise ValueError("SMS contract requires account reference and sender")
+        if body.adapter not in (
+            {"mock", "twilio_mock"}
+            if channel == "sms"
+            else {"mock", "slack_webhook_mock", "slack_api_mock"}
+        ):
+            raise ValueError("Adapter does not match channel")
+        if channel == "sms" and body.sender and not e164(body.sender):
+            raise ValueError(
+                "SMS sender requires validated E.164 syntax; native registration remains unverified"
+            )
+        if channel == "slack" and body.sender:
+            import re
+
+            if not re.fullmatch(r"[A-Za-z0-9_-]{1,80}", body.sender):
+                raise ValueError("Bounded Slack channel identifier required")
+        row = db.get(NotificationProviderConfig, channel)
+        if not row:
+            row = NotificationProviderConfig(channel=channel)
+            db.add(row)
+        row.adapter = body.adapter
+        row.sender = body.sender
+        row.registration_reference = body.registration_reference
+        row.account_reference = body.account_reference
+        if body.callback_secret:
+            try:
+                row.callback_secret_ciphertext = seal(
+                    settings.notifications_vault_key_file,
+                    body.callback_secret.get_secret_value(),
+                )
+            except (ValueError, OSError):
+                raise ValueError(
+                    "Private callback encryption key unavailable"
+                ) from None
+        row.last_health = "not_tested"
+        audit(
+            db,
+            user.id,
+            "provider_configuration_changed",
+            channel=channel,
+            adapter=body.adapter,
+        )
+        return {
+            "channel": channel,
+            "adapter": row.adapter,
+            "live_enabled": False,
+            "sender_configured": bool(row.sender),
+        }
+
+    return tx(db, save)
+
+
+@router.post("/providers/{channel}/mock-health")
+def provider_health(
+    channel: Literal["sms", "slack"], db=Depends(get_db), user=Depends(require_admin)
+):
+    def check():
+        from app.notifications.controls import (
+            NotificationProviderConfig,
+            require_processing,
+        )
+
+        require_processing(db)
+        if not settings.offline_mode or settings.app_env != "staging":
+            raise ValueError("Mock health requires offline staging")
+        row = db.get(NotificationProviderConfig, channel)
+        if not row:
+            raise ValueError("Configure the provider contract first")
+        # No connection is established; this is explicitly mock contract health.
+        from app.notifications.providers import configured_mock_senders
+
+        sms, slack = configured_mock_senders(db)
+        (sms if channel == "sms" else slack).send(
+            key="health-" + channel,
+            destination="+15555550996" if channel == "sms" else "noc-simulation",
+            payload={
+                "simulation_only": True,
+                "body": "Synthetic contract health check",
+            },
+        )
+        row.last_health = "mock_healthy"
+        row.last_health_at = clock()
+        audit(db, user.id, "mock_provider_health", channel=channel)
+        return {
+            "channel": channel,
+            "status": row.last_health,
+            "at": row.last_health_at,
+            "external_calls": 0,
+        }
+
+    return tx(db, check)
+
+
+class MockCallback(SafeModel):
+    event_id: str = Field(pattern=r"^[A-Za-z0-9_.:-]{1,120}$")
+    channel: Literal["sms", "slack"]
+    delivery_id: int = Field(ge=1)
+    status: Literal["accepted", "delivered", "failed", "opt_out"]
+    timestamp: int = Field(ge=0)
+    signature: str = Field(pattern=r"^[a-f0-9]{64}$")
+
+
+@router.post("/mock-callback")
+def mock_callback(body: MockCallback, db=Depends(get_db), user=Depends(require_admin)):
+    def apply():
+        from app.notifications.controls import (
+            NotificationProviderConfig,
+            NotificationCallback,
+        )
+        from app.notifications.providers import verified_callback
+        from app.notifications.secrets import unseal
+        import hashlib, json
+
+        if not settings.offline_mode or settings.app_env != "staging":
+            raise ValueError("Only authenticated offline mock callbacks are available")
+        config = db.get(NotificationProviderConfig, body.channel)
+        if not config or not config.callback_secret_ciphertext:
+            raise ValueError("Private mock callback signing secret not configured")
+        payload = json.dumps(
+            body.model_dump(exclude={"signature"}),
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode()
+        try:
+            secret = unseal(
+                settings.notifications_vault_key_file, config.callback_secret_ciphertext
+            ).encode()
+        except (ValueError, OSError):
+            raise ValueError("Private callback verification key unavailable") from None
+        if not verified_callback(
+            secret, payload, body.signature, body.timestamp, int(clock().timestamp())
+        ):
+            raise ValueError("Mock callback verification failed")
+        digest = hashlib.sha256(payload).hexdigest()
+        prior = db.get(NotificationCallback, body.event_id)
+        if prior:
+            if prior.body_hash != digest:
+                raise ValueError("Conflicting callback event identifier")
+            return {"duplicate": True, "simulation_only": True}
+        delivery = db.get(NotificationDelivery, body.delivery_id)
+        if (
+            not delivery
+            or delivery.channel != body.channel
+            or delivery.state != "simulated"
+        ):
+            raise ValueError(
+                "Callback must refer to a completed mock delivery on its channel"
+            )
+        if body.status != "opt_out":
+            if (
+                delivery.provider_status in {"delivered", "failed"}
+                and delivery.provider_status != body.status
+            ):
+                raise ValueError("Terminal provider status cannot regress")
+            if delivery.provider_status_at and body.timestamp < int(
+                delivery.provider_status_at.timestamp()
+            ):
+                raise ValueError("Stale provider status callback")
+            delivery.provider_status = body.status
+            delivery.provider_status_at = datetime.fromtimestamp(
+                body.timestamp, timezone.utc
+            )
+        if body.status == "opt_out":
+            if body.channel != "sms" or not delivery.recipient_id:
+                raise ValueError("Opt-out requires a matching SMS recipient")
+            recipient = db.get(NotificationRecipient, delivery.recipient_id)
+            account = db.get(CustomerAccount, recipient.customer_id)
+            account.sms_opt_out = True
+            account.opt_out_at = clock()
+            if not db.get(NotificationSuppression, account.id):
+                db.add(
+                    NotificationSuppression(customer_id=account.id, reason="opt_out")
+                )
+        db.add(
+            NotificationCallback(
+                event_id=body.event_id,
+                delivery_id=delivery.id,
+                status=body.status,
+                body_hash=digest,
+            )
+        )
+        audit(
+            db,
+            user.id,
+            "mock_callback_applied",
+            plan_id=delivery.plan_id,
+            delivery_id=delivery.id,
+            status=body.status,
+        )
+        return {"duplicate": False, "simulation_only": True, "status": body.status}
+
+    return tx(db, apply)

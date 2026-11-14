@@ -171,6 +171,7 @@ class Incident(Base):
     title: Mapped[str] = mapped_column(String(255), index=True)
     severity: Mapped[str] = mapped_column(String(30), default="warning", index=True)
     status: Mapped[str] = mapped_column(String(30), default="open", index=True)
+    sector_id:Mapped[int|None]=mapped_column(ForeignKey("sectors.id",ondelete="SET NULL"),nullable=True,index=True)
     site_id: Mapped[int | None] = mapped_column(ForeignKey("sites.id", ondelete="SET NULL"), nullable=True, index=True)
     device_id: Mapped[int | None] = mapped_column(ForeignKey("devices.id", ondelete="SET NULL"), nullable=True, index=True)
     link_id: Mapped[int | None] = mapped_column(ForeignKey("network_links.id", ondelete="SET NULL"), nullable=True, index=True)
@@ -462,3 +463,4 @@ class RevokedToken(Base):
 # Register additive, private customer models in the same Alembic metadata.
 from app.customers.models import CustomerAccount, CustomerService, CustomerSyncState, CustomerSyncRun, IncidentCustomer  # noqa: E402,F401
 from app.notifications.models import NotificationPolicy, NotificationTemplate, NotificationMaintenance, NotificationPlan, NotificationRecipient, NotificationDelivery, NotificationAttempt, NotificationSuppression, NotificationCredential  # noqa: E402,F401
+from app.notifications.controls import NotificationControl,NotificationProviderConfig,NotificationCallback  # noqa: E402,F401

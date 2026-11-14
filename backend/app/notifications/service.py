@@ -9,6 +9,7 @@ from app.models.entities import (
     User,
     Incident,
     MaintenanceWindow,
+    MonitorEvent,
     Site,
     Device,
     Sector,
@@ -41,6 +42,15 @@ DEFAULTS = {
     "cancelled": "{brand}: Planned maintenance {event_id} has been cancelled. Text support {support}. {opt_out}",
     "restoration": "{brand}: Service restoration has been verified for {event_id}. If service remains unavailable, text {support}. {opt_out}",
 }
+DEFAULTS.update(
+    {
+        "backhaul": "{brand}: A backhaul outage is disrupting service in your area. Our technicians are investigating {event_id}. Text {support}. {opt_out}",
+        "power": "{brand}: A verified tower power interruption is affecting service. Our technicians are investigating {event_id}. Text {support}. {opt_out}",
+        "reminder": "{brand}: Reminder: planned maintenance {event_id} at {window} may interrupt service. Text {support}. {opt_out}",
+        "delay": "{brand}: Maintenance {event_id} has been delayed; the revised window is {window}. Text {support}. {opt_out}",
+    }
+)
+TEMPLATE_KEYS = tuple(DEFAULTS)
 SEVERITY = {"info": 0, "warning": 1, "critical": 2}
 
 
@@ -173,6 +183,7 @@ def source(db, request):
             "revision": row.revision,
             "status": row.status,
             "target": row.target,
+            "targets": row.targets or [row.target],
             "starts_at": utc(row.starts_at).isoformat(),
             "ends_at": utc(row.ends_at).isoformat(),
         },
@@ -273,7 +284,26 @@ def snapshot(db, request, now=None):
         raise ValueError(
             "Recipient set exceeds reviewed limit; no truncated campaign allowed"
         )
-    impacts = analyze(db, target, services)
+    targets = [Target(**t) for t in context.get("targets", [vars(target)])]
+    evaluated = [analyze(db, t, services) for t in targets]
+    rank = {"not_affected": 0, "unknown": 1, "probable": 2, "confirmed": 3}
+    impacts = []
+    for index in range(len(services)):
+        choices = [group[index] for group in evaluated]
+        best = max(choices, key=lambda r: rank[r["classification"]])
+        best = dict(best)
+        best["evidence"] = dict(
+            best["evidence"],
+            evaluated_scopes=[
+                {
+                    "classification": r["classification"],
+                    "reason": r["reason"],
+                    "target": r["evidence"]["target"],
+                }
+                for r in choices
+            ],
+        )
+        impacts.append(best)
     selected = recipients(db, impacts)["recipients"]
     accounts = (
         {
@@ -300,6 +330,90 @@ def snapshot(db, request, now=None):
         and (now - utc(row.started_at)).total_seconds() < p.minimum_outage_seconds
     ):
         sms_allowed = False
+    # Count actual monitoring transitions only, never fabricated power telemetry.
+    device_ids = set()
+    from app.models.entities import Device, Sector
+
+    for scope in targets:
+        if scope.device_id:
+            device_ids.add(scope.device_id)
+        if scope.site_id:
+            device_ids.update(
+                db.scalars(
+                    select(Device.id).where(Device.wisp_site_id == scope.site_id)
+                )
+            )
+        if scope.sector_id:
+            sector = db.get(Sector, scope.sector_id)
+            if sector and sector.device_id:
+                device_ids.add(sector.device_id)
+        if scope.link_id:
+            link = db.get(NetworkLink, scope.link_id)
+            if link:
+                device_ids.update(i for i in (link.a_device_id, link.z_device_id) if i)
+    transitions = (
+        dict(
+            db.execute(
+                select(MonitorEvent.device_id, func.count())
+                .where(
+                    MonitorEvent.device_id.in_(device_ids),
+                    MonitorEvent.created_at
+                    >= now - timedelta(seconds=p.flapping_window_seconds),
+                    MonitorEvent.to_status.in_(["up", "down"]),
+                )
+                .group_by(MonitorEvent.device_id)
+            ).all()
+        )
+        if device_ids
+        else {}
+    )
+    flapping = any(n >= p.flapping_transition_limit for n in transitions.values())
+    maintenance_services = set()
+    if request.incident_id and request.kind != "restoration":
+        scopes = []
+        for window in db.scalars(
+            select(MaintenanceWindow).where(
+                MaintenanceWindow.status == "scheduled",
+                MaintenanceWindow.starts_at <= now,
+                MaintenanceWindow.ends_at >= now,
+            )
+        ):
+            if window.link_id:
+                scopes.append(Target(link_id=window.link_id))
+            elif window.site_id:
+                scopes.append(Target(site_id=window.site_id))
+        for window in db.scalars(
+            select(NotificationMaintenance).where(
+                NotificationMaintenance.status == "scheduled",
+                NotificationMaintenance.starts_at <= now,
+                NotificationMaintenance.ends_at >= now,
+            )
+        ):
+            scopes.extend(Target(**t) for t in (window.targets or [window.target]))
+        for scope in scopes:
+            maintenance_services.update(
+                r["service_id"]
+                for r in analyze(db, scope, services)
+                if r["classification"] in {"confirmed", "probable"}
+            )
+    maintenance_suppressed = bool(
+        maintenance_services
+        & {
+            r["service_id"]
+            for r in impacts
+            if r["classification"] in {"confirmed", "probable"}
+        }
+    )
+    context["flapping_detected"] = flapping
+    context["maintenance_suppressed"] = maintenance_suppressed
+    if flapping:
+        sms_allowed = False
+    if request.evidence.event_type in {
+        "high_utilization",
+        "monitoring_failure",
+        "acknowledgment",
+    }:
+        sms_allowed = False
     prior = set()
     if request.kind in {"restoration", "cancelled"}:
         s = (
@@ -324,7 +438,18 @@ def snapshot(db, request, now=None):
         prior = set(db.scalars(s))
     for r in selected:
         if not sms_allowed:
-            r.update(eligible=False, reason="unconfirmed_or_brief_event")
+            r.update(
+                eligible=False,
+                reason=(
+                    "flapping"
+                    if flapping
+                    else (
+                        "planned_maintenance_suppression"
+                        if maintenance_suppressed
+                        else "unconfirmed_or_brief_event"
+                    )
+                ),
+            )
         if r["customer_id"] in suppressed:
             r.update(eligible=False, reason="suppression_list")
         if (
@@ -332,6 +457,20 @@ def snapshot(db, request, now=None):
             and r["customer_id"] not in prior
         ):
             r.update(eligible=False, reason="no_prior_notice")
+        if r["eligible"] and not accounts[r["customer_id"]].consent_recorded_at:
+            r.update(eligible=False, reason="consent_timestamp_unverified")
+        r["consent_recorded_at"] = (
+            utc(accounts[r["customer_id"]].consent_recorded_at).isoformat()
+            if accounts[r["customer_id"]].consent_recorded_at
+            else None
+        )
+        if (
+            request.incident_id
+            and request.kind != "restoration"
+            and r["eligible"]
+            and set(r["service_ids"]).issubset(maintenance_services)
+        ):
+            r.update(eligible=False, reason="planned_maintenance_suppression")
         r.pop("phone", None)
         r["contact_hash"] = contact_hash(accounts[r["customer_id"]].phone)
     if sum(r["eligible"] for r in selected) > p.max_sms_per_plan:
@@ -342,7 +481,39 @@ def snapshot(db, request, now=None):
         severity != "critical" or not p.critical_quiet_bypass
     ):
         raise ValueError("Critical quiet-hours exception is not approved by policy")
-    body, revision = template(db, request.kind)
+    key = request.template_key or (
+        "reminder"
+        if request.reminder_minutes is not None
+        else (
+            "backhaul"
+            if request.kind == "outage"
+            and request.evidence.event_type == "backhaul_outage"
+            and request.evidence.confirmed
+            else (
+                "power"
+                if request.kind == "outage"
+                and request.evidence.event_type == "tower_power"
+                and request.evidence.confirmed
+                else request.kind
+            )
+        )
+    )
+    allowed = {request.kind}
+    if request.kind == "outage":
+        allowed.update(["backhaul", "power"])
+    if request.kind in {"maintenance", "rescheduled"}:
+        allowed.update(["reminder", "delay"])
+    if key == "power" and not (
+        request.evidence.event_type == "tower_power" and request.evidence.confirmed
+    ):
+        raise ValueError("Power template requires confirmed power evidence")
+    if key == "backhaul" and not (
+        request.evidence.event_type == "backhaul_outage" and request.evidence.confirmed
+    ):
+        raise ValueError("Backhaul template requires confirmed backhaul evidence")
+    if key not in allowed:
+        raise ValueError("Template does not match operational event")
+    body, revision = template(db, key)
     window = "not scheduled"
     if request.maintenance_id:
         zone = ZoneInfo(p.timezone)
@@ -365,6 +536,7 @@ def snapshot(db, request, now=None):
         "context": context,
         "policy": p.model_dump(),
         "template_revision": revision,
+        "template_key": key,
         "template": body,
         "recipients": selected,
         "impacts": impacts,
@@ -454,6 +626,25 @@ def slack_payload(db, data, severity):
 def create_plan(db, request, user_id, now=None):
     lock(db)
     now = now or clock()
+    if request.reminder_minutes is not None:
+        if not request.maintenance_id or request.kind not in {
+            "maintenance",
+            "rescheduled",
+        }:
+            raise ValueError("Reminder requires scheduled maintenance")
+        maintenance = db.get(NotificationMaintenance, request.maintenance_id)
+        if not maintenance:
+            raise LookupError()
+        if request.reminder_minutes not in maintenance.advance_notice_minutes:
+            raise ValueError("Reminder interval not configured for this maintenance")
+        due = utc(maintenance.starts_at) - timedelta(minutes=request.reminder_minutes)
+        if due < now:
+            raise ValueError(
+                "Reminder time has passed; explicitly review an immediate notice instead"
+            )
+        if request.due_at and utc(request.due_at) != due:
+            raise ValueError("Reminder interval and explicit schedule conflict")
+        request = request.model_copy(update={"due_at": due})
     data, severity = snapshot(db, request, now)
     ctx = data["context"]
     sourcekey = (
@@ -469,7 +660,10 @@ def create_plan(db, request, user_id, now=None):
         raise ValueError("Initial/lifecycle event uses one deduplicated revision")
     if request.kind in {"update", "extended"} and request.update_number < 1:
         raise ValueError("Updates require an explicit operator update number")
-    key = digest([sourcekey, request.kind, request.update_number])
+    key = digest(
+        [sourcekey, request.kind, request.update_number]
+        + ([request.reminder_minutes] if request.reminder_minutes is not None else [])
+    )
     fp = digest(data)
     existing = db.scalar(
         select(NotificationPlan).where(NotificationPlan.dedupe_key == key)
@@ -562,6 +756,9 @@ def create_plan(db, request, user_id, now=None):
 
 def approve(db, ident, user_id, now=None, *, expected_fingerprint=None):
     lock(db)
+    from app.notifications.controls import require_processing
+
+    require_processing(db)
     now = now or clock()
     plan = db.get(NotificationPlan, ident)
     if not plan:
@@ -630,7 +827,15 @@ def approve(db, ident, user_id, now=None, *, expected_fingerprint=None):
             NotificationDelivery(
                 plan_id=ident,
                 channel="slack",
-                recipient_key=p.slack_channel,
+                recipient_key=(
+                    p.slack_maintenance_channel
+                    if plan.maintenance_id
+                    else (
+                        p.slack_critical_channel
+                        if plan.severity == "critical"
+                        else p.slack_channel
+                    )
+                ),
                 next_attempt_at=plan.due_at,
             )
         )

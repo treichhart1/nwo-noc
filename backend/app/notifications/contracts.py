@@ -22,6 +22,15 @@ class Policy(SafeModel):
     quiet_start: int = Field(22, ge=0, le=23)
     quiet_end: int = Field(8, ge=0, le=23)
     critical_quiet_bypass: bool = False
+    outage_cooldown_seconds: int = Field(900, ge=60, le=86400)
+    flapping_window_seconds: int = Field(300, ge=60, le=3600)
+    flapping_transition_limit: int = Field(3, ge=2, le=20)
+    slack_critical_channel: str = Field(
+        "noc-simulation-critical", pattern=r"^[A-Za-z0-9_-]{1,80}$"
+    )
+    slack_maintenance_channel: str = Field(
+        "noc-simulation-maintenance", pattern=r"^[A-Za-z0-9_-]{1,80}$"
+    )
     max_sms_per_plan: int = Field(100, ge=1, le=1000)
     max_sms_per_minute: int = Field(20, ge=1, le=100)
     max_sms_per_hour: int = Field(200, ge=1, le=5000)
@@ -82,6 +91,9 @@ class Evidence(SafeModel):
         "fiber_outage",
         "equipment_failure",
         "planned_maintenance",
+        "high_utilization",
+        "monitoring_failure",
+        "acknowledgment",
         "restoration",
     ]
     confirmed: bool = False
@@ -101,6 +113,8 @@ class Evidence(SafeModel):
 
 
 class PlanRequest(SafeModel):
+    template_key: str | None = Field(None, max_length=40)
+    reminder_minutes: int | None = Field(None, ge=1, le=10080)
     incident_id: int | None = Field(None, ge=1)
     maintenance_id: int | None = Field(None, ge=1)
     kind: Literal[
@@ -132,7 +146,37 @@ class PlanRequest(SafeModel):
         return self
 
 
+class TargetSpec(SafeModel):
+    site_id: int | None = Field(None, ge=1)
+    device_id: int | None = Field(None, ge=1)
+    sector_id: int | None = Field(None, ge=1)
+    link_id: int | None = Field(None, ge=1)
+
+    @model_validator(mode="after")
+    def one(self):
+        if sum(v is not None for v in self.model_dump().values()) != 1:
+            raise ValueError("One explicit target per entry required")
+        return self
+
+
 class MaintenanceRequest(SafeModel):
+    targets: list[TargetSpec] = Field(default_factory=list, max_length=40)
+    description: str | None = Field(None, max_length=1000)
+    advance_notice_minutes: list[int] = Field(
+        default_factory=lambda: [1440, 60], max_length=5
+    )
+
+    @field_validator("advance_notice_minutes")
+    @classmethod
+    def intervals(cls, v):
+        if (
+            not v
+            or len(set(v)) != len(v)
+            or any(isinstance(x, bool) or not 1 <= x <= 10080 for x in v)
+        ):
+            raise ValueError("Unique bounded reminder intervals required")
+        return sorted(v, reverse=True)
+
     title: str = Field(min_length=1, max_length=160)
     site_id: int | None = Field(None, ge=1)
     device_id: int | None = Field(None, ge=1)
@@ -143,14 +187,16 @@ class MaintenanceRequest(SafeModel):
 
     @model_validator(mode="after")
     def valid(self):
-        if (
-            sum(
-                x is not None
-                for x in (self.site_id, self.device_id, self.sector_id, self.link_id)
-            )
-            != 1
+        fields = (self.site_id, self.device_id, self.sector_id, self.link_id)
+        if (self.targets and any(v is not None for v in fields)) or (
+            not self.targets and sum(v is not None for v in fields) != 1
         ):
-            raise ValueError("Exactly one explicit infrastructure target required")
+            raise ValueError("Use either one target or a reviewed list of targets")
+        keys = [
+            tuple(sorted(t.model_dump(exclude_none=True).items())) for t in self.targets
+        ]
+        if len(keys) != len(set(keys)):
+            raise ValueError("Duplicate maintenance targets")
         if (
             self.starts_at.tzinfo is None
             or self.ends_at.tzinfo is None

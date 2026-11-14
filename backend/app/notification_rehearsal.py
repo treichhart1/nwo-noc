@@ -43,6 +43,7 @@ def run(action):
         if action == "seed":
             if db.scalar(select(NotificationPlan.id)):
                 raise ValueError("Fresh notification fixture required")
+            a.consent_recorded_at = now
             a.sms_consent = "granted"
             a.sms_opt_out = False
             a.communication_preference = "sms"

@@ -36,15 +36,23 @@ from app.notifications.contracts import PlanRequest
 def run_batch(db, *, sms=None, slack=None, now=None, limit=20):
     if not settings.offline_mode or settings.app_env != "staging":
         raise ValueError("Mock notification processing requires offline staging")
-    sms = sms or MockSender()
-    slack = slack or MockSender()
+    if not 1 <= limit <= 100:
+        raise ValueError("Bounded batch required")
+    lock(db)
+    from app.notifications.controls import control_status, emergency_disabled
+
+    controls = control_status(db)
+    if controls["paused"] or controls["emergency_disabled"]:
+        return {"processed": 0, "simulation_only": True, **controls}
+    from app.notifications.providers import configured_mock_senders
+
+    configured_sms, configured_slack = configured_mock_senders(db)
+    sms = sms or configured_sms
+    slack = slack or configured_slack
     if not isinstance(sms, MockSender) or not isinstance(
         slack, (MockSender, MockSlack)
     ):
         raise ValueError("Only mock senders are permitted")
-    if not 1 <= limit <= 100:
-        raise ValueError("Bounded batch required")
-    lock(db)
     now = now or clock()
     p = policy(db)
     processed = 0
@@ -69,6 +77,8 @@ def run_batch(db, *, sms=None, slack=None, now=None, limit=20):
         )
     )
     for d in rows:
+        if emergency_disabled():
+            break
         plan = db.get(NotificationPlan, d.plan_id)
         actor = db.get(User, plan.approved_by) if plan.approved_by else None
         try:
@@ -187,7 +197,8 @@ def run_batch(db, *, sms=None, slack=None, now=None, limit=20):
                     NotificationDelivery.channel == "sms",
                     NotificationDelivery.recipient_key == d.recipient_key,
                     NotificationDelivery.state == "simulated",
-                    NotificationDelivery.completed_at >= now - timedelta(minutes=15),
+                    NotificationDelivery.completed_at
+                    >= now - timedelta(seconds=p.outage_cooldown_seconds),
                     NotificationPlan.kind.in_(["outage", "update", "extended"]),
                 )
                 .limit(1)
@@ -212,11 +223,15 @@ def run_batch(db, *, sms=None, slack=None, now=None, limit=20):
             destination = "internal-dashboard"
             payload = {"plan_id": plan.id, "simulation_only": True}
             provider = MockSender()
+        if emergency_disabled():
+            break
         d.attempts += 1
         try:
             receipt = provider.send(
                 key=f"noc96:{d.id}", destination=destination, payload=payload
             )
+            d.provider_status = "accepted"
+            d.provider_status_at = now
             d.provider_receipt = receipt
             d.state = "simulated"
             d.completed_at = now

@@ -329,6 +329,9 @@ def list_incidents(status: str | None = None, limit: int = Query(200, ge=1, le=1
 @router.post("/incidents", response_model=IncidentOut, status_code=201)
 def create_incident(payload: IncidentCreate, request: Request, db: Session = Depends(get_db), user: User = Depends(require_operator)):
     data = payload.model_dump()
+    if payload.sector_id:
+        sector=db.get(Sector,payload.sector_id)
+        if not sector or payload.site_id and payload.site_id!=sector.site_id or payload.device_id and payload.device_id!=sector.device_id:raise HTTPException(422,'Sector, site and device context must match existing inventory')
     data["started_at"] = data.get("started_at") or datetime.now(timezone.utc)
     item = Incident(**data, created_by=user.id)
     db.add(item); db.flush()

@@ -118,6 +118,7 @@ def synchronize(db, provider, *, user_id=None):
                     raise ProviderFailure("conflicting_duplicate")
                 if row.phone != record.phone:
                     row.sms_consent = "unknown"
+                    row.consent_recorded_at = None
                     row.consent_record = None
                 row.name = None if record.deleted else record.name
                 row.phone = None if record.deleted else record.phone
@@ -127,6 +128,7 @@ def synchronize(db, provider, *, user_id=None):
                 row.source_deleted_at = now if record.deleted else None
                 if record.deleted:
                     row.sms_consent = "unknown"
+                    row.consent_recorded_at = None
                     row.sms_opt_out = True
                     row.consent_record = None
             db.flush()
@@ -233,6 +235,7 @@ def synchronize(db, provider, *, user_id=None):
                         row.phone = None
                         row.email = None
                         row.sms_consent = "unknown"
+                        row.consent_recorded_at = None
                         row.sms_opt_out = True
                         row.consent_record = None
             # A complete cursor-contiguous delta verifies unchanged rows too.

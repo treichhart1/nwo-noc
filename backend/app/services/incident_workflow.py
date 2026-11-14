@@ -1,6 +1,6 @@
 """Shared incident updates: existing and RF operations UIs use the same records."""
 from datetime import datetime,timezone
-from app.models.entities import User,IncidentNote
+from app.models.entities import User,IncidentNote,Sector
 from app.core.operator_text import clean_operator_text
 
 
@@ -8,6 +8,10 @@ def apply_update(db,item,changes,*,user_id,now=None):
     now=now or datetime.now(timezone.utc);changes=dict(changes)
     expected=changes.pop('expected_revision',None)
     if expected is not None and expected!=item.revision:raise ValueError('Investigation changed; reload before saving your notes')
+    sector_id=changes.get('sector_id',item.sector_id)
+    if sector_id:
+        sector=db.get(Sector,sector_id)
+        if not sector or changes.get('site_id',item.site_id) and changes.get('site_id',item.site_id)!=sector.site_id or changes.get('device_id',item.device_id) and changes.get('device_id',item.device_id)!=sector.device_id:raise ValueError('Sector, site and device context must match existing inventory')
     assigned=changes.get('assigned_to_user_id')
     if assigned is not None:
         user=db.get(User,assigned)

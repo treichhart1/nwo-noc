@@ -178,3 +178,39 @@ class TwilioMockAdapter(MockSender):
             raise DeliveryFailure("timeout") from None
         except Exception:
             raise DeliveryFailure("invalid_response", True) from None
+
+
+def configured_mock_senders(db):
+    """Registry selection never permits a real transport or provider endpoint."""
+    from app.notifications.controls import NotificationProviderConfig
+    from app.notifications.models import NotificationCredential
+    from app.notifications.secrets import unseal
+    from app.core.config import settings
+
+    sms, slack = MockSender(), MockSender()
+    c = db.get(NotificationProviderConfig, "sms")
+    if c and c.adapter == "twilio_mock":
+        secret = db.get(NotificationCredential, "sms")
+        if not secret or not c.account_reference or not c.sender:
+            raise ValueError("Configured SMS mock contract is incomplete")
+        try:
+            token = unseal(settings.notifications_vault_key_file, secret.ciphertext)
+        except (OSError, ValueError):
+            raise ValueError("Configured SMS mock credential unavailable") from None
+        sms = TwilioMockAdapter(
+            httpx.MockTransport(
+                lambda r: httpx.Response(
+                    201, json={"sid": "SM" + "0" * 32, "status": "queued"}
+                )
+            ),
+            account_sid=c.account_reference,
+            token=token,
+            from_number=c.sender,
+        )
+    c = db.get(NotificationProviderConfig, "slack")
+    if c and c.adapter in {"slack_webhook_mock", "slack_api_mock"}:
+        slack = MockSlack(
+            httpx.MockTransport(lambda r: httpx.Response(200, json={"ok": True})),
+            mode="api" if c.adapter == "slack_api_mock" else "webhook",
+        )
+    return sms, slack

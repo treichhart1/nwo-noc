@@ -4,7 +4,7 @@ import argparse, os, re, stat
 from pathlib import Path
 
 ALLOWED = re.compile(
-    r"^(?:[a-f0-9]{64}\.json|\.writing-[a-zA-Z0-9_]+|integrations\.disabled)$"
+    r"^(?:[a-f0-9]{64}\.json|\.writing-[a-zA-Z0-9_]+|(?:integrations|notifications)\.disabled)$"
 )
 
 

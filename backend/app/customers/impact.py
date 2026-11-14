@@ -32,6 +32,7 @@ def target_for(db, *, incident_id=None, maintenance_id=None, target=None):
         # A location field is context, not proof that the whole tower failed.
         if row.link_id:
             return Target(link_id=row.link_id)
+        if row.sector_id:return Target(sector_id=row.sector_id)
         if row.device_id:
             return Target(device_id=row.device_id)
         return Target(site_id=row.site_id)

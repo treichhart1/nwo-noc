@@ -58,6 +58,7 @@ def network(imported, monkeypatch):
     x = imported
     monkeypatch.setattr(settings, "offline_mode", True)
     monkeypatch.setattr(settings, "app_env", "staging")
+    x.account.consent_recorded_at = NOW
     x.account.sms_consent = "granted"
     x.account.communication_preference = "sms"
     x.account.consent_record = "SYN-CONSENT"
@@ -288,7 +289,7 @@ def test_slack_failure_isolated_from_sms_and_dashboard(network):
         x.db.scalar(
             select(NotificationDelivery).where(
                 NotificationDelivery.channel == "slack",
-                NotificationDelivery.recipient_key == "noc-simulation",
+                NotificationDelivery.recipient_key == "noc-simulation-critical",
             )
         ).state
         == "dead_letter"
@@ -735,6 +736,7 @@ def test_recipient_volume_limit_is_not_silent_truncation(network):
             sms_consent="granted",
             communication_preference="sms",
             consent_record="SYN",
+            consent_recorded_at=NOW,
             source_updated_at=NOW,
             last_synced_at=NOW,
         )
@@ -938,6 +940,7 @@ def test_large_cost_estimate_cannot_overflow_or_bypass_budget(network):
             sms_consent="granted",
             communication_preference="sms",
             consent_record="SYN",
+            consent_recorded_at=NOW,
             source_updated_at=NOW,
             last_synced_at=NOW,
         )

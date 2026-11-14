@@ -42,6 +42,11 @@ class NotificationMaintenance(Base):
         unique=True,
     )
     title: Mapped[str] = mapped_column(String(160))
+    targets: Mapped[list] = mapped_column(JSON, default=list)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    advance_notice_minutes: Mapped[list] = mapped_column(
+        JSON, default=lambda: [1440, 60]
+    )
     target: Mapped[dict] = mapped_column(JSON)
     starts_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     ends_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
@@ -126,6 +131,10 @@ class NotificationDelivery(Base):
         DateTime(timezone=True), index=True
     )
     last_error: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    provider_status: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    provider_status_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     provider_receipt: Mapped[str | None] = mapped_column(String(100), nullable=True)
     budget_charge_microunits: Mapped[int | None] = mapped_column(Integer, nullable=True)
     completed_at: Mapped[datetime | None] = mapped_column(
