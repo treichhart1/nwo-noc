@@ -217,7 +217,14 @@ jobs:
             tests/test_notification_expansion.py \
             tests/test_down_detector.py \
             tests/test_tower_health.py \
-            tests/test_ipam.py
+            tests/test_ipam.py \
+            tests/test_equipment.py
+      - name: Measure physical inventory at 40 POPs and1000/10000 assets
+        env:
+          APP_ENV: staging
+          OFFLINE_MODE: "true"
+          SYNTHETIC_MONITORING_ENABLED: "true"
+        run: python -m app.equipment.benchmark
       - name: Measure IPAM at 40 POPs and1000/10000 synthetic assignments
         env:
           APP_ENV: staging
@@ -526,6 +533,14 @@ jobs:
         run: |
           scripts/release/manage.sh "$NOC_ACCEPTANCE_STATE" exec -T backend python -m app.ipam.rehearsal > "$NOC_ACCEPTANCE_STATE/ipam-fixture.json"
           (cd frontend && npx playwright test ipam.spec.ts)
+      - name: Validate physical inventory, IPAM bindings, maintenance and private attachments
+        env:
+          NOC_PROJECT: noc84-wisp-test
+          NOC_ACCEPTANCE_STATE: ${{ runner.temp }}/noc85-wisp-state
+          NOC100_EQUIPMENT_BROWSER: "true"
+        run: |
+          scripts/release/manage.sh "$NOC_ACCEPTANCE_STATE" exec -T backend python -m app.equipment.rehearsal > "$NOC_ACCEPTANCE_STATE/equipment-fixture.json"
+          (cd frontend && npx playwright test equipment.spec.ts)
       - name: Validate immutable old-release upgrade, failed-upgrade rollback and matching restore
         run: scripts/release/rehearse-upgrade.sh "$RUNNER_TEMP/noc93-upgrade-state"
       - name: Stop isolated acceptance services, retain volumes
