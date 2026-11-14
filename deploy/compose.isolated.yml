@@ -8,7 +8,7 @@ x-app: &app
   security_opt: [no-new-privileges:true]
   cap_drop: [ALL]
   read_only: true
-  tmpfs: [/tmp:rw,noexec,nosuid,size=32m]
+  tmpfs: ["/tmp:rw,noexec,nosuid,size=32m"]
 services:
   db:
     image: ${NOC_POSTGRES_IMAGE:-postgres:16-alpine}
@@ -71,7 +71,7 @@ services:
   frontend:
     cap_drop: [ALL]
     read_only: true
-    tmpfs: [/tmp:rw,noexec,nosuid,size=32m]
+    tmpfs: ["/tmp:rw,noexec,nosuid,size=32m"]
     image: ${NOC_FRONTEND_IMAGE:-noc84-frontend:rc}
     networks: [isolated]
     depends_on:
