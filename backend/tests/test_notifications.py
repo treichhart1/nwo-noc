@@ -1084,3 +1084,48 @@ def test_external_operations_edit_invalidates_notification_context(api):
 def test_dashboard_links_cannot_include_credentials_or_insecure_origins(bad):
     with pytest.raises(ValueError):
         Policy(dashboard_base_url=bad)
+
+
+def test_auto_discovery_does_not_starve_new_incidents_behind_existing_drafts(network):
+    x = network
+    cfg = Policy.model_validate(x.db.get(NotificationPolicy, 1).config)
+    cfg.max_plans_per_hour = 100
+    x.db.get(NotificationPolicy, 1).config = cfg.model_dump()
+    x.db.flush()
+    for i in range(21):
+        incident = (
+            x.incident
+            if i == 0
+            else Incident(
+                title=f"Synthetic historical draft {i}",
+                site_id=x.a.id,
+                started_at=NOW - timedelta(hours=3),
+            )
+        )
+        if i:
+            x.db.add(incident)
+            x.db.flush()
+        plan = create_plan(
+            x.db,
+            PlanRequest(
+                incident_id=incident.id,
+                evidence=Evidence(reference="SYN-OLD-DRAFT", event_type="tower_outage"),
+            ),
+            x.admin.id,
+            NOW,
+        )
+        plan.created_at = NOW - timedelta(hours=2)
+    latest = Incident(
+        title="Synthetic newly arrived incident",
+        site_id=x.a.id,
+        started_at=NOW - timedelta(minutes=1),
+    )
+    x.db.add(latest)
+    x.db.flush()
+    assert discover(x.db, NOW) == 1
+    assert (
+        x.db.scalar(
+            select(NotificationPlan).where(NotificationPlan.incident_id == latest.id)
+        ).status
+        == "draft"
+    )

@@ -325,7 +325,15 @@ def discover(db, now=None):
     created = 0
     for i in db.scalars(
         select(Incident)
-        .where(Incident.status.not_in(["resolved", "closed"]))
+        .where(
+            Incident.status.not_in(["resolved", "closed"]),
+            Incident.id.not_in(
+                select(NotificationPlan.incident_id).where(
+                    NotificationPlan.incident_id.is_not(None),
+                    NotificationPlan.kind == "outage",
+                )
+            ),
+        )
         .order_by(Incident.id)
         .limit(20)
     ):
