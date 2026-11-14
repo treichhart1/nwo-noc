@@ -461,3 +461,4 @@ class RevokedToken(Base):
 
 # Register additive, private customer models in the same Alembic metadata.
 from app.customers.models import CustomerAccount, CustomerService, CustomerSyncState, CustomerSyncRun, IncidentCustomer  # noqa: E402,F401
+from app.notifications.models import NotificationPolicy, NotificationTemplate, NotificationMaintenance, NotificationPlan, NotificationRecipient, NotificationDelivery, NotificationAttempt, NotificationSuppression, NotificationCredential  # noqa: E402,F401

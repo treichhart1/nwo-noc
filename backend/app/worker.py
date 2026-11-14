@@ -20,6 +20,9 @@ def main():
     runtime = Runtime()
     runner = Runner(runtime.id)
     legacy = LegacyTasks()
+    from concurrent.futures import ThreadPoolExecutor
+    notification_pool = ThreadPoolExecutor(max_workers=1, thread_name_prefix='noc-mock-notifications') if settings.notifications_worker_enabled else None
+    notification_future = None
     last = {"tcp": 0.0, "uisp": 0.0, "mikrotik": 0.0}
     while True:
         now = time.monotonic()
@@ -33,6 +36,12 @@ def main():
             runtime.db_failed = True
             log.warning("Monitoring database unavailable; durable work retained")
         if database_ok:
+            if notification_pool and (notification_future is None or notification_future.done()):
+                if notification_future is not None:
+                    try: notification_future.result()
+                    except Exception: log.warning('Notification queue interrupted; durable work retained')
+                from app.notifications.worker import tick
+                notification_future = notification_pool.submit(tick)
             if now - last["tcp"] >= 15 and legacy.submit("tcp", run_due_checks):
                 last["tcp"] = now
             if settings.rf_scheduler_enabled:

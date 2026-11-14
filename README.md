@@ -155,3 +155,5 @@ Consolidated release/pilot status and safe recovery: [NOC-93 release readiness](
 Current security/release verification and pilot gates: [NOC-94 final verification](docs/NOC-94-final-release-verification.md).
 
 NOC-95 private customer synchronization, reviewed network mapping and no-delivery impact previews: [Powercode customer foundation and operator guide](docs/NOC-95-powercode-customers.md). Native Powercode compatibility remains unverified and live connectivity is unavailable/disabled.
+
+NOC-96 operational notification approvals, durable mock SMS/Slack queues, maintenance and privacy controls: [Notification architecture and operator guide](docs/NOC-96-operational-notifications.md). External delivery remains unavailable/disabled; simulated receipts do not establish provider delivery.

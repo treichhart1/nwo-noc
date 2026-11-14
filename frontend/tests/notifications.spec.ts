@@ -1,0 +1,21 @@
+import {test,expect} from '@playwright/test'
+import fs from 'node:fs'
+test.skip(process.env.NOC96_NOTIFICATION_BROWSER!=='true','Requires explicit synthetic notification and NOC-95 customer fixture')
+test('operator approves only simulated notifications and manages maintenance without personal data',async({page})=>{
+ test.setTimeout(120000)
+ const state=process.env.NOC_ACCEPTANCE_STATE!;const env=Object.fromEntries(fs.readFileSync(`${state}/acceptance.env`,'utf8').trim().split('\n').map(l=>{const i=l.indexOf('=');return [l.slice(0,i),l.slice(i+1)]}));const fixture=JSON.parse(fs.readFileSync(`${state}/notification-fixture.json`,'utf8'))
+ const external:string[]=[];await page.route('**/*',async r=>{if(new URL(r.request().url()).origin!=='http://127.0.0.1:18090'){external.push(r.request().url());await r.abort()}else await r.continue()})
+ await page.goto('/');await page.locator('.loginCard input').nth(0).fill('acceptance');await page.locator('input[type=password]').fill(env.ADMIN_PASSWORD);await page.getByRole('button',{name:'Sign in',exact:true}).click();await page.locator('nav').getByRole('button',{name:'Notifications',exact:true}).click()
+ const center=page.getByRole('region',{name:'Notification control center',exact:true});await expect(center).toContainText('Simulation only');await expect(center).toContainText('SMS provider: mock_only')
+ await page.getByLabel('Source record',{exact:true}).selectOption(String(fixture.incident_id));await page.getByLabel('Network event type',{exact:true}).selectOption('tower_power');await page.getByLabel('Evidence record reference',{exact:true}).fill('SYN-NOC96-BROWSER');await page.getByLabel('Operator confirms customer-impacting evidence',{exact:true}).check();await page.getByRole('button',{name:'Prepare notification preview',exact:true}).click()
+ const approval=page.getByRole('article',{name:'Notification approval',exact:true});await expect(approval).toContainText('Recipient eligibility: 1 eligible');await expect(approval).toContainText('419-954-0586');await expect(approval).not.toContainText('+15555550001')
+ await expect(page.getByRole('button',{name:'Approve simulated notifications',exact:true})).toBeDisabled();await page.getByLabel('I reviewed the evidence, recipients, content, schedule and cost; approve simulation only',{exact:true}).check();await page.getByRole('button',{name:'Approve simulated notifications',exact:true}).click();await expect(center).toContainText('Simulation approved')
+ await page.getByRole('button',{name:'Process due mock queue',exact:true}).click();await expect(approval).toContainText('sms: simulated');await expect(center).toContainText('external delivery remains disabled')
+ await page.getByRole('button',{name:'Run safe mock provider test',exact:true}).click();await expect(center).toContainText('no external message sent')
+ const dates=await page.evaluate(()=>{const local=(d:Date)=>new Intl.DateTimeFormat('sv-SE',{timeZone:'UTC',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(d).replace(' ','T');return {start:local(new Date(Date.now()+3600000)),end:local(new Date(Date.now()+7200000))}})
+ await page.getByLabel('Maintenance name',{exact:true}).fill('SYN-NOC96 browser planned maintenance');await page.getByLabel('Maintenance infrastructure',{exact:true}).selectOption(String(fixture.site_id));await page.getByLabel('Maintenance start',{exact:true}).fill(dates.start);await page.getByLabel('Maintenance end',{exact:true}).fill(dates.end)
+ const[created]=await Promise.all([page.waitForResponse(r=>r.url().endsWith('/api/notifications/maintenance')&&r.request().method()==='POST'),page.getByRole('button',{name:'Save maintenance schedule',exact:true}).click()]);expect(created.status()).toBe(200);const id=(await created.json()).id
+ await page.getByRole('button',{name:`Edit maintenance #${id}`,exact:true}).click();await page.getByRole('button',{name:'cancel maintenance',exact:true}).click();await expect(center).toContainText('Old queued notices were suppressed')
+ await page.goto(`/?incident=${fixture.incident_id}`);await expect(page.getByRole('article',{name:'Technician investigation',exact:true})).toContainText('NOC96 Synthetic tower power interruption')
+ expect(external).toEqual([])
+})
