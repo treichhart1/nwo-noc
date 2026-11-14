@@ -633,3 +633,77 @@ def test_original_failed_power_and_routing_signals_require_explicit_recovery(net
             now=NOW + timedelta(seconds=80),
         )
     assert e.status == "resolved"
+
+
+@pytest.mark.parametrize(
+    "signals,state,kind",
+    [
+        ({"commercial_power": False}, "degraded", "confirmed_commercial_power_outage"),
+        (
+            {**GOOD, "commercial_power": False},
+            "degraded",
+            "confirmed_commercial_power_outage",
+        ),
+        (
+            {**BAD, "commercial_power": False},
+            "bad",
+            "confirmed_commercial_power_outage",
+        ),
+        (
+            {**BAD, "telemetry": True, "commercial_power": False},
+            "degraded",
+            "confirmed_commercial_power_outage",
+        ),
+        ({**GOOD, "ups": False}, "degraded", "backup_power_warning"),
+        ({**GOOD, "battery": False}, "degraded", "backup_power_warning"),
+        ({**GOOD, "power_supply": False}, "degraded", "backup_power_warning"),
+        ({**BAD, "ups": False}, "bad", "suspected_power_failure"),
+        ({**GOOD, "commercial_power": True}, "good", "healthy"),
+        ({**GOOD, "commercial_power": None}, "good", "healthy"),
+        ({}, "unknown", "missing_signals"),
+    ],
+)
+def test_power_state_matrix_without_invented_liveness(signals, state, kind):
+    o = Observation(
+        event_id="SYN-POWER-MATRIX",
+        kind="site",
+        target_id=1,
+        source="synthetic",
+        observed_at=NOW,
+        signals=signals,
+    )
+    result = classify(o, DetectionPolicy())
+    assert result[:2] == (state, kind)
+
+
+def test_cause_change_does_not_forget_unresolved_power_failure(network):
+    x = network
+    e = fail(
+        x,
+        "site",
+        x.a.id,
+        {"commercial_power": False, "telemetry": True, "collector": True},
+    )
+    for second in [-50, -20, 10]:
+        ingest(
+            x.db,
+            obs(x, "site", x.a.id, {"collector": False}, second),
+            now=NOW + timedelta(seconds=10),
+        )
+    assert e.classification == "collector_failure"
+    assert set(e.evidence["required_recovery_signals"]) == {
+        "collector",
+        "commercial_power",
+    }
+    for second in [20, 50, 80]:
+        ingest(
+            x.db, obs(x, "site", x.a.id, GOOD, second), now=NOW + timedelta(seconds=80)
+        )
+    assert e.status == "active"
+    for second in [90, 120, 150]:
+        ingest(
+            x.db,
+            obs(x, "site", x.a.id, {**GOOD, "commercial_power": True}, second),
+            now=NOW + timedelta(seconds=150),
+        )
+    assert e.status == "resolved"

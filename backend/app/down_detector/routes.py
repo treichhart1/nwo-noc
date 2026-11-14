@@ -143,8 +143,9 @@ def dashboard(
                 "sites": len(sites),
                 "online_sites": sum(v == "up" for v in site_states.values()),
                 "offline_sites": sum(v == "down" for v in site_states.values()),
+                "degraded_sites": sum(v == "degraded" for v in site_states.values()),
                 "unknown_sites": len(sites)
-                - sum(v in {"up", "down"} for v in site_states.values()),
+                - sum(v in {"up", "down", "degraded"} for v in site_states.values()),
                 "stale_components": len(states) - len(fresh),
                 "degraded_components": sum(s.state == "degraded" for s in fresh),
                 "active_critical_incidents": db.scalar(
@@ -188,6 +189,20 @@ def detail(ident: int, before: int | None = Query(None, ge=1), db=Depends(get_db
             ("commercial_power", "Review commercial power and UPS evidence"),
             ("collector", "Inspect collector heartbeat before diagnosing equipment"),
             ("wireless", "Review access-sector radio history"),
+            ("ups", "Inspect recorded UPS alarms and backup-power status"),
+            (
+                "battery",
+                "Review observed battery status; do not assume remaining runtime",
+            ),
+            ("power_supply", "Inspect recorded power-supply alarms"),
+            ("interface", "Review read-only Ethernet interface and counter history"),
+            ("fiber", "Review the documented fiber path and equipment availability"),
+            ("icmp", "Review recorded reachability and known upstream dependencies"),
+            ("snmp", "Inspect the allowlisted read-only SNMP source and its health"),
+            (
+                "telemetry",
+                "Inspect source freshness and collector health before device diagnosis",
+            ),
         ]:
             if st.evidence.get("signals", {}).get(signal) is False:
                 recommendations.append(
@@ -365,6 +380,9 @@ def notification(
         )
         if ep.classification == "fiber_outage":
             event = "fiber_outage"
+        elif ep.classification == "backup_power_warning":
+            event = "ups_warning"
+            verified = False
         elif ep.classification == "collector_failure":
             event = "monitoring_failure"
         if ep.classification == "confirmed_commercial_power_outage":

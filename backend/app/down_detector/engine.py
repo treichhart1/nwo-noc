@@ -67,10 +67,14 @@ def classify(o, p):
     if s.get("commercial_power") is False:
         # Confirms commercial power loss, not necessarily loss of customer service.
         return (
-            ("degraded" if good else "bad"),
+            ("bad" if len(bad) >= p.independent_signals and not good else "degraded"),
             "confirmed_commercial_power_outage",
             "confirmed",
         )
+    if any(s.get(k) is False for k in ["ups", "battery", "power_supply"]) and (
+        len(bad) < p.independent_signals or good
+    ):
+        return "degraded", "backup_power_warning", "probable"
     if s.get("telemetry") is True and bad & {"icmp", "snmp"}:
         return "degraded", "management_connectivity_failure", "probable"
     if bad and good:
@@ -231,7 +235,12 @@ def ingest(db, o: Observation, *, now=None):
         )
     )
     if state == "good" and ep:
-        failed = {k for k, v in ep.evidence.get("signals", {}).items() if v is False}
+        failed = set(
+            ep.evidence.get(
+                "required_recovery_signals",
+                [k for k, v in ep.evidence.get("signals", {}).items() if v is False],
+            )
+        )
         if any(o.signals.get(k) is not True for k in failed):
             state = "unknown"
             classification = "incomplete_recovery_evidence"
@@ -254,7 +263,12 @@ def ingest(db, o: Observation, *, now=None):
                     confidence=confidence,
                     started_at=st.bad_since,
                     confirmed_at=o.observed_at,
-                    evidence=st.evidence,
+                    evidence={
+                        **st.evidence,
+                        "required_recovery_signals": sorted(
+                            k for k, v in o.signals.items() if v is False
+                        ),
+                    },
                 )
                 db.add(ep)
                 db.flush()
@@ -274,7 +288,22 @@ def ingest(db, o: Observation, *, now=None):
             elif ep.classification != classification and not ep.override_reason:
                 ep.classification = classification
                 ep.confidence = confidence
-                ep.evidence = st.evidence
+                required = set(
+                    ep.evidence.get(
+                        "required_recovery_signals",
+                        [
+                            k
+                            for k, v in ep.evidence.get("signals", {}).items()
+                            if v is False
+                        ],
+                    )
+                )
+                ep.evidence = {
+                    **st.evidence,
+                    "required_recovery_signals": sorted(
+                        required | {k for k, v in o.signals.items() if v is False}
+                    ),
+                }
                 audit(
                     db,
                     "cause_changed",
@@ -282,6 +311,23 @@ def ingest(db, o: Observation, *, now=None):
                     classification=classification,
                     event_id=o.event_id,
                 )
+            if ep:
+                required = set(
+                    ep.evidence.get(
+                        "required_recovery_signals",
+                        [
+                            k
+                            for k, v in ep.evidence.get("signals", {}).items()
+                            if v is False
+                        ],
+                    )
+                )
+                ep.evidence = {
+                    **ep.evidence,
+                    "required_recovery_signals": sorted(
+                        required | {k for k, v in o.signals.items() if v is False}
+                    ),
+                }
     elif state == "good":
         st.bad_count = 0
         st.bad_since = None
