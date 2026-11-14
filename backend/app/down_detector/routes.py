@@ -363,6 +363,10 @@ def notification(
                 else "equipment_failure" if st.kind == "device" else "tower_outage"
             )
         )
+        if ep.classification == "fiber_outage":
+            event = "fiber_outage"
+        elif ep.classification == "collector_failure":
+            event = "monitoring_failure"
         if ep.classification == "confirmed_commercial_power_outage":
             event = (
                 "tower_power"
@@ -392,6 +396,7 @@ def notification(
             ):
                 raise ValueError("Stable primary and downstream recovery required")
             event = "restoration"
+            verified = True
         p = create_plan(
             db,
             PlanRequest(
@@ -402,7 +407,9 @@ def notification(
                     event_type=event,
                     confirmed=verified,
                     recovery_verified=body.kind == "restoration",
-                    recovery_samples=st.good_count if body.kind == "restoration" else 0,
+                    recovery_samples=(
+                        min(st.good_count, 100) if body.kind == "restoration" else 0
+                    ),
                     verified_at=st.last_seen if body.kind == "restoration" else None,
                 ),
             ),

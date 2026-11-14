@@ -358,10 +358,15 @@ def test_parent_device_chain_and_cycles(network):
     assert child.parent_id is None and root.parent_id is None
 
 
-def test_primary_preview_dedupe_and_maintenance_suppression(api):
+@pytest.mark.parametrize("maintenance_status", ["scheduled", "in_progress", "active"])
+def test_primary_preview_dedupe_and_maintenance_suppression(api, maintenance_status):
     from app.models.entities import MaintenanceWindow
 
     x, c, h = api
+    from app.notifications.models import NotificationPolicy
+
+    pol = x.db.get(NotificationPolicy, 1)
+    pol.config = {**pol.config, "minimum_outage_seconds": 60}
     root = fail(x, "link", x.up.id)
     child = fail(x)
     reconcile(x.db, now=NOW)
@@ -371,7 +376,7 @@ def test_primary_preview_dedupe_and_maintenance_suppression(api):
             site_id=x.a.id,
             starts_at=NOW - timedelta(hours=1),
             ends_at=NOW + timedelta(hours=1),
-            status="active",
+            status=maintenance_status,
         )
     )
     x.db.commit()
@@ -391,6 +396,9 @@ def test_primary_preview_dedupe_and_maintenance_suppression(api):
     assert r.status_code == 200, r.text
     p = c.get(f"/api/notifications/plans/{r.json()['plan_id']}", headers=h).json()
     assert p["recipient_counts"].get("eligible", 0) == 0
+    assert any(
+        r["reason"] == "planned_maintenance_suppression" for r in p["recipients"]
+    )
     assert not x.db.scalar(select(NotificationDelivery.id))
 
 
@@ -510,3 +518,93 @@ def test_malformed_stored_payloads_are_isolated_without_poisoning_queue(network)
     assert consume(x.db, now=NOW)["processed"] == 0
     assert x.db.get(OutageState, f"device:{x.ap.id}").state == "unknown"
     assert not x.db.scalar(select(OutageEpisode))
+
+
+@pytest.mark.parametrize(
+    "kind,signals,expected",
+    [
+        (
+            "link",
+            {"fiber": False, "interface": False, "collector": True},
+            "fiber_outage",
+        ),
+        ("device", {"collector": False}, "monitoring_failure"),
+    ],
+)
+def test_notification_preview_preserves_observed_failure_type(
+    api, kind, signals, expected
+):
+    x, c, h = api
+    ident = x.fiber.id if kind == "link" else x.ap.id
+    e = fail(x, kind, ident, signals)
+    reconcile(x.db, now=NOW)
+    x.db.commit()
+    r = c.post(
+        f"/api/down-detector/episodes/{e.id}/notification-preview", headers=h, json={}
+    )
+    assert r.status_code == 200, r.text
+    assert (
+        x.db.get(NotificationPlan, r.json()["plan_id"]).snapshot["request"]["evidence"][
+            "event_type"
+        ]
+        == expected
+    )
+
+
+def test_long_stable_recovery_count_fits_notification_evidence_contract(api):
+    from app.down_detector.engine import clock
+
+    x, c, h = api
+    from app.notifications.models import NotificationPolicy
+    from app.notifications.service import approve
+    from app.notifications.worker import run_batch
+
+    pol = x.db.get(NotificationPolicy, 1)
+    pol.config = {**pol.config, "minimum_outage_seconds": 60}
+    at = clock()
+    for second in [-170, -140, -110]:
+        ingest(
+            x.db,
+            obs(x, second=second).model_copy(
+                update={"observed_at": at + timedelta(seconds=second)}
+            ),
+            now=at,
+        )
+    reconcile(x.db, now=at)
+    e = x.db.scalar(select(OutageEpisode))
+    x.db.commit()
+    notice = c.post(
+        f"/api/down-detector/episodes/{e.id}/notification-preview", headers=h, json={}
+    )
+    assert notice.status_code == 200, notice.text
+    approve(x.db, notice.json()["plan_id"], x.admin.id, clock())
+    run_batch(x.db, now=clock())
+    x.db.commit()
+    for second in [-90, -60, -30]:
+        ingest(
+            x.db,
+            obs(x, signals=GOOD, second=second).model_copy(
+                update={"observed_at": at + timedelta(seconds=second)}
+            ),
+            now=at,
+        )
+    reconcile(x.db, now=at)
+    x.db.get(OutageState, e.key).good_count = 101
+    x.db.commit()
+    r = c.post(
+        f"/api/down-detector/episodes/{e.id}/notification-preview",
+        headers=h,
+        json={"kind": "restoration"},
+    )
+    assert r.status_code == 200, r.text
+    assert (
+        x.db.get(NotificationPlan, r.json()["plan_id"]).snapshot["request"]["evidence"][
+            "recovery_samples"
+        ]
+        == 100
+    )
+
+    assert any(
+        r["eligible"]
+        for r in x.db.get(NotificationPlan, r.json()["plan_id"]).snapshot["recipients"]
+    )
