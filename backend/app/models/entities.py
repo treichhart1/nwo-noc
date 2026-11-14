@@ -458,3 +458,6 @@ class RevokedToken(Base):
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
     revoked_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+# Register additive, private customer models in the same Alembic metadata.
+from app.customers.models import CustomerAccount, CustomerService, CustomerSyncState, CustomerSyncRun, IncidentCustomer  # noqa: E402,F401

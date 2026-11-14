@@ -153,3 +153,5 @@ NOC-91 adds [unified RF operations and shared technician investigations](docs/NO
 Consolidated release/pilot status and safe recovery: [NOC-93 release readiness](docs/NOC-93-release-readiness.md). No production or live-device pilot is authorized by this candidate.
 
 Current security/release verification and pilot gates: [NOC-94 final verification](docs/NOC-94-final-release-verification.md).
+
+NOC-95 private customer synchronization, reviewed network mapping and no-delivery impact previews: [Powercode customer foundation and operator guide](docs/NOC-95-powercode-customers.md). Native Powercode compatibility remains unverified and live connectivity is unavailable/disabled.

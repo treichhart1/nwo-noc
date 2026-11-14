@@ -64,7 +64,7 @@ with SessionLocal() as db:
  assert db.scalar(text("SELECT count(*) FROM telemetry_samples WHERE raw_data::jsonb->>'noc93_marker'='preserved'"))==1
  assert db.scalar(text("SELECT count(*) FROM incidents WHERE findings='NOC93 retained findings'"))==1
  assert db.scalar(text("SELECT to_regclass('noc93_failed_upgrade')")) is None
- assert h['version']=={'0011_monitoring_reliability':'3.2.1-rc.2','0012_session_revocation':'3.2.1-rc.3'}[revision]
+ assert h['version']=={'0011_monitoring_reliability':'3.2.1-rc.2','0013_customer_foundation':'3.2.1-rc.3'}[revision]
 print(json.dumps({'revision':revision,'health':'ok','authenticated_rf_operations':'ok','raw_and_findings':'preserved'}))
 """
 SEED = """
@@ -205,7 +205,7 @@ with SessionLocal() as db:
     manage(state, "stop", "worker", "backend")
     command([str(ROOT / "scripts/release/prepare-runtime.sh"), str(candidate)])
     manage(candidate, "up", "-d", "--wait", "--wait-timeout", "180")
-    assert json.loads(python(candidate, PROBE))["revision"] == "0012_session_revocation"
+    assert json.loads(python(candidate, PROBE))["revision"] == "0013_customer_foundation"
     checks.append("candidate_upgrade_preserves_data")
     proof_code = (
         "import os,hashlib,json;from pathlib import Path;p=Path('/var/lib/nwo-noc/monitoring')/"
@@ -218,7 +218,7 @@ with SessionLocal() as db:
     checks.append("private_spool_payload_preserved_during_nonroot_upgrade")
     manage(candidate, "restart", "backend", "worker")
     manage(candidate, "up", "-d", "--wait", "backend", "worker")
-    assert json.loads(python(candidate, PROBE))["revision"] == "0012_session_revocation"
+    assert json.loads(python(candidate, PROBE))["revision"] == "0013_customer_foundation"
     checks.append("candidate_restart_healthy")
     target = "restore_noc93_" + secrets.token_hex(4)
     command(
@@ -260,14 +260,14 @@ with SessionLocal() as db:
         checks.append("actual_old_application_runs_on_matching_restored_database")
     finally:
         command(["docker", "--host=unix:///var/run/docker.sock", "rm", "-f", ident])
-    assert json.loads(python(candidate, PROBE))["revision"] == "0012_session_revocation"
+    assert json.loads(python(candidate, PROBE))["revision"] == "0013_customer_foundation"
     checks.append("current_candidate_and_original_database_untouched_by_restore")
     return {
         "checks": checks,
         "checks_passed": len(checks),
         "elapsed_seconds": round(time.monotonic() - start, 3),
         "old_schema": "0011_monitoring_reliability",
-        "new_schema": "0012_session_revocation",
+        "new_schema": "0013_customer_foundation",
         "restore_database": target,
         "network": "internal-only; no equipment access",
         "data": "synthetic only; volumes/backups/configurations retained",
