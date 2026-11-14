@@ -10,6 +10,9 @@ class Settings(BaseSettings):
     synthetic_monitoring_enabled: bool = False
     powercode_fixture_enabled: bool = False
     powercode_live_enabled: bool = False
+    down_detector_enabled: bool = False
+    down_detector_interval_seconds: int = Field(30,ge=15,le=300)
+    down_detector_policy: dict = Field(default_factory=dict)
     notifications_worker_enabled: bool = False
     notifications_auto_drafts_enabled: bool = False
     notifications_live_delivery_enabled: bool = False

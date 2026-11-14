@@ -23,6 +23,9 @@ def main():
     from concurrent.futures import ThreadPoolExecutor
     notification_pool = ThreadPoolExecutor(max_workers=1, thread_name_prefix='noc-mock-notifications') if settings.notifications_worker_enabled else None
     notification_future = None
+    detector_pool = ThreadPoolExecutor(max_workers=1, thread_name_prefix="noc-down-detector") if settings.down_detector_enabled else None
+    detector_future = None
+    detector_last = 0.0
     last = {"tcp": 0.0, "uisp": 0.0, "mikrotik": 0.0}
     while True:
         now = time.monotonic()
@@ -36,6 +39,13 @@ def main():
             runtime.db_failed = True
             log.warning("Monitoring database unavailable; durable work retained")
         if database_ok:
+            if detector_pool and now-detector_last>=settings.down_detector_interval_seconds and (detector_future is None or detector_future.done()):
+                if detector_future is not None:
+                    try: detector_future.result()
+                    except Exception: log.warning("Down Detector interrupted; durable observations retained")
+                from app.down_detector.worker import tick as detector_tick
+                detector_future=detector_pool.submit(detector_tick)
+                detector_last=now
             if notification_pool and (notification_future is None or notification_future.done()):
                 if notification_future is not None:
                     try: notification_future.result()

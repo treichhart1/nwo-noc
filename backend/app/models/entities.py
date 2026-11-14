@@ -464,3 +464,5 @@ class RevokedToken(Base):
 from app.customers.models import CustomerAccount, CustomerService, CustomerSyncState, CustomerSyncRun, IncidentCustomer  # noqa: E402,F401
 from app.notifications.models import NotificationPolicy, NotificationTemplate, NotificationMaintenance, NotificationPlan, NotificationRecipient, NotificationDelivery, NotificationAttempt, NotificationSuppression, NotificationCredential  # noqa: E402,F401
 from app.notifications.controls import NotificationControl,NotificationProviderConfig,NotificationCallback  # noqa: E402,F401
+
+from app.down_detector.models import OutageObservation,OutageState,OutageEpisode,OutageTimeline  # noqa: E402,F401

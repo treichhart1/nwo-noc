@@ -38,9 +38,12 @@ from fastapi.responses import JSONResponse
 
 @app.exception_handler(RequestValidationError)
 async def private_customer_validation(request, exc):
-    if request.url.path.startswith(('/api/customers','/api/notifications')):
+    if request.url.path.startswith(('/api/customers','/api/notifications','/api/down-detector')):
         return JSONResponse(status_code=422, content={'detail':'Invalid customer request; check the documented field types and bounds'})
     return await request_validation_exception_handler(request, exc)
 
 from app.notifications.routes import router as notification_router
 app.include_router(notification_router)
+
+from app.down_detector.routes import router as down_detector_router
+app.include_router(down_detector_router)
