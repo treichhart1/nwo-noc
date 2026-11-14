@@ -218,6 +218,7 @@ class TopologyOut(BaseModel):
 class IncidentCreate(BaseModel):
     title: str = Field(min_length=3, max_length=255)
     severity: str = "warning"
+    sector_id:int|None=Field(default=None,ge=1)
     site_id: int | None = None
     device_id: int | None = None
     link_id: int | None = None
@@ -233,6 +234,7 @@ class IncidentUpdate(BaseModel):
     title: str | None = None
     severity: str | None = None
     status: Literal["open", "acknowledged", "investigating", "resolved", "closed"] | None = None
+    sector_id:int|None=Field(default=None,ge=1)
     site_id: int | None = None
     device_id: int | None = None
     link_id: int | None = None
@@ -250,6 +252,7 @@ class IncidentOut(ORMModel):
     title: str
     severity: str
     status: str
+    sector_id:int|None=Field(default=None,ge=1)
     site_id: int | None
     site_name: str | None = None
     device_id: int | None

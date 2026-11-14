@@ -28,6 +28,15 @@ class CustomerAccount(Base):
     sms_consent: Mapped[str] = mapped_column(String(20), default="unknown")
     sms_opt_out: Mapped[bool] = mapped_column(Boolean, default=False)
     communication_preference: Mapped[str] = mapped_column(String(20), default="unknown")
+    consent_recorded_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    opt_out_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    preference_updated_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     consent_record: Mapped[str | None] = mapped_column(String(120), nullable=True)
     source_updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     last_synced_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))

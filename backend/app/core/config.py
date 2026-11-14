@@ -10,6 +10,19 @@ class Settings(BaseSettings):
     synthetic_monitoring_enabled: bool = False
     powercode_fixture_enabled: bool = False
     powercode_live_enabled: bool = False
+    notifications_worker_enabled: bool = False
+    notifications_auto_drafts_enabled: bool = False
+    notifications_live_delivery_enabled: bool = False
+    notifications_vault_key_file: str = Field(default='',repr=False,exclude=True)
+
+    @model_validator(mode='after')
+    def notification_isolation(self):
+        if self.notifications_live_delivery_enabled:
+            raise ValueError('External notification delivery is unavailable in NOC-96; explicit future provider/security approval required')
+        if self.notifications_worker_enabled and (not self.offline_mode or self.app_env!='staging'):
+            raise ValueError('Mock notification worker requires offline staging')
+        return self
+
 
     @model_validator(mode="after")
     def powercode_isolation(self):

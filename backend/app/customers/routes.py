@@ -150,6 +150,9 @@ def view(s, a):
         "email": masked_email(a.email),
         "valid_sms_phone": bool(e164(a.phone)),
         "sms_consent": a.sms_consent,
+        "consent_recorded_at": a.consent_recorded_at,
+        "opt_out_at": a.opt_out_at,
+        "preference_updated_at": a.preference_updated_at,
         "sms_opt_out": a.sms_opt_out,
         "communication_preference": a.communication_preference,
         "last_synced_at": s.last_synced_at,
@@ -402,6 +405,12 @@ def preference(
             raise ProviderFailure("overlap_skipped")
         if a.source_deleted_at or body.consent == "granted" and not body.consent_record:
             raise ProviderFailure("invalid_reference")
+        a.consent_recorded_at = (
+            datetime.now(timezone.utc) if body.consent == "granted" else None
+        )
+        a.preference_updated_at = datetime.now(timezone.utc)
+        if body.opt_out:
+            a.opt_out_at = datetime.now(timezone.utc)
         a.sms_consent = body.consent
         a.sms_opt_out = body.opt_out
         a.communication_preference = body.preference
