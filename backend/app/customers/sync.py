@@ -1,7 +1,7 @@
 """Atomic, bounded export reconciliation; never writes to the provider."""
 
 from datetime import datetime, timezone
-from sqlalchemy import select, text
+from sqlalchemy import select, text, update
 from app.customers.models import (
     CustomerAccount,
     CustomerService,
@@ -98,7 +98,7 @@ def synchronize(db, provider, *, user_id=None):
                 ):
                     continue
                 elif record.updated_at < utc(row.source_updated_at):
-                    continue
+                    raise ProviderFailure("stale_snapshot")
                 elif (
                     record.updated_at == utc(row.source_updated_at)
                     and row.source_deleted_at is not None
@@ -159,7 +159,7 @@ def synchronize(db, provider, *, user_id=None):
                 ):
                     continue
                 elif record.updated_at < utc(row.source_updated_at):
-                    continue
+                    raise ProviderFailure("stale_snapshot")
                 elif (
                     record.updated_at == utc(row.source_updated_at)
                     and row.source_deleted_at
@@ -235,6 +235,17 @@ def synchronize(db, provider, *, user_id=None):
                         row.sms_consent = "unknown"
                         row.sms_opt_out = True
                         row.consent_record = None
+            # A complete cursor-contiguous delta verifies unchanged rows too.
+            # Materialization timestamps must not falsely go stale while source
+            # reconciliation continues successfully with no customer changes.
+            db.flush()
+            if batch.mode == "incremental":
+                for model in (CustomerAccount, CustomerService):
+                    db.execute(
+                        update(model)
+                        .where(model.source_deleted_at.is_(None))
+                        .values(last_synced_at=now)
+                    )
             state.status = "healthy"
             state.cursor = batch.cursor
             state.watermark = batch.as_of

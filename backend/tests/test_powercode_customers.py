@@ -948,3 +948,27 @@ def test_customer_without_contacts_or_source_assignments_is_not_invented(postgre
         and s.site_id is None
         and s.download_mbps is None
     )
+
+
+def test_complete_incremental_verifies_unchanged_records(imported):
+    x = imported
+    x.service.last_synced_at = NOW - timedelta(days=2)
+    x.account.last_synced_at = NOW - timedelta(days=2)
+    x.db.flush()
+    p = batch(1, "incremental")
+    p["accounts"] = []
+    p["services"] = []
+    assert sync(x.db, p)["status"] == "healthy"
+    assert (
+        analyze(x.db, Target(site_id=x.a.id), [x.service])[0]["classification"]
+        == "confirmed"
+    )
+    assert x.account.last_synced_at > NOW
+
+
+def test_older_record_does_not_advance_successful_cursor(postgres_db):
+    sync(postgres_db)
+    p = batch(1, "incremental")
+    p["accounts"][0]["updated_at"] = (NOW - timedelta(seconds=1)).isoformat()
+    assert sync(postgres_db, p)["error_code"] == "stale_snapshot"
+    assert postgres_db.get(CustomerSyncState, "powercode").cursor == "cursor-0"
