@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     synthetic_monitoring_enabled: bool = False
     powercode_fixture_enabled: bool = False
     powercode_live_enabled: bool = False
+    ipam_discovery_enabled: bool = False
     tower_health_enabled: bool = False
     tower_health_interval_seconds: int = Field(15,ge=15,le=300)
     tower_health_policy: dict = Field(default_factory=dict)

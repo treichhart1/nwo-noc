@@ -468,3 +468,5 @@ from app.notifications.controls import NotificationControl,NotificationProviderC
 from app.down_detector.models import OutageObservation,OutageState,OutageEpisode,OutageTimeline  # noqa: E402,F401
 
 from app.tower_health.models import TowerEvent,TowerSample,TowerReceipt,TowerDaily,TowerCurrent,TowerHistory,TowerFinding,TowerNote,TowerPolicyRow  # noqa: E402,F401
+
+from app.ipam.models import VRF,VLAN,Interface,Prefix,Pool,Assignment,DNSRecord,Observation,DiscoveryBatch,ImportBatch,Change,ReadBudget  # noqa: E402,F401
