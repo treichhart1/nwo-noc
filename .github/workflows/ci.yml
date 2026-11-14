@@ -9,6 +9,20 @@ permissions:
   contents: read
 
 jobs:
+  dependency-security:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: pip install pip-audit==2.10.1
+      - run: pip-audit -r backend/requirements.txt --vulnerability-service pypi --format json --output pip-audit.json
+      - run: npm ci --no-audit --no-fund && npm audit --audit-level=low
+        working-directory: frontend
   frontend:
     runs-on: ubuntu-24.04
     defaults:
@@ -196,7 +210,8 @@ jobs:
             tests/test_rf_troubleshooting_postgres.py \
             tests/test_rf_operations_postgres.py \
             tests/test_monitoring_reliability.py \
-            tests/test_release_combined_postgres.py
+            tests/test_release_combined_postgres.py \
+            tests/test_final_release_security.py
       - name: Measure 30-day historical analytics at 250/500/1000 devices
         env:
           APP_ENV: staging
@@ -282,6 +297,7 @@ jobs:
       - backend
       - database-migrations
       - rf-postgres-integration
+      - dependency-security
       - compose-validation
     if: ${{ always() }}
     steps:
@@ -291,10 +307,11 @@ jobs:
           FRONTEND_RESULT: ${{ needs.frontend.result }}
           BACKEND_RESULT: ${{ needs.backend.result }}
           MIGRATIONS_RESULT: ${{ needs.database-migrations.result }}
+          SECURITY_RESULT: ${{ needs.dependency-security.result }}
           RF_RESULT: ${{ needs.rf-postgres-integration.result }}
           COMPOSE_RESULT: ${{ needs.compose-validation.result }}
         run: |
-          for name in INSTALL_RESULT FRONTEND_RESULT BACKEND_RESULT MIGRATIONS_RESULT RF_RESULT COMPOSE_RESULT; do
+          for name in INSTALL_RESULT FRONTEND_RESULT BACKEND_RESULT MIGRATIONS_RESULT RF_RESULT COMPOSE_RESULT SECURITY_RESULT; do
             result="${!name}"
             if [ "$result" != "success" ]; then
               echo "::error::$name is $result, expected success"
@@ -350,6 +367,13 @@ jobs:
           npm ci --no-audit --no-fund
           npx playwright install --with-deps chromium
           npx playwright test
+      - name: Validate durable logout, nonroot runtime, restricted DB and operator stop
+        env:
+          NOC_ACCEPTANCE_STATE: ${{ runner.temp }}/noc84-state
+          NOC94_SECURITY_BROWSER: "true"
+        run: |
+          (cd frontend && npx playwright test final-security.spec.ts)
+          python3 tests/release/test_final_security.py
       - name: Validate 400-device rural WISP operational dashboard
         env:
           NOC85_WISP_BROWSER: "true"

@@ -156,6 +156,8 @@ def configured(db):
 
 
 def claim(db, worker_id, *, now=None, limit=32):
+    from app.services.integration_interlock import disabled
+    if disabled():return []
     now = now or datetime.now(timezone.utc)
     rows = list(
         db.scalars(
@@ -251,6 +253,8 @@ def execute(
         replayed = delivery is not None
         if delivery is None:
             try:
+                from app.services.integration_interlock import disabled
+                if disabled():raise IntegrationFailure("disabled")
                 observation = Envelope.model_validate(collector(db, row, now))
             except (SQLAlchemyError, IntegrationFailure):
                 raise

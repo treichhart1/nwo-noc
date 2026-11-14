@@ -16,6 +16,8 @@ def _target(device: Device) -> tuple[str | None, int]:
     return (device.monitor_host or device.ip_address or device.hostname, device.monitor_port or 443)
 
 def tcp_check(host: str, port: int, timeout: int) -> tuple[bool, float | None, str | None]:
+    from app.services.integration_interlock import disabled
+    if disabled():return False,None,"Monitoring disabled by operator"
     if settings.synthetic_monitoring_enabled:
         try:
             synthetic = ip_address(host) in ip_network("198.18.0.0/15")
@@ -39,6 +41,9 @@ POLL_LOCK = 850085
 
 def check_device(db: Session, device: Device, force: bool = False, *, now=None,
                  probe_result=None, commit=True) -> MonitorCheck:
+    from app.services.integration_interlock import disabled
+    from app.integrations.read_only import IntegrationFailure
+    if disabled():raise IntegrationFailure("disabled")
     now = now or datetime.now(timezone.utc)
     if commit and db.get_bind().dialect.name == "postgresql":
         # Serialize manual checks with worker batches; refresh state after lock.
@@ -56,6 +61,7 @@ def check_device(db: Session, device: Device, force: bool = False, *, now=None,
         ok, latency, error = False, None, "No monitoring target configured"
     else:
         ok, latency, error = tcp_check(host, port, min(max(device.monitor_timeout_seconds, 1), 10))
+    if disabled():raise IntegrationFailure("disabled")
     failures = 0 if ok else device.monitor_consecutive_failures + 1
     new = UP if ok else (DOWN if failures >= 2 else old if old in (UP, DOWN) else UNKNOWN)
     check = MonitorCheck(device_id=device.id, status=UP if ok else DOWN, latency_ms=latency, error=error, checked_at=now)
@@ -84,6 +90,8 @@ def run_due_checks(db: Session, *, now=None, probe=None, progress=None) -> dict:
     PostgreSQL transaction lock prevents overlapping workers/manual checks from
     creating duplicate transitions. A crash rolls back the complete state batch.
     """
+    from app.services.integration_interlock import disabled
+    if disabled():return {"enabled":0,"checked":0,"operator_disabled":True}
     started = time.perf_counter()
     frozen_clock = now is not None
     now = now or datetime.now(timezone.utc)
@@ -111,6 +119,8 @@ def run_due_checks(db: Session, *, now=None, probe=None, progress=None) -> dict:
             results.append((result, now if frozen_clock else datetime.now(timezone.utc)))
             if progress is not None:
                 progress()
+    if disabled():
+        db.rollback();return {"enabled":0,"checked":0,"operator_disabled":True}
     for device, (result, observed_at) in zip(due, results):
         check_device(db, device, now=observed_at, probe_result=result, commit=False)
     db.execute(delete(MonitorCheck).where(MonitorCheck.checked_at < now - timedelta(days=30)))

@@ -116,6 +116,8 @@ class MicrowaveCollector(RadioCollector):
         except (ValueError,TypeError):raise IntegrationFailure('invalid_response') from None
 
     async def collect(self,credentials):
+        from app.services.integration_interlock import disabled
+        if disabled():raise IntegrationFailure('disabled')
         address=self.policy.validate_connection()
         oids=tuple(f.oid for f in self.mapping.fields.values())
         async def batch():
@@ -125,6 +127,7 @@ class MicrowaveCollector(RadioCollector):
                 selected=oids[offset:offset+32]
                 for attempt in range(self.policy.retries+1):
                     try:
+                        if disabled():raise IntegrationFailure('disabled')
                         result=await asyncio.wait_for(self.transport.get(address,credentials,selected,self.policy.timeout_seconds),self.policy.timeout_seconds+.5)
                         if not isinstance(result,dict) or set(result)-set(selected):raise IntegrationFailure('invalid_response')
                         values.update(result);break

@@ -13,3 +13,8 @@ export async function login(username:string,password:string){
   const r=await fetch(BASE+"/auth/login",{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body})
   const data=await r.json().catch(()=>({})); if(!r.ok) throw new Error(data.detail||"Login failed"); return data
 }
+export async function logout(){
+  const token=getToken()
+  if(token){const r=await fetch(BASE+'/auth/logout',{method:'POST',headers:{Authorization:`Bearer ${token}`}});if(!r.ok&&r.status!==401)throw new Error('Server logout could not revoke this session. Retry when service recovers.')}
+  setToken(null)
+}

@@ -110,7 +110,7 @@ docker compose up -d --build
 
 Current Version
 
-v3.2.1-rc.2
+v3.2.1-rc.3
 
 Current Sprint
 
@@ -151,3 +151,5 @@ NOC-90 adds [evidence-based RF troubleshooting and human review](docs/NOC-90-rf-
 NOC-91 adds [unified RF operations and shared technician investigations](docs/NOC-91-rf-operations.md), with explicit coverage/freshness, site/link context, incident assignments and cursor audit history. The dashboard reads stored telemetry and performs no equipment operations.
 
 Consolidated release/pilot status and safe recovery: [NOC-93 release readiness](docs/NOC-93-release-readiness.md). No production or live-device pilot is authorized by this candidate.
+
+Current security/release verification and pilot gates: [NOC-94 final verification](docs/NOC-94-final-release-verification.md).

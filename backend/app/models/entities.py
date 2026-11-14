@@ -451,3 +451,10 @@ class MonitoringWorker(Base):
     redis_state: Mapped[str] = mapped_column(String(20), default="unknown")
     phase: Mapped[str] = mapped_column(String(30), default="starting")
     spool_pending: Mapped[int] = mapped_column(Integer, default=0)
+
+class RevokedToken(Base):
+    __tablename__ = "revoked_tokens"
+    token_id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    revoked_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)

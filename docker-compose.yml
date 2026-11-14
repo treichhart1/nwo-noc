@@ -27,6 +27,9 @@ services:
       retries: 10
 
   backend:
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    volumes: [monitoring_spool:/var/lib/nwo-noc/monitoring]
     build: ./backend
     restart: unless-stopped
     env_file: .env
@@ -45,6 +48,8 @@ services:
       retries: 10
 
   worker:
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
     build: ./backend
     restart: unless-stopped
     env_file: .env
@@ -62,10 +67,14 @@ services:
         condition: service_healthy
 
   frontend:
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    read_only: true
+    tmpfs: [/tmp:rw,noexec,nosuid,size=32m]
     build: ./frontend
     restart: unless-stopped
     ports:
-      - "${BIND_ADDRESS:-127.0.0.1}:${FRONTEND_PORT:-8090}:80"
+      - "${BIND_ADDRESS:-127.0.0.1}:${FRONTEND_PORT:-8090}:${NOC_FRONTEND_INTERNAL_PORT:-8080}"
     depends_on:
       backend:
         condition: service_healthy

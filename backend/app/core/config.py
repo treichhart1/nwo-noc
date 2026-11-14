@@ -8,12 +8,12 @@ class Settings(BaseSettings):
     api_docs_enabled: bool = False
     offline_mode: bool = False
     synthetic_monitoring_enabled: bool = False
-    secret_key: str
-    access_token_expire_minutes: int = 720
-    database_url: str
+    secret_key: str = Field(repr=False,exclude=True)
+    access_token_expire_minutes: int = Field(15,ge=1,le=30)
+    database_url: str = Field(repr=False,exclude=True)
     redis_url: str = "redis://redis:6379/0"
     admin_username: str = "admin"
-    admin_password: str
+    admin_password: str = Field(repr=False,exclude=True)
     admin_email: str = "admin@nwohiobb.local"
     uisp_base_url: str = ""
     uisp_token: SecretStr = SecretStr("")

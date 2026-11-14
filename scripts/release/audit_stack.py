@@ -4,7 +4,7 @@ import json, subprocess
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-SNAPSHOT = ROOT / "docs/audits/NOC-93-pr-snapshot.json"
+SNAPSHOT = ROOT / "docs/audits/NOC-94-pr-snapshot.json"
 
 
 def git(*args, check=True):

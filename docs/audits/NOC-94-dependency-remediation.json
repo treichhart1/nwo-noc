@@ -1,0 +1,66 @@
+{
+  "scope": "queried PyPI and npm known-advisory feeds; not OS image or penetration-test certification",
+  "python_before": [
+    {
+      "package": "python-jose",
+      "version": "3.5.0",
+      "advisories": [
+        "PYSEC-2026-4298"
+      ]
+    },
+    {
+      "package": "python-multipart",
+      "version": "0.0.20",
+      "advisories": [
+        "PYSEC-2026-1852",
+        "PYSEC-2026-3036",
+        "PYSEC-2026-3037",
+        "PYSEC-2026-3038",
+        "PYSEC-2026-3039",
+        "PYSEC-2026-3040"
+      ]
+    },
+    {
+      "package": "starlette",
+      "version": "0.47.3",
+      "advisories": [
+        "PYSEC-2026-161",
+        "PYSEC-2026-1942",
+        "PYSEC-2026-2280",
+        "PYSEC-2026-2281",
+        "PYSEC-2026-248",
+        "PYSEC-2026-249"
+      ]
+    },
+    {
+      "package": "ecdsa",
+      "version": "0.19.2",
+      "advisories": [
+        "PYSEC-2026-1325"
+      ]
+    }
+  ],
+  "npm_before": {
+    "info": 0,
+    "low": 0,
+    "moderate": 2,
+    "high": 4,
+    "critical": 0,
+    "total": 6
+  },
+  "python_after_known_vulnerabilities": 0,
+  "npm_after": {
+    "info": 0,
+    "low": 0,
+    "moderate": 0,
+    "high": 0,
+    "critical": 0,
+    "total": 0
+  },
+  "changes": [
+    "python-jose and transitive ecdsa removed; bounded HS256 PyJWT 2.15.1 replaces JWT implementation",
+    "FastAPI 0.162.7 / Starlette 1.10.0 / python-multipart 0.0.33",
+    "cryptography 50.0.2 explicitly retained for SNMPv3 authPriv",
+    "Vite 7.3.8 / React plugin 5.2.0 with refreshed audited transitive lockfile"
+  ]
+}

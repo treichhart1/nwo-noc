@@ -165,3 +165,15 @@ def open_incident(
         return {"incident_id": incident.id, "execution_enabled": False}
 
     return run(db, create, True)
+
+@router.post('/emergency-disable')
+def emergency_disable(db=Depends(get_db),user=Depends(require_admin)):
+    from app.services.integration_interlock import activate
+    try:activate()
+    except (OSError,ValueError):raise HTTPException(503,'Unable to persist operator stop; stop the NOC worker and revoke external network access through the approved procedure') from None
+    try:
+        db.add(AuditLog(user_id=user.id,action='monitoring.emergency_disabled',entity_type='monitoring',entity_id='global',details={'read_only':True,'equipment_action_executed':False}))
+        db.commit()
+    except SQLAlchemyError:
+        db.rollback();raise HTTPException(503,'Operator stop is active; database audit unavailable. Preserve the latch and verify audit recovery before restart') from None
+    return {'operator_disabled':True,'restart_required':True,'inflight_reads':'may finish within existing bounded deadlines','equipment_action_executed':False}

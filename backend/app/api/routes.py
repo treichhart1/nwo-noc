@@ -43,11 +43,15 @@ def audit(db: Session, user: User, request: Request, action: str, entity_type: s
                     details=details, ip_address=request.client.host if request.client else None))
 
 @router.post("/auth/login", response_model=Token)
-def login(form: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+def login(request: Request, form: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     user = db.scalar(select(User).where(User.username == form.username))
     if not user or not user.is_active or not verify_password(form.password, user.password_hash):
         raise HTTPException(status_code=401, detail="Incorrect username or password")
-    return Token(access_token=create_access_token(user.username))
+    if len(form.username)>80:raise HTTPException(401,"Incorrect username or password")
+    token=create_access_token(user.username,user_id=user.id)
+    audit(db,user,request,"auth.login","user",str(user.id),{"session_issued":True})
+    db.commit()
+    return Token(access_token=token)
 
 @router.get("/auth/me", response_model=UserOut)
 def me(user: User = Depends(current_user)):
@@ -431,7 +435,10 @@ def monitoring_summary(db: Session = Depends(get_db), _=Depends(current_user)):
 def run_monitor_check(device_id: int, db: Session = Depends(get_db), _=Depends(require_operator)):
     device = db.get(Device, device_id)
     if not device: raise HTTPException(status_code=404, detail="Device not found")
-    return check_device(db, device, force=True)
+    from app.integrations.read_only import IntegrationFailure
+    try:return check_device(db, device, force=True)
+    except IntegrationFailure:
+        db.rollback();raise HTTPException(409,"Monitoring collection is disabled by operator") from None
 
 @router.get("/devices/{device_id}/monitor/checks", response_model=list[MonitorCheckOut])
 def monitor_history(device_id: int, hours: int = Query(24, ge=1, le=720), limit: int = Query(500, ge=1, le=5000), db: Session = Depends(get_db), _=Depends(current_user)):
