@@ -174,7 +174,7 @@ def seed(db, count=200):
         "sites_created": 40,
         "source": "synthetic NOC export contract; not native Powercode",
         "live_connections": 0,
-        "sync_ms": elapsed,
+        "fixture_import_and_mapping_ms": elapsed,
         "impact_ms": impact_ms,
         "site_id": sites[1].id,
         "device_id": aps[1].id,
