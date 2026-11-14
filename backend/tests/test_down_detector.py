@@ -493,3 +493,20 @@ def test_conflicting_same_time_evidence_is_unknown(network):
     st = x.db.get(OutageState, f"device:{x.ap.id}")
     assert st.state == "unknown" and st.bad_count == st.good_count == 0
     assert x.db.scalar(select(func.count(OutageObservation.id))) == 2
+
+
+def test_malformed_stored_payloads_are_isolated_without_poisoning_queue(network):
+    x = network
+    for i, payload in enumerate([[], "malformed", {"rf_radio_v2": "malformed"}]):
+        x.db.add(
+            TelemetrySample(
+                device_id=x.ap.id,
+                sampled_at=NOW - timedelta(seconds=60 - i),
+                raw_data=payload,
+            )
+        )
+    x.db.flush()
+    assert consume(x.db, now=NOW)["processed"] == 3
+    assert consume(x.db, now=NOW)["processed"] == 0
+    assert x.db.get(OutageState, f"device:{x.ap.id}").state == "unknown"
+    assert not x.db.scalar(select(OutageEpisode))

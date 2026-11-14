@@ -34,7 +34,7 @@ def consume(db, *, now=None, limit=200):
         )
     )
     for row in rows:
-        raw = row.raw_data or {}
+        raw = row.raw_data if isinstance(row.raw_data, dict) else {}
         signals = {}
         kind = "device"
         ident = row.device_id
