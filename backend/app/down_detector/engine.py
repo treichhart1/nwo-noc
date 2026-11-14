@@ -234,6 +234,23 @@ def ingest(db, o: Observation, *, now=None):
             OutageEpisode.key == key, OutageEpisode.status == "active"
         )
     )
+    power_only_recovery = False
+    if state == "unknown" and ep and o.signals.get("collector") is True:
+        required = set(
+            ep.evidence.get(
+                "required_recovery_signals",
+                [k for k, v in ep.evidence.get("signals", {}).items() if v is False],
+            )
+        )
+        power_fields = {"commercial_power", "ups", "battery", "power_supply"}
+        if (
+            required & power_fields
+            and required <= power_fields | {"collector"}
+            and all(o.signals.get(k) is True for k in required)
+        ):
+            state = "good"
+            classification = "power_restored"
+            power_only_recovery = True
     if state == "good" and ep:
         failed = set(
             ep.evidence.get(
@@ -339,7 +356,7 @@ def ingest(db, o: Observation, *, now=None):
             and st.good_count >= p.recovery_samples
             and (o.observed_at - st.good_since).total_seconds() >= p.recovery_seconds
         ):
-            st.state = "up"
+            st.state = "power_restored" if power_only_recovery else "up"
             ep.status = "resolved"
             ep.resolved_at = o.observed_at
             audit(

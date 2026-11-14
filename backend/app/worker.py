@@ -26,6 +26,9 @@ def main():
     detector_pool = ThreadPoolExecutor(max_workers=1, thread_name_prefix="noc-down-detector") if settings.down_detector_enabled else None
     detector_future = None
     detector_last = 0.0
+    tower_pool = ThreadPoolExecutor(max_workers=1,thread_name_prefix="noc-tower-health") if settings.tower_health_enabled else None
+    tower_future=None
+    tower_last=0.0
     last = {"tcp": 0.0, "uisp": 0.0, "mikrotik": 0.0}
     while True:
         now = time.monotonic()
@@ -39,6 +42,12 @@ def main():
             runtime.db_failed = True
             log.warning("Monitoring database unavailable; durable work retained")
         if database_ok:
+            if tower_pool and now-tower_last>=settings.tower_health_interval_seconds and (tower_future is None or tower_future.done()):
+                if tower_future is not None:
+                    try: tower_future.result()
+                    except Exception: log.warning("Tower health processing interrupted; durable telemetry retained")
+                from app.tower_health.worker import tick as tower_tick
+                tower_future=tower_pool.submit(tower_tick);tower_last=now
             if detector_pool and now-detector_last>=settings.down_detector_interval_seconds and (detector_future is None or detector_future.done()):
                 if detector_future is not None:
                     try: detector_future.result()
