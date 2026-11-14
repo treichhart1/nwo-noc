@@ -9,6 +9,7 @@ import httpx
 UISP_PATHS=frozenset('/nms/api/v2.1/'+name for name in ('devices','sites','links','sectors'))
 MIKROTIK_PATHS=frozenset(('/rest/system/identity','/rest/system/resource','/rest/interface',
                         '/rest/system/health','/rest/routing/ospf/neighbor'))
+IPAM_PATHS=frozenset('/rest'+p for p in ('/ip/address','/ipv6/address','/interface','/interface/vlan','/interface/bridge','/routing/table','/ip/route','/ipv6/route','/routing/ospf/neighbor','/ip/dhcp-server/network','/ip/pool','/ip/dhcp-server/lease','/ip/arp','/ipv6/neighbor','/system/identity','/system/resource'))
 ERROR_CODES=frozenset(('disabled','configuration_invalid','endpoint_denied','operation_denied',
     'authentication_failed','rate_limited','unavailable','timeout','invalid_response','response_too_large',
     'pagination_invalid','limit_exceeded','unsupported','sync_failed','partial_sync','rf_failed','overlap_skipped'))
@@ -54,7 +55,7 @@ class ReadPolicy:
         if not self.enabled or not self.admin_approved:raise IntegrationFailure('disabled')
         base=origin(self.base_url)
         if base not in {origin(value) for value in self.allowed_origins}:raise IntegrationFailure('endpoint_denied')
-        if not self.paths or not self.paths.issubset(UISP_PATHS|MIKROTIK_PATHS):raise IntegrationFailure('operation_denied')
+        if not self.paths or not self.paths.issubset(UISP_PATHS|MIKROTIK_PATHS|IPAM_PATHS):raise IntegrationFailure('operation_denied')
         if not (1<=self.max_pages<=100 and 1<=self.max_items<=10000 and 1<=self.max_bytes<=2_000_000
                 and 0<=self.retries<=2 and .2<=self.interval<=5):raise IntegrationFailure('configuration_invalid')
         return base
