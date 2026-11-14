@@ -1,3 +1,4 @@
+import DownDetector from "./DownDetector"
 import NotificationCenter from "./NotificationCenter"
 import CustomerImpact from "./CustomerImpact"
 import packageInfo from "../package.json"
@@ -20,12 +21,12 @@ import DeviceRFHealth from "./DeviceRFHealth"
 
 L.Icon.Default.mergeOptions({iconRetinaUrl:"/marker-icon-2x.png",iconUrl:"/marker-icon.png",shadowUrl:"/marker-shadow.png"})
 
-type Page="dashboard"|"operations"|"incidents"|"map"|"topology"|"sites"|"links"|"sectors"|"devices"|"alerts"|"rf"|"rfops"|"analytics"|"troubleshooting"|"settings"|"customers"|"notifications"
+type Page="downDetector"|"dashboard"|"operations"|"incidents"|"map"|"topology"|"sites"|"links"|"sectors"|"devices"|"alerts"|"rf"|"rfops"|"analytics"|"troubleshooting"|"settings"|"customers"|"notifications"
 type Site={id:number,name:string,site_type:string,status:string,address?:string,city?:string,state?:string,postal_code?:string,latitude?:number,longitude?:number,tower_height_ft?:number,structure_owner?:string,utility_provider?:string,ups_present:boolean,generator_present:boolean,customer_count:number,notes?:string,device_count:number,active_count:number,offline_count:number,unauthorized_count:number,health_score:number}
 type Link={id:number,name:string,link_type:string,status:string,a_site_id:number,z_site_id:number,a_site_name?:string,z_site_name?:string,vendor?:string,model?:string,frequency_ghz?:number,channel_width_mhz?:number,licensed:boolean,license_call_sign?:string,capacity_mbps?:number,rx_signal_a?:number,rx_signal_z?:number,notes?:string}
 type Sector={id:number,name:string,site_id:number,site_name?:string,status:string,technology?:string,frequency_mhz?:number,channel_width_mhz?:number,azimuth?:number,beamwidth?:number,customer_count:number,capacity_mbps?:number}
 type Incident={id:number,title:string,severity:string,status:string,site_id?:number,site_name?:string,device_id?:number,device_name?:string,link_id?:number,link_name?:string,customer_impact:number,summary?:string,root_cause?:string,resolution?:string,started_at:string,acknowledged_at?:string,resolved_at?:string}
-const nav:[Page,string,React.ReactNode][]=[["notifications","Notifications",<Bell/>],["customers","Customer Impact",<Users/>],["dashboard","Dashboard",<LayoutDashboard/>],["operations","Operations",<Activity/>],["incidents","Incidents",<Siren/>],["map","Network Map",<MapPinned/>],["topology","Topology",<GitBranch/>],["sites","Towers & POPs",<RadioTower/>],["links","Backhauls & Fiber",<Link2/>],["sectors","Access Sectors",<Wifi/>],["devices","Devices",<Server/>],["alerts","Alert Center",<Bell/>],["rf","RF Diagnostics",<Activity/>],["rfops","RF Operations",<Activity/>],["analytics","RF Analytics",<Activity/>],["troubleshooting","RF Troubleshooting",<Activity/>],["settings","Settings",<Settings/>]]
+const nav:[Page,string,React.ReactNode][]=[["downDetector","Down Detector",<Activity/>],["notifications","Notifications",<Bell/>],["customers","Customer Impact",<Users/>],["dashboard","Dashboard",<LayoutDashboard/>],["operations","Operations",<Activity/>],["incidents","Incidents",<Siren/>],["map","Network Map",<MapPinned/>],["topology","Topology",<GitBranch/>],["sites","Towers & POPs",<RadioTower/>],["links","Backhauls & Fiber",<Link2/>],["sectors","Access Sectors",<Wifi/>],["devices","Devices",<Server/>],["alerts","Alert Center",<Bell/>],["rf","RF Diagnostics",<Activity/>],["rfops","RF Operations",<Activity/>],["analytics","RF Analytics",<Activity/>],["troubleshooting","RF Troubleshooting",<Activity/>],["settings","Settings",<Settings/>]]
 function norm(v?:string|null){const x=(v||"unknown").toLowerCase();return ["active","online","connected"].includes(x)?"active":["offline","unreachable","disconnected"].includes(x)?"offline":x}
 function Badge({value}:{value?:string|null}){const v=norm(value);return <span className={`badge ${v}`}>{v}</span>}
 function Login(){const[u,setU]=useState("admin"),[p,setP]=useState(""),[e,setE]=useState("");async function submit(x:FormEvent){x.preventDefault();setE("");try{const r=await login(u,p);setToken(r.access_token);location.reload()}catch(err){setE((err as Error).message)}}return <main className="login"><form className="loginCard" onSubmit={submit}><div className="logo"><RadioTower/></div><p className="eyebrow">Northwest Ohio Broadband</p><h1>NWO NOC</h1><p className="muted">WISP network operations platform.</p><label>Username</label><input autoFocus value={u} onChange={x=>setU(x.target.value)}/><label>Password</label><input type="password" value={p} onChange={x=>setP(x.target.value)}/>{e&&<div className="error">{e}</div>}<button>Sign in</button></form></main>}
@@ -50,6 +51,7 @@ return <div className="shell"><aside className={menu?"open":""}><div><div classN
 {page==="alerts"&&<Alerts alerts={alerts} onSelect={id=>setSelected(devices.find(d=>d.id===id))}/>} 
 {page==="rf"&&<RFDiagnostics devices={devices}/>}
 {page==="rfops"&&<RFOperations/>}
+{page==="downDetector"&&<DownDetector onIncident={id=>{location.href=`/?incident=${id}`}}/>}
 {page==="notifications"&&<NotificationCenter sites={sites} devices={devices} sectors={sectors} links={links} incidents={incidents}/>}
 {page==="customers"&&<CustomerImpact sites={sites} devices={devices} sectors={sectors} links={links} incidents={incidents} maintenance={maintenance}/>}
 {page==="analytics"&&<RFAnalytics/>}

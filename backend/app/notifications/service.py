@@ -373,7 +373,7 @@ def snapshot(db, request, now=None):
         scopes = []
         for window in db.scalars(
             select(MaintenanceWindow).where(
-                MaintenanceWindow.status == "scheduled",
+                MaintenanceWindow.status.in_(["scheduled", "in_progress", "active"]),
                 MaintenanceWindow.starts_at <= now,
                 MaintenanceWindow.ends_at >= now,
             )

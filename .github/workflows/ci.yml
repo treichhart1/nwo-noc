@@ -214,7 +214,14 @@ jobs:
             tests/test_final_release_security.py \
             tests/test_powercode_customers.py \
             tests/test_notifications.py \
-            tests/test_notification_expansion.py
+            tests/test_notification_expansion.py \
+            tests/test_down_detector.py
+      - name: Measure synthetic Down Detector correlation at 250/500/1000 devices
+        env:
+          APP_ENV: staging
+          OFFLINE_MODE: "true"
+          SYNTHETIC_MONITORING_ENABLED: "true"
+        run: python -m app.down_detector.benchmark
       - name: Measure 30-day historical analytics at 250/500/1000 devices
         env:
           APP_ENV: staging
@@ -473,6 +480,18 @@ jobs:
           scripts/release/manage.sh "$NOC_ACCEPTANCE_STATE" exec -T -e NOTIFICATIONS_WORKER_ENABLED=true backend python -m app.notifications.worker
           scripts/release/manage.sh "$NOC_ACCEPTANCE_STATE" exec -T -e NOTIFICATIONS_WORKER_ENABLED=true backend python -m app.notifications.worker
           scripts/release/manage.sh "$NOC_ACCEPTANCE_STATE" exec -T backend python -m app.notification_rehearsal verify
+      - name: Validate Down Detector, notification drafts and durable recorded-input recovery
+        env:
+          NOC_PROJECT: noc84-wisp-test
+          NOC_ACCEPTANCE_STATE: ${{ runner.temp }}/noc85-wisp-state
+          NOC97_DOWN_DETECTOR_BROWSER: "true"
+        run: |
+          scripts/release/manage.sh "$NOC_ACCEPTANCE_STATE" exec -T backend python -m app.down_detector.rehearsal seed > "$NOC_ACCEPTANCE_STATE/down-detector-fixture.json"
+          (cd frontend && npx playwright test down-detector.spec.ts)
+          scripts/release/manage.sh "$NOC_ACCEPTANCE_STATE" exec -T backend python -m app.down_detector.rehearsal queue
+          scripts/release/manage.sh "$NOC_ACCEPTANCE_STATE" restart db
+          scripts/release/manage.sh "$NOC_ACCEPTANCE_STATE" up -d --wait db backend worker
+          scripts/release/manage.sh "$NOC_ACCEPTANCE_STATE" exec -T backend python -m app.down_detector.rehearsal verify
       - name: Validate immutable old-release upgrade, failed-upgrade rollback and matching restore
         run: scripts/release/rehearse-upgrade.sh "$RUNNER_TEMP/noc93-upgrade-state"
       - name: Stop isolated acceptance services, retain volumes
