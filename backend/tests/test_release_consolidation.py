@@ -101,13 +101,13 @@ def test_release_versions_and_migrations_consistent():
     script = ScriptDirectory.from_config(config)
     assert (
         len(script.get_heads()) == 1
-        and script.get_current_head() == "0011_monitoring_reliability"
+        and script.get_current_head() == "0012_session_revocation"
     )
 
 
 def test_reviewed_stack_complete_without_merging():
     r = load("audit_stack").audit()
-    assert r["prs"] == 96 and r["logical_replays"] == 1 and r["direct_ancestors"] == 95
+    assert r["prs"] == 97 and r["logical_replays"] == 1 and r["direct_ancestors"] == 96
 
 
 def test_pin_identity_is_private_and_never_silently_repinned(tmp_path, monkeypatch):

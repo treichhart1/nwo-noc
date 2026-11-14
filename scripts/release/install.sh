@@ -22,6 +22,9 @@ if [[ ${NOC_SKIP_BUILD:-0} != 1 ]]; then
 fi
 if [[ -f $state_dir/release-manifest.json ]]; then python3 "$ROOT/scripts/release/pin_images.py" "$state_dir"; fi
 "$ROOT/scripts/release/manage.sh" "$state_dir" config --quiet
+"$ROOT/scripts/release/manage.sh" "$state_dir" up -d --wait db redis
+python3 "$ROOT/scripts/release/bootstrap_runtime_db.py" "$state_dir"
+"$ROOT/scripts/release/prepare-runtime.sh" "$state_dir"
 "$ROOT/scripts/release/manage.sh" "$state_dir" up -d --wait --wait-timeout 180
 "$ROOT/scripts/release/manage.sh" "$state_dir" exec -T backend alembic check
 "$ROOT/scripts/release/manage.sh" "$state_dir" exec -T worker python -m app.worker_health

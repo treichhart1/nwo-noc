@@ -7,6 +7,8 @@ x-app: &app
   restart: unless-stopped
   security_opt: [no-new-privileges:true]
   cap_drop: [ALL]
+  read_only: true
+  tmpfs: ["/tmp:rw,noexec,nosuid,size=32m"]
 services:
   db:
     image: ${NOC_POSTGRES_IMAGE:-postgres:16-alpine}
@@ -39,6 +41,10 @@ services:
       db: {condition: service_healthy}
   backend:
     <<: *app
+    volumes: [monitoring_spool:/var/lib/nwo-noc/monitoring]
+    environment:
+      DATABASE_URL: ${NOC_RUNTIME_DATABASE_URL:-${DATABASE_URL}}
+      POSTGRES_PASSWORD: ""
     command: [sh, -ec, 'python -m app.seed && exec uvicorn app.main:app --host 0.0.0.0 --port 8000']
     depends_on:
       migrate: {condition: service_completed_successfully}
@@ -50,6 +56,9 @@ services:
       retries: 30
   worker:
     <<: *app
+    environment:
+      DATABASE_URL: ${NOC_RUNTIME_DATABASE_URL:-${DATABASE_URL}}
+      POSTGRES_PASSWORD: ""
     command: [python, -m, app.worker]
     volumes: [monitoring_spool:/var/lib/nwo-noc/monitoring]
     depends_on:
@@ -60,6 +69,12 @@ services:
       timeout: 5s
       retries: 20
   frontend:
+    user: "101:101"
+    sysctls:
+      net.ipv4.ip_unprivileged_port_start: "0"
+    cap_drop: [ALL]
+    read_only: true
+    tmpfs: ["/tmp:rw,noexec,nosuid,size=32m", "/var/cache/nginx:rw,noexec,nosuid,size=16m,uid=101,gid=101,mode=0700", "/var/run:rw,noexec,nosuid,size=1m,uid=101,gid=101,mode=0700"]
     image: ${NOC_FRONTEND_IMAGE:-noc84-frontend:rc}
     networks: [isolated]
     depends_on:

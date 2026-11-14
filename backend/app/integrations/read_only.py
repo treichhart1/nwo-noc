@@ -73,6 +73,8 @@ class ReadClient:
     def __exit__(self,*args):self.close()
 
     def request(self,path,*,method='GET',params=None):
+        from app.services.integration_interlock import disabled
+        if disabled():raise IntegrationFailure('disabled')
         if method!='GET' or path not in self.policy.paths:raise IntegrationFailure('operation_denied')
         if params and (path not in UISP_PATHS or set(params)-{'page','limit'}):raise IntegrationFailure('operation_denied')
         if params and any(isinstance(v,bool) or not isinstance(v,int) or not 1<=v<=(self.policy.max_pages if k=='page' else 100) for k,v in params.items()):raise IntegrationFailure('operation_denied')
@@ -84,6 +86,7 @@ class ReadClient:
                 if self.last_request is not None:self.sleep(max(0,self.policy.interval-(current-self.last_request)))
                 self.last_request=self.clock()
             try:
+                if disabled():raise IntegrationFailure('disabled')
                 with self.client.stream('GET',self.base+path,params=params) as response:
                     status=response.status_code
                     if status in (401,403):raise IntegrationFailure('authentication_failed')

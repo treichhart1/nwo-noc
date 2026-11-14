@@ -28,6 +28,10 @@ def validate(path):
     for key in ['SECRET_KEY', 'ADMIN_PASSWORD', 'POSTGRES_PASSWORD']:
         if len(values.get(key, '')) < 32:
             raise ValueError(f'{key} must contain at least 32 characters')
+    if values.get('NOC_RUNTIME_DATABASE_URL'):
+        runtime=urlsplit(values['NOC_RUNTIME_DATABASE_URL'])
+        if (runtime.scheme,runtime.hostname,runtime.port,runtime.path,runtime.username)!=('postgresql+psycopg','db',5432,'/nwo_noc','noc_app') or runtime.password!=values.get('APP_DATABASE_PASSWORD') or len(values.get('APP_DATABASE_PASSWORD',''))<32:raise ValueError('Runtime database must use the isolated restricted noc_app role')
+    if values.get('NOC_FRONTEND_INTERNAL_PORT','80') not in {'80','8080'}:raise ValueError('Unreviewed internal frontend port')
     return values
 
 

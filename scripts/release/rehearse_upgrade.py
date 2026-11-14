@@ -10,7 +10,7 @@ from validate_config import validate
 from pin_images import capture, image_id
 
 ROOT = Path(__file__).resolve().parents[2]
-BASELINE = "bf642bdb467b696c9a3778d51bf4ce816d0f82f7"
+BASELINE = "b5329506a34ce0fe5b6889b20a559ab4f1646a0c"
 PROJECT = os.environ.get("NOC93_UPGRADE_PROJECT", "noc84-noc93upgrade")
 
 
@@ -64,7 +64,7 @@ with SessionLocal() as db:
  assert db.scalar(text("SELECT count(*) FROM telemetry_samples WHERE raw_data::jsonb->>'noc93_marker'='preserved'"))==1
  assert db.scalar(text("SELECT count(*) FROM incidents WHERE findings='NOC93 retained findings'"))==1
  assert db.scalar(text("SELECT to_regclass('noc93_failed_upgrade')")) is None
- assert h['version']=={'0010_rf_operations':'3.2.1-rc.1','0011_monitoring_reliability':'3.2.1-rc.2'}[revision]
+ assert h['version']=={'0011_monitoring_reliability':'3.2.1-rc.2','0012_session_revocation':'3.2.1-rc.3'}[revision]
 print(json.dumps({'revision':revision,'health':'ok','authenticated_rf_operations':'ok','raw_and_findings':'preserved'}))
 """
 SEED = """
@@ -80,6 +80,7 @@ from app.core.database import engine
 with engine.begin() as c:
  c.execute(text('CREATE TABLE noc93_failed_upgrade (value integer)'))
  c.execute(text('INSERT INTO noc93_failed_upgrade VALUES (1)'))
+ print('NOC94_DDL_CHECKPOINT',flush=True)
  raise RuntimeError('Synthetic transactional upgrade failure')
 """
 
@@ -119,16 +120,45 @@ def main(state):
     start = time.monotonic()
     generate(state)
     old = {
-        "NOC_BACKEND_IMAGE": image_id("noc93-backend:rollback-bf642bd"),
-        "NOC_FRONTEND_IMAGE": image_id("noc93-frontend:rollback-bf642bd"),
+        "NOC_BACKEND_IMAGE": image_id("noc93-backend:rollback-b532950"),
+        "NOC_FRONTEND_IMAGE": image_id("noc93-frontend:rollback-b532950"),
+        "NOC_FRONTEND_INTERNAL_PORT": "80",
     }
-    with (state / "acceptance.env").open("a") as f:
-        f.write("".join(f"{k}={v}\n" for k, v in old.items()))
+    original = validate(state / "acceptance.env")
+    original.update(old)
+    (state / "acceptance.env").write_text(
+        "".join(f"{k}={v}\n" for k, v in original.items())
+    )
     capture(state, BASELINE)
     checks = []
     command([str(ROOT / "scripts/release/rehearse-ubuntu.sh"), str(state)])
     python(state, SEED)
-    assert json.loads(python(state, PROBE))["revision"] == "0010_rf_operations"
+    # A real old-format private delivery is carried through the UID transition.
+    spool_proof = json.loads(
+        python(
+            state,
+            """
+import hashlib,json
+from datetime import datetime,timezone
+from types import SimpleNamespace
+from sqlalchemy import select
+from app.core.config import settings
+from app.core.database import SessionLocal
+from app.models.entities import Device
+from app.services.monitoring_collectors import synthetic
+from app.services.monitoring_spool import Delivery,put,target
+settings.synthetic_monitoring_enabled=True
+with SessionLocal() as db:
+ d=Device(source='synthetic',external_id='noc94-spool',name='Synthetic retained spool',vendor='Cambium',enabled=True);db.add(d);db.commit()
+ at=datetime.now(timezone.utc);j=SimpleNamespace(device_id=d.id,fixture={'mode':'normal'})
+ delivery=Delivery(job_key='synthetic:'+str(d.id),slot_at=at,observation=synthetic(db,j,at))
+ put(settings.rf_scheduler_spool_dir,delivery);p=target(settings.rf_scheduler_spool_dir,delivery.job_key,at)
+ print(json.dumps({'name':p.name,'sha256':hashlib.sha256(p.read_bytes()).hexdigest()}))
+""",
+            service="worker",
+        )
+    )
+    assert json.loads(python(state, PROBE))["revision"] == "0011_monitoring_reliability"
     checks.append("old_release_authenticated_startup")
     dump = state / "before-upgrade.dump"
     command([str(ROOT / "scripts/release/backup.sh"), str(state), str(dump)])
@@ -139,6 +169,7 @@ def main(state):
     values.update(
         NOC_BACKEND_IMAGE=image_id("noc84-backend:rc"),
         NOC_FRONTEND_IMAGE=image_id("noc84-frontend:rc"),
+        NOC_FRONTEND_INTERNAL_PORT="8080",
     )
     with open(
         candidate / "acceptance.env", "x", opener=lambda p, f: os.open(p, f, 0o600)
@@ -146,7 +177,9 @@ def main(state):
         f.write("".join(f"{k}={v}\n" for k, v in values.items()))
     capture(candidate)
     manage(state, "stop", "worker", "backend")
-    python(candidate, FAIL_MIGRATION, running=False, expect_failure=True)
+    assert "NOC94_DDL_CHECKPOINT" in python(
+        candidate, FAIL_MIGRATION, service="migrate", running=False, expect_failure=True
+    )
     checks.append("failed_transactional_migration_rejected")
     python(
         candidate,
@@ -167,21 +200,25 @@ def main(state):
         "worker",
         "frontend",
     )
-    assert json.loads(python(state, PROBE))["revision"] == "0010_rf_operations"
+    assert json.loads(python(state, PROBE))["revision"] == "0011_monitoring_reliability"
     checks.append("old_release_rollback_healthy_with_original_data")
     manage(state, "stop", "worker", "backend")
+    command([str(ROOT / "scripts/release/prepare-runtime.sh"), str(candidate)])
     manage(candidate, "up", "-d", "--wait", "--wait-timeout", "180")
-    assert (
-        json.loads(python(candidate, PROBE))["revision"]
-        == "0011_monitoring_reliability"
-    )
+    assert json.loads(python(candidate, PROBE))["revision"] == "0012_session_revocation"
     checks.append("candidate_upgrade_preserves_data")
+    proof_code = (
+        "import os,hashlib,json;from pathlib import Path;p=Path('/var/lib/nwo-noc/monitoring')/"
+        + repr(spool_proof["name"])
+        + ";assert os.getuid()==10001;assert p.stat().st_uid==10001;print(hashlib.sha256(p.read_bytes()).hexdigest())"
+    )
+    assert (
+        python(candidate, proof_code, service="worker").strip() == spool_proof["sha256"]
+    )
+    checks.append("private_spool_payload_preserved_during_nonroot_upgrade")
     manage(candidate, "restart", "backend", "worker")
     manage(candidate, "up", "-d", "--wait", "backend", "worker")
-    assert (
-        json.loads(python(candidate, PROBE))["revision"]
-        == "0011_monitoring_reliability"
-    )
+    assert json.loads(python(candidate, PROBE))["revision"] == "0012_session_revocation"
     checks.append("candidate_restart_healthy")
     target = "restore_noc93_" + secrets.token_hex(4)
     command(
@@ -219,21 +256,18 @@ def main(state):
                     "Restored old application failed health/auth/data checks"
                 )
             time.sleep(1)
-        assert json.loads(p.stdout)["revision"] == "0010_rf_operations"
+        assert json.loads(p.stdout)["revision"] == "0011_monitoring_reliability"
         checks.append("actual_old_application_runs_on_matching_restored_database")
     finally:
         command(["docker", "--host=unix:///var/run/docker.sock", "rm", "-f", ident])
-    assert (
-        json.loads(python(candidate, PROBE))["revision"]
-        == "0011_monitoring_reliability"
-    )
+    assert json.loads(python(candidate, PROBE))["revision"] == "0012_session_revocation"
     checks.append("current_candidate_and_original_database_untouched_by_restore")
     return {
         "checks": checks,
         "checks_passed": len(checks),
         "elapsed_seconds": round(time.monotonic() - start, 3),
-        "old_schema": "0010_rf_operations",
-        "new_schema": "0011_monitoring_reliability",
+        "old_schema": "0011_monitoring_reliability",
+        "new_schema": "0012_session_revocation",
         "restore_database": target,
         "network": "internal-only; no equipment access",
         "data": "synthetic only; volumes/backups/configurations retained",

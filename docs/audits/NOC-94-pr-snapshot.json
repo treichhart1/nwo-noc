@@ -1,0 +1,976 @@
+{
+  "repository": "treichhart1/nwo-noc",
+  "baseline": "b5329506a34ce0fe5b6889b20a559ab4f1646a0c",
+  "pull_requests": [
+    {
+      "number": 1,
+      "title": "NOC Priority 1: Foundation audit and security verification plan",
+      "base": "develop",
+      "base_sha": "13a737f32bcf5dad8321f5e725a169805a96caa8",
+      "head": "audit/noc-foundation-2026-11",
+      "sha": "6e3d0acc8799101e78100f00655d962f53e232a0",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 2,
+      "title": "NOC-73A: RF telemetry normalization foundation",
+      "base": "audit/noc-foundation-2026-11",
+      "base_sha": "6e3d0acc8799101e78100f00655d962f53e232a0",
+      "head": "feature/noc-73a-rf-telemetry-normalization",
+      "sha": "c7402a6b134b3313fa1397168918c6cc8da1b200",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 3,
+      "title": "NOC-73B: conservative UISP RF telemetry adapter",
+      "base": "feature/noc-73a-rf-telemetry-normalization",
+      "base_sha": "c7402a6b134b3313fa1397168918c6cc8da1b200",
+      "head": "feature/noc-73b-uisp-rf-adapter",
+      "sha": "a361cc7f469b478585211edc1374cfa6a9a6ca6a",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 4,
+      "title": "NOC-73C: opt-in RF telemetry persistence",
+      "base": "feature/noc-73b-uisp-rf-adapter",
+      "base_sha": "a361cc7f469b478585211edc1374cfa6a9a6ca6a",
+      "head": "feature/noc-73c-rf-telemetry-persistence",
+      "sha": "c02b4c1056a2991587aee737f456072e7f0c70c3",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 5,
+      "title": "NOC-73D: opt-in bounded UISP RF collection integration",
+      "base": "feature/noc-73c-rf-telemetry-persistence",
+      "base_sha": "c02b4c1056a2991587aee737f456072e7f0c70c3",
+      "head": "feature/noc-73d-rf-collection-integration",
+      "sha": "19985f98d166c3ce6aa9575e1222dae30b4e6bff",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 6,
+      "title": "NOC-73E: read-only RF degradation detection",
+      "base": "feature/noc-73d-rf-collection-integration",
+      "base_sha": "19985f98d166c3ce6aa9575e1222dae30b4e6bff",
+      "head": "feature/noc-73e-rf-degradation-detection",
+      "sha": "ecc7def7d5fe3228b505dbf8b7946d45212d99b2",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 7,
+      "title": "NOC-73F: historical RF trend analysis",
+      "base": "feature/noc-73e-rf-degradation-detection",
+      "base_sha": "ecc7def7d5fe3228b505dbf8b7946d45212d99b2",
+      "head": "feature/noc-73f-rf-trend-analysis",
+      "sha": "7af5fb19dd1a55a673a2960f9dd7e246f089db46",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 8,
+      "title": "NOC-73G: read-only RF diagnostics service",
+      "base": "feature/noc-73f-rf-trend-analysis",
+      "base_sha": "7af5fb19dd1a55a673a2960f9dd7e246f089db46",
+      "head": "feature/noc-73g-rf-diagnostics-service",
+      "sha": "dc0f90e3a469954f375bbf4f2e157e4db2198b89",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 9,
+      "title": "NOC-73H: authenticated read-only RF diagnostics API",
+      "base": "feature/noc-73g-rf-diagnostics-service",
+      "base_sha": "dc0f90e3a469954f375bbf4f2e157e4db2198b89",
+      "head": "feature/noc-73h-authenticated-rf-api",
+      "sha": "88a213e13df081532d65d8dfecdd69a498145bab",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 10,
+      "title": "NOC-73I: read-only RF diagnostics dashboard",
+      "base": "feature/noc-73h-authenticated-rf-api",
+      "base_sha": "88a213e13df081532d65d8dfecdd69a498145bab",
+      "head": "feature/noc-73i-rf-dashboard",
+      "sha": "e6b1b0aa70947806c5742471cb0d194684371781",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 11,
+      "title": "NOC-73J: opt-in RF telemetry collection in UISP worker sync",
+      "base": "feature/noc-73i-rf-dashboard",
+      "base_sha": "e6b1b0aa70947806c5742471cb0d194684371781",
+      "head": "feature/noc-73j-opt-in-rf-collection",
+      "sha": "f2ba3544fce60535e8adcc1ba087c95a6923fa11",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 12,
+      "title": "NOC-73K: RF telemetry freshness classification",
+      "base": "feature/noc-73j-opt-in-rf-collection",
+      "base_sha": "f2ba3544fce60535e8adcc1ba087c95a6923fa11",
+      "head": "feature/noc-73k-rf-freshness",
+      "sha": "1f67fe1e8d9dc724dcfaa9d881cce0a0d3d8d3af",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 13,
+      "title": "NOC-73L: authenticated RF collection health reporting",
+      "base": "feature/noc-73k-rf-freshness",
+      "base_sha": "1f67fe1e8d9dc724dcfaa9d881cce0a0d3d8d3af",
+      "head": "feature/noc-73l-rf-collection-health",
+      "sha": "35516689a0f8a0d6ae9de3e5b736cb36a5839249",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 14,
+      "title": "NOC-73M: persistent sanitized RF collection history",
+      "base": "feature/noc-73l-rf-collection-health",
+      "base_sha": "35516689a0f8a0d6ae9de3e5b736cb36a5839249",
+      "head": "feature/noc-73m-rf-collection-history",
+      "sha": "145f0083ffc970b0073f2f94a3ae561a0527a53e",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 15,
+      "title": "NOC-73N: RF collection reliability and opt-in retention",
+      "base": "feature/noc-73m-rf-collection-history",
+      "base_sha": "145f0083ffc970b0073f2f94a3ae561a0527a53e",
+      "head": "feature/noc-73n-rf-reliability-retention",
+      "sha": "0301d3928e29beff5f2de070ab647e3cdaa80610",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 16,
+      "title": "NOC-73O: RF diagnostics operational readiness and failure isolation",
+      "base": "feature/noc-73n-rf-reliability-retention",
+      "base_sha": "0301d3928e29beff5f2de070ab647e3cdaa80610",
+      "head": "feature/noc-73o-rf-operational-readiness",
+      "sha": "d6be2c8f823c4008c4de78ad2564b15265254f78",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 17,
+      "title": "NOC-73P: RF deployment-readiness audit and collection health correction",
+      "base": "feature/noc-73o-rf-operational-readiness",
+      "base_sha": "d6be2c8f823c4008c4de78ad2564b15265254f78",
+      "head": "feature/noc-73p-rf-readiness-audit",
+      "sha": "e7f17882cd5ab2be5e113f1ec9bde90ab86ae1b0",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 18,
+      "title": "NOC-73Q: real PostgreSQL RF integration CI",
+      "base": "feature/noc-73p-rf-readiness-audit",
+      "base_sha": "e7f17882cd5ab2be5e113f1ec9bde90ab86ae1b0",
+      "head": "feature/noc-73q-postgres-rf-integration",
+      "sha": "aff4aeaa8fdb0a2ba2a8234704e9add2fc66fe9b",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 19,
+      "title": "NOC-73R: simulated UISP-to-diagnostics PostgreSQL E2E CI",
+      "base": "feature/noc-73q-postgres-rf-integration",
+      "base_sha": "aff4aeaa8fdb0a2ba2a8234704e9add2fc66fe9b",
+      "head": "feature/noc-73r-rf-end-to-end-validation",
+      "sha": "2889ae7b5268da05ca5b4bd5bb4932a3df3f5152",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 20,
+      "title": "NOC-73S: indexed and bounded RF diagnostics queries",
+      "base": "feature/noc-73r-rf-end-to-end-validation",
+      "base_sha": "2889ae7b5268da05ca5b4bd5bb4932a3df3f5152",
+      "head": "feature/noc-73s-rf-query-scalability",
+      "sha": "765cc8c3941108a4b17eebfc4f49d8f10fd116d5",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 21,
+      "title": "NOC-73T: indexed latest RF collection health lookup",
+      "base": "feature/noc-73s-rf-query-scalability",
+      "base_sha": "765cc8c3941108a4b17eebfc4f49d8f10fd116d5",
+      "head": "feature/noc-73t-rf-health-query-optimization",
+      "sha": "f393a9ab6b4e1973b6a6d63ba2e5126b178d875b",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 22,
+      "title": "NOC-73U: disposable PostgreSQL RF health performance benchmarks",
+      "base": "feature/noc-73t-rf-health-query-optimization",
+      "base_sha": "f393a9ab6b4e1973b6a6d63ba2e5126b178d875b",
+      "head": "feature/noc-73u-rf-performance-benchmarks",
+      "sha": "3161fe260c539b3d3d31eeb35a7fceaf2d7ffbce",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 23,
+      "title": "NOC-73V: RF health scalability baseline at 250 and 1000 radios",
+      "base": "feature/noc-73u-rf-performance-benchmarks",
+      "base_sha": "3161fe260c539b3d3d31eeb35a7fceaf2d7ffbce",
+      "head": "feature/noc-73v-rf-performance-baselines",
+      "sha": "e56031b5d69855c80fade3fe804954988afe81d0",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 24,
+      "title": "NOC-73W: RF rollout safety and savepoint failure reporting",
+      "base": "feature/noc-73v-rf-performance-baselines",
+      "base_sha": "e56031b5d69855c80fade3fe804954988afe81d0",
+      "head": "feature/noc-73w-rf-rollout-safety",
+      "sha": "3f16619101112a178faf3a3a2f46cd170fecce8b",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 25,
+      "title": "NOC-73X: simulated RF staging repeat-sync validation",
+      "base": "feature/noc-73w-rf-rollout-safety",
+      "base_sha": "3f16619101112a178faf3a3a2f46cd170fecce8b",
+      "head": "feature/noc-73x-rf-staging-validation",
+      "sha": "e7689f027050fe1559b6e7235adc77fc829b0dbe",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 26,
+      "title": "NOC-73Y: RF collection failure recovery integration regression",
+      "base": "feature/noc-73x-rf-staging-validation",
+      "base_sha": "e7689f027050fe1559b6e7235adc77fc829b0dbe",
+      "head": "feature/noc-73y-rf-failure-recovery",
+      "sha": "527c8b39c9f529521de10f198e416a06ade15119",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 27,
+      "title": "NOC-73Z: interrupted RF write rollback and safe retry",
+      "base": "feature/noc-73y-rf-failure-recovery",
+      "base_sha": "527c8b39c9f529521de10f198e416a06ade15119",
+      "head": "feature/noc-73z-rf-interrupted-sync",
+      "sha": "53d89b46b48ae549c85ab1d8f391d1ba078277a2",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 28,
+      "title": "NOC-74A: RF measurement accuracy and endpoint authentication audit",
+      "base": "feature/noc-73z-rf-interrupted-sync",
+      "base_sha": "53d89b46b48ae549c85ab1d8f391d1ba078277a2",
+      "head": "feature/noc-74a-rf-data-security-audit",
+      "sha": "b9667d680870f61a3f01504e8afe7d0d254b2c50",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 29,
+      "title": "NOC-74B: fail-closed RF staging configuration preflight",
+      "base": "feature/noc-74a-rf-data-security-audit",
+      "base_sha": "b9667d680870f61a3f01504e8afe7d0d254b2c50",
+      "head": "feature/noc-74b-rf-staging-preflight",
+      "sha": "c57123e35197174caefd08b33c945cf0aa051e48",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 30,
+      "title": "NOC-74C: CI staging safety gate before RF PostgreSQL integration",
+      "base": "feature/noc-74b-rf-staging-preflight",
+      "base_sha": "c57123e35197174caefd08b33c945cf0aa051e48",
+      "head": "feature/noc-74c-rf-staging-validation",
+      "sha": "230cfa080b5b8905eac117e41482c93765208716",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 31,
+      "title": "NOC-74D: RF release-readiness evidence and operator acceptance gates",
+      "base": "feature/noc-74c-rf-staging-validation",
+      "base_sha": "230cfa080b5b8905eac117e41482c93765208716",
+      "head": "feature/noc-74d-rf-release-readiness",
+      "sha": "6c18e657fc2af347533cb391f605e483d459276f",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 32,
+      "title": "NOC-74E: cumulative RF integration audit and staging blockers",
+      "base": "feature/noc-74d-rf-release-readiness",
+      "base_sha": "6c18e657fc2af347533cb391f605e483d459276f",
+      "head": "feature/noc-74e-rf-integration-audit",
+      "sha": "0dbe5dac4a61ad7cfc74cee6e5cb201246c4edec",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 33,
+      "title": "NOC-74F: controlled offline RF staging rollout runbook",
+      "base": "feature/noc-74e-rf-integration-audit",
+      "base_sha": "0dbe5dac4a61ad7cfc74cee6e5cb201246c4edec",
+      "head": "feature/noc-74f-rf-staging-rollout",
+      "sha": "4895573fbff9ee559898350f38222055245b58ca",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 34,
+      "title": "NOC-74G: offline RF staging acceptance against PostgreSQL",
+      "base": "feature/noc-74f-rf-staging-rollout",
+      "base_sha": "4895573fbff9ee559898350f38222055245b58ca",
+      "head": "feature/noc-74g-rf-staging-acceptance",
+      "sha": "06c7a28083df0e6f2a69b99deb8cb12348f3ca9b",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 35,
+      "title": "NOC-74H: operator staging acceptance and approval gates",
+      "base": "feature/noc-74g-rf-staging-acceptance",
+      "base_sha": "06c7a28083df0e6f2a69b99deb8cb12348f3ca9b",
+      "head": "feature/noc-74h-rf-staging-approval",
+      "sha": "57f05d0d9705a38c5de7e5aa365dcdc4df7aaace",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 36,
+      "title": "NOC-75A: integrate read-only RF health into main NOC dashboard",
+      "base": "feature/noc-74h-rf-staging-approval",
+      "base_sha": "57f05d0d9705a38c5de7e5aa365dcdc4df7aaace",
+      "head": "feature/noc-75a-rf-dashboard-integration",
+      "sha": "87d9a5b1bd295f6f9d6031068769638d4bf2391a",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 37,
+      "title": "NOC-75B: correlate RF diagnostics with device reachability",
+      "base": "feature/noc-75a-rf-dashboard-integration",
+      "base_sha": "87d9a5b1bd295f6f9d6031068769638d4bf2391a",
+      "head": "feature/noc-75b-rf-device-correlation",
+      "sha": "813298ce764c0d0b352039541af5a9f0f797c68a",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 38,
+      "title": "NOC-75C: RF freshness and degradation summaries by tower/POP",
+      "base": "feature/noc-75b-rf-device-correlation",
+      "base_sha": "813298ce764c0d0b352039541af5a9f0f797c68a",
+      "head": "feature/noc-75c-rf-site-summary",
+      "sha": "065e244899d12d7a9f4470d819db872f76f161af",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 39,
+      "title": "NOC-75D: validate RF site counts and bounded PostgreSQL scale",
+      "base": "feature/noc-75c-rf-site-summary",
+      "base_sha": "065e244899d12d7a9f4470d819db872f76f161af",
+      "head": "feature/noc-75d-rf-site-validation",
+      "sha": "a8dd8b304db596dc2af94e4c61bd309220af1287",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 40,
+      "title": "NOC-75E: batch RF site future-sample lookups",
+      "base": "feature/noc-75d-rf-site-validation",
+      "base_sha": "a8dd8b304db596dc2af94e4c61bd309220af1287",
+      "head": "feature/noc-75e-rf-site-query-optimization",
+      "sha": "9d8532a491184fb35510727b68e28640c46c1e03",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 41,
+      "title": "NOC-75F: RF site aggregation SQL query budget review",
+      "base": "feature/noc-75e-rf-site-query-optimization",
+      "base_sha": "9d8532a491184fb35510727b68e28640c46c1e03",
+      "head": "feature/noc-75f-rf-query-budget",
+      "sha": "26c3db54dda02704c55e3d3fd97572fb5349e601",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 42,
+      "title": "NOC-75G: bulk bounded RF history aggregation by site",
+      "base": "feature/noc-75f-rf-query-budget",
+      "base_sha": "26c3db54dda02704c55e3d3fd97572fb5349e601",
+      "head": "feature/noc-75g-rf-bulk-history",
+      "sha": "22286c8b2dfcb27d0a41fa0cc30ef9271e55b921",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 43,
+      "title": "NOC-75H: integrated RF review and release gates",
+      "base": "feature/noc-75g-rf-bulk-history",
+      "base_sha": "22286c8b2dfcb27d0a41fa0cc30ef9271e55b921",
+      "head": "feature/noc-75h-rf-final-review",
+      "sha": "f0b8d24744fc99f1cf2004efc70ccff40b2e8550",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 44,
+      "title": "NOC-75I: RF PR consolidation and release preparation",
+      "base": "feature/noc-75h-rf-final-review",
+      "base_sha": "f0b8d24744fc99f1cf2004efc70ccff40b2e8550",
+      "head": "feature/noc-75i-rf-release-preparation",
+      "sha": "1908dbd466f5f3093259d560378757630be0df68",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 45,
+      "title": "NOC-75J: verify RF branch ancestry and integration blockers",
+      "base": "feature/noc-75i-rf-release-preparation",
+      "base_sha": "1908dbd466f5f3093259d560378757630be0df68",
+      "head": "feature/noc-75j-rf-stack-audit",
+      "sha": "0ddfb750de433c6c29dd8cccee710ae02e728a6f",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 46,
+      "title": "NOC-75K: verify foundation ancestry against main and develop",
+      "base": "feature/noc-75j-rf-stack-audit",
+      "base_sha": "0ddfb750de433c6c29dd8cccee710ae02e728a6f",
+      "head": "feature/noc-75k-foundation-integration-audit",
+      "sha": "8ed179f66e46bc1f1ac4379b6c9c69c5847dc5f8",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 47,
+      "title": "NOC-75L: consolidated RF security and release-risk review",
+      "base": "feature/noc-75k-foundation-integration-audit",
+      "base_sha": "8ed179f66e46bc1f1ac4379b6c9c69c5847dc5f8",
+      "head": "feature/noc-75l-consolidated-security-review",
+      "sha": "1317ebd527d77fba40fa9a78387c6fcbf8279a11",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 48,
+      "title": "NOC-75M: enforce RF endpoint role authorization",
+      "base": "feature/noc-75l-consolidated-security-review",
+      "base_sha": "1317ebd527d77fba40fa9a78387c6fcbf8279a11",
+      "head": "feature/noc-75m-rf-authorization",
+      "sha": "1dfb02fa3f28a9ef2468fa5cc08f63071f0b439b",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 49,
+      "title": "NOC-75N: HTTP-level RF authorization regression coverage",
+      "base": "feature/noc-75m-rf-authorization",
+      "base_sha": "1dfb02fa3f28a9ef2468fa5cc08f63071f0b439b",
+      "head": "feature/noc-75n-rf-security-regression",
+      "sha": "d2d2075da27c77da1136605489a802b1a3321cf5",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 50,
+      "title": "NOC-75O: disable API docs and schema by default",
+      "base": "feature/noc-75n-rf-security-regression",
+      "base_sha": "d2d2075da27c77da1136605489a802b1a3321cf5",
+      "head": "feature/noc-75o-deployment-security",
+      "sha": "b4680a6ee7a117003f007c96a117fd331a7c7849",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 51,
+      "title": "NOC-75P: fail-closed production configuration safeguards",
+      "base": "feature/noc-75o-deployment-security",
+      "base_sha": "b4680a6ee7a117003f007c96a117fd331a7c7849",
+      "head": "feature/noc-75p-config-safeguards",
+      "sha": "fff876b754248ed1a641366f50fabbc889d218c4",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 52,
+      "title": "NOC-75Q: validate Compose network exposure in CI",
+      "base": "feature/noc-75p-config-safeguards",
+      "base_sha": "fff876b754248ed1a641366f50fabbc889d218c4",
+      "head": "feature/noc-75q-compose-network-guard",
+      "sha": "c591bee9287b4050c28a63397ad02cb66448a590",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 53,
+      "title": "NOC-75R: offline deployment environment preflight",
+      "base": "feature/noc-75q-compose-network-guard",
+      "base_sha": "c591bee9287b4050c28a63397ad02cb66448a590",
+      "head": "feature/noc-75r-deployment-preflight",
+      "sha": "7b9810abe123fef6b7c685f4a307063f226e65cb",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 54,
+      "title": "NOC-75S: consolidated offline deployment readiness audit",
+      "base": "feature/noc-75r-deployment-preflight",
+      "base_sha": "7b9810abe123fef6b7c685f4a307063f226e65cb",
+      "head": "feature/noc-75s-readiness-audit",
+      "sha": "8a34ca8c3c64aaeaa88660146723c22db0ed4d0b",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 55,
+      "title": "NOC-75T: fail-closed staging evidence gate",
+      "base": "feature/noc-75s-readiness-audit",
+      "base_sha": "8a34ca8c3c64aaeaa88660146723c22db0ed4d0b",
+      "head": "feature/noc-75t-staging-readiness-gate",
+      "sha": "95aa37bddf4a37a07146234705772bfc42f4a5a7",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 56,
+      "title": "NOC-75U: audit draft PR chain and staging blockers",
+      "base": "feature/noc-75t-staging-readiness-gate",
+      "base_sha": "95aa37bddf4a37a07146234705772bfc42f4a5a7",
+      "head": "feature/noc-75u-pr-chain-audit",
+      "sha": "7b06aadde555ece5cf32458c196e4d485ff68363",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 57,
+      "title": "NOC-75V: isolated staging validation and rollback procedure",
+      "base": "feature/noc-75u-pr-chain-audit",
+      "base_sha": "7b06aadde555ece5cf32458c196e4d485ff68363",
+      "head": "feature/noc-75v-staging-procedure",
+      "sha": "33b70c0f7f3a517c4fa62c3f6c28a78b85be4f09",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 58,
+      "title": "NOC-75W: offline staging isolation configuration validation",
+      "base": "feature/noc-75v-staging-procedure",
+      "base_sha": "33b70c0f7f3a517c4fa62c3f6c28a78b85be4f09",
+      "head": "feature/noc-75w-staging-isolation-check",
+      "sha": "1b20a69685fecd317c879be4b720a32d773891d8",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 59,
+      "title": "NOC-75X: offline staging egress policy manifest validation",
+      "base": "feature/noc-75w-staging-isolation-check",
+      "base_sha": "1b20a69685fecd317c879be4b720a32d773891d8",
+      "head": "feature/noc-75x-staging-egress-policy",
+      "sha": "0adcbcdfe56b0eb38ec2c10a02a2d8144ef12857",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 60,
+      "title": "NOC-75Y: staging network isolation acceptance test plan",
+      "base": "feature/noc-75x-staging-egress-policy",
+      "base_sha": "0adcbcdfe56b0eb38ec2c10a02a2d8144ef12857",
+      "head": "feature/noc-75y-staging-network-test-plan",
+      "sha": "5a56b81524bb0acd6d5f6ac4cff4a127d875d9d1",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 61,
+      "title": "NOC-75Z: enforce offline staging policy checks in CI",
+      "base": "feature/noc-75y-staging-network-test-plan",
+      "base_sha": "5a56b81524bb0acd6d5f6ac4cff4a127d875d9d1",
+      "head": "feature/noc-75z-offline-staging-ci",
+      "sha": "296a9be82202ad59a8a8043feb416465a869ce47",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 62,
+      "title": "NOC-76A: RF integration and authorization regression CI gate",
+      "base": "feature/noc-75z-offline-staging-ci",
+      "base_sha": "296a9be82202ad59a8a8043feb416465a869ce47",
+      "head": "feature/noc-76a-rf-regression-gate",
+      "sha": "1f9677739845781753f3ede54325b02cbfb5604f",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 63,
+      "title": "NOC-76B: RF release security regression tests",
+      "base": "feature/noc-76a-rf-regression-gate",
+      "base_sha": "1f9677739845781753f3ede54325b02cbfb5604f",
+      "head": "feature/noc-76b-rf-release-regression",
+      "sha": "871772f92c13ee339c00afaba57d2e56ce6fc7eb",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 64,
+      "title": "NOC-76C: fail-closed aggregate RF offline acceptance gate",
+      "base": "feature/noc-76b-rf-release-regression",
+      "base_sha": "871772f92c13ee339c00afaba57d2e56ce6fc7eb",
+      "head": "feature/noc-76c-rf-acceptance-gate",
+      "sha": "667dc2aea76d762b4f22575ccd930e1b4363d705",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 65,
+      "title": "NOC-76D: RF offline development completion review",
+      "base": "feature/noc-76c-rf-acceptance-gate",
+      "base_sha": "667dc2aea76d762b4f22575ccd930e1b4363d705",
+      "head": "feature/noc-76d-rf-completion-review",
+      "sha": "10b697b830c9206b55bbd6713acd5985e5b0927e",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 66,
+      "title": "NOC-77A: authenticated dashboard operational contract regression",
+      "base": "feature/noc-76d-rf-completion-review",
+      "base_sha": "10b697b830c9206b55bbd6713acd5985e5b0927e",
+      "head": "feature/noc-77a-dashboard-contract",
+      "sha": "65c9c394c4c32a4d6c06706dd67c914eb91de0f4",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 67,
+      "title": "NOC-77B: dashboard health reflects confirmed online devices",
+      "base": "feature/noc-77a-dashboard-contract",
+      "base_sha": "65c9c394c4c32a4d6c06706dd67c914eb91de0f4",
+      "head": "feature/noc-77b-dashboard-status-consistency",
+      "sha": "f711b0a96a59138e495541fa26114941d75a4fd6",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 68,
+      "title": "NOC-77C: consolidate dashboard device counts into one SQL aggregate",
+      "base": "feature/noc-77b-dashboard-status-consistency",
+      "base_sha": "f711b0a96a59138e495541fa26114941d75a4fd6",
+      "head": "feature/noc-77c-dashboard-query-performance",
+      "sha": "530619f65961366312cd84f52b97aeb8c035741e",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 69,
+      "title": "NOC-77D: enforce dashboard database query budget",
+      "base": "feature/noc-77c-dashboard-query-performance",
+      "base_sha": "530619f65961366312cd84f52b97aeb8c035741e",
+      "head": "feature/noc-77d-dashboard-query-budget",
+      "sha": "0ec9493f115be51a2ba631def42bc7fc1596ed8d",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 70,
+      "title": "NOC-77E: PostgreSQL dashboard scale regression with 1000 synthetic devices",
+      "base": "feature/noc-77d-dashboard-query-budget",
+      "base_sha": "0ec9493f115be51a2ba631def42bc7fc1596ed8d",
+      "head": "feature/noc-77e-dashboard-large-inventory",
+      "sha": "998919f92fbbc6a836eb7414e45c4c589331439d",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 71,
+      "title": "NOC-77F: operations and monitoring HTTP summary contract tests",
+      "base": "feature/noc-77e-dashboard-large-inventory",
+      "base_sha": "998919f92fbbc6a836eb7414e45c4c589331439d",
+      "head": "feature/noc-77f-operations-monitoring-contract",
+      "sha": "cc189552f8ea90642b20a530a7c73754eb5aeb30",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 72,
+      "title": "NOC-77G: optimize monitoring summary to two SQL queries",
+      "base": "feature/noc-77f-operations-monitoring-contract",
+      "base_sha": "cc189552f8ea90642b20a530a7c73754eb5aeb30",
+      "head": "feature/noc-77g-monitoring-query-optimization",
+      "sha": "9c51d9916617a913cd330dcbe4e45c12484b01bb",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 73,
+      "title": "NOC-77H: reduce operations summary to four database queries",
+      "base": "feature/noc-77g-monitoring-query-optimization",
+      "base_sha": "9c51d9916617a913cd330dcbe4e45c12484b01bb",
+      "head": "feature/noc-77h-operations-query-optimization",
+      "sha": "92f8c847b92e96a9c322caa71c2668edba05489a",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 74,
+      "title": "NOC-77I: validate operations summary with disposable PostgreSQL",
+      "base": "feature/noc-77h-operations-query-optimization",
+      "base_sha": "92f8c847b92e96a9c322caa71c2668edba05489a",
+      "head": "feature/noc-77i-operations-postgres",
+      "sha": "dc32980f3993e039b70c8213b0b162c1fd4522cd",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 75,
+      "title": "NOC-77J: validate monitoring summary against disposable PostgreSQL",
+      "base": "feature/noc-77i-operations-postgres",
+      "base_sha": "dc32980f3993e039b70c8213b0b162c1fd4522cd",
+      "head": "feature/noc-77j-monitoring-postgres",
+      "sha": "a0e7a56a4af23993043ff73147ec46be63cb219a",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 76,
+      "title": "NOC-77K: expose stale monitoring checks in summary API",
+      "base": "feature/noc-77j-monitoring-postgres",
+      "base_sha": "a0e7a56a4af23993043ff73147ec46be63cb219a",
+      "head": "feature/noc-77k-monitoring-freshness",
+      "sha": "7a8b17c16eaad02c7f0dc41587cb04d60ee63c6d",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 77,
+      "title": "NOC-77L: display stale monitoring checks on NOC dashboard",
+      "base": "feature/noc-77k-monitoring-freshness",
+      "base_sha": "7a8b17c16eaad02c7f0dc41587cb04d60ee63c6d",
+      "head": "feature/noc-77l-monitoring-freshness-ui",
+      "sha": "cca5b09d985633b7e54859da9b1dd6b6392371ec",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 78,
+      "title": "NOC-77M: clarify last-reported monitoring status versus stale checks",
+      "base": "feature/noc-77l-monitoring-freshness-ui",
+      "base_sha": "cca5b09d985633b7e54859da9b1dd6b6392371ec",
+      "head": "feature/noc-77m-monitoring-status-clarity",
+      "sha": "7c3418c32ca2f38915abc640bfb2836aaa2b4261",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 79,
+      "title": "NOC-77N: distinguish recently checked up/down from stale monitoring",
+      "base": "feature/noc-77m-monitoring-status-clarity",
+      "base_sha": "7c3418c32ca2f38915abc640bfb2836aaa2b4261",
+      "head": "feature/noc-77n-fresh-monitoring-counts",
+      "sha": "6492beb6ae4961bec78f1df87f8e71c6adf90b63",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 80,
+      "title": "NOC-77O: distinguish never-checked monitoring devices",
+      "base": "feature/noc-77n-fresh-monitoring-counts",
+      "base_sha": "6492beb6ae4961bec78f1df87f8e71c6adf90b63",
+      "head": "feature/noc-77o-never-checked-monitoring",
+      "sha": "92a1de46b3f88dc8c11f4b7310b8a854dd4b5122",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 81,
+      "title": "NOC-77P: device-level monitoring attention list",
+      "base": "feature/noc-77o-never-checked-monitoring",
+      "base_sha": "92a1de46b3f88dc8c11f4b7310b8a854dd4b5122",
+      "head": "feature/noc-77p-monitoring-attention",
+      "sha": "5eec8f2804dc06d3c6f00daeb238c40524c457fe",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 82,
+      "title": "RF-78: refresh RF collection health and fail closed on polling errors",
+      "base": "feature/noc-77p-monitoring-attention",
+      "base_sha": "5eec8f2804dc06d3c6f00daeb238c40524c457fe",
+      "head": "feature/noc-78-rf-health-refresh",
+      "sha": "085111e56f80086438527d581b545c08586af44d",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 83,
+      "title": "RF-79: fail-closed simulated self-healing proposals and approvals",
+      "base": "feature/noc-78-rf-health-refresh",
+      "base_sha": "085111e56f80086438527d581b545c08586af44d",
+      "head": "feature/rf-79-simulated-self-healing",
+      "sha": "f7856391361cbcbfc0287786b2409a2c69c3d069",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 84,
+      "title": "RF-80: authenticated fail-closed self-healing preview API",
+      "base": "feature/rf-79-simulated-self-healing",
+      "base_sha": "f7856391361cbcbfc0287786b2409a2c69c3d069",
+      "head": "feature/rf-80-self-healing-preview",
+      "sha": "653bac6acd43ea71d301b3e1b2b3a6e779174e8b",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 85,
+      "title": "RF-81: validated stored RF telemetry for simulation-only self-healing",
+      "base": "feature/rf-80-self-healing-preview",
+      "base_sha": "653bac6acd43ea71d301b3e1b2b3a6e779174e8b",
+      "head": "feature/rf-81-validated-self-healing-telemetry",
+      "sha": "c7e7eddca8a044d1efc24d953303cb376daf0f74",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 86,
+      "title": "NOC-82: release consolidation audit and clean-install readiness gates",
+      "base": "feature/rf-81-validated-self-healing-telemetry",
+      "base_sha": "b27e53a5437d04612f6adbf41605e22501d1bbb5",
+      "head": "feature/noc-82-release-readiness-audit",
+      "sha": "34e54e226f93159adf7d2dc52548d36aad277b46",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 87,
+      "title": "NOC-83: stabilize CI and prepare Ubuntu 24.04 release candidate",
+      "base": "feature/noc-82-release-readiness-audit",
+      "base_sha": "34e54e226f93159adf7d2dc52548d36aad277b46",
+      "head": "feature/noc-83-ci-release-validation",
+      "sha": "2f3f5edff1925104327d1f2c06f5504bf8398ae2",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 88,
+      "title": "NOC-84: isolated Ubuntu clean installation and release acceptance",
+      "base": "feature/noc-83-ci-release-validation",
+      "base_sha": "2f3f5edff1925104327d1f2c06f5504bf8398ae2",
+      "head": "feature/noc-84-clean-install-release-acceptance",
+      "sha": "a0161602cd013ce76048b799631dd5e2ba746310",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 89,
+      "title": "NOC-85: synthetic WISP monitoring and operational readiness",
+      "base": "feature/noc-84-clean-install-release-acceptance",
+      "base_sha": "a0161602cd013ce76048b799631dd5e2ba746310",
+      "head": "feature/noc-85-operational-readiness",
+      "sha": "07ac49c150d3d972c3326e6106370b4fa68699b1",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 90,
+      "title": "NOC-86: read-only integrations and normalized vendor RF monitoring foundation",
+      "base": "feature/noc-85-operational-readiness",
+      "base_sha": "07ac49c150d3d972c3326e6106370b4fa68699b1",
+      "head": "feature/noc-86-read-only-integration-readiness",
+      "sha": "3dd74d6c9c5855fc01fa6de5ff0d9f947c79970e",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 91,
+      "title": "NOC-87: read-only Ubiquiti and Cambium RF telemetry and diagnostics",
+      "base": "feature/noc-86-read-only-integration-readiness",
+      "base_sha": "3dd74d6c9c5855fc01fa6de5ff0d9f947c79970e",
+      "head": "feature/noc-87-ubiquiti-cambium-rf-telemetry",
+      "sha": "f31b35eceeb99d6167c284fa15777825206f6616",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 92,
+      "title": "NOC-88: read-only Racom and Aviat microwave backhaul monitoring",
+      "base": "feature/noc-87-ubiquiti-cambium-rf-telemetry",
+      "base_sha": "f31b35eceeb99d6167c284fa15777825206f6616",
+      "head": "feature/noc-88-racom-aviat-microwave-monitoring",
+      "sha": "47ec94159ffb2e41ea8b75720566301e2d196358",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 93,
+      "title": "NOC-89: historical RF analytics and suspected interference evidence",
+      "base": "feature/noc-88-racom-aviat-microwave-monitoring",
+      "base_sha": "47ec94159ffb2e41ea8b75720566301e2d196358",
+      "head": "feature/noc-89-rf-historical-analytics",
+      "sha": "1258347a8e24a007620270bb10a4f431bb382c98",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 94,
+      "title": "NOC-90: evidence-based RF troubleshooting and audited operator workflow",
+      "base": "feature/noc-89-rf-historical-analytics",
+      "base_sha": "1258347a8e24a007620270bb10a4f431bb382c98",
+      "head": "feature/noc-90-ai-rf-troubleshooting",
+      "sha": "b343c39a9b58ccb1a720c2c4aaaabe2b55008e68",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 95,
+      "title": "NOC-91: unified RF operations dashboard and shared technician investigations",
+      "base": "feature/noc-90-ai-rf-troubleshooting",
+      "base_sha": "b343c39a9b58ccb1a720c2c4aaaabe2b55008e68",
+      "head": "feature/noc-91-rf-operations-dashboard",
+      "sha": "bf642bdb467b696c9a3778d51bf4ce816d0f82f7",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 96,
+      "title": "NOC-92: RF monitoring reliability, alert accuracy and recovery",
+      "base": "feature/noc-91-rf-operations-dashboard",
+      "base_sha": "bf642bdb467b696c9a3778d51bf4ce816d0f82f7",
+      "head": "feature/noc-92-rf-monitoring-reliability",
+      "sha": "a5f318e333e3e0fe06bf7fa29b51818ddce27e41",
+      "draft": true,
+      "state": "open"
+    },
+    {
+      "number": 97,
+      "title": "NOC-93: consolidate 3.2.1-rc.2 and validate controlled pilot readiness",
+      "base": "feature/noc-92-rf-monitoring-reliability",
+      "base_sha": "a5f318e333e3e0fe06bf7fa29b51818ddce27e41",
+      "head": "feature/noc-93-release-consolidation",
+      "sha": "b5329506a34ce0fe5b6889b20a559ab4f1646a0c",
+      "draft": true,
+      "state": "open"
+    }
+  ]
+}

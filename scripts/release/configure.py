@@ -10,7 +10,8 @@ def generate(directory):
     path.mkdir(mode=0o700, parents=True, exist_ok=True)
     os.chmod(path, 0o700)
     password = secrets.token_hex(24)
-    values = dict(APP_ENV='staging', OFFLINE_MODE='true', POSTGRES_PASSWORD=password,
+    app_password=secrets.token_hex(24)
+    values = dict(NOC_FRONTEND_INTERNAL_PORT='8080',APP_DATABASE_PASSWORD=app_password,NOC_RUNTIME_DATABASE_URL=f'postgresql+psycopg://noc_app:{app_password}@db:5432/nwo_noc',APP_ENV='staging', OFFLINE_MODE='true', POSTGRES_PASSWORD=password,
         SECRET_KEY=secrets.token_hex(32), ADMIN_USERNAME='acceptance',
         ADMIN_PASSWORD=secrets.token_hex(24), ADMIN_EMAIL='acceptance@example.invalid',
         DATABASE_URL=f'postgresql+psycopg://noc_test:{password}@db:5432/nwo_noc',

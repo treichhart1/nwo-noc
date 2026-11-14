@@ -16,7 +16,7 @@ REMOTE = """import base64,http.client,json,sys
 for line in sys.stdin:
  try:
   r=json.loads(line)
-  c=http.client.HTTPConnection('frontend',80,timeout=15)
+  c=http.client.HTTPConnection('frontend',FRONTEND_PORT_VALUE,timeout=15)
   c.request(r['method'],r['path'],base64.b64decode(r['body']),r['headers'])
   response=c.getresponse()
   print(json.dumps(dict(status=response.status,headers=response.getheaders(),body=base64.b64encode(response.read()).decode())),flush=True)
@@ -80,6 +80,7 @@ class Handler(BaseHTTPRequestHandler):
 
 if __name__=='__main__':
     from validate_config import validate
-    validate(Path(STATE)/'acceptance.env')
+    values=validate(Path(STATE)/'acceptance.env')
+    REMOTE=REMOTE.replace('FRONTEND_PORT_VALUE',values.get('NOC_FRONTEND_INTERNAL_PORT','80'))
     print('Isolated access on http://127.0.0.1:18090',flush=True)
     ThreadingHTTPServer(('127.0.0.1',18090),Handler).serve_forever()

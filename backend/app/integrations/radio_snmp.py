@@ -191,6 +191,8 @@ class RadioCollector:
         except (ValueError, TypeError): raise IntegrationFailure('invalid_response') from None
 
     async def collect(self, credentials):
+        from app.services.integration_interlock import disabled
+        if disabled():raise IntegrationFailure('disabled')
         address = self.policy.validate_connection()  # Before socket, sleep or credential use.
         oids = tuple(f.oid for f in self.mapping.fields.values())
         async with self.lock:
@@ -199,6 +201,7 @@ class RadioCollector:
             self.last_attempt = self.clock()
             for attempt in range(self.policy.retries + 1):
                 try:
+                    if disabled():raise IntegrationFailure('disabled')
                     values = await asyncio.wait_for(self.transport.get(address, credentials, oids, self.policy.timeout_seconds),
                                                     timeout=self.policy.timeout_seconds + .5)
                     now = datetime.now(timezone.utc)

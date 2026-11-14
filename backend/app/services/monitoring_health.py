@@ -105,6 +105,8 @@ def correlate(alerts, devices, links, now):
 
 
 def health(db, *, now=None, offset=0, limit=50):
+    from app.services.integration_interlock import disabled
+    operator_disabled=disabled()
     now = now or datetime.now(timezone.utc)
     since = now - timedelta(hours=24)
     counts = db.execute(
@@ -197,6 +199,7 @@ def health(db, *, now=None, offset=0, limit=50):
     )
     return {
         "generated_at": now,
+        "operator_disabled":operator_disabled,
         "execution_enabled": False,
         "jobs_total": counts[0],
         "queue_backlog": counts[1],

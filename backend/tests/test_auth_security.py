@@ -1,7 +1,7 @@
 """Authentication token regression tests: no database or network required."""
 from datetime import datetime, timedelta, timezone
 
-from jose import jwt
+import jwt
 
 from app.core import security
 
@@ -23,7 +23,7 @@ def test_expired_token_is_rejected():
 def test_invalid_signature_is_rejected():
     token = jwt.encode(
         {"sub": "noc-test-user", "exp": datetime.now(timezone.utc) + timedelta(minutes=5)},
-        "different-signing-key-for-test",
+        "different-signing-key-for-test-32-bytes",
         algorithm=security.ALGORITHM,
     )
     assert security.decode_access_token(token) is None
