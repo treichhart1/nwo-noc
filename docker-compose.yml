@@ -67,10 +67,13 @@ services:
         condition: service_healthy
 
   frontend:
+    user: "101:101"
+    sysctls:
+      net.ipv4.ip_unprivileged_port_start: "0"
     cap_drop: [ALL]
     security_opt: [no-new-privileges:true]
     read_only: true
-    tmpfs: ["/tmp:rw,noexec,nosuid,size=32m"]
+    tmpfs: ["/tmp:rw,noexec,nosuid,size=32m", "/var/cache/nginx:rw,noexec,nosuid,size=16m,uid=101,gid=101,mode=0700", "/var/run:rw,noexec,nosuid,size=1m,uid=101,gid=101,mode=0700"]
     build: ./frontend
     restart: unless-stopped
     ports:

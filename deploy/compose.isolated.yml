@@ -69,9 +69,12 @@ services:
       timeout: 5s
       retries: 20
   frontend:
+    user: "101:101"
+    sysctls:
+      net.ipv4.ip_unprivileged_port_start: "0"
     cap_drop: [ALL]
     read_only: true
-    tmpfs: ["/tmp:rw,noexec,nosuid,size=32m"]
+    tmpfs: ["/tmp:rw,noexec,nosuid,size=32m", "/var/cache/nginx:rw,noexec,nosuid,size=16m,uid=101,gid=101,mode=0700", "/var/run:rw,noexec,nosuid,size=1m,uid=101,gid=101,mode=0700"]
     image: ${NOC_FRONTEND_IMAGE:-noc84-frontend:rc}
     networks: [isolated]
     depends_on:
