@@ -17,7 +17,10 @@ from app.models.entities import (
 )
 from app.services.monitoring_scheduler import run_batch
 from app.services.monitoring_health import health
-from app.services.process_resources import snapshot, elapsed as resource_elapsed
+from app.services.process_resources import (
+    snapshot as resource_snapshot,
+    elapsed as resource_elapsed,
+)
 
 
 def measure(size):
@@ -98,7 +101,7 @@ def measure(size):
                             )
                         )
                         db.commit()
-                resources_start = snapshot()
+                resources_start = resource_snapshot()
                 started = time.perf_counter()
                 accepted = 0
                 while True:
