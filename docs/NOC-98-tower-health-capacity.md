@@ -171,7 +171,7 @@ inventory are untouched by the new migration.
 
 Default derived raw retention is 30 days (configurable 7–90), daily/hourly summaries 400
 (configurable 180–730). Pruning is bounded, admin-confirmed or at most 500 rows/background
-tick. Dedupe ledgers outlive the accepted history window; source receipts remain while
+tick **per derived table** (four tables maximum). Dedupe ledgers outlive the accepted history window; source receipts remain while
 the original telemetry row exists, preventing replay after raw retention. Findings/notes
 and original source telemetry are not automatically deleted. Retention does not promise
 whole-database compaction or bound the upstream telemetry store; use existing source
@@ -192,14 +192,26 @@ All existing RF, outage, Powercode and notification suites are retained in CI. U
 CI retains clean Compose installation, startup, health, restart, backup/restore, immutable
 old-release upgrade and failed-upgrade rollback acceptance.
 
-Measured local 1,000-device / 40-POP run: 3,000 source frames normalized in 28,700.22 ms;
-assessment 2,584.97 ms, 93 SELECTs / 674 statements; repeat assessment 2,057.81 ms;
-289 deduplicated maintenance findings, 1,670 mapped synthetic customer services,
-169,084 KiB process peak RSS, zero external calls. This measures stored-data processing,
+Final local measurements (40 POPs each):
+
+| Devices | Source/normalized frames | Normalize ms | Assess ms | Repeat ms | Peak process RSS KiB |
+|---:|---:|---:|---:|---:|---:|
+| 250 | 750 | 7,780.82 | 771.51 | 920.99 | 94,272 |
+| 500 | 1,500 | 12,683.65 | 1,169.10 | 949.12 | 122,148 |
+| 1,000 | 3,000 | 26,398.62 | 2,505.12 | 2,113.06 | 171,700 |
+
+The 1,000-device assessment used 93 SELECTs / 674 statements, produced 289 deduplicated
+maintenance findings and counted 1,670 mapped synthetic customer services. All scales
+had zero duplicate findings and zero external calls. This measures stored-data processing,
 not native polling or continuous large-network throughput. The first expanded-IN query
 hit the ten-second budget at1,000 devices; a single PostgreSQL array parameter fixed it
 without raising the timeout. Final CI logs contain repeatable measurements at250/500/1000.
-Exact final test counts, SHA and CI status are recorded in the draft PR acceptance report.
+Local validation: full backend run 1,042 passed in 316.54s before ten additional cases
+were added; final NOC-98 suite 73 passed in 19.81s. TypeScript/React build passed; new
+Chromium workflow 1 passed in 7.5s with zero external requests. Migration drift check
+passed. PostgreSQL restart recovered three queued observations exactly once and one
+finding. Backup/restore matched content hashes for eight tables and passed queue replay.
+Exact final GitHub counts, SHA and CI status are recorded in the draft PR acceptance report.
 
 **Go/no-go: synthetic development acceptance only; NO-GO for production or live pilot.**
 A future pilot still requires explicit approval of one device, minimum-privilege credentials,
