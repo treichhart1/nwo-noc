@@ -1,0 +1,21 @@
+{
+  "approved": false,
+  "approval_record": "REQUIRES-INDEPENDENT-APPROVAL",
+  "candidate_commit": "0000000000000000000000000000000000000000",
+  "device_id": 1,
+  "vendor": "cambium",
+  "address": "10.93.0.1",
+  "protocol": "snmpv3_get",
+  "port": 161,
+  "interval_seconds": 300,
+  "operator_token_ttl_minutes": 15,
+  "concurrency": 1,
+  "batch_size": 1,
+  "tls_verified": true,
+  "minimum_privilege_reviewed": false,
+  "private_secret_mount_reviewed": false,
+  "deny_other_egress_verified": false,
+  "firmware_mapping_validated": false,
+  "backup_restore_verified": false,
+  "simulation_only": true
+}

@@ -9,7 +9,7 @@ x-app: &app
   cap_drop: [ALL]
 services:
   db:
-    image: postgres:16-alpine
+    image: ${NOC_POSTGRES_IMAGE:-postgres:16-alpine}
     environment:
       POSTGRES_DB: nwo_noc
       POSTGRES_USER: noc_test
@@ -22,7 +22,7 @@ services:
       timeout: 3s
       retries: 30
   redis:
-    image: redis:7-alpine
+    image: ${NOC_REDIS_IMAGE:-redis:7-alpine}
     networks: [isolated]
     command: [redis-server, --appendonly, 'yes']
     volumes: [redis_data:/data]

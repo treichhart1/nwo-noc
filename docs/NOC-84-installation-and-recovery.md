@@ -111,7 +111,7 @@ back up the database, and separately encrypt the protected environment/configura
 and Compose source with access restricted to recovery operators. Test both backup
 and configuration recovery off-host. Build/load candidate images, run migrations
 with only db/redis active, then start services and run acceptance on disposable
-cloned data. This candidate adds no schema migrations. Never roll an old application
+cloned data. The NOC-84 milestone added no migration; the consolidated NOC-93 candidate requires migrations through `0011_monitoring_reliability`. Follow the current [NOC-93 release guide](NOC-93-release-readiness.md), not historical milestone revision assumptions. Never roll an old application
 against an unknown newer schema. For rollback retain old volumes, restore the
 matching pre-upgrade backup into a separate project, select the old SHA/images,
 validate migration revision and application health, then request separate approval
