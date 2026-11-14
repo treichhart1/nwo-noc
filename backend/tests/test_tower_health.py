@@ -903,3 +903,42 @@ def test_recorded_microwave_adapter_retains_validated_association(postgres_db, v
         == o.measurements.reported_capacity_mbps
     )
     assert normalized.metrics.tx_capacity_mbps is None
+
+
+def test_history_query_jit_setting_is_transaction_local(health):
+    from sqlalchemy import text
+    from app.tower_health.service import history_rows
+
+    x = health
+    before = x.db.scalar(text("SHOW jit"))
+    with pytest.raises(RuntimeError, match="rollback local setting"):
+        with x.db.begin_nested():
+            history_rows(x.db, [x.ap.id], x.now)
+            assert x.db.scalar(text("SHOW jit")) == "off"
+            raise RuntimeError("rollback local setting")
+    assert x.db.scalar(text("SHOW jit")) == before
+
+
+def test_dense_recent_history_keeps_hourly_temperature_evidence(health):
+    from app.tower_health.service import history_rows
+
+    x = health
+    for second in [-14400, -10800, -7200]:
+        ingest(
+            x.db,
+            observation(x, second, metrics={"temperature_c": 40.0}, base=False),
+            now=x.now,
+        )
+    for i in range(121):
+        ingest(
+            x.db,
+            observation(x, -1800 + 15 * i, metrics={"temperature_c": 50.0}, base=False),
+            now=x.now,
+        )
+    rows = history_rows(x.db, [x.ap.id], x.now)
+    assert 27 <= len(rows) <= 48
+    assert {x.now + timedelta(seconds=n) for n in [-14400, -10800, -7200]} <= {
+        r.observed_at for r in rows
+    }
+    decisions = rule_decisions(rows, x.now, Policy())
+    assert decisions["rising_temperature"]["state"] == "warning"

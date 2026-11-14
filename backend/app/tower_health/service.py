@@ -5,6 +5,7 @@ from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from sqlalchemy import select, func, text, delete, or_, any_, bindparam, Integer
 from sqlalchemy.dialects.postgresql import ARRAY
+from sqlalchemy.orm import aliased
 from app.core.config import settings
 from app.models.entities import Site, Device, Sector, NetworkLink, AuditLog
 from app.customers.models import CustomerAccount, CustomerService, CustomerSyncState
@@ -341,9 +342,14 @@ def paired_power(rows, states, now, p):
 
 
 def history_rows(db, device_ids, now, limit=24):
+    # PostgreSQL may estimate this bounded window query above its JIT threshold
+    # after large rollback-only fixtures or stale statistics. Avoid a self-join
+    # that can multiply window execution, and keep interpretation local to this
+    # transaction; never change server/session defaults or increase the timeout.
+    db.execute(text("SET LOCAL jit = off"))
     ranked = (
         select(
-            TowerSample.id.label("sample_id"),
+            TowerSample,
             func.row_number()
             .over(
                 partition_by=(TowerSample.device_id, TowerSample.scope_key),
@@ -373,12 +379,12 @@ def history_rows(db, device_ids, now, limit=24):
         )
         .subquery()
     )
+    sample = aliased(TowerSample, ranked)
     rows = list(
         db.scalars(
-            select(TowerSample)
-            .join(ranked, ranked.c.sample_id == TowerSample.id)
+            select(sample)
             .where(or_(ranked.c.rn <= limit, ranked.c.hour_rn == 1))
-            .order_by(TowerSample.observed_at, TowerSample.id)
+            .order_by(sample.observed_at, sample.id)
             .limit(50001)
         )
     )

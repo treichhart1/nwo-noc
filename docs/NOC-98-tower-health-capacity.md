@@ -192,7 +192,7 @@ All existing RF, outage, Powercode and notification suites are retained in CI. U
 CI retains clean Compose installation, startup, health, restart, backup/restore, immutable
 old-release upgrade and failed-upgrade rollback acceptance.
 
-Final local measurements (40 POPs each):
+Initial local measurements before query-plan stabilization (40 POPs each):
 
 | Devices | Source/normalized frames | Normalize ms | Assess ms | Repeat ms | Peak process RSS KiB |
 |---:|---:|---:|---:|---:|---:|
@@ -204,10 +204,17 @@ The 1,000-device assessment used 93 SELECTs / 674 statements, produced 289 dedup
 maintenance findings and counted 1,670 mapped synthetic customer services. All scales
 had zero duplicate findings and zero external calls. This measures stored-data processing,
 not native polling or continuous large-network throughput. The first expanded-IN query
-hit the ten-second budget at1,000 devices; a single PostgreSQL array parameter fixed it
-without raising the timeout. Final CI logs contain repeatable measurements at250/500/1000.
-Local validation: full backend run 1,042 passed in 316.54s before ten additional cases
-were added; final NOC-98 suite 73 passed in 19.81s. TypeScript/React build passed; new
+hit the ten-second budget at1,000 devices. An array parameter improved expression
+cost but did not eliminate intermittent plan-dependent timeouts. JIT control alone was
+also insufficient. The history query now carries the complete mapped row through one
+ranked scan instead of joining the ranked subquery back to the same table. Transaction-local
+`jit=off` avoids compilation overhead; server defaults and the ten-second timeout remain
+unchanged. Tests preserve recent rows plus older hourly evidence and verify local-setting
+rollback. Final CI logs contain repeatable measurements at250/500/1000.
+Local full backend validation before the final query-plan fix:1,052 passed in294.43s.
+The expanded NOC-98 suite75 passed in35.64s, including dense recent-history evidence and
+transaction-local settings. The latest full-suite result is recorded in the draft PR.
+TypeScript/React build passed; new
 Chromium workflow 1 passed in 7.5s with zero external requests. Migration drift check
 passed. PostgreSQL restart recovered three queued observations exactly once and one
 finding. Backup/restore matched content hashes for eight tables and passed queue replay.
