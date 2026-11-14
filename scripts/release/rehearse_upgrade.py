@@ -178,7 +178,7 @@ with SessionLocal() as db:
     capture(candidate)
     manage(state, "stop", "worker", "backend")
     assert "NOC94_DDL_CHECKPOINT" in python(
-        candidate, FAIL_MIGRATION, running=False, expect_failure=True
+        candidate, FAIL_MIGRATION, service="migrate", running=False, expect_failure=True
     )
     checks.append("failed_transactional_migration_rejected")
     python(
