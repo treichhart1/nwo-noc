@@ -2,9 +2,9 @@
 set -Eeuo pipefail
 ROOT=$(cd "$(dirname "$0")/../.." && pwd)
 state=${1:?Specify isolated state directory}
-image=$(python3 - "$state" <<'PY'
+image=$(python3 - "$state" "$ROOT" <<'PY'
 import sys
-sys.path.insert(0,'scripts/release')
+sys.path.insert(0,sys.argv[2]+'/scripts/release')
 from validate_config import validate
 print(validate(sys.argv[1]+'/acceptance.env').get('NOC_BACKEND_IMAGE','noc84-backend:rc'))
 PY
