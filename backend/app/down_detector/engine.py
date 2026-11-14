@@ -66,7 +66,11 @@ def classify(o, p):
     good = {k for k in AVAILABILITY if s.get(k) is True}
     if s.get("commercial_power") is False:
         # Confirms commercial power loss, not necessarily loss of customer service.
-        return "bad", "confirmed_commercial_power_outage", "confirmed"
+        return (
+            ("degraded" if good else "bad"),
+            "confirmed_commercial_power_outage",
+            "confirmed",
+        )
     if s.get("telemetry") is True and bad & {"icmp", "snmp"}:
         return "degraded", "management_connectivity_failure", "probable"
     if bad and good:
@@ -226,6 +230,12 @@ def ingest(db, o: Observation, *, now=None):
             OutageEpisode.key == key, OutageEpisode.status == "active"
         )
     )
+    if state == "good" and ep:
+        failed = {k for k, v in ep.evidence.get("signals", {}).items() if v is False}
+        if any(o.signals.get(k) is not True for k in failed):
+            state = "unknown"
+            classification = "incomplete_recovery_evidence"
+            st.classification = classification
     if state in {"bad", "degraded"}:
         st.good_count = 0
         st.good_since = None

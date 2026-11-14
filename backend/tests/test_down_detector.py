@@ -418,6 +418,7 @@ def test_power_loss_with_working_telemetry_is_not_customer_outage(api):
     assert r.status_code == 200, r.text
     plan = x.db.get(NotificationPlan, r.json()["plan_id"])
     assert plan.snapshot["request"]["evidence"]["event_type"] == "ups_warning"
+    assert x.db.get(OutageState, e.key).state == "degraded"
     assert not any(r["eligible"] for r in plan.snapshot["recipients"])
 
 
@@ -608,3 +609,27 @@ def test_long_stable_recovery_count_fits_notification_evidence_contract(api):
         r["eligible"]
         for r in x.db.get(NotificationPlan, r.json()["plan_id"]).snapshot["recipients"]
     )
+
+
+def test_original_failed_power_and_routing_signals_require_explicit_recovery(network):
+    x = network
+    e = fail(
+        x,
+        "site",
+        x.a.id,
+        {"commercial_power": False, "telemetry": True, "collector": True},
+    )
+    assert x.db.get(OutageState, e.key).state == "degraded"
+    for second in [-50, -20, 10]:
+        ingest(
+            x.db, obs(x, "site", x.a.id, GOOD, second), now=NOW + timedelta(seconds=10)
+        )
+    assert e.status == "active"
+    assert x.db.get(OutageState, e.key).classification == "incomplete_recovery_evidence"
+    for second in [20, 50, 80]:
+        ingest(
+            x.db,
+            obs(x, "site", x.a.id, {**GOOD, "commercial_power": True}, second),
+            now=NOW + timedelta(seconds=80),
+        )
+    assert e.status == "resolved"
