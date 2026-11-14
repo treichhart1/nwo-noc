@@ -17,6 +17,7 @@ from app.models.entities import (
 )
 from app.services.monitoring_scheduler import run_batch
 from app.services.monitoring_health import health
+from app.services.process_resources import snapshot, elapsed as resource_elapsed
 
 
 def measure(size):
@@ -97,6 +98,7 @@ def measure(size):
                             )
                         )
                         db.commit()
+                resources_start = snapshot()
                 started = time.perf_counter()
                 accepted = 0
                 while True:
@@ -129,6 +131,7 @@ def measure(size):
                         "elapsed_seconds": round(elapsed, 3),
                         "polls_per_second": round(size / elapsed, 2),
                         "active_alerts": active,
+                        "resources": resource_elapsed(resources_start, elapsed),
                     }
                 )
         with factory() as db:
@@ -150,6 +153,15 @@ def measure(size):
                 "rounds": rounds,
                 "samples_and_unique_receipts": size * 6,
                 "health_query_ms": round(health_ms, 2),
+                "source_history_bytes": int(
+                    db.scalar(
+                        text(
+                            "SELECT sum(pg_total_relation_size(quote_ident(:schema)||'.'||quote_ident(tablename))) FROM pg_tables WHERE schemaname=:schema AND tablename IN ('telemetry_samples','monitoring_jobs','monitoring_attempts','monitoring_alerts','monitoring_receipts')"
+                        ),
+                        {"schema": schema},
+                    )
+                    or 0
+                ),
                 "collection_mean_ms": round(latency[0], 2),
                 "collection_max_ms": round(latency[1], 2),
                 "recovery_validation": "three distinct normal samples clear RF condition; virtual 30-second schedule, actual concurrent PostgreSQL processing",

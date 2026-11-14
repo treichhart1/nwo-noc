@@ -16,6 +16,8 @@ jobs:
         working-directory: frontend
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -35,6 +37,8 @@ jobs:
       ADMIN_PASSWORD: CI-password-only
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -69,6 +73,8 @@ jobs:
       ADMIN_PASSWORD: CI-password-only
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -138,6 +144,8 @@ jobs:
       ADMIN_PASSWORD: CI-password-only
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -187,7 +195,8 @@ jobs:
             tests/test_rf_analytics_postgres.py \
             tests/test_rf_troubleshooting_postgres.py \
             tests/test_rf_operations_postgres.py \
-            tests/test_monitoring_reliability.py
+            tests/test_monitoring_reliability.py \
+            tests/test_release_combined_postgres.py
       - name: Measure 30-day historical analytics at 250/500/1000 devices
         env:
           APP_ENV: staging
@@ -225,6 +234,8 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Validate Compose configuration without deployment
         env:
           POSTGRES_DB: nwo_noc
@@ -305,6 +316,8 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -408,12 +421,17 @@ jobs:
         run: |
           printf 'RF_SCHEDULER_ENABLED=true\n' >> "$NOC_ACCEPTANCE_STATE/acceptance.env"
           scripts/release/manage.sh "$NOC_ACCEPTANCE_STATE" up -d --wait backend worker
-          python3 tests/release/test_monitoring_recovery.py
+          python3 scripts/release/resource_monitor.py "$NOC_ACCEPTANCE_STATE" "$RUNNER_TEMP/noc93-container-resources.json" python3 tests/release/test_monitoring_recovery.py
           (cd frontend && npx playwright test monitoring-reliability.spec.ts)
+      - name: Validate immutable old-release upgrade, failed-upgrade rollback and matching restore
+        run: scripts/release/rehearse-upgrade.sh "$RUNNER_TEMP/noc93-upgrade-state"
       - name: Stop isolated acceptance services, retain volumes
         if: always()
         run: |
           scripts/release/manage.sh "$RUNNER_TEMP/noc84-state" down
+          if [ -f "$RUNNER_TEMP/noc93-upgrade-state/acceptance.env" ]; then
+            NOC_PROJECT=noc84-noc93upgrade scripts/release/manage.sh "$RUNNER_TEMP/noc93-upgrade-state" down
+          fi
           if [ -f "$RUNNER_TEMP/noc85-wisp-state/acceptance.env" ]; then
             NOC_PROJECT=noc84-wisp-test scripts/release/manage.sh "$RUNNER_TEMP/noc85-wisp-state" down
           fi
