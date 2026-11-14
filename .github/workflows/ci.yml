@@ -211,7 +211,8 @@ jobs:
             tests/test_rf_operations_postgres.py \
             tests/test_monitoring_reliability.py \
             tests/test_release_combined_postgres.py \
-            tests/test_final_release_security.py
+            tests/test_final_release_security.py \
+            tests/test_powercode_customers.py
       - name: Measure 30-day historical analytics at 250/500/1000 devices
         env:
           APP_ENV: staging
@@ -447,6 +448,15 @@ jobs:
           scripts/release/manage.sh "$NOC_ACCEPTANCE_STATE" up -d --wait backend worker
           python3 scripts/release/resource_monitor.py "$NOC_ACCEPTANCE_STATE" "$RUNNER_TEMP/noc93-container-resources.json" python3 tests/release/test_monitoring_recovery.py
           (cd frontend && npx playwright test monitoring-reliability.spec.ts)
+      - name: Validate synthetic Powercode customers, private mappings and no-delivery impact previews
+        env:
+          NOC_PROJECT: noc84-wisp-test
+          NOC_ACCEPTANCE_STATE: ${{ runner.temp }}/noc85-wisp-state
+          NOC95_CUSTOMER_BROWSER: "true"
+        run: |
+          scripts/release/manage.sh "$NOC_ACCEPTANCE_STATE" exec -T backend python -m app.powercode_rehearsal > "$NOC_ACCEPTANCE_STATE/customer-fixture.json"
+          cat "$NOC_ACCEPTANCE_STATE/customer-fixture.json"
+          (cd frontend && npx playwright test customers.spec.ts)
       - name: Validate immutable old-release upgrade, failed-upgrade rollback and matching restore
         run: scripts/release/rehearse-upgrade.sh "$RUNNER_TEMP/noc93-upgrade-state"
       - name: Stop isolated acceptance services, retain volumes

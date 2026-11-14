@@ -8,6 +8,17 @@ class Settings(BaseSettings):
     api_docs_enabled: bool = False
     offline_mode: bool = False
     synthetic_monitoring_enabled: bool = False
+    powercode_fixture_enabled: bool = False
+    powercode_live_enabled: bool = False
+
+    @model_validator(mode="after")
+    def powercode_isolation(self):
+        if self.powercode_live_enabled:
+            raise ValueError("Live Powercode requires separately validated API/schema mappings; unavailable in NOC-95")
+        if self.powercode_fixture_enabled and (not self.offline_mode or self.app_env != "staging"):
+            raise ValueError("Powercode fixtures require offline staging")
+        return self
+
     secret_key: str = Field(repr=False,exclude=True)
     access_token_expire_minutes: int = Field(15,ge=1,le=30)
     database_url: str = Field(repr=False,exclude=True)

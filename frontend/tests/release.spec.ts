@@ -17,7 +17,7 @@ test.beforeEach(async ({page})=>{
   await page.getByRole('button',{name:'Sign in',exact:true}).click()
   await expect(page.locator('h1')).toHaveText('Dashboard')
 })
-for (const title of ['Dashboard','Towers & POPs','Devices','Topology','Operations','Alert Center','Incidents','Network Map','Settings','RF Operations','RF Analytics','RF Troubleshooting']) {
+for (const title of ['Customer Impact','Dashboard','Towers & POPs','Devices','Topology','Operations','Alert Center','Incidents','Network Map','Settings','RF Operations','RF Analytics','RF Troubleshooting']) {
   test(`renders ${title}`,async({page})=>{
     await page.locator('nav').getByRole('button',{name:new RegExp('^'+title)}).click()
     await expect(page.locator('h1')).toHaveText(title)

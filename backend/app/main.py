@@ -28,3 +28,16 @@ app.include_router(monitoring_reliability_router)
 
 from app.api.session_routes import router as session_router
 app.include_router(session_router)
+
+from app.customers.routes import router as customer_router
+app.include_router(customer_router)
+
+from fastapi.exceptions import RequestValidationError
+from fastapi.exception_handlers import request_validation_exception_handler
+from fastapi.responses import JSONResponse
+
+@app.exception_handler(RequestValidationError)
+async def private_customer_validation(request, exc):
+    if request.url.path.startswith('/api/customers'):
+        return JSONResponse(status_code=422, content={'detail':'Invalid customer request; check the documented field types and bounds'})
+    return await request_validation_exception_handler(request, exc)
