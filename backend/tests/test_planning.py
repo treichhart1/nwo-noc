@@ -627,10 +627,16 @@ def test_calibration_original_measurements_and_alignment(x):
     assert result["observed_dbm"] == -65
     assert result["error_db"] == pytest.approx(-65 - result["predicted_dbm"])
     assert point.signal_dbm == -65
+    assert result["source_snapshot"]["signal_dbm"] == -65
     with pytest.raises(ValueError, match="align"):
         s.calibration(x.db, x.u, body.model_copy(update={"measured_latitude": 42}))
     with pytest.raises(ValueError):
         s.calibration(x.db, x.u, body.model_copy(update={"receiver_device_id": 99999}))
+    from sqlalchemy import delete
+
+    x.db.execute(delete(RFAnalyticsPoint).where(RFAnalyticsPoint.id == point.id))
+    x.db.flush()
+    assert x.db.get(Calibration, result["id"]).source_snapshot["signal_dbm"] == -65
 
 
 def test_oversized_coverage_budget():

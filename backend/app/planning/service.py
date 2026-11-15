@@ -499,6 +499,18 @@ def calibration(db, u, b):
                 "Valid original measured RF signal required; do not override"
             )
         observed = r.signal_dbm
+        snapshot = {
+            "kind": "rf_analytics_point",
+            "id": r.id,
+            "device_id": r.device_id,
+            "series_key": r.series_key,
+            "source_sample_id": r.source_sample_id,
+            "source_profile": r.source_profile,
+            "sampled_at": r.sampled_at.isoformat(),
+            "valid": r.valid,
+            "signal_dbm": r.signal_dbm,
+            "measured_coordinates": [b.measured_longitude, b.measured_latitude],
+        }
     else:
         from app.signup.models import Survey, Application
         from app.signup import crypto
@@ -526,12 +538,20 @@ def calibration(db, u, b):
         if b.observed_dbm is None:
             raise ValueError("Explicit technician-measured survey RSSI required")
         observed = b.observed_dbm
+        snapshot = {
+            "kind": "installation_survey",
+            "id": r.id,
+            "surveyed_at": r.surveyed_at.isoformat(),
+            "measured_signal_attested_dbm": observed,
+            "measured_coordinates": [b.measured_longitude, b.measured_latitude],
+        }
     row = Calibration(
         job_id=b.job_id,
         point_index=b.point_index,
         emitter_index=b.emitter_index,
         rf_point_id=b.rf_point_id,
         survey_id=b.survey_id,
+        source_snapshot=snapshot,
         predicted_dbm=pred,
         observed_dbm=observed,
         error_db=observed - pred,

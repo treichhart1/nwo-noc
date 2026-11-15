@@ -172,6 +172,7 @@ def upgrade():
         sa.Column("point_index", sa.Integer(), nullable=False),
         sa.Column("emitter_index", sa.Integer(), nullable=False),
         sa.Column("rf_point_id", sa.Integer(), nullable=True),
+        sa.Column("source_snapshot", sa.JSON(), nullable=False),
         sa.Column("survey_id", sa.Integer(), nullable=True),
         sa.Column("predicted_dbm", sa.Float(), nullable=False),
         sa.Column("observed_dbm", sa.Float(), nullable=False),
@@ -186,10 +187,6 @@ def upgrade():
         sa.ForeignKeyConstraint(
             ["job_id"],
             ["planning_jobs.id"],
-        ),
-        sa.ForeignKeyConstraint(
-            ["rf_point_id"],
-            ["rf_analytics_points.id"],
         ),
         sa.ForeignKeyConstraint(
             ["survey_id"],
