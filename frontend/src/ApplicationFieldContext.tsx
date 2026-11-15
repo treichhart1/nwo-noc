@@ -1,9 +1,10 @@
 import React,{useEffect,useState} from 'react'
 import {appAPI} from './Applications'
 import {getToken} from './lib/api'
+import {readFieldContext} from './lib/field-context'
 export default function ApplicationFieldContext({workId}:{workId:number}){
  const[c,setC]=useState<any>(null),[error,setError]=useState(''),[reason,setReason]=useState(''),[approved,setApproved]=useState(false),[busy,setBusy]=useState(false),[pending,setPending]=useState<any>(null),[f,setF]=useState<any>({surveyed_at:'',latitude:'',longitude:'',proposed_sector_id:'',technology:'wireless',line_of_sight:'',signal_observation:'',equipment:'',mounting:'',cable_route:'',complexity:'',outcome:'inconclusive'})
- async function load(){setC(await appAPI('/work-context/'+workId))}
+ async function load(){setC(await readFieldContext('/applications/work-context/'+workId))}
  useEffect(()=>{setC(null);load().catch(e=>{if(e.status!==404)setError(e.message)})},[workId])
  async function post(path:string,body:any){const p=pending||{path,body:{...body,reason,operation_key:crypto.randomUUID()}};if(p.path!==path)throw new Error('Resolve pending field submission first');setPending(p);await appAPI(p.path,p.body);setPending(null);await load()}
  async function act(fn:()=>Promise<any>){setBusy(true);setError('');try{await fn()}catch(e:any){setError(e.message)}finally{setBusy(false)}}

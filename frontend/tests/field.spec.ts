@@ -20,7 +20,7 @@ test('phone technician scans authenticated tower, preserves draft, retries once 
  await page.getByLabel('Inspection local date and time',{exact:true}).fill('2026-01-01T10:00')
  for(const select of await page.locator('[aria-label="Inspection checklist"] select').all())await select.selectOption('pass')
  let requests=0
- await page.route(`**/api/field/work-orders/${f.work_id}/inspections`,async route=>{requests++;if(requests===1){await route.fetch();await route.abort('failed')}else await route.continue()})
+ await page.route(`**/api/field/work-orders/${f.work_id}/inspections`,async route=>{requests++;if(requests===1){const response=await route.fetch();expect(response.ok(),await response.text()).toBe(true);await route.abort('failed')}else await route.continue()})
  await page.getByRole('button',{name:'Submit completed inspection',exact:true}).click();await expect(page.getByRole('region',{name:'Pending field submission',exact:true})).toBeVisible()
  await page.getByRole('button',{name:'Retry saved submission',exact:true}).click();await expect(page.getByRole('region',{name:'Pending field submission',exact:true})).toHaveCount(0)
  const work=page.getByRole('region',{name:'Field work order',exact:true});await expect(work).toContainText('Inspection#');expect(await work.locator('article').filter({hasText:/Inspection#/}).count()).toBe(1)
@@ -48,4 +48,15 @@ test('technician documents scanned equipment replacement and closes the work ord
  await page.getByLabel('Installation details',{exact:true}).fill('Installed verified synthetic spare and retained existing logical device association');await page.getByLabel('Removal details',{exact:true}).fill('Removed synthetic old radio to repair stock for qualified inspection');await page.getByLabel('Complete work order in the same transaction',{exact:true}).check()
  await page.getByRole('button',{name:'Document field replacement',exact:true}).click();await expect(work).toContainText('completed');await expect(work).toContainText('equipment_replaced')
  const result=await page.evaluate(async({asset,spare})=>{const headers={Authorization:`Bearer ${localStorage.getItem('nwo_token')}`};const a=await fetch('/api/field/assets/'+asset,{headers});const b=await fetch('/api/field/assets/'+spare,{headers});return {old:await a.json(),new:await b.json()}},{asset:f.asset_id,spare:f.spare_id});expect(result.old.state).toBe('removed');expect(result.new.state).toBe('installed');expect(result.new.availability.state).toBe('unknown')
+})
+
+test('optional network context authorization failure preserves the primary field session and inspection draft',async({page})=>{
+ const {env,f}=fixture();let release!:()=>void;const proceed=new Promise<void>(resolve=>{release=resolve})
+ await page.route('**/api/field/work-orders/*/unified-context',async route=>{await proceed;await route.fulfill({status:401,contentType:'application/json',body:JSON.stringify({detail:'Synthetic auxiliary authorization unavailable'})})})
+ await login(page,'/?field=home&work='+f.context_work_id,'field-context-acceptance',env.ADMIN_PASSWORD)
+ const note=page.getByLabel('Inspection work notes',{exact:true});await note.fill('Synthetic inspection draft must survive optional context failure')
+ release();await expect(page.getByRole('region',{name:'Assigned network components',exact:true})).toContainText('unavailable')
+ expect(await page.evaluate(()=>Boolean(localStorage.getItem('nwo_token')))).toBe(true)
+ await expect(note).toHaveValue('Synthetic inspection draft must survive optional context failure')
+ const status=await page.evaluate(async id=>{const r=await fetch('/api/field/work-orders/'+id,{headers:{Authorization:'Bearer '+localStorage.getItem('nwo_token')}});return r.status},f.context_work_id);expect(status).toBe(200)
 })
