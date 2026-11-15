@@ -222,7 +222,14 @@ jobs:
             tests/test_equipment.py \
             tests/test_field.py \
             tests/test_maintenance_documents.py \
-            tests/test_signup.py
+            tests/test_signup.py \
+            tests/test_unified.py
+      - name: Measure unified40 POP physical logical and customer impact graphs
+        env:
+          APP_ENV: staging
+          OFFLINE_MODE: "true"
+          SYNTHETIC_MONITORING_ENABLED: "true"
+        run: python -m app.unified.benchmark
       - name: Measure encrypted signup workflows at40 POPs
         env:
           APP_ENV: staging
@@ -600,6 +607,14 @@ jobs:
             sleep 1
           done
           (cd frontend && npx playwright test signup.spec.ts)
+      - name: Validate unified wireless fiber hybrid map and strand reservations
+        env:
+          NOC_PROJECT: noc84-wisp-test
+          NOC_ACCEPTANCE_STATE: ${{ runner.temp }}/noc85-wisp-state
+          NOC104_UNIFIED_BROWSER: "true"
+        run: |
+          scripts/release/manage.sh "$NOC_ACCEPTANCE_STATE" exec -T backend python -m app.unified.rehearsal > "$NOC_ACCEPTANCE_STATE/unified-fixture.json"
+          (cd frontend && npx playwright test unified.spec.ts)
       - name: Validate immutable old-release upgrade, failed-upgrade rollback and matching restore
         run: scripts/release/rehearse-upgrade.sh "$RUNNER_TEMP/noc93-upgrade-state"
       - name: Stop isolated acceptance services, retain volumes
