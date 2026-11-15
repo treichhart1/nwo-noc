@@ -10,8 +10,9 @@ Nothing has been merged or deployed.
   The final context-filter regression was added after this run began; the final
   focused PostgreSQL suite passed42 tests,2 dependency warnings,5.17 seconds.
   These suites overlap and counts are not additive.
-* Native mobile browser workflows:3 passed,1 unrelated RF test skipped by its own
-  fixture guard. Recorded CPU report/chart, unavailable RF data, CSV download,
+* Final native mobile/browser workflows:3 passed,0 skipped with the exact test selector.
+  Includes phone-width overflow and print-visibility regressions.
+  Recorded CPU report/chart, unavailable RF data, CSV download,
   synthetic health labeling, provisioning export, secure links and invalid UID rejection.
 * Private and public/signup frontend production builds passed. Existing bundle-size
   advisory remains non-failing.

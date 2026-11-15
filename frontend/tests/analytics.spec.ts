@@ -73,6 +73,27 @@ test("mobile private reports distinguish missing observations and export recorde
       exact: false,
     }),
   ).toBeVisible();
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+  await page.emulateMedia({ media: "print" });
+  await expect(
+    page.getByRole("heading", {
+      name: "Historical monitoring report",
+      exact: true,
+    }),
+  ).toBeVisible();
+  expect(
+    await page
+      .getByRole("heading", {
+        name: "Historical monitoring report",
+        exact: true,
+      })
+      .evaluate((el) => getComputedStyle(el).visibility),
+  ).toBe("visible");
+  await page.emulateMedia({ media: "screen" });
   expect(outside).toEqual([]);
 });
 test("synthetic health is explicitly unverified and provisioning never writes remotely", async ({

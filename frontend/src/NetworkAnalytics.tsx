@@ -126,7 +126,7 @@ export default function NetworkAnalytics() {
     lo = Math.min(...values.map((p: any) => p.value)),
     hi = Math.max(...values.map((p: any) => p.value));
   return (
-    <main className="fieldPage">
+    <main className="fieldApp analyticsPage">
       <header>
         <a href="/">← NOC</a>
         <h1>Network Analytics</h1>
@@ -572,7 +572,7 @@ export default function NetworkAnalytics() {
           )}
         </>
       )}
-      <style>{`.analyticsFilters{display:flex;flex-wrap:wrap;gap:1rem}.analyticsFilters label{min-width:180px}pre{max-height:24rem;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere}@media print{button,select,input,header a{display:none}.card{break-inside:avoid}body{background:white;color:black}}`}</style>
+      <style>{`.analyticsFilters{display:flex;flex-wrap:wrap;gap:1rem}.analyticsFilters label{min-width:180px}pre{max-height:24rem;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere}@media print{.analyticsPage,.analyticsPage *{visibility:visible}.analyticsPage{position:absolute;left:0;top:0;width:100%;max-width:none;background:white;color:black}button,select,input,header a{display:none}.card{break-inside:avoid}body{background:white;color:black}}`}</style>
     </main>
   );
 }
