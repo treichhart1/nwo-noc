@@ -225,7 +225,10 @@ jobs:
             tests/test_signup.py \
             tests/test_unified.py \
             tests/test_planning.py \
-            tests/test_fiber_sync.py
+            tests/test_fiber_sync.py \
+            tests/test_finance.py
+      - name: Measure operational finance at40 synthetic POPs
+        run: python -m app.finance.benchmark
       - name: Measure approved fiber reconciliation at40 synthetic POPs
         run: python -m app.fiber_sync.benchmark
       - name: Measure offline terrain coverage at40 synthetic POPs
@@ -646,6 +649,17 @@ jobs:
           scripts/release/manage.sh "$NOC_ACCEPTANCE_STATE" exec -T backend python -m app.fiber_sync.rehearsal > "$NOC_ACCEPTANCE_STATE/fiber-sync-fixture.json"
           scripts/release/manage.sh "$NOC_ACCEPTANCE_STATE" exec -T -e FIBER_DESIGNER_WORKER_ENABLED=true backend python -m app.fiber_sync.worker --once
           (cd frontend && npx playwright test fiber-sync.spec.ts)
+      - name: Validate private operational finance, allocations and advisory scenarios
+        env:
+          APP_ENV: staging
+          OFFLINE_MODE: "true"
+          SYNTHETIC_MONITORING_ENABLED: "true"
+          NOC_PROJECT: noc84-wisp-test
+          NOC_ACCEPTANCE_STATE: ${{ runner.temp }}/noc85-wisp-state
+          NOC107_FINANCE_BROWSER: "true"
+        run: |
+          scripts/release/manage.sh "$NOC_ACCEPTANCE_STATE" exec -T backend python -m app.finance.rehearsal > "$NOC_ACCEPTANCE_STATE/finance-fixture.json"
+          (cd frontend && npx playwright test finance.spec.ts)
       - name: Validate immutable old-release upgrade, failed-upgrade rollback and matching restore
         run: scripts/release/rehearse-upgrade.sh "$RUNNER_TEMP/noc93-upgrade-state"
       - name: Stop isolated acceptance services, retain volumes
