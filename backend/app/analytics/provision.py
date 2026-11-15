@@ -16,8 +16,8 @@ SELECT observed_at,site_id,device_id,value AS total,CASE WHEN value IS NULL THEN
 FROM noc_analytics.metric_points WHERE metric='{metric}' AND $__timeFilter(observed_at)
 AND ($__unixEpochTo()-$__unixEpochFrom())<=86400 {FILTER}
 UNION ALL
-SELECT bucket,site_id,device_id,value_sum,valid_count FROM noc_analytics.hourly
-WHERE metric='{metric}' AND $__timeFilter(bucket) AND ($__unixEpochTo()-$__unixEpochFrom())>86400 {FILTER}
+SELECT bucket,site_id,device_id,value_sum,valid_count FROM noc_analytics.hourly h
+WHERE EXISTS(SELECT 1 FROM noc_analytics.coverage c WHERE c.bucket=h.bucket AND c.complete) AND metric='{metric}' AND $__timeFilter(bucket) AND ($__unixEpochTo()-$__unixEpochFrom())>86400 {FILTER}
 ) SELECT $__timeGroupAlias(observed_at,'$__interval'),sum(total)/nullif(sum(n),0) AS value,coalesce(site_id,0)::text AS metric FROM points GROUP BY 1,3 ORDER BY 1 LIMIT 5000"""
 
 
@@ -78,7 +78,7 @@ def dashboard(uid):
     if uid in {"noc-network", "noc-towers", "noc-outages"}:
         table(
             "Authoritative NOC incident lifetimes · impact is a recorded estimate",
-            f"SELECT id,site_id,started_at,restored_at,severity,status,recorded_customer_impact_estimate FROM noc_analytics.incidents WHERE $__timeFilter(started_at) {FILTER} ORDER BY started_at DESC LIMIT 1000",
+            f"SELECT id,site_id,started_at,restored_at,severity,status,recorded_customer_impact_estimate FROM noc_analytics.incidents WHERE started_at<=$__timeTo() AND coalesce(restored_at,$__timeTo())>=$__timeFrom() {FILTER} ORDER BY started_at DESC LIMIT 1000",
         )
     if uid == "noc-towers":
         table(
@@ -97,7 +97,7 @@ def dashboard(uid):
     if uid == "noc-capacity":
         table(
             "Hourly recorded capacity · sample-weighted, not configured speed",
-            f"SELECT bucket,site_id,metric,value_sum/nullif(valid_count,0) AS recorded_mean,valid_count,missing_count FROM noc_analytics.hourly WHERE $__timeFilter(bucket) AND metric IN ('rf_capacity_mbps','rf_utilization_percent','sector_utilization_percent') {FILTER} ORDER BY bucket DESC LIMIT 5000",
+            f"SELECT bucket,site_id,metric,value_sum/nullif(valid_count,0) AS recorded_mean,valid_count,missing_count FROM noc_analytics.hourly h WHERE EXISTS(SELECT 1 FROM noc_analytics.coverage c WHERE c.bucket=h.bucket AND c.complete) AND $__timeFilter(bucket) AND metric IN ('rf_capacity_mbps','rf_utilization_percent','sector_utilization_percent') {FILTER} ORDER BY bucket DESC LIMIT 5000",
         )
     return {
         "uid": uid,

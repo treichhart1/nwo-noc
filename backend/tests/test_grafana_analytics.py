@@ -589,6 +589,7 @@ def test_provisioning_uses_sql_quoted_ids_and_weighted_rollups():
     assert "${site:sqlstring}" in sql
     assert "sum(total)/nullif(sum(n),0)" in sql
     assert "noc_analytics.hourly" in sql
+    assert "c.bucket=h.bucket AND c.complete" in sql
 
 
 def test_context_without_filters_and_device_only_are_valid(x):

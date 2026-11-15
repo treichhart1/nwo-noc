@@ -6,7 +6,10 @@ Nothing has been merged or deployed.
 
 ## Measured local acceptance
 
-* Focused PostgreSQL analytics suite: final counts recorded in the PR after validation.
+* Full local backend suite:1,590 passed,58 existing dependency warnings,662.64 seconds.
+  The final context-filter regression was added after this run began; the final
+  focused PostgreSQL suite passed42 tests,2 dependency warnings,5.17 seconds.
+  These suites overlap and counts are not additive.
 * Native mobile browser workflows:3 passed,1 unrelated RF test skipped by its own
   fixture guard. Recorded CPU report/chart, unavailable RF data, CSV download,
   synthetic health labeling, provisioning export, secure links and invalid UID rejection.
@@ -28,6 +31,16 @@ untyped optional PostgreSQL filter parameters. The migration was rebuilt against
 an empty disposable schema; filter casts and a regression were added. A browser
 link assertion was corrected to the actual safe dashboard route including its
 constant slug. No security assertions or functionality were removed.
+
+A populated synthetic backup restored into a new isolated database with12 telemetry
+samples,2 incidents,3 equipment assets,5 financial entries,1 analytics configuration,
+2 health checks and2 provisioning receipts retained. The restored numeric report
+passed; the original database and backup were preserved.
+
+Final review added complete-cache predicates to long-range Grafana queries so
+late-data invalidation cannot silently display old derived bins. Outage panels
+include incidents overlapping the window even when they began earlier. All61
+panel queries and42 focused tests passed after these changes.
 
 ## Synthetic performance
 
