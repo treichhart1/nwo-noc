@@ -41,7 +41,7 @@ services:
       db: {condition: service_healthy}
   backend:
     <<: *app
-    volumes: [monitoring_spool:/var/lib/nwo-noc/monitoring, maintenance_documents:/var/lib/nwo-noc/documents]
+    volumes: [monitoring_spool:/var/lib/nwo-noc/monitoring, maintenance_documents:/var/lib/nwo-noc/documents, signup_private:/var/lib/nwo-noc/signup]
     environment:
       DATABASE_URL: ${NOC_RUNTIME_DATABASE_URL:-${DATABASE_URL}}
       POSTGRES_PASSWORD: ""
@@ -60,7 +60,7 @@ services:
       DATABASE_URL: ${NOC_RUNTIME_DATABASE_URL:-${DATABASE_URL}}
       POSTGRES_PASSWORD: ""
     command: [python, -m, app.worker]
-    volumes: [monitoring_spool:/var/lib/nwo-noc/monitoring, maintenance_documents:/var/lib/nwo-noc/documents]
+    volumes: [monitoring_spool:/var/lib/nwo-noc/monitoring, maintenance_documents:/var/lib/nwo-noc/documents, signup_private:/var/lib/nwo-noc/signup]
     depends_on:
       backend: {condition: service_healthy}
     healthcheck:
@@ -91,3 +91,5 @@ volumes:
   monitoring_spool:
 
   maintenance_documents:
+
+  signup_private:

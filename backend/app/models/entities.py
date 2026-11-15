@@ -476,3 +476,5 @@ from app.equipment.models import Asset as EquipmentAsset,Category as EquipmentCa
 from app.field import models as field_models  # noqa: E402,F401
 
 from app.maintenance_ops import models as maintenance_models  # noqa: E402,F401
+
+from app.signup import models as signup_models  # noqa: E402,F401

@@ -157,3 +157,5 @@ Current security/release verification and pilot gates: [NOC-94 final verificatio
 NOC-95 private customer synchronization, reviewed network mapping and no-delivery impact previews: [Powercode customer foundation and operator guide](docs/NOC-95-powercode-customers.md). Native Powercode compatibility remains unverified and live connectivity is unavailable/disabled.
 
 NOC-96 operational notification approvals, durable mock SMS/Slack queues, maintenance and privacy controls: [Notification architecture and operator guide](docs/NOC-96-operational-notifications.md). External delivery remains unavailable/disabled; simulated receipts do not establish provider delivery.
+
+NOC-103 adds [private customer application management and an isolated public signup form](docs/NOC103_CUSTOMER_SIGNUP.md), with preliminary qualification, consent-aware drafts, manual quote approvals and existing technician work-order integration. Public activation remains disabled pending the documented security and provider gates.

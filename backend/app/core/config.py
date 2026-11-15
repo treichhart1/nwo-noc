@@ -11,6 +11,31 @@ class Settings(BaseSettings):
     powercode_fixture_enabled: bool = False
     powercode_live_enabled: bool = False
     ipam_discovery_enabled: bool = False
+    signup_pii_key_file: str = Field(default='',repr=False,exclude=True)
+    signup_public_origin: str = ''
+    signup_public_enabled: bool = False
+    signup_public_test_mode: bool = False
+    signup_turnstile_mode: Literal['disabled','turnstile','fixture'] = 'disabled'
+    signup_turnstile_site_key: str = ''
+    signup_turnstile_secret_file: str = Field(default='',repr=False,exclude=True)
+    signup_geocoder: Literal['disabled','nominatim','fixture'] = 'disabled'
+    signup_geocoder_origin: str = ''
+    signup_geocoder_approved_origins: str = ''
+    signup_geocoder_admin_approved: bool = False
+    signup_trusted_proxy_cidrs: str = ''
+    signup_retention_days: int = Field(365,ge=30,le=3650)
+    @model_validator(mode='after')
+    def signup_safety(self):
+        test=self.offline_mode and self.app_env=='staging' and self.synthetic_monitoring_enabled
+        if (self.signup_public_test_mode or self.signup_turnstile_mode=='fixture' or self.signup_geocoder=='fixture') and not test:
+            raise ValueError('Signup fixtures require explicitly isolated synthetic staging')
+        if self.signup_public_enabled:
+            from urllib.parse import urlsplit
+            p=urlsplit(self.signup_public_origin)
+            if not p.hostname or p.username or p.password or p.path or p.query or p.fragment or (p.scheme!='https' and not(self.signup_public_test_mode and p.scheme=='http' and p.hostname=='127.0.0.1')):
+                raise ValueError('Approved signup HTTPS origin required')
+        return self
+
     maintenance_scheduler_enabled: bool = False
     maintenance_warranty_warning_days: int = Field(60,ge=0,le=3650)
     maintenance_repeat_service_count: int = Field(3,ge=2,le=100)

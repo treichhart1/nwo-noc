@@ -95,6 +95,37 @@ def migrate_documents(root, uid):
     return len(files)
 
 
+def migrate_signup(root, uid):
+    """Only the private application master key; never print or replace key bytes."""
+    if os.geteuid() != 0 or uid not in (0, 10001):
+        raise ValueError("Approved root metadata migration required")
+    p = Path(root)
+    st = p.lstat()
+    if not stat.S_ISDIR(st.st_mode) or st.st_uid not in (0, 10001):
+        raise ValueError("Owned signup key directory required")
+    entries = list(p.iterdir())
+    if entries and st.st_mode & 0o077:
+        raise ValueError("Nonempty signup key directory must be private")
+    for item in entries:
+        st = item.lstat()
+        if (
+            item.name != "pii.key"
+            or not stat.S_ISREG(st.st_mode)
+            or st.st_uid not in (0, 10001)
+            or st.st_mode & 0o077
+            or st.st_size > 256
+        ):
+            raise ValueError(
+                "Unexpected signup key entry; preserve for operator review"
+            )
+    for item in entries:
+        os.chown(item, uid, uid, follow_symlinks=False)
+        os.chmod(item, 0o600, follow_symlinks=False)
+    os.chown(p, uid, uid, follow_symlinks=False)
+    os.chmod(p, 0o700)
+    return len(entries)
+
+
 if __name__ == "__main__":
     a = argparse.ArgumentParser()
     a.add_argument("--uid", type=int, required=True)
@@ -107,6 +138,10 @@ if __name__ == "__main__":
         print(
             "Private document metadata migrated; payloads retained:",
             migrate_documents("/var/lib/nwo-noc/documents", args.uid),
+        )
+        print(
+            "Private signup key metadata migrated; key retained:",
+            migrate_signup("/var/lib/nwo-noc/signup", args.uid),
         )
     except (ValueError, OSError):
         raise SystemExit(
