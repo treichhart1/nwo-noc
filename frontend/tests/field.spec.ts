@@ -12,7 +12,17 @@ test('phone technician scans authenticated tower, preserves draft, retries once 
  await page.getByRole('button',{name:`Open work order #${f.work_id}`,exact:true}).click()
  await page.getByLabel('Field change reason',{exact:true}).fill('Synthetic mobile technician approved site inspection documentation');await page.getByLabel('I approve documentation changes only.',{exact:true}).check()
  await page.getByLabel('Work performed or technician note',{exact:true}).fill('Started synthetic tower inspection after authorized site verification')
- await page.getByRole('button',{name:'Save work status',exact:true}).click();await expect(page.getByRole('region',{name:'Field work order',exact:true})).toContainText('in_progress')
+ // A dropdown option is not evidence that the preceding mutation was acknowledged.
+ // Hold the committed status response so this test cannot race a reload with its retry envelope.
+ let acknowledgeStatus!:()=>void, statusCommitted!:()=>void
+ const statusGate=new Promise<void>(resolve=>{acknowledgeStatus=resolve})
+ const statusArrived=new Promise<void>(resolve=>{statusCommitted=resolve})
+ await page.route(`**/api/field/work-orders/${f.work_id}/status`,async route=>{const response=await route.fetch();statusCommitted();await statusGate;await route.fulfill({response})})
+ await page.getByRole('button',{name:'Save work status',exact:true}).click();await statusArrived
+ const savedStatus=page.getByRole('region',{name:'Field work order',exact:true}).locator('p').first()
+ try{await expect(savedStatus).not.toContainText('in_progress')}finally{acknowledgeStatus()}
+ await expect(savedStatus).toContainText('in_progress')
+ await expect(page.getByRole('region',{name:'Pending field submission',exact:true})).toHaveCount(0)
  await page.getByLabel('Inspection work notes',{exact:true}).fill('Synthetic mobile draft survives reload without background synchronization')
  await page.reload();await expect(page.getByLabel('Inspection work notes',{exact:true})).toHaveValue('Synthetic mobile draft survives reload without background synchronization')
  await context.setOffline(true);await expect(app).toContainText('Offline — submissions disabled');await expect(page.getByRole('button',{name:'Submit completed inspection',exact:true})).toBeDisabled();await context.setOffline(false)
@@ -23,7 +33,7 @@ test('phone technician scans authenticated tower, preserves draft, retries once 
  await page.route(`**/api/field/work-orders/${f.work_id}/inspections`,async route=>{requests++;if(requests===1){const response=await route.fetch();expect(response.ok(),await response.text()).toBe(true);await route.abort('failed')}else await route.continue()})
  await page.getByRole('button',{name:'Submit completed inspection',exact:true}).click();await expect(page.getByRole('region',{name:'Pending field submission',exact:true})).toBeVisible()
  await page.getByRole('button',{name:'Retry saved submission',exact:true}).click();await expect(page.getByRole('region',{name:'Pending field submission',exact:true})).toHaveCount(0)
- const work=page.getByRole('region',{name:'Field work order',exact:true});await expect(work).toContainText('Inspection#');expect(await work.locator('article').filter({hasText:/Inspection#/}).count()).toBe(1)
+ const work=page.getByRole('region',{name:'Field work order',exact:true});await expect(work).toContainText('Inspection#');expect(requests).toBe(2);expect(await work.locator('article').filter({hasText:/Inspection#/}).count()).toBe(1)
  const file=page.getByLabel('Attach inspection photograph or report',{exact:true});await expect(file).toBeEnabled();await file.setInputFiles({name:'field-report.txt',mimeType:'text/plain',buffer:Buffer.from('Synthetic tower field inspection report, no live equipment')});await expect(page.getByRole('button',{name:/Download field-report.txt/})).toBeVisible()
  await page.getByRole('combobox',{name:/^Work order status/}).selectOption('completed');await page.getByLabel('Work performed or technician note',{exact:true}).fill('Completed synthetic visual inspection and recorded all checklist evidence');await page.getByRole('button',{name:'Save work status',exact:true}).click();await expect(work).toContainText('completed')
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);expect(external).toEqual([])

@@ -50,6 +50,14 @@ Reader-role provisioning now suppresses password-bearing SQL exceptions and retu
 a fixed CLI failure message. A synthetic database failure regression verifies that
 the generated password does not appear in rendered exception output.
 
+The final Ubuntu push run565 exposed an inherited field-browser synchronization
+error: a whole-region status assertion matched a dropdown option before the status
+mutation was acknowledged. A reload could preserve that uncertain status envelope
+and later retry it instead of the inspection. The test now gates the status response,
+waits for the actual saved status paragraph, and verifies exactly two inspection
+requests and one stored inspection. The controlled case passed locally; no client
+functionality or assertion was removed.
+
 ## Synthetic performance
 
 40 POPs, no external calls, all benchmark transactions rolled back:
