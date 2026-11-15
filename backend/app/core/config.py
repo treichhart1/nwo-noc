@@ -11,6 +11,20 @@ class Settings(BaseSettings):
     powercode_fixture_enabled: bool = False
     powercode_live_enabled: bool = False
     ipam_discovery_enabled: bool = False
+    maintenance_scheduler_enabled: bool = False
+    maintenance_warranty_warning_days: int = Field(60,ge=0,le=3650)
+    maintenance_repeat_service_count: int = Field(3,ge=2,le=100)
+    maintenance_service_history_days: int = Field(90,ge=1,le=3650)
+    maintenance_document_root: str = '/var/lib/nwo-noc/documents'
+    maintenance_document_max_bytes: int = Field(5242880,ge=1024,le=10485760)
+    maintenance_document_scanner: Literal['disabled','clamav','synthetic'] = 'disabled'
+    maintenance_clamav_socket: str = '/run/clamav/clamd.sock'
+    @model_validator(mode='after')
+    def maintenance_safety(self):
+        if self.maintenance_document_scanner=='synthetic' and not(self.offline_mode and self.app_env=='staging' and self.synthetic_monitoring_enabled):
+            raise ValueError('Synthetic document scanner requires explicit offline synthetic staging')
+        return self
+
     field_public_base_url: str = ""
     tower_health_enabled: bool = False
     tower_health_interval_seconds: int = Field(15,ge=15,le=300)

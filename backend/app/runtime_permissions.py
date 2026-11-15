@@ -51,6 +51,50 @@ def migrate(root, uid):
     return len(entries)
 
 
+def migrate_documents(root, uid):
+    if os.geteuid() != 0 or uid not in (0, 10001):
+        raise ValueError("Approved root migration required")
+    p = Path(root)
+    st = p.lstat()
+    if not stat.S_ISDIR(st.st_mode) or st.st_uid not in (0, 10001):
+        raise ValueError("Private document directory required")
+    entries = list(p.iterdir())
+    files = []
+    dirs = []
+    if entries and st.st_mode & 0o077:
+        raise ValueError("Nonempty document root must be private")
+    for shard in entries:
+        st = shard.lstat()
+        if (
+            not re.fullmatch("[0-9a-f]{2}", shard.name)
+            or not stat.S_ISDIR(st.st_mode)
+            or st.st_uid not in (0, 10001)
+            or st.st_mode & 0o077
+        ):
+            raise ValueError("Unexpected document shard")
+        dirs.append(shard)
+        for item in shard.iterdir():
+            st = item.lstat()
+            if (
+                not re.fullmatch("[0-9a-f]{64}", item.name)
+                or not item.name.startswith(shard.name)
+                or not stat.S_ISREG(st.st_mode)
+                or st.st_uid not in (0, 10001)
+                or st.st_mode & 0o077
+            ):
+                raise ValueError("Unexpected document file; preserve for review")
+            files.append(item)
+            if len(files) > 100000:
+                raise ValueError("Document ownership migration bound exceeded")
+    for item in files:
+        os.chown(item, uid, uid, follow_symlinks=False)
+        os.chmod(item, 0o400, follow_symlinks=False)
+    for item in dirs + [p]:
+        os.chown(item, uid, uid, follow_symlinks=False)
+        os.chmod(item, 0o700, follow_symlinks=False)
+    return len(files)
+
+
 if __name__ == "__main__":
     a = argparse.ArgumentParser()
     a.add_argument("--uid", type=int, required=True)
@@ -59,6 +103,10 @@ if __name__ == "__main__":
         print(
             "Private spool metadata migrated; payloads retained:",
             migrate("/var/lib/nwo-noc/monitoring", args.uid),
+        )
+        print(
+            "Private document metadata migrated; payloads retained:",
+            migrate_documents("/var/lib/nwo-noc/documents", args.uid),
         )
     except (ValueError, OSError):
         raise SystemExit(

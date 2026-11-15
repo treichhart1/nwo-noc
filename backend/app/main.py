@@ -38,7 +38,7 @@ from fastapi.responses import JSONResponse
 
 @app.exception_handler(RequestValidationError)
 async def private_customer_validation(request, exc):
-    if request.url.path.startswith(('/api/customers','/api/notifications','/api/down-detector','/api/tower-health','/api/ipam','/api/equipment','/api/field')):
+    if request.url.path.startswith(('/api/customers','/api/notifications','/api/down-detector','/api/tower-health','/api/ipam','/api/equipment','/api/field','/api/maintenance-ops')):
         return JSONResponse(status_code=422, content={'detail':'Invalid customer request; check the documented field types and bounds'})
     return await request_validation_exception_handler(request, exc)
 
@@ -59,3 +59,6 @@ app.include_router(equipment_router)
 
 from app.field.routes import router as field_router
 app.include_router(field_router)
+
+from app.maintenance_ops.routes import router as maintenance_ops_router
+app.include_router(maintenance_ops_router)

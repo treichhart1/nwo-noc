@@ -18,3 +18,5 @@ email-validator==2.2.0
 pysnmp==7.1.32
 
 qrcode==8.2
+
+pypdf==7.1.0

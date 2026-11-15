@@ -219,7 +219,14 @@ jobs:
             tests/test_tower_health.py \
             tests/test_ipam.py \
             tests/test_equipment.py \
-            tests/test_field.py
+            tests/test_field.py \
+            tests/test_maintenance_documents.py
+      - name: Measure preventive maintenance and document metadata at40 POPs
+        env:
+          APP_ENV: staging
+          OFFLINE_MODE: "true"
+          SYNTHETIC_MONITORING_ENABLED: "true"
+        run: python -m app.maintenance_ops.benchmark
       - name: Measure authenticated QR and field work pages at40 POPs
         env:
           APP_ENV: staging
@@ -368,7 +375,7 @@ jobs:
   clean-install-acceptance:
     name: Ubuntu 24.04 isolated installation and recovery
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
         with:
@@ -418,7 +425,7 @@ jobs:
           NOC_ACCEPTANCE_STATE: ${{ runner.temp }}/noc85-wisp-state
         run: |
           python3 scripts/release/configure.py "$NOC_ACCEPTANCE_STATE"
-          printf 'SYNTHETIC_MONITORING_ENABLED=true\n' >> "$NOC_ACCEPTANCE_STATE/acceptance.env"
+          printf 'SYNTHETIC_MONITORING_ENABLED=true\nMAINTENANCE_DOCUMENT_SCANNER=synthetic\nMAINTENANCE_SCHEDULER_ENABLED=true\n' >> "$NOC_ACCEPTANCE_STATE/acceptance.env"
           NOC_PROJECT=noc84-wisp-test scripts/release/rehearse-ubuntu.sh "$NOC_ACCEPTANCE_STATE"
           NOC_PROJECT=noc84-wisp-test scripts/release/manage.sh "$NOC_ACCEPTANCE_STATE" stop worker
           NOC_PROJECT=noc84-wisp-test scripts/release/manage.sh "$NOC_ACCEPTANCE_STATE" exec -T backend python -m app.wisp_rehearsal seed
@@ -556,6 +563,19 @@ jobs:
         run: |
           scripts/release/manage.sh "$NOC_ACCEPTANCE_STATE" exec -T backend python -m app.field.rehearsal > "$NOC_ACCEPTANCE_STATE/field-fixture.json"
           (cd frontend && npx playwright test field.spec.ts)
+      - name: Validate preventive maintenance, secure documents and durable occurrence recovery
+        env:
+          NOC_PROJECT: noc84-wisp-test
+          NOC_ACCEPTANCE_STATE: ${{ runner.temp }}/noc85-wisp-state
+          NOC102_MAINTENANCE_BROWSER: "true"
+        run: |
+          scripts/release/manage.sh "$NOC_ACCEPTANCE_STATE" exec -T backend python -m app.maintenance_ops.rehearsal seed > "$NOC_ACCEPTANCE_STATE/maintenance-fixture.json"
+          (cd frontend && npx playwright test maintenance.spec.ts)
+          scripts/release/manage.sh "$NOC_ACCEPTANCE_STATE" stop worker
+          scripts/release/manage.sh "$NOC_ACCEPTANCE_STATE" exec -T backend python -m app.maintenance_ops.rehearsal queue
+          scripts/release/manage.sh "$NOC_ACCEPTANCE_STATE" restart db
+          scripts/release/manage.sh "$NOC_ACCEPTANCE_STATE" up -d --wait db backend worker
+          scripts/release/manage.sh "$NOC_ACCEPTANCE_STATE" exec -T backend python -m app.maintenance_ops.rehearsal verify
       - name: Validate immutable old-release upgrade, failed-upgrade rollback and matching restore
         run: scripts/release/rehearse-upgrade.sh "$RUNNER_TEMP/noc93-upgrade-state"
       - name: Stop isolated acceptance services, retain volumes
