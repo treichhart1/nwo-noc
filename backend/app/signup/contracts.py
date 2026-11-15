@@ -47,9 +47,11 @@ class Address(SafeModel):
     postal_code: str = Field(pattern=r"^\d{5}(-\d{4})?$")
     country: Literal["US"] = "US"
 
-    @field_validator("street", "unit", "city", "state")
+    @field_validator("street", "unit", "city", "state", "postal_code", mode="before")
     @classmethod
     def clean(cls, v):
+        if not isinstance(v, str):
+            return v
         return re.sub(r"\s+", " ", unicodedata.normalize("NFKC", v).strip())
 
 
@@ -74,6 +76,15 @@ class SignupInput(SafeModel):
     notes: str = Field("", max_length=2000)
     website: str = Field("", max_length=200)
     turnstile_token: str = Field(min_length=1, max_length=2048)
+
+    @field_validator("customer_name", "business_name", mode="before")
+    @classmethod
+    def applicant_name(cls, v):
+        return (
+            re.sub(r"\s+", " ", unicodedata.normalize("NFKC", v).strip())
+            if isinstance(v, str)
+            else v
+        )
 
     @field_validator("phone")
     @classmethod
@@ -329,6 +340,7 @@ class Control(Mutation):
         "approve_quote",
         "issue_quote",
         "record_acceptance",
+        "record_opt_out",
         "approve_match",
         "prepare_provisioning",
         "hold",

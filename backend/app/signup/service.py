@@ -2,7 +2,7 @@ import json, math, hashlib
 from datetime import timedelta
 from decimal import Decimal
 from uuid import uuid4
-from sqlalchemy import select, func, or_, text
+from sqlalchemy import select, func, or_, text, update as sql_update
 from cryptography.fernet import InvalidToken
 from app.models.entities import User, Site, Sector, NetworkLink, AuditLog
 from app.customers.models import CustomerAccount, CustomerService
@@ -526,7 +526,7 @@ def update(db, u, a, b):
         a,
         u,
         "state_changed",
-        b.reason,
+        b.reason + " | Review evidence: " + b.evidence,
         {"before": old, "after": a.state, "provisioning_changes": 0},
     )
     return {"id": a.id, "state": a.state, "revision": a.revision}
@@ -753,6 +753,23 @@ def control(db, u, a, b):
         )
         if not row:
             db.add(ProvisionDraft(application_id=a.id, approved_by=u.id))
+    elif b.action == "record_opt_out":
+        data = pii(a)
+        data.update(
+            {
+                "consent_email": False,
+                "consent_phone": False,
+                "consent_sms": False,
+                "preferred_contact": "none",
+                "consent_withdrawn_at": now().isoformat(),
+            }
+        )
+        a.pii_ciphertext = crypto.seal(a, data)
+        db.execute(
+            sql_update(NotificationDraft)
+            .where(NotificationDraft.application_id == a.id)
+            .values(eligible=False)
+        )
     elif b.action == "hold":
         a.legal_hold = True
     elif b.action == "release_hold":
@@ -781,7 +798,7 @@ def control(db, u, a, b):
         a,
         u,
         b.action,
-        b.reason,
+        b.reason + " | Approval evidence: " + b.evidence,
         {"state": a.state, "powercode_writes": 0, "external_delivery": False},
     )
     return {

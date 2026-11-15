@@ -143,6 +143,16 @@ def test_residential_and_business_signup_encrypted(signup):
     "changes",
     [
         {"customer_name": ""},
+        {"customer_name": "   "},
+        {"audience": "business", "business_name": "   "},
+        {
+            "service_address": {
+                "street": "   ",
+                "city": "   ",
+                "state": "OH",
+                "postal_code": "43500",
+            }
+        },
         {"privacy_consent": False},
         {"audience": "business"},
         {"email": "invalid"},
@@ -1116,3 +1126,49 @@ def test_access_log_drops_sensitive_query_values():
     assert "private@example.com" not in record.getMessage()
     assert "secret" not in record.getMessage()
     assert "/api/applications" in record.getMessage()
+
+
+def test_recorded_opt_out_suppresses_old_and_future_notification_drafts(signup):
+    x = signup
+    a = application(x)
+    r = s.notification(
+        x.db,
+        x.admin,
+        a,
+        b(
+            NotifyInput,
+            expected_revision=a.revision,
+            template="application_received",
+            channel="email",
+        ),
+    )
+    assert r["eligible"]
+    s.control(
+        x.db,
+        x.admin,
+        a,
+        b(
+            Control,
+            expected_revision=a.revision,
+            action="record_opt_out",
+            evidence="Synthetic customer explicitly withdrew contact permission",
+        ),
+    )
+    x.db.expire_all()
+    assert not x.db.get(NotificationDraft, r["id"]).eligible
+    result = s.notification(
+        x.db,
+        x.admin,
+        a,
+        b(
+            NotifyInput,
+            expected_revision=a.revision,
+            template="status_update",
+            channel="email",
+        ),
+    )
+    assert not result["eligible"]
+    assert s.pii(a)["preferred_contact"] == "none"
+    assert "Synthetic customer explicitly withdrew contact permission" in str(
+        s.detail(x.db, x.admin, a)["events"]
+    )
