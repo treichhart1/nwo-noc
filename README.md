@@ -165,3 +165,5 @@ NOC-104 adds [unified wireless/fiber/hybrid topology, strand documentation and e
 - [NOC-105 terrain, LiDAR and advisory RF planning](docs/NOC-105-lidar-rf-planning.md)
 
 - [NOC-106 approved Fiber Designer integration, ownership and recovery](docs/NOC-106-fiber-designer-integration.md)
+
+- [NOC-107 network profitability, financial evidence and operational ROI](docs/NOC-107-network-roi.md)
