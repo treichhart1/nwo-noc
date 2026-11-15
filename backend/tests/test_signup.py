@@ -16,7 +16,7 @@ from app.signup import service as s, public_service as ps, crypto, providers
 from app.signup.models import *
 from app.signup.contracts import *
 from app.field.models import WorkOrder
-from app.models.entities import User, Site, Sector
+from app.models.entities import User, Site, Sector, NetworkLink
 from app.customers.models import CustomerAccount, CustomerService
 from test_field import field, auth
 from test_equipment import stock
@@ -556,12 +556,22 @@ def test_installation_work_order_duplicate_and_pii_not_in_generic_work(signup):
     a.state = "installation_pending"
     a.proposed_site_id = x.a.id
     x.db.flush()
+    fiber = NetworkLink(
+        name="Synthetic documented installation fiber",
+        link_type="fiber",
+        a_site_id=x.a.id,
+        z_site_id=x.b.id,
+    )
+    x.db.add(fiber)
+    x.db.flush()
     body = b(
         WorkInput,
         expected_revision=a.revision,
         kind="installation",
         site_id=x.a.id,
         technician_id=x.tech.id,
+        fiber_link_id=fiber.id,
+        equipment=["Synthetic approved installation kit"],
         scheduled_at=now() + timedelta(days=1),
     )
     r = s.make_work(x.db, x.admin, a, body)
@@ -570,6 +580,9 @@ def test_installation_work_order_duplicate_and_pii_not_in_generic_work(signup):
     assert r["work_order_id"] == again["work_order_id"] and again["duplicate"]
     w = x.db.get(WorkOrder, r["work_order_id"])
     assert "Applicant" not in w.description and "5555" not in w.description
+    context = s.work_context(x.db, x.tech, w.id)
+    assert context["network_proposal"]["fiber_link_id"] == fiber.id
+    assert context["required_equipment"] == ["Synthetic approved installation kit"]
     with pytest.raises(PermissionError):
         s.work_context(x.db, x.other, w.id)
 

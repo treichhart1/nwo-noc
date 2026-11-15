@@ -583,8 +583,15 @@ def make_work(db, u, a, b):
         u,
         "work_order_created",
         b.reason,
-        {"work_order_id": w["id"], "kind": b.kind, "dispatches": 0},
+        {
+            "work_order_id": w["id"],
+            "kind": b.kind,
+            "sector_id": b.sector_id,
+            "fiber_link_id": b.fiber_link_id,
+            "dispatches": 0,
+        },
     )
+    db.flush()
     return {
         "id": m.id,
         "work_order_id": w["id"],
@@ -959,6 +966,16 @@ def work_context(db, u, work_id):
         raise PermissionError("Applicant retention redacted")
     data = pii(a)
     audit(db, u, "work_context_viewed", a.id)
+    proposal = db.scalar(
+        select(Event)
+        .where(
+            Event.application_id == a.id,
+            Event.action == "work_order_created",
+            Event.data["work_order_id"].as_integer() == w.id,
+        )
+        .order_by(Event.id.desc())
+        .limit(1)
+    )
     return {
         "application_id": a.id,
         "reference": a.reference,
@@ -982,6 +999,13 @@ def work_context(db, u, work_id):
         "requested_plan": a.plan_snapshot["name"],
         "installation_preferences": data["installation_preferences"],
         "site_id": w.site_id,
+        "network_proposal": {
+            "site_id": w.site_id,
+            "sector_id": proposal.data.get("sector_id") if proposal else None,
+            "fiber_link_id": proposal.data.get("fiber_link_id") if proposal else None,
+            "status": "Documentation only; connection and capacity require approved verification",
+        },
+        "required_equipment": w.required_equipment,
         "surveys": [
             crypto.unseal(a, r.details_ciphertext)
             for r in db.scalars(
