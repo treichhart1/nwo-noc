@@ -5,7 +5,7 @@ export async function request(path:string, init:RequestInit={}){
   const headers=new Headers(init.headers); if(getToken()) headers.set("Authorization",`Bearer ${getToken()}`)
   const r=await fetch(BASE+path,{...init,headers}); const data=await r.json().catch(()=>({}))
   if(r.status===401){setToken(null);location.href="/"}
-  if(!r.ok) throw new Error(data.detail||`Request failed (${r.status})`)
+  if(!r.ok) throw Object.assign(new Error(data.detail||`Request failed (${r.status})`),{status:r.status})
   return data
 }
 export async function login(username:string,password:string){

@@ -161,7 +161,7 @@ def asset_access(db, u, id):
     return a
 
 
-def mutation(db, u, action, b, fn):
+def mutation(db, u, action, b, fn, *, audit_reason=None):
     # Always acquire the inventory lock first: replacements/parts use that service.
     inventory.lock(db)
     db.execute(text("SELECT pg_advisory_xact_lock(1000101)"))
@@ -189,7 +189,7 @@ def mutation(db, u, action, b, fn):
         action,
         "field_operations",
         result.get("id", "batch"),
-        {"reason": b.reason},
+        {"reason": b.reason if audit_reason is None else audit_reason},
     )
     return result
 
@@ -356,8 +356,12 @@ def related_incident(db, site, id):
     return i
 
 
-def create_work(db, u, b):
-    admin(u)
+def create_work(db, u, b, *, customer_application_authorized=False):
+    if customer_application_authorized:
+        if u.role not in {"admin", "operator"}:
+            raise PermissionError("Application work operator required")
+    else:
+        admin(u)
     get(db, Site, b.site_id)
     instant(b.scheduled_at)
     if b.asset_id and asset_site(db, get(db, Asset, b.asset_id)) != b.site_id:

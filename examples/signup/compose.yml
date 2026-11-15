@@ -1,0 +1,40 @@
+# Example additive deployment profile. Not enabled by the standard offline release installation.
+# Supply SIGNUP_DATABASE_URL using the restricted role, not the private NOC DB owner.
+# The gateway needs approved Turnstile-only egress; block RFC1918/device networks at the firewall.
+services:
+  signup-gateway:
+    profiles: [signup]
+    build: ../../backend
+    user: "10001:10001"
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    read_only: true
+    tmpfs: ["/tmp:rw,noexec,nosuid,size=16m"]
+    env_file: ../../.env
+    environment:
+      DATABASE_URL: ${SIGNUP_DATABASE_URL:?restricted signup database URL required}
+      SIGNUP_PII_KEY_FILE: /run/signup/pii.key
+    volumes:
+      - ${SIGNUP_KEY_DIRECTORY:?private existing key directory required}:/run/signup:ro
+    command: uvicorn app.signup.public_app:app --host 0.0.0.0 --port 8000 --no-access-log
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+  signup-web:
+    profiles: [signup]
+    image: nginx:stable-alpine
+    user: "101:101"
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    read_only: true
+    tmpfs: ["/tmp:rw,noexec,nosuid,size=16m", "/var/cache/nginx:rw,noexec,nosuid,size=16m,uid=101,gid=101,mode=0700", "/var/run:rw,noexec,nosuid,size=1m,uid=101,gid=101,mode=0700"]
+    volumes:
+      - ../../frontend/dist-signup:/usr/share/nginx/html:ro
+      - ../../frontend/nginx-main.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    ports: ["127.0.0.1:18091:8080"]
+    depends_on:
+      signup-gateway:
+        condition: service_healthy

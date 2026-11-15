@@ -29,7 +29,7 @@ services:
   backend:
     cap_drop: [ALL]
     security_opt: [no-new-privileges:true]
-    volumes: [monitoring_spool:/var/lib/nwo-noc/monitoring, maintenance_documents:/var/lib/nwo-noc/documents]
+    volumes: [monitoring_spool:/var/lib/nwo-noc/monitoring, maintenance_documents:/var/lib/nwo-noc/documents, signup_private:/var/lib/nwo-noc/signup]
     build: ./backend
     restart: unless-stopped
     env_file: .env
@@ -57,6 +57,7 @@ services:
     volumes:
       - monitoring_spool:/var/lib/nwo-noc/monitoring
       - maintenance_documents:/var/lib/nwo-noc/documents
+      - signup_private:/var/lib/nwo-noc/signup
     healthcheck:
       test: ["CMD", "python", "-m", "app.worker_health"]
       interval: 15s
@@ -90,3 +91,5 @@ volumes:
   monitoring_spool:
 
   maintenance_documents:
+
+  signup_private:

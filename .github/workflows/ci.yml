@@ -39,6 +39,7 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci --no-audit --no-fund
       - run: npm run build
+      - run: npm run build:signup
 
   backend:
     runs-on: ubuntu-24.04
@@ -220,7 +221,14 @@ jobs:
             tests/test_ipam.py \
             tests/test_equipment.py \
             tests/test_field.py \
-            tests/test_maintenance_documents.py
+            tests/test_maintenance_documents.py \
+            tests/test_signup.py
+      - name: Measure encrypted signup workflows at40 POPs
+        env:
+          APP_ENV: staging
+          OFFLINE_MODE: "true"
+          SYNTHETIC_MONITORING_ENABLED: "true"
+        run: python -m app.signup.benchmark
       - name: Measure preventive maintenance and document metadata at40 POPs
         env:
           APP_ENV: staging
@@ -425,7 +433,7 @@ jobs:
           NOC_ACCEPTANCE_STATE: ${{ runner.temp }}/noc85-wisp-state
         run: |
           python3 scripts/release/configure.py "$NOC_ACCEPTANCE_STATE"
-          printf 'SYNTHETIC_MONITORING_ENABLED=true\nMAINTENANCE_DOCUMENT_SCANNER=synthetic\nMAINTENANCE_SCHEDULER_ENABLED=true\n' >> "$NOC_ACCEPTANCE_STATE/acceptance.env"
+          printf 'SYNTHETIC_MONITORING_ENABLED=true\nMAINTENANCE_DOCUMENT_SCANNER=synthetic\nMAINTENANCE_SCHEDULER_ENABLED=true\nSIGNUP_PII_KEY_FILE=/var/lib/nwo-noc/signup/pii.key\nSIGNUP_PUBLIC_ENABLED=true\nSIGNUP_PUBLIC_ORIGIN=http://127.0.0.1:18091\nSIGNUP_PUBLIC_TEST_MODE=true\nSIGNUP_TURNSTILE_MODE=fixture\n' >> "$NOC_ACCEPTANCE_STATE/acceptance.env"
           NOC_PROJECT=noc84-wisp-test scripts/release/rehearse-ubuntu.sh "$NOC_ACCEPTANCE_STATE"
           NOC_PROJECT=noc84-wisp-test scripts/release/manage.sh "$NOC_ACCEPTANCE_STATE" stop worker
           NOC_PROJECT=noc84-wisp-test scripts/release/manage.sh "$NOC_ACCEPTANCE_STATE" exec -T backend python -m app.wisp_rehearsal seed
@@ -576,6 +584,22 @@ jobs:
           scripts/release/manage.sh "$NOC_ACCEPTANCE_STATE" restart db
           scripts/release/manage.sh "$NOC_ACCEPTANCE_STATE" up -d --wait db backend worker
           scripts/release/manage.sh "$NOC_ACCEPTANCE_STATE" exec -T backend python -m app.maintenance_ops.rehearsal verify
+      - name: Validate isolated public signup and private installation workflows
+        env:
+          NOC_PROJECT: noc84-wisp-test
+          NOC_ACCEPTANCE_STATE: ${{ runner.temp }}/noc85-wisp-state
+          NOC103_SIGNUP_BROWSER: "true"
+        run: |
+          (cd frontend && npm run build:signup)
+          scripts/release/manage.sh "$NOC_ACCEPTANCE_STATE" exec -T backend python -m app.signup.rehearsal > "$NOC_ACCEPTANCE_STATE/signup-fixture.json"
+          scripts/release/manage.sh "$NOC_ACCEPTANCE_STATE" exec -T -d backend sh -c 'exec uvicorn app.signup.public_app:app --host 127.0.0.1 --port 8001 --no-access-log'
+          nohup python3 scripts/release/signup-access.py "$NOC_ACCEPTANCE_STATE" > "$RUNNER_TEMP/noc103-access.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/noc103-access.pid"
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:18091/public/signup/config >/dev/null; then break; fi
+            sleep 1
+          done
+          (cd frontend && npx playwright test signup.spec.ts)
       - name: Validate immutable old-release upgrade, failed-upgrade rollback and matching restore
         run: scripts/release/rehearse-upgrade.sh "$RUNNER_TEMP/noc93-upgrade-state"
       - name: Stop isolated acceptance services, retain volumes

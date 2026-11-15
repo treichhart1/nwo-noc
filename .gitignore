@@ -36,3 +36,5 @@ work/
 # Browser acceptance artifacts
 frontend/test-results/
 frontend/playwright-report/
+
+frontend/dist-signup/

@@ -26,7 +26,7 @@ def current_user(
         raise HTTPException(401, "Invalid or expired session")
     # Field-only technicians must not bypass assignment scope through legacy APIs.
     if user.role == "technician" and not (
-        request.url.path.startswith(("/api/field/", "/api/maintenance-ops/"))
+        request.url.path.startswith(("/api/field/", "/api/maintenance-ops/", "/api/applications/"))
         or request.url.path in {"/api/auth/me", "/api/auth/logout"}
     ):
         from app.models.entities import AuditLog
