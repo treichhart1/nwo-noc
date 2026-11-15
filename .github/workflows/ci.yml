@@ -218,7 +218,14 @@ jobs:
             tests/test_down_detector.py \
             tests/test_tower_health.py \
             tests/test_ipam.py \
-            tests/test_equipment.py
+            tests/test_equipment.py \
+            tests/test_field.py
+      - name: Measure authenticated QR and field work pages at40 POPs
+        env:
+          APP_ENV: staging
+          OFFLINE_MODE: "true"
+          SYNTHETIC_MONITORING_ENABLED: "true"
+        run: python -m app.field.benchmark
       - name: Measure physical inventory at 40 POPs and1000/10000 assets
         env:
           APP_ENV: staging
@@ -541,6 +548,14 @@ jobs:
         run: |
           scripts/release/manage.sh "$NOC_ACCEPTANCE_STATE" exec -T backend python -m app.equipment.rehearsal > "$NOC_ACCEPTANCE_STATE/equipment-fixture.json"
           (cd frontend && npx playwright test equipment.spec.ts)
+      - name: Validate mobile field QR, drafts, replay and inspection workflow
+        env:
+          NOC_PROJECT: noc84-wisp-test
+          NOC_ACCEPTANCE_STATE: ${{ runner.temp }}/noc85-wisp-state
+          NOC101_FIELD_BROWSER: "true"
+        run: |
+          scripts/release/manage.sh "$NOC_ACCEPTANCE_STATE" exec -T backend python -m app.field.rehearsal > "$NOC_ACCEPTANCE_STATE/field-fixture.json"
+          (cd frontend && npx playwright test field.spec.ts)
       - name: Validate immutable old-release upgrade, failed-upgrade rollback and matching restore
         run: scripts/release/rehearse-upgrade.sh "$RUNNER_TEMP/noc93-upgrade-state"
       - name: Stop isolated acceptance services, retain volumes

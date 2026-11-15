@@ -134,8 +134,8 @@ def technician(db, ident):
     if ident is None:
         return
     u = required(db, User, ident)
-    if not u.is_active or u.role not in {"operator", "admin"}:
-        raise ValueError("Technician must be an active NOC operator/admin")
+    if not u.is_active or u.role not in {"operator", "admin", "technician"}:
+        raise ValueError("Technician must be an active NOC operator/admin/technician")
 
 
 def create_category(db, b, actor):
