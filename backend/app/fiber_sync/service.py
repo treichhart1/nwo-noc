@@ -477,7 +477,7 @@ class Context:
                 physically_installed = asset.state in {"installed", "in_service"} or (
                     asset.state in {"failed", "under_maintenance"}
                     and location
-                    and location.kind in {"tower", "customer"}
+                    and location.kind in {"tower", "customer_premises"}
                 )
                 if not physically_installed:
                     raise Conflict(

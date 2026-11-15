@@ -940,6 +940,24 @@ def test_gpon_olt_splitter_ont_uses_existing_assets_and_ports(x):
     records = list(x.records)
     for name, role in [("olt", "olt"), ("splitter", "splitter"), ("ont", "ont")]:
         asset = equipment(x, "SYN-" + name.upper())
+        if role == "ont":
+            from app.equipment import service as es
+            from app.equipment.contracts import LocationInput
+
+            location = es.create_location(
+                x.db,
+                LocationInput(
+                    code="fiber-cpe",
+                    name="Synthetic customer premises",
+                    kind="customer_premises",
+                    service_id=x.service.id,
+                    reason=R,
+                ),
+                x.user.id,
+            )
+            asset.location_id = location.id
+            asset.state = "failed"
+            x.db.flush()
         s.bind(
             x.db,
             x.user,
