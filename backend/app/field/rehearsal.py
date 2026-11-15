@@ -2,11 +2,11 @@
 
 import json
 from uuid import uuid4
-from sqlalchemy import select
+from sqlalchemy import select, func
 from app.core.config import settings
 from app.core.database import SessionLocal
 from app.core.security import hash_password
-from app.models.entities import User
+from app.models.entities import User, Site
 from app.equipment.models import Asset, Location
 from app.equipment.contracts import AssetInput
 from app.equipment import service as inventory
@@ -37,6 +37,11 @@ def seed():
             is_active=True,
         )
         db.add(tech)
+        db.flush()
+        # Exercise more than one label page even in a small local acceptance DB.
+        site_count = db.scalar(select(func.count()).select_from(Site))
+        for i in range(max(0, 60 - site_count)):
+            db.add(Site(name=f"NOC101 Synthetic pagination site {i:03}"))
         db.flush()
         reason = "Synthetic offline field browser acceptance fixture"
 
