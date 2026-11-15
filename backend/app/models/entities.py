@@ -481,3 +481,5 @@ from app.signup import models as signup_models  # noqa: E402,F401
 from app.unified import models as unified_models
 
 from app.planning import models as planning_models
+
+from app.fiber_sync import models as fiber_sync_models

@@ -163,3 +163,5 @@ NOC-103 adds [private customer application management and an isolated public sig
 NOC-104 adds [unified wireless/fiber/hybrid topology, strand documentation and evidence-based customer impact](docs/NOC-104-unified-network.md), reusing existing inventory, customer, IPAM, field and document records. All changes are internal documentation; live OLT control and automatic service provisioning are unavailable.
 
 - [NOC-105 terrain, LiDAR and advisory RF planning](docs/NOC-105-lidar-rf-planning.md)
+
+- [NOC-106 approved Fiber Designer integration, ownership and recovery](docs/NOC-106-fiber-designer-integration.md)

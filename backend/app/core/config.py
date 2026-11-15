@@ -50,6 +50,11 @@ class Settings(BaseSettings):
             raise ValueError('Synthetic document scanner requires explicit offline synthetic staging')
         return self
 
+    fiber_designer_heartbeat_file: str = "/var/lib/nwo-noc/documents/fiber-sync.heartbeat"
+    fiber_designer_worker_enabled: bool = False
+    fiber_designer_ingest_enabled: bool = False
+    fiber_designer_key_file: str = Field(default="",repr=False,exclude=True)
+
     planning_worker_enabled: bool = False
     planning_storage_root: str = "/var/lib/nwo-noc/planning"
     planning_max_upload_bytes: int = Field(67108864,ge=1024,le=134217728)
