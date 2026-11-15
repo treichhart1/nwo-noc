@@ -485,3 +485,5 @@ from app.planning import models as planning_models
 from app.fiber_sync import models as fiber_sync_models
 
 from app.finance import models as finance_models
+
+from app.analytics import models as analytics_models

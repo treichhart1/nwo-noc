@@ -17,6 +17,7 @@ manage=("$ROOT/scripts/release/manage.sh" "$state_dir")
 DO $$ BEGIN
 IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname='noc_app') THEN
  GRANT USAGE ON SCHEMA public TO noc_app;
+ IF EXISTS(SELECT 1 FROM pg_namespace WHERE nspname='noc_analytics') THEN GRANT USAGE ON SCHEMA noc_analytics TO noc_app; GRANT SELECT ON ALL TABLES IN SCHEMA noc_analytics TO noc_app; END IF;
  REVOKE CREATE ON SCHEMA public FROM PUBLIC;
  GRANT SELECT,INSERT,UPDATE,DELETE ON ALL TABLES IN SCHEMA public TO noc_app;
  GRANT USAGE,SELECT ON ALL SEQUENCES IN SCHEMA public TO noc_app;

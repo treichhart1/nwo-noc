@@ -38,7 +38,7 @@ from fastapi.responses import JSONResponse
 
 @app.exception_handler(RequestValidationError)
 async def private_customer_validation(request, exc):
-    if request.url.path.startswith(('/api/customers','/api/notifications','/api/down-detector','/api/tower-health','/api/ipam','/api/equipment','/api/field','/api/maintenance-ops','/api/applications','/api/unified','/api/planning','/api/fiber-designer','/api/finance')):
+    if request.url.path.startswith(('/api/customers','/api/notifications','/api/down-detector','/api/tower-health','/api/ipam','/api/equipment','/api/field','/api/maintenance-ops','/api/applications','/api/unified','/api/planning','/api/fiber-designer','/api/finance','/api/analytics')):
         return JSONResponse(status_code=422, content={'detail':'Invalid customer request; check the documented field types and bounds'})
     return await request_validation_exception_handler(request, exc)
 
@@ -123,4 +123,18 @@ async def bounded_financial_requests(request, call_next):
         except ValueError:return JSONResponse({"detail":"Bounded financial request of at most 1 MiB required"},status_code=413)
     response=await call_next(request)
     if request.url.path.startswith("/api/finance/"):response.headers["Cache-Control"]="no-store"
+    return response
+
+from app.analytics.routes import router as analytics_router, scrape_router as analytics_scrape_router
+app.include_router(analytics_router)
+app.include_router(analytics_scrape_router)
+
+@app.middleware("http")
+async def bounded_analytics_requests(request,call_next):
+    if request.method=="POST" and request.url.path.startswith("/api/analytics/"):
+        try:
+            if request.headers.get("transfer-encoding") or not 0<int(request.headers.get("content-length","0"))<=65536:raise ValueError()
+        except ValueError:return JSONResponse({"detail":"Bounded analytics request required"},status_code=413)
+    response=await call_next(request)
+    if request.url.path.startswith(("/api/analytics/","/api/analytics-scrape/")):response.headers["Cache-Control"]="no-store"
     return response

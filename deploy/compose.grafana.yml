@@ -1,0 +1,52 @@
+# Optional private visualization overlay. No published ports or default credentials.
+services:
+  grafana:
+    image: ${NOC_GRAFANA_IMAGE:?Set a reviewed pinned Grafana image digest}
+    user: "472:472"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    networks: [analytics_private]
+    tmpfs: [/tmp:rw,noexec,nosuid,size=32m]
+    entrypoint: [/bin/sh, /opt/noc/secret-entrypoint.sh]
+    environment:
+      GF_SERVER_ROOT_URL: ${NOC_GRAFANA_PRIVATE_URL:?Set private HTTPS Grafana URL}
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_SECURITY_ALLOW_EMBEDDING: "false"
+      GF_SECURITY_COOKIE_SECURE: "true"
+      GF_SECURITY_COOKIE_SAMESITE: strict
+      GF_SECURITY_ADMIN_PASSWORD__FILE: /run/secrets/grafana_admin_password
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+      GF_ANALYTICS_CHECK_FOR_PLUGIN_UPDATES: "false"
+      GF_PLUGINS_PREINSTALL_DISABLED: "true"
+      NOC_GRAFANA_PG_HOST: ${NOC_GRAFANA_PG_HOST:?Set private TLS PostgreSQL endpoint}
+      NOC_GRAFANA_PG_SSLMODE: verify-full
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ${NOC_GRAFANA_PROVISIONING:?Set reviewed provisioning directory}:/etc/grafana/provisioning:ro
+      - ./grafana/secret-entrypoint.sh:/opt/noc/secret-entrypoint.sh:ro
+    secrets:
+      - grafana_db_password
+      - grafana_admin_password
+    healthcheck:
+      test: [CMD-SHELL, "wget -q -O /dev/null http://127.0.0.1:3000/api/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 30s
+    pids_limit: 128
+    mem_limit: 512m
+    cpus: 1.0
+    restart: unless-stopped
+networks:
+  analytics_private:
+    internal: true
+volumes:
+  grafana_data:
+secrets:
+  grafana_db_password:
+    file: ${NOC_GRAFANA_DB_PASSWORD_FILE:?Set private reader password file}
+  grafana_admin_password:
+    file: ${NOC_GRAFANA_ADMIN_PASSWORD_FILE:?Set private Grafana admin password file}
