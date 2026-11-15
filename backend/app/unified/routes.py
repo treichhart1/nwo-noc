@@ -61,7 +61,10 @@ def graph(
 
 @router.get("/nodes/{id}")
 def node_context(id: int, db=Depends(get_db), u=Depends(access)):
-    return read(db, u, lambda: s.node_context(db, u, id))
+    def call():
+        from app.fiber_sync.service import provenance
+        result=s.node_context(db,u,id);result["fiber_designer"]=provenance(db,u,node_id=id);return result
+    return read(db, u, call)
 
 
 @router.post("/impact")

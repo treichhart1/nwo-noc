@@ -38,7 +38,7 @@ from fastapi.responses import JSONResponse
 
 @app.exception_handler(RequestValidationError)
 async def private_customer_validation(request, exc):
-    if request.url.path.startswith(('/api/customers','/api/notifications','/api/down-detector','/api/tower-health','/api/ipam','/api/equipment','/api/field','/api/maintenance-ops','/api/applications','/api/unified','/api/planning')):
+    if request.url.path.startswith(('/api/customers','/api/notifications','/api/down-detector','/api/tower-health','/api/ipam','/api/equipment','/api/field','/api/maintenance-ops','/api/applications','/api/unified','/api/planning','/api/fiber-designer')):
         return JSONResponse(status_code=422, content={'detail':'Invalid customer request; check the documented field types and bounds'})
     return await request_validation_exception_handler(request, exc)
 
@@ -93,4 +93,21 @@ async def bounded_terrain_upload(request, call_next):
                 raise ValueError()
         except ValueError:
             return JSONResponse({'detail':'Terrain request exceeds configured import limit; pre-tile locally'},status_code=413)
+    return await call_next(request)
+
+from app.fiber_sync.routes import router as fiber_sync_router, machine_router as fiber_ingest_router
+app.include_router(fiber_sync_router)
+app.include_router(fiber_ingest_router)
+
+@app.middleware('http')
+async def bounded_fiber_exports(request, call_next):
+    if request.method == 'POST' and request.url.path.startswith(('/api/fiber-designer/v1/','/api/fiber-designer-ingest/v1/')):
+        from fastapi.responses import JSONResponse
+        length=request.headers.get('content-length')
+        if request.headers.get('transfer-encoding') or length is None:
+            return JSONResponse({'detail':'Bounded Content-Length required'},status_code=411)
+        try:
+            if not 0<int(length)<=2200000:raise ValueError()
+        except ValueError:
+            return JSONResponse({'detail':'Fiber export request budget exceeded; partition approved revisions'},status_code=413)
     return await call_next(request)
