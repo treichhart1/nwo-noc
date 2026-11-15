@@ -728,3 +728,44 @@ def test_document_upload_idempotency_and_revision_conflict(client):
     )
     body["operation_key"] = str(uuid4())
     assert c.post(url, headers=auth(x.admin), json=body).status_code == 409
+
+
+def test_maintenance_executor_prevents_overlap_and_resumes():
+    from concurrent.futures import Future
+    from app.maintenance_ops.worker import MaintenanceRunner
+
+    class Pool:
+        def __init__(self):
+            self.calls = []
+
+        def submit(self, fn):
+            self.calls.append(fn)
+            return Future()
+
+    pool = Pool()
+    runner = MaintenanceRunner(True, pool)
+    assert runner.submit_due(0) and not runner.submit_due(61)
+    runner.pending.set_result({"generated": []})
+    assert runner.submit_due(61)
+    assert not runner.submit_due(90) and len(pool.calls) == 2
+
+
+def test_maintenance_executor_failure_isolated_and_retried(caplog):
+    from concurrent.futures import Future
+    from app.maintenance_ops.worker import MaintenanceRunner
+
+    class Pool:
+        def submit(self, fn):
+            return Future()
+
+    runner = MaintenanceRunner(True, Pool())
+    runner.submit_due(0)
+    runner.pending.set_exception(RuntimeError("sensitive internal detail"))
+    assert runner.submit_due(60) and "sensitive internal detail" not in caplog.text
+
+
+def test_maintenance_executor_disabled_no_tasks():
+    from app.maintenance_ops.worker import MaintenanceRunner
+
+    runner = MaintenanceRunner(False)
+    assert not runner.submit_due(1000) and runner.pool is None
