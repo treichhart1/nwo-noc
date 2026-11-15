@@ -407,6 +407,8 @@ jobs:
         run: |
           docker build -t noc84-backend:rc backend
           docker build -t noc84-frontend:rc frontend
+      - name: Verify backend native geospatial runtime without network access
+        run: docker run --rm --network none -e SECRET_KEY=ci-native-runtime-secret-key-ci-native-runtime -e ADMIN_PASSWORD=CI-password-only -e DATABASE_URL=postgresql+psycopg://synthetic:synthetic@127.0.0.1/nwo_noc --entrypoint python noc84-backend:rc -c "import app.main; import rasterio; import pyproj; import laspy; print('Native geospatial backend imports passed')"
       - name: Rehearse Ubuntu installation in a fresh userspace container
         run: scripts/release/rehearse-ubuntu.sh "$RUNNER_TEMP/noc84-state"
       - name: Start loopback access to internal-only stack

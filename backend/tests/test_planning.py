@@ -708,3 +708,29 @@ def test_calculation_cancelled_before_claim_has_no_result(x):
     assert worker.claim(x.db) is None
     assert x.db.get(Job, j.id).state == "cancelled"
     assert not x.db.get(Job, j.id).result
+
+
+# Reuse the existing inventory fixture to validate canonical installation identity.
+from test_equipment import stock, asset
+from test_notifications import network
+from test_powercode_customers import inventory, imported
+
+
+def test_existing_asset_installation_cannot_be_relocated_by_scenario(stock):
+    x = stock
+    x.a.latitude = 41.5
+    x.a.longitude = -83.5
+    x.db.flush()
+    a = asset(x)
+    e = Emitter(
+        profile_id=1,
+        site_id=x.a.id,
+        asset_id=a.id,
+        latitude=41.5,
+        longitude=-83.5,
+        height_m=30,
+        evidence=R,
+    )
+    with pytest.raises(ValueError, match="installation site"):
+        s.source_snapshot(x.db, e.model_dump())
+    assert a.location_id == x.warehouse.id

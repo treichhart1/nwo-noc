@@ -170,6 +170,10 @@ def source_snapshot(db, emitter):
         refs["device"] = {"id": r.id, "site_id": r.site_id}
     if e.get("asset_id"):
         r = get(db, Asset, e["asset_id"])
+        if site and audit.asset_site(db, r) != site.id:
+            raise ValueError(
+                "Asset installation site differs from emitter; use a separate proposed profile"
+            )
         refs["asset"] = {
             "id": r.id,
             "revision": r.revision,
