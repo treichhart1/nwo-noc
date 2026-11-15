@@ -607,3 +607,28 @@ def test_context_without_filters_and_device_only_are_valid(x):
                 assert r.json()["financial_values_in_grafana"] is False
     finally:
         app.dependency_overrides.clear()
+
+
+def test_reader_credential_database_errors_do_not_render_password():
+    import traceback
+    from sqlalchemy.exc import ProgrammingError
+
+    secret = "a" * 64
+
+    class FailedPasswordDatabase:
+        def scalar(self, *args, **kwargs):
+            return False
+
+        def execute(self, statement, *args, **kwargs):
+            if "PASSWORD" in str(statement):
+                raise ProgrammingError(
+                    str(statement), {}, RuntimeError("synthetic denied")
+                )
+
+    try:
+        reader_role.install(FailedPasswordDatabase(), secret)
+        pytest.fail("Expected sanitized credential failure")
+    except ValueError as exc:
+        rendered = "".join(traceback.format_exception(exc))
+        assert secret not in rendered
+        assert "Reader credential update failed" in rendered

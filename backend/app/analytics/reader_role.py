@@ -6,6 +6,7 @@ connection against a disposable database or an explicitly approved deployment.
 
 import re
 from sqlalchemy import text
+from sqlalchemy.exc import SQLAlchemyError
 from .service import private_secret, VIEW_NAMES
 
 
@@ -37,7 +38,12 @@ def install(db, password):
             )
         )
     # Generated validated hex only; SQL role password cannot be a bind parameter.
-    db.execute(text("ALTER ROLE noc_grafana PASSWORD '" + password + "'"))
+    try:
+        db.execute(text("ALTER ROLE noc_grafana PASSWORD '" + password + "'"))
+    except SQLAlchemyError:
+        raise ValueError(
+            "Reader credential update failed; rollback and review database privileges"
+        ) from None
     db.execute(
         text(
             "ALTER ROLE noc_grafana SET default_transaction_read_only=on; ALTER ROLE noc_grafana SET statement_timeout='5s'; ALTER ROLE noc_grafana SET idle_in_transaction_session_timeout='10s'; ALTER ROLE noc_grafana SET search_path=noc_analytics,pg_catalog;"
@@ -86,7 +92,12 @@ if __name__ == "__main__":
     a = p.parse_args()
     if not a.approve_private_reader:
         raise SystemExit("Explicit --approve-private-reader required")
-    with SessionLocal() as db:
-        result = install(db, private_secret(a.password_file))
-        db.commit()
+    try:
+        with SessionLocal() as db:
+            result = install(db, private_secret(a.password_file))
+            db.commit()
         print(json.dumps(result))
+    except (SQLAlchemyError, ValueError, OSError):
+        raise SystemExit(
+            "Reader provisioning rejected; verify private credential ownership, privileged migration connection and existing grants. No credentials are logged."
+        ) from None

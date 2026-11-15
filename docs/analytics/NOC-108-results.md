@@ -7,8 +7,8 @@ Nothing has been merged or deployed.
 ## Measured local acceptance
 
 * Full local backend suite:1,590 passed,58 existing dependency warnings,662.64 seconds.
-  The final context-filter regression was added after this run began; the final
-  focused PostgreSQL suite passed42 tests,2 dependency warnings,5.17 seconds.
+  The final context-filter and credential-error regressions were added after this run began; the final
+  focused PostgreSQL suite passed43 tests,2 dependency warnings,5.19 seconds.
   These suites overlap and counts are not additive.
 * Final native mobile/browser workflows:3 passed,0 skipped with the exact test selector.
   Includes phone-width overflow and print-visibility regressions.
@@ -44,7 +44,11 @@ passed; the original database and backup were preserved.
 Final review added complete-cache predicates to long-range Grafana queries so
 late-data invalidation cannot silently display old derived bins. Outage panels
 include incidents overlapping the window even when they began earlier. All61
-panel queries and42 focused tests passed after these changes.
+panel queries and43 focused tests passed after these changes.
+
+Reader-role provisioning now suppresses password-bearing SQL exceptions and returns
+a fixed CLI failure message. A synthetic database failure regression verifies that
+the generated password does not appear in rendered exception output.
 
 ## Synthetic performance
 
