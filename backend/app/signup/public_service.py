@@ -139,9 +139,11 @@ def submit(db, b, verify=providers.turnstile):
     )
     db.execute(text("SET LOCAL statement_timeout='5000ms'"))
     db.execute(text("SELECT pg_advisory_xact_lock(1000103)"))
-    old = db.scalar(
-        select(Application).where(Application.submission_key == str(b.submission_key))
-    )
+    old = db.execute(
+        select(
+            Application.reference, Application.submission_key, Application.digest
+        ).where(Application.submission_key == str(b.submission_key))
+    ).first()
     if old:
         if old.digest != signature:
             raise ValueError("Submission conflict")
@@ -215,11 +217,11 @@ def lookup(db, b, verify=providers.turnstile):
         valid = verify(b.turnstile_token, uuid4())
     if not valid:
         raise PermissionError("Verification failed")
-    a = db.scalar(
-        select(Application).where(
+    a = db.execute(
+        select(Application.state, Application.redacted_at).where(
             Application.lookup_hash == crypto.digest("lookup-hash", b.token)
         )
-    )
+    ).first()
     if not a or a.redacted_at:
         return {
             "status": "not_available",

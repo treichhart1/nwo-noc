@@ -1010,6 +1010,18 @@ def test_concurrent_exact_submissions_use_one_postgres_application(signup):
                     c.rollback()
                 c.execute(text("RESET ROLE"))
                 c.commit()
+        with engine.connect() as c:
+            c.execute(text("SET ROLE " + role))
+            with pytest.raises(__import__("sqlalchemy").exc.ProgrammingError) as denied:
+                c.execute(
+                    text(
+                        "SELECT pii_ciphertext,wrapped_key,email_hash FROM signup_applications"
+                    )
+                )
+            assert denied.value.orig.sqlstate == "42501"
+            c.rollback()
+            c.execute(text("RESET ROLE"))
+            c.commit()
         with Session(engine) as db:
             assert db.scalar(select(func.count()).select_from(Application)) == 1
             assert db.scalar(select(func.count()).select_from(Event)) == 1

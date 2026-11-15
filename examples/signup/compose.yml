@@ -10,8 +10,10 @@ services:
     security_opt: [no-new-privileges:true]
     read_only: true
     tmpfs: ["/tmp:rw,noexec,nosuid,size=16m"]
-    env_file: ../../.env
+    env_file: ${SIGNUP_ENV_FILE:?dedicated public-only environment file required}
     environment:
+      SECRET_KEY: ${SIGNUP_GATEWAY_SECRET_KEY:?distinct gateway-only secret required}
+      ADMIN_PASSWORD: ${SIGNUP_GATEWAY_UNUSED_ADMIN_PASSWORD:?distinct unused gateway-only value required}
       DATABASE_URL: ${SIGNUP_DATABASE_URL:?restricted signup database URL required}
       SIGNUP_PII_KEY_FILE: /run/signup/pii.key
     volumes:
