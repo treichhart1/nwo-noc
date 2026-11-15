@@ -31,6 +31,9 @@ untyped optional PostgreSQL filter parameters. The migration was rebuilt against
 an empty disposable schema; filter casts and a regression were added. A browser
 link assertion was corrected to the actual safe dashboard route including its
 constant slug. No security assertions or functionality were removed.
+CI559 also exposed an invocation error: the new focused step used the standalone
+pytest executable without the application import path. It now uses the repository
+standard `python -m pytest`; no runtime code or assertions changed.
 
 A populated synthetic backup restored into a new isolated database with12 telemetry
 samples,2 incidents,3 equipment assets,5 financial entries,1 analytics configuration,

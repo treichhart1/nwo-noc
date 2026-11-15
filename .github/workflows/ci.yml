@@ -232,7 +232,7 @@ jobs:
       - name: Validate private Grafana analytics and bounded synthetic history
         working-directory: backend
         run: |
-          pytest -q tests/test_grafana_analytics.py
+          python -m pytest -q tests/test_grafana_analytics.py
           python -m app.analytics.benchmark
       - name: Measure approved fiber reconciliation at40 synthetic POPs
         run: python -m app.fiber_sync.benchmark
