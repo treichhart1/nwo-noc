@@ -229,6 +229,11 @@ jobs:
             tests/test_finance.py
       - name: Measure operational finance at40 synthetic POPs
         run: python -m app.finance.benchmark
+      - name: Validate private Grafana analytics and bounded synthetic history
+        working-directory: backend
+        run: |
+          pytest -q tests/test_grafana_analytics.py
+          python -m app.analytics.benchmark
       - name: Measure approved fiber reconciliation at40 synthetic POPs
         run: python -m app.fiber_sync.benchmark
       - name: Measure offline terrain coverage at40 synthetic POPs
@@ -660,6 +665,14 @@ jobs:
         run: |
           scripts/release/manage.sh "$NOC_ACCEPTANCE_STATE" exec -T backend python -m app.finance.rehearsal > "$NOC_ACCEPTANCE_STATE/finance-fixture.json"
           (cd frontend && npx playwright test finance.spec.ts)
+      - name: Validate private monitoring analytics without contacting Grafana
+        env:
+          NOC_PROJECT: noc84-wisp-test
+          NOC_ACCEPTANCE_STATE: ${{ runner.temp }}/noc85-wisp-state
+          NOC108_ANALYTICS_BROWSER: "true"
+        run: |
+          scripts/release/manage.sh "$NOC_ACCEPTANCE_STATE" exec -T backend python -m app.analytics.rehearsal > "$NOC_ACCEPTANCE_STATE/analytics-fixture.json"
+          (cd frontend && npx playwright test '(^|/)analytics\.spec\.ts$')
       - name: Validate immutable old-release upgrade, failed-upgrade rollback and matching restore
         run: scripts/release/rehearse-upgrade.sh "$RUNNER_TEMP/noc93-upgrade-state"
       - name: Stop isolated acceptance services, retain volumes

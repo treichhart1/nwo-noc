@@ -167,3 +167,7 @@ NOC-104 adds [unified wireless/fiber/hybrid topology, strand documentation and e
 - [NOC-106 approved Fiber Designer integration, ownership and recovery](docs/NOC-106-fiber-designer-integration.md)
 
 - [NOC-107 network profitability, financial evidence and operational ROI](docs/NOC-107-network-roi.md)
+
+NOC-108 adds private Grafana provisioning and recorded monitoring reports without
+additional device polling. See [configuration, security and operations](docs/analytics/NOC-108.md)
+and [validation evidence](docs/analytics/NOC-108-results.md). Integrations remain disabled by default.

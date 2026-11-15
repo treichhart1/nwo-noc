@@ -3,6 +3,12 @@ from pydantic import Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
+    grafana_allowed_origins: str = ''
+    grafana_live_health_enabled: bool = False
+    grafana_embed_approved: bool = False
+    grafana_service_token_file: str = Field(default='',repr=False,exclude=True)
+    analytics_metrics_token_file: str = Field(default='',repr=False,exclude=True)
+    analytics_rollup_enabled: bool = False
     app_name: str = "NWO NOC"
     app_env: str = "production"
     api_docs_enabled: bool = False
