@@ -29,7 +29,7 @@ services:
   backend:
     cap_drop: [ALL]
     security_opt: [no-new-privileges:true]
-    volumes: [monitoring_spool:/var/lib/nwo-noc/monitoring, maintenance_documents:/var/lib/nwo-noc/documents, signup_private:/var/lib/nwo-noc/signup]
+    volumes: [monitoring_spool:/var/lib/nwo-noc/monitoring, maintenance_documents:/var/lib/nwo-noc/documents, signup_private:/var/lib/nwo-noc/signup, planning_terrain:/var/lib/nwo-noc/planning]
     build: ./backend
     restart: unless-stopped
     env_file: .env
@@ -58,6 +58,7 @@ services:
       - monitoring_spool:/var/lib/nwo-noc/monitoring
       - maintenance_documents:/var/lib/nwo-noc/documents
       - signup_private:/var/lib/nwo-noc/signup
+      - planning_terrain:/var/lib/nwo-noc/planning
     healthcheck:
       test: ["CMD", "python", "-m", "app.worker_health"]
       interval: 15s
@@ -67,6 +68,19 @@ services:
     depends_on:
       backend:
         condition: service_healthy
+
+  planning-worker:
+    extends: {service: worker}
+    profiles: [planning]
+    command: python -m app.planning.worker
+    environment:
+      PLANNING_WORKER_ENABLED: "true"
+    healthcheck:
+      test: [CMD, python, -m, app.planning.worker, --health]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
 
   frontend:
     user: "101:101"
@@ -93,3 +107,5 @@ volumes:
   maintenance_documents:
 
   signup_private:
+
+  planning_terrain:

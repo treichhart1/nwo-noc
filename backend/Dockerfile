@@ -7,6 +7,6 @@ RUN --mount=type=secret,id=proxy_ca \
     if [ -f /run/secrets/proxy_ca ]; then export PIP_CERT=/run/secrets/proxy_ca; fi; \
     pip install --no-cache-dir -r requirements.txt
 COPY . .
-RUN chmod -R a=rX /app && groupadd --gid 10001 noc && useradd --uid 10001 --gid 10001 --home-dir /tmp --no-create-home --shell /usr/sbin/nologin noc && mkdir -p /var/lib/nwo-noc/documents /var/lib/nwo-noc/monitoring /var/lib/nwo-noc/signup && chown 10001:10001 /var/lib/nwo-noc/documents /var/lib/nwo-noc/monitoring /var/lib/nwo-noc/signup && chmod 700 /var/lib/nwo-noc/documents /var/lib/nwo-noc/monitoring /var/lib/nwo-noc/signup
+RUN chmod -R a=rX /app && groupadd --gid 10001 noc && useradd --uid 10001 --gid 10001 --home-dir /tmp --no-create-home --shell /usr/sbin/nologin noc && mkdir -p /var/lib/nwo-noc/documents /var/lib/nwo-noc/monitoring /var/lib/nwo-noc/signup /var/lib/nwo-noc/planning && chown 10001:10001 /var/lib/nwo-noc/documents /var/lib/nwo-noc/monitoring /var/lib/nwo-noc/signup /var/lib/nwo-noc/planning && chmod 700 /var/lib/nwo-noc/documents /var/lib/nwo-noc/monitoring /var/lib/nwo-noc/signup /var/lib/nwo-noc/planning
 USER 10001:10001
 EXPOSE 8000

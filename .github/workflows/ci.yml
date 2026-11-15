@@ -223,7 +223,10 @@ jobs:
             tests/test_field.py \
             tests/test_maintenance_documents.py \
             tests/test_signup.py \
-            tests/test_unified.py
+            tests/test_unified.py \
+            tests/test_planning.py
+      - name: Measure offline terrain coverage at40 synthetic POPs
+        run: python -m app.planning.benchmark
       - name: Measure unified40 POP physical logical and customer impact graphs
         env:
           APP_ENV: staging
@@ -615,6 +618,17 @@ jobs:
         run: |
           scripts/release/manage.sh "$NOC_ACCEPTANCE_STATE" exec -T backend python -m app.unified.rehearsal > "$NOC_ACCEPTANCE_STATE/unified-fixture.json"
           (cd frontend && npx playwright test unified.spec.ts)
+      - name: Validate offline terrain subprocesses, predicted coverage and private planning workflow
+        env:
+          APP_ENV: staging
+          OFFLINE_MODE: "true"
+          SYNTHETIC_MONITORING_ENABLED: "true"
+          NOC_PROJECT: noc84-wisp-test
+          NOC_ACCEPTANCE_STATE: ${{ runner.temp }}/noc85-wisp-state
+          NOC105_PLANNING_BROWSER: "true"
+        run: |
+          scripts/release/manage.sh "$NOC_ACCEPTANCE_STATE" exec -T backend python -m app.planning.rehearsal > "$NOC_ACCEPTANCE_STATE/planning-fixture.json"
+          (cd frontend && npx playwright test planning.spec.ts)
       - name: Validate immutable old-release upgrade, failed-upgrade rollback and matching restore
         run: scripts/release/rehearse-upgrade.sh "$RUNNER_TEMP/noc93-upgrade-state"
       - name: Stop isolated acceptance services, retain volumes
