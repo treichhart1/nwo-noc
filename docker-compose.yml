@@ -29,7 +29,7 @@ services:
   backend:
     cap_drop: [ALL]
     security_opt: [no-new-privileges:true]
-    volumes: [monitoring_spool:/var/lib/nwo-noc/monitoring]
+    volumes: [monitoring_spool:/var/lib/nwo-noc/monitoring, maintenance_documents:/var/lib/nwo-noc/documents]
     build: ./backend
     restart: unless-stopped
     env_file: .env
@@ -56,6 +56,7 @@ services:
     command: python -m app.worker
     volumes:
       - monitoring_spool:/var/lib/nwo-noc/monitoring
+      - maintenance_documents:/var/lib/nwo-noc/documents
     healthcheck:
       test: ["CMD", "python", "-m", "app.worker_health"]
       interval: 15s
@@ -87,3 +88,5 @@ volumes:
   redis_data:
 
   monitoring_spool:
+
+  maintenance_documents:

@@ -29,7 +29,7 @@ def main():
     tower_pool = ThreadPoolExecutor(max_workers=1,thread_name_prefix="noc-tower-health") if settings.tower_health_enabled else None
     tower_future=None
     tower_last=0.0
-    last = {"tcp": 0.0, "uisp": 0.0, "mikrotik": 0.0}
+    last = {"maintenance": 0.0, "tcp": 0.0, "uisp": 0.0, "mikrotik": 0.0}
     while True:
         now = time.monotonic()
         database_ok = False
@@ -42,6 +42,9 @@ def main():
             runtime.db_failed = True
             log.warning("Monitoring database unavailable; durable work retained")
         if database_ok:
+            if settings.maintenance_scheduler_enabled and now-last["maintenance"]>=60:
+                from app.maintenance_ops.worker import tick as maintenance_tick
+                if legacy.submit("maintenance", maintenance_tick):last["maintenance"]=now
             if tower_pool and now-tower_last>=settings.tower_health_interval_seconds and (tower_future is None or tower_future.done()):
                 if tower_future is not None:
                     try: tower_future.result()
