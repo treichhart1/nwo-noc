@@ -42,7 +42,10 @@ test('RF diagnostics displays synthetic telemetry',async({page})=>{
 })
 test('logout clears session',async({page})=>{
   const oldToken=await page.evaluate(()=>localStorage.getItem('nwo_token'))
+  const loggedOut=page.waitForResponse(r=>r.url().endsWith('/api/auth/logout')&&r.request().method()==='POST')
   await page.getByRole('button',{name:'Log out'}).click()
+  expect((await loggedOut).status()).toBe(204)
+  await expect(page.getByRole('button',{name:'Sign in',exact:true})).toBeVisible()
   const replay=await page.request.get('/api/auth/me',{headers:{Authorization:`Bearer ${oldToken}`}})
   expect(replay.status()).toBe(401)
   await expect(page.getByRole('button',{name:'Sign in',exact:true})).toBeVisible()
