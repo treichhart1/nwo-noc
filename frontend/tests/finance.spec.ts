@@ -189,3 +189,86 @@ test("mock revenue requires reviewed preview approval and preserves cash distinc
       .first(),
   ).toHaveText("Unavailable");
 });
+
+test("late financial response cannot overwrite a newer selected revenue basis", async ({
+  page,
+}) => {
+  const f = await login(page);
+  const report = page.getByRole("region", {
+    name: "Financial report",
+    exact: true,
+  });
+  await expect(report).toContainText("contracted revenue; not collected cash");
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => (release = resolve));
+  let seen!: () => void;
+  const waiting = new Promise<void>((resolve) => (seen = resolve));
+  let delivered!: () => void;
+  const finished = new Promise<void>((resolve) => (delivered = resolve));
+  await page.route(
+    `**/api/finance/v1/periods/${f.period_id}/report?*`,
+    async (route) => {
+      if (
+        new URL(route.request().url()).searchParams.get("revenue_basis") ===
+        "estimated"
+      ) {
+        const response = await route.fetch();
+        seen();
+        await gate;
+        await route.fulfill({ response });
+        delivered();
+      } else await route.continue();
+    },
+  );
+  try {
+    await page
+      .getByRole("combobox", { name: "Revenue basis", exact: true })
+      .selectOption("estimated");
+    await waiting;
+    const newerResponse = page.waitForResponse(
+      (response) =>
+        response.url().includes("/finance/v1/") &&
+        response.url().includes("/report?") &&
+        new URL(response.url()).searchParams.get("revenue_basis") ===
+          "contracted",
+    );
+    await page
+      .getByRole("combobox", { name: "Revenue basis", exact: true })
+      .selectOption("contracted");
+    await (await newerResponse).finished();
+    await page.evaluate(
+      () =>
+        new Promise<void>((resolve) =>
+          requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+        ),
+    );
+    await expect(report).toContainText(
+      "contracted revenue; not collected cash",
+    );
+    await expect(report).toContainText("$1,000.00");
+    const staleResponse = page.waitForResponse(
+      (response) =>
+        response.url().includes("/finance/v1/") &&
+        response.url().includes("/report?") &&
+        new URL(response.url()).searchParams.get("revenue_basis") ===
+          "estimated",
+    );
+    release();
+    await finished;
+    await (await staleResponse).finished();
+    await page.evaluate(
+      () =>
+        new Promise<void>((resolve) =>
+          requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+        ),
+    );
+    await expect(
+      page.getByRole("combobox", { name: "Revenue basis", exact: true }),
+    ).toHaveValue("contracted");
+    await expect(report).toContainText(
+      "contracted revenue; not collected cash",
+    );
+  } finally {
+    release();
+  }
+});

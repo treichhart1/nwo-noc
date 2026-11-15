@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { request } from "./lib/api";
 import "./field.css";
 import "./finance.css";
@@ -43,6 +43,10 @@ export default function NetworkFinance() {
     [json, J] = useState(""),
     [output, O] = useState<any>(),
     [trends, TR] = useState<any[]>([]);
+  const selectedView = JSON.stringify([pid, sid, rb, eb, kind, technology]);
+  const currentView = useRef(selectedView);
+  const readGeneration = useRef(0);
+  currentView.current = selectedView;
   async function load() {
     const [p, s, h] = await Promise.all([
       api("/periods"),
@@ -56,7 +60,8 @@ export default function NetworkFinance() {
     if (!sid && s.items.length) SID(String(s.items[0].id));
   }
   async function refresh() {
-    if (!pid || !sid) return;
+    if (!pid || !sid || currentView.current !== selectedView) return;
+    const generation = ++readGeneration.current;
     const [r, d] = await Promise.all([
       api(
         `/periods/${pid}/report?scope_id=${sid}&revenue_basis=${rb}&expense_basis=${eb}${technology ? "&service_type=" + technology : ""}`,
@@ -65,6 +70,11 @@ export default function NetworkFinance() {
         `/periods/${pid}/dashboard?kind=${kind}&revenue_basis=${rb}&expense_basis=${eb}`,
       ),
     ]);
+    if (
+      currentView.current !== selectedView ||
+      generation !== readGeneration.current
+    )
+      return;
     R(r);
     ROWS(d.items);
     TR(d.period_trends);
@@ -78,6 +88,8 @@ export default function NetworkFinance() {
       .catch((e) => M(e.message));
   }, []);
   useEffect(() => {
+    R(undefined);
+    ROWS([]);
     if (allowed) refresh().catch((e) => M(e.message));
   }, [pid, sid, rb, eb, kind, technology, allowed]);
   async function perform(path: string, body: any) {
@@ -92,7 +104,8 @@ export default function NetworkFinance() {
           ...body,
           operation_key: crypto.randomUUID(),
           reason:
-            body.reason || "Financial administrator reviewed operational finance documentation",
+            body.reason ||
+            "Financial administrator reviewed operational finance documentation",
         },
       };
       PENDING(op);
