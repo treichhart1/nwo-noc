@@ -472,3 +472,5 @@ from app.tower_health.models import TowerEvent,TowerSample,TowerReceipt,TowerDai
 from app.ipam.models import VRF,VLAN,Interface,Prefix,Pool,Assignment,DNSRecord,Observation,DiscoveryBatch,ImportBatch,Change,ReadBudget  # noqa: E402,F401
 
 from app.equipment.models import Asset as EquipmentAsset,Category as EquipmentCategory,Product as EquipmentProduct,Location as EquipmentLocation,Manufacturer as EquipmentManufacturer,DeviceBinding as EquipmentBinding,Movement as EquipmentMovement,BulkBalance,BulkMovement,Maintenance as EquipmentMaintenance,Attachment as EquipmentAttachment,Financial as EquipmentFinancial,FinancialChange,CostEntry,StockPolicy,ImportBatch as EquipmentImportBatch,RequestBudget as EquipmentBudget  # noqa: E402,F401
+
+from app.field import models as field_models  # noqa: E402,F401

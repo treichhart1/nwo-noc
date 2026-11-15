@@ -1,4 +1,4 @@
-from fastapi import Depends, HTTPException
+from fastapi import Depends, HTTPException, Request
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -10,7 +10,9 @@ from sqlalchemy.exc import SQLAlchemyError
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
 
-def current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+def current_user(
+    request: Request, token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)
+):
     claims = decode_access_claims(token)
     if claims is None:
         raise HTTPException(status_code=401, detail="Invalid or expired session")
@@ -22,6 +24,26 @@ def current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_
         raise HTTPException(503, "Authentication storage unavailable") from None
     if revoked or not user or not user.is_active or claims.get("uid") != user.id:
         raise HTTPException(401, "Invalid or expired session")
+    # Field-only technicians must not bypass assignment scope through legacy APIs.
+    if user.role == "technician" and not (
+        request.url.path.startswith("/api/field/")
+        or request.url.path in {"/api/auth/me", "/api/auth/logout"}
+    ):
+        from app.models.entities import AuditLog
+
+        db.add(
+            AuditLog(
+                user_id=user.id,
+                action="field.legacy_access_denied",
+                entity_type="field_operations",
+                entity_id="private",
+                details={"scope_enforced": True},
+            )
+        )
+        db.commit()
+        raise HTTPException(
+            403, "Technician access is limited to assigned field workflows"
+        )
     return user
 
 
