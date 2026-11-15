@@ -50,6 +50,10 @@ class Settings(BaseSettings):
             raise ValueError('Synthetic document scanner requires explicit offline synthetic staging')
         return self
 
+    planning_worker_enabled: bool = False
+    planning_storage_root: str = "/var/lib/nwo-noc/planning"
+    planning_max_upload_bytes: int = Field(67108864,ge=1024,le=134217728)
+
     field_public_base_url: str = ""
     tower_health_enabled: bool = False
     tower_health_interval_seconds: int = Field(15,ge=15,le=300)

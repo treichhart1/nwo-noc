@@ -101,7 +101,7 @@ def test_release_versions_and_migrations_consistent():
     script = ScriptDirectory.from_config(config)
     assert (
         len(script.get_heads()) == 1
-        and script.get_current_head() == "0023_unified_network"
+        and script.get_current_head() == "0024_rf_planning"
     )
 
 

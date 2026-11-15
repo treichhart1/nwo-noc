@@ -479,3 +479,5 @@ from app.maintenance_ops import models as maintenance_models  # noqa: E402,F401
 
 from app.signup import models as signup_models  # noqa: E402,F401
 from app.unified import models as unified_models
+
+from app.planning import models as planning_models

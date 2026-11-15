@@ -467,6 +467,9 @@ def qualify(db, u, a, b):
             snapshot["unified_network"] = unified_qualification(
                 db, coords["latitude"], coords["longitude"], a.technology
             )
+    if coords:
+        from app.planning.service import qualification as rf_planning_qualification
+        snapshot["rf_planning"] = rf_planning_qualification(db, coords["latitude"], coords["longitude"])
     q = Qualification(application_id=a.id, actor_id=u.id, snapshot=snapshot)
     db.add(q)
     db.flush()
