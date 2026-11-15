@@ -554,3 +554,23 @@ def inspection_record(id: int, db=Depends(get_db), u=Depends(access)):
         return inventory.view(r)
 
     return run(db, u, read)
+
+
+@router.get("/work-orders/{id}/unified-context")
+def unified_context(id: int, db=Depends(get_db), u=Depends(access)):
+    def read():
+        s.work_access(db, u, id)
+        from app.unified.models import Association, Node, Edge
+
+        rows = db.scalars(
+            select(Association).where(Association.work_order_id == id).limit(100)
+        ).all()
+        return {
+            "items": [
+                {"association_id": a.id, "node_id": a.node_id, "edge_id": a.edge_id}
+                for a in rows
+            ],
+            "documentation_only": True,
+        }
+
+    return run(db, u, read)

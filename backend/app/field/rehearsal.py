@@ -100,6 +100,27 @@ def seed():
                 description="Synthetic equipment replacement field documentation",
             ),
         )
+        context_tech = User(
+            username="field-context-acceptance",
+            email="field-context@example.invalid",
+            password_hash=hash_password(settings.admin_password),
+            role="technician",
+            is_active=True,
+        )
+        db.add(context_tech)
+        db.flush()
+        s.grant(db, admin, b(GrantInput, site_id=site, technician_id=context_tech.id))
+        context_order = s.create_work(
+            db,
+            admin,
+            b(
+                WorkInput,
+                site_id=site,
+                technician_id=context_tech.id,
+                template_id=template["id"],
+                description="Synthetic optional-context recovery inspection",
+            ),
+        )
         tower_qr = s.label(db, admin, b(LabelInput, site_id=site))
         asset_qr = s.label(db, admin, b(LabelInput, asset_id=asset.id))
         db.commit()
@@ -109,6 +130,7 @@ def seed():
             "spare_id": spare.id,
             "work_id": order["id"],
             "replacement_work_id": replace_order["id"],
+            "context_work_id": context_order["id"],
             "tower_qr": tower_qr["identifier"],
             "asset_qr": asset_qr["identifier"],
             "label_id": tower_qr["id"],

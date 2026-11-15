@@ -458,6 +458,15 @@ def qualify(db, u, a, b):
                 "reason": "Nearby/planned fiber does not establish a customer connection, port availability or construction commitment"
             }
         )
+    if coords:
+        from app.unified.models import Node as UnifiedNode
+
+        if db.scalar(select(UnifiedNode.id).limit(1)):
+            from app.unified.service import qualification as unified_qualification
+
+            snapshot["unified_network"] = unified_qualification(
+                db, coords["latitude"], coords["longitude"], a.technology
+            )
     q = Qualification(application_id=a.id, actor_id=u.id, snapshot=snapshot)
     db.add(q)
     db.flush()

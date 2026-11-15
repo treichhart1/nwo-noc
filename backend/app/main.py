@@ -38,7 +38,7 @@ from fastapi.responses import JSONResponse
 
 @app.exception_handler(RequestValidationError)
 async def private_customer_validation(request, exc):
-    if request.url.path.startswith(('/api/customers','/api/notifications','/api/down-detector','/api/tower-health','/api/ipam','/api/equipment','/api/field','/api/maintenance-ops','/api/applications')):
+    if request.url.path.startswith(('/api/customers','/api/notifications','/api/down-detector','/api/tower-health','/api/ipam','/api/equipment','/api/field','/api/maintenance-ops','/api/applications','/api/unified')):
         return JSONResponse(status_code=422, content={'detail':'Invalid customer request; check the documented field types and bounds'})
     return await request_validation_exception_handler(request, exc)
 
@@ -69,3 +69,6 @@ app.include_router(signup_router)
 # Application/contact searches and receipt tokens must not enter access logs.
 from app.signup.privacy import configure as redact_access_queries
 redact_access_queries()
+
+from app.unified.routes import router as unified_router
+app.include_router(unified_router)
