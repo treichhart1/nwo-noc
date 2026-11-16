@@ -165,3 +165,9 @@ Public access defaults off; all delivery remains mock-only.
 
 Comprehensive source/database/security findings, corrected defects and remaining
 production gates: [NOC-111 audit](docs/NOC-111-comprehensive-audit.md).
+
+NOC114 controlled acceptance:
+
+See [release acceptance](docs/NOC-114-release-acceptance.md) and the
+[disabled, future pilot review plan](docs/NOC-114-controlled-pilot.md).
+Neither authorizes production deployment or live-device access.

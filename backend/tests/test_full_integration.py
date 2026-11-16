@@ -24,6 +24,7 @@ from app.customer_status.contracts import (
 )
 from app.down_detector import engine as detector
 from app.down_detector.models import OutageEpisode
+from app.down_detector.contracts import Observation as DetectorObservation
 from app.tower_health import service as tower
 from app.tower_health.contracts import Observation, Metrics, Power
 from app.unified import service as topology, models as um
@@ -87,13 +88,38 @@ def approve_message(x, result):
     )
 
 
+@pytest.mark.parametrize("failure_kind", ["power", "backhaul", "sector"])
 def test_a_power_evidence_to_outage_customers_mock_sms_and_verified_restoration(
     communications,
+    failure_kind,
 ):
     x = communications
     start = comm.clock() - timedelta(minutes=12)
+    kind, ident = {
+        "power": ("site", x.a.id),
+        "backhaul": ("link", x.up.id),
+        "sector": ("sector", x.sector.id),
+    }[failure_kind]
     for seconds in [0, 30, 60]:
         at = start + timedelta(seconds=seconds)
+        if failure_kind != "power":
+            detector.ingest(
+                x.db,
+                DetectorObservation(
+                    event_id=f"NOC114-{failure_kind}-{seconds}",
+                    kind=kind,
+                    target_id=ident,
+                    source="synthetic",
+                    observed_at=at,
+                    signals=(
+                        {"microwave": False, "interface": False, "collector": True}
+                        if kind == "link"
+                        else {"icmp": False, "snmp": False, "collector": True}
+                    ),
+                ),
+                now=at,
+            )
+            continue
         tower.ingest(
             x.db,
             Observation(
@@ -109,9 +135,17 @@ def test_a_power_evidence_to_outage_customers_mock_sms_and_verified_restoration(
         )
     detector.reconcile(x.db, now=start + timedelta(seconds=60))
     episode = x.db.scalar(
-        select(OutageEpisode).where(OutageEpisode.key == f"site:{x.a.id}")
+        select(OutageEpisode).where(OutageEpisode.key == f"{kind}:{ident}")
     )
-    assert episode and episode.classification == "confirmed_commercial_power_outage"
+    assert (
+        episode
+        and episode.classification
+        == {
+            "power": "confirmed_commercial_power_outage",
+            "backhaul": "backhaul_outage",
+            "sector": "sector_outage",
+        }[failure_kind]
+    )
     x.incident = x.db.get(Incident, episode.incident_id)
     x.p = x.db.get(
         Publication,
@@ -125,15 +159,42 @@ def test_a_power_evidence_to_outage_customers_mock_sms_and_verified_restoration(
     assert not sender.calls  # A detected incident never approves a campaign.
     approve_message(x, message)
     run_batch(x.db, sms=sender)
-    assert sender.calls and set(
-        x.db.scalars(
-            select(NotificationDelivery.state).where(
-                NotificationDelivery.channel == "sms"
+    if failure_kind == "backhaul":
+        assert not sender.calls
+        preview = comm.impact_preview(x.db, x.p)
+        assert preview["eligible_count"] == 0
+        assert preview["classification_counts"].get("unknown")
+    else:
+        assert sender.calls and set(
+            x.db.scalars(
+                select(NotificationDelivery.state).where(
+                    NotificationDelivery.channel == "sms"
+                )
             )
-        )
-    ) == {"simulated"}
+        ) == {"simulated"}
+    delivered = len(sender.calls)
+    run_batch(x.db, sms=sender)
+    assert len(sender.calls) == delivered
     for seconds in [180, 210, 240]:
         at = start + timedelta(seconds=seconds)
+        if failure_kind != "power":
+            detector.ingest(
+                x.db,
+                DetectorObservation(
+                    event_id=f"NOC114-restored-{failure_kind}-{seconds}",
+                    kind=kind,
+                    target_id=ident,
+                    source="synthetic",
+                    observed_at=at,
+                    signals=(
+                        {"microwave": True, "interface": True, "collector": True}
+                        if kind == "link"
+                        else {"icmp": True, "snmp": True, "collector": True}
+                    ),
+                ),
+                now=at,
+            )
+            continue
         tower.ingest(
             x.db,
             Observation(
@@ -159,6 +220,13 @@ def test_a_power_evidence_to_outage_customers_mock_sms_and_verified_restoration(
         )
     x.db.flush()
     proof = comm.assess(x.db, x.admin, x.p, body(Mutation))
+    if failure_kind == "backhaul":
+        # This fixture has no documented monitored link endpoints. Never fabricate recovery.
+        assert not proof["verified"]
+        assert "no_documented_monitored_devices" in proof["evidence"]["reasons"]
+        assert not sender.calls
+        assert x.p.published_revision_id is None
+        return
     assert proof["verified"]
     restored = comm.prepare_message(
         x.db,
@@ -178,6 +246,18 @@ def test_a_power_evidence_to_outage_customers_mock_sms_and_verified_restoration(
     approve_message(x, restored)
     run_batch(x.db, sms=sender)
     assert len(sender.calls) > before
+    final_deliveries = len(sender.calls)
+    run_batch(x.db, sms=sender)
+    assert len(sender.calls) == final_deliveries
+    assert (
+        x.db.scalar(
+            select(func.count(AuditLog.id)).where(
+                AuditLog.user_id == x.admin.id,
+                AuditLog.action.like("customer_status.%"),
+            )
+        )
+        > 0
+    )
     # Public publication is independently disabled; no public incident is published here.
     assert x.p.published_revision_id is None
 

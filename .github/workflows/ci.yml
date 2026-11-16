@@ -399,7 +399,7 @@ jobs:
   host-package-acceptance:
     name: Ubuntu 24.04 approved host package
     runs-on: ubuntu-24.04
-    timeout-minutes: 25
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
@@ -409,7 +409,31 @@ jobs:
           docker build -t noc113-backend:base backend
           docker build -t noc113-frontend:base frontend
       - name: Execute disposable Ubuntu systemd install, verification, encrypted restore and upgrade failure acceptance
-        run: sudo python3 tests/installer/test_ubuntu_host.py --workspace /var/tmp/noc113-acceptance
+        run: sudo python3 tests/installer/test_ubuntu_host.py --workspace /var/tmp/noc113-acceptance --extended
+      - name: Build disposable Ubuntu failure-test control image
+        run: docker build -f deploy/Dockerfile.installer-failures -t noc114-installer-failures .
+      - name: Exercise real fresh-install failures without deleting retained state
+        run: |
+          sudo mkdir -m 700 /var/tmp/noc114-failures
+          for stage in resources dependencies database migration startup interrupted; do
+            docker run --rm --network none \
+              --tmpfs /noc114-small:rw,size=64m \
+              -v "$PWD:$PWD:ro" -w "$PWD" \
+              -v /var/tmp/noc114-failures:/var/tmp/noc114-failures \
+              -v /var/run/docker.sock:/var/run/docker.sock \
+              noc114-installer-failures python3 tests/installer/test_ubuntu_host.py \
+              --rehearsal --failure-stage "$stage" --workspace "/var/tmp/noc114-failures/$stage"
+          done
+      - name: Reject unsupported OS before any installation changes
+        run: |
+          set +e
+          docker run --rm --network none --read-only --cap-drop ALL --user 0:0 \
+            -v "$PWD:/source:ro" --entrypoint python noc113-backend:base \
+            /source/scripts/host/manager.py install > /tmp/noc114-unsupported.log 2>&1
+          result=$?
+          set -e
+          test "$result" -ne 0
+          grep -F 'Ubuntu Server24.04LTS required; no host changes made' /tmp/noc114-unsupported.log
 
   rf-release-acceptance:
     name: RF offline release acceptance
