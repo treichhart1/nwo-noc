@@ -182,6 +182,11 @@ def main():
         ]
     )
 
+    # Exercise the documented regular-user clone followed by sudo installation.
+    # Root-owned test clones previously masked child Git audits rejecting ownership.
+    os.chown(clone, 65534, 65534)
+    os.chown(clone / ".git", 65534, 65534)
+
     def git(*argv):
         return (
             command(["git", "-c", f"safe.directory={clone}", "-C", clone, *argv])
@@ -424,6 +429,10 @@ def main():
         ],
     )
     passed("clean_complete_application_install", installed.returncode == 0)
+    passed(
+        "root_install_from_operator_owned_checkout",
+        clone.stat().st_uid == 65534 and (clone / ".git").stat().st_uid == 65534,
+    )
     install_seconds = round(time.monotonic() - started, 3)
     state_path = root / "var/lib/nwo-noc/installation.json"
     state = json.loads(state_path.read_text())

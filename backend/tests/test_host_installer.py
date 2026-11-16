@@ -539,3 +539,49 @@ def test_stale_socket_cleanup_never_removes_regular_files_or_links(tmp_path):
     with pytest.raises(ValueError):
         host.clear_stopped_frontend_socket()
     assert outside.read_text() == "data" and target.is_symlink()
+
+def test_immutable_artifact_download_retries_transport_only(tmp_path, monkeypatch):
+    host = fake_host(tmp_path)
+    reference = "registry.example.invalid/noc@sha256:" + "a" * 64
+    calls, delays = [], []
+    attempts = 0
+    inspected = 0
+
+    def execute(argv, **kwargs):
+        nonlocal attempts, inspected
+        calls.append((argv, kwargs))
+        if "pull" in argv:
+            attempts += 1
+            assert kwargs["timeout"] == 600 and kwargs["check"] is False
+            return SimpleNamespace(returncode=0 if attempts == 3 else 1, stdout=b"")
+        inspected += 1
+        return SimpleNamespace(returncode=1 if inspected == 1 else 0, stdout=b'[{"verified_fixture":true}]')
+
+    monkeypatch.setattr(host_manager, "run", execute)
+    monkeypatch.setattr(host_manager.time, "sleep", delays.append)
+    assert host.image(reference) == {"verified_fixture": True}
+    assert attempts == 3 and delays == [2, 4]
+    assert all(argv[-1] == reference for argv, _ in calls)
+
+
+@pytest.mark.parametrize("failure", ["exit", "timeout"])
+def test_failed_immutable_download_is_bounded_and_preserves_state(tmp_path, monkeypatch, failure):
+    host = fake_host(tmp_path)
+    reference = "registry.example.invalid/noc@sha256:" + "b" * 64
+    calls, delays = [], []
+
+    def execute(argv, **kwargs):
+        if "pull" in argv:
+            calls.append(argv)
+            if failure == "timeout":
+                raise host_manager.subprocess.TimeoutExpired(argv, 600)
+        return SimpleNamespace(returncode=1, stdout=b"")
+
+    before = sorted(str(p) for p in tmp_path.rglob("*"))
+    monkeypatch.setattr(host_manager, "run", execute)
+    monkeypatch.setattr(host_manager.time, "sleep", delays.append)
+    with pytest.raises(ValueError, match="after 3 bounded attempts"):
+        host.image(reference)
+    assert len(calls) == 3 and delays == [2, 4]
+    assert all(argv[-1] == reference for argv in calls)
+    assert sorted(str(p) for p in tmp_path.rglob("*")) == before

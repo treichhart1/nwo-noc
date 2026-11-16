@@ -1,0 +1,40 @@
+{
+  "format": "human-review-only; not an installer approval or runtime environment",
+  "installer_input": false,
+  "approved": false,
+  "release_commit": null,
+  "artifact_signature_reviewed": false,
+  "core": {
+    "database": "installer-generated internal PostgreSQL16; noc_owner migrations; noc_app runtime; no published port",
+    "application_secrets": "installer-generated; never supply plaintext values in this worksheet",
+    "nginx_template": "deploy/host/nginx.conf.template",
+    "systemd_templates": "deploy/host/nwo-noc*.service and nwo-noc-backup.timer",
+    "dashboard_binding": "127.0.0.1 only; approved SSH/VPN tunnel",
+    "tls_certificate_reference": null,
+    "tls_private_key_reference": null,
+    "workers": "one core worker plus bounded local planning worker; maintenance uses core worker",
+    "offline_mode": true
+  },
+  "integrations": {
+    "mikrotik": {"enabled": false, "approved_endpoints": []},
+    "ubiquiti": {"enabled": false, "approved_endpoints": []},
+    "cambium": {"enabled": false, "approved_endpoints": []},
+    "racom": {"enabled": false, "approved_endpoints": []},
+    "aviat": {"enabled": false, "approved_endpoints": []},
+    "powercode": {"enabled": false, "credential_reference": null},
+    "grafana": {"enabled": false, "credential_reference": null},
+    "fiber_designer": {"enabled": false, "credential_reference": null},
+    "sms_provider": {"enabled": false, "credential_reference": null},
+    "public_status_api": {"enabled": false, "publication_approved": false}
+  },
+  "backups": {
+    "local_directory": "/var/backups/nwo-noc",
+    "age_public_recipient_reference": null,
+    "off_host_destination_reference": null,
+    "off_host_private_identity_custody_verified": false,
+    "off_host_restore_verified": false,
+    "timer_enabled": false
+  },
+  "pilot_activation_authorized": false,
+  "automatic_remediation_enabled": false
+}

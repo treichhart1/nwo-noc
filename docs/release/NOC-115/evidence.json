@@ -1,0 +1,435 @@
+{
+  "format": 1,
+  "repository": "treichhart1/nwo-noc",
+  "audited_baseline": "d46ace336bce97ce52dffdcc4be0abbc203e3f84",
+  "sources": [
+    {
+      "milestone": "NOC113",
+      "commit": "d501979c53837754c9ec0145b2207a8a0c5b44b7",
+      "run": 588,
+      "run_id": 43881727767,
+      "job_id": 133349061372,
+      "url": "https://github.com/treichhart1/nwo-noc/actions/runs/43881727767/job/133349061372",
+      "status": "PASS",
+      "environment": "GitHub disposable Ubuntu24.04 preprovisioned systemd VM",
+      "actual_checkpoints": [
+        "clean_complete_application_install",
+        "administrator_password_not_retained",
+        "ready_state",
+        "repeated_install_refused",
+        "configuration_not_overwritten",
+        "verification_no_failed_checks",
+        "optional_integrations_not_configured",
+        "first_administrator_authentication_over_verified_private_tls",
+        "administrator_role",
+        "no_demonstration_inventory_seeded",
+        "real_systemd_service_active",
+        "dedicated_account",
+        "dedicated_account_has_no_docker_or_extra_groups",
+        "unit_syntax",
+        "systemd_restart_and_verification",
+        "integrated_schema",
+        "single_admin_and_audit",
+        "administrator_bootstrap_one_time",
+        "upgrade_success",
+        "upgrade_verification",
+        "atomic_current_release",
+        "document_preserved",
+        "database_history_preserved",
+        "encrypted_backup_exists",
+        "ciphertext_checksum",
+        "no_plaintext_staging_retained",
+        "encrypted_backup_decrypts",
+        "configuration_keys_release_documents_backed_up",
+        "isolated_restore_history",
+        "source_database_not_overwritten",
+        "failed_upgrade_rejected",
+        "failed_upgrade_old_pointer_preserved",
+        "postmigration_recovery_gate",
+        "failed_upgrade_verification_reports_failure",
+        "no_automatic_old_release_start",
+        "no_automatic_database_restore",
+        "failed_upgrade_backup_retained"
+      ],
+      "checkpoint_count": 37,
+      "full_host_boot_tested": false
+    },
+    {
+      "milestone": "NOC114",
+      "commit": "d46ace336bce97ce52dffdcc4be0abbc203e3f84",
+      "run": 593,
+      "run_id": 43899628524,
+      "job_id": 133412406722,
+      "url": "https://github.com/treichhart1/nwo-noc/actions/runs/43899628524/job/133412406722",
+      "status": "PASS",
+      "environment": "GitHub disposable Ubuntu24.04 preprovisioned systemd VM plus pinned Ubuntu24.04 failure containers",
+      "runner_image": "20261111.127.1",
+      "host_checkpoints": [
+        "invalid_loopback_port_refused_without_installation",
+        "missing_administrator_secret_refused_without_installation",
+        "missing_release_approval_refused_without_installation",
+        "incomplete_tls_configuration_refused_without_installation",
+        "public_approval_permissions_refused",
+        "clean_complete_application_install",
+        "administrator_password_not_retained",
+        "ready_state",
+        "repeated_install_refused",
+        "configuration_not_overwritten",
+        "verification_no_failed_checks",
+        "optional_integrations_not_configured",
+        "first_administrator_authentication_over_verified_private_tls",
+        "administrator_role",
+        "no_demonstration_inventory_seeded",
+        "real_systemd_service_active",
+        "dedicated_account",
+        "dedicated_account_has_no_docker_or_extra_groups",
+        "unit_syntax",
+        "systemd_restart_and_verification",
+        "installed_smoke:/api/dashboard",
+        "installed_smoke:/api/sites",
+        "installed_smoke:/api/devices",
+        "installed_smoke:/api/links",
+        "installed_smoke:/api/sectors",
+        "installed_smoke:/api/integrations",
+        "installed_smoke:/api/incidents",
+        "installed_smoke:/api/rf/analytics/options",
+        "installed_smoke:/api/monitoring/reliability",
+        "installed_smoke:/api/ipam/vrfs",
+        "installed_smoke:/api/equipment/assets",
+        "installed_smoke:/api/field/labels",
+        "installed_smoke:/api/field/work-orders",
+        "installed_smoke:/api/maintenance-ops/schedules",
+        "installed_smoke:/api/maintenance-ops/documents",
+        "installed_smoke:/api/applications/plans",
+        "installed_smoke:/api/unified/graph",
+        "installed_smoke:/api/planning/catalog",
+        "installed_smoke:/api/fiber-designer/v1/contract",
+        "installed_smoke:/api/finance/v1/periods",
+        "installed_smoke:/api/analytics/v1/health",
+        "installed_smoke:/api/customer-status/v1/policy",
+        "unauthenticated_private_api_denied:/api/sites",
+        "unauthenticated_private_api_denied:/api/maintenance-ops/documents",
+        "unauthenticated_private_api_denied:/api/finance/v1/periods",
+        "unauthenticated_private_api_denied:/api/customer-status/v1/policy",
+        "verification_rejects_public_secret_permissions",
+        "verification_rejects_missing_secret",
+        "verification_detects_stopped_db",
+        "safe_recovery_after_db_restart",
+        "verification_detects_stopped_redis",
+        "safe_recovery_after_redis_restart",
+        "verification_detects_stopped_worker",
+        "safe_recovery_after_worker_restart",
+        "integrated_schema",
+        "single_admin_and_audit",
+        "administrator_bootstrap_one_time",
+        "upgrade_success",
+        "upgrade_verification",
+        "atomic_current_release",
+        "document_preserved",
+        "database_history_preserved",
+        "encrypted_backup_exists",
+        "ciphertext_checksum",
+        "no_plaintext_staging_retained",
+        "encrypted_backup_decrypts",
+        "configuration_keys_release_documents_backed_up",
+        "isolated_restore_history",
+        "restored_application_health_and_history",
+        "source_database_not_overwritten",
+        "failed_upgrade_rejected",
+        "failed_upgrade_old_pointer_preserved",
+        "postmigration_recovery_gate",
+        "failed_upgrade_verification_reports_failure",
+        "no_automatic_old_release_start",
+        "no_automatic_database_restore",
+        "failed_upgrade_backup_retained"
+      ],
+      "host_checkpoint_count": 77,
+      "failure_assertions": [
+        "resources_actual_preflight_failure",
+        "dependencies_actual_preflight_failure",
+        "database_fresh_install_rejected",
+        "failed_or_interrupted_state_preserved",
+        "incomplete_install_cannot_boot",
+        "incomplete_install_verification_fails",
+        "incomplete_install_rerun_refused",
+        "failed_configuration_not_overwritten",
+        "migration_fresh_install_rejected",
+        "failed_or_interrupted_state_preserved",
+        "incomplete_install_cannot_boot",
+        "incomplete_install_verification_fails",
+        "incomplete_install_rerun_refused",
+        "failed_configuration_not_overwritten",
+        "startup_fresh_install_rejected",
+        "failed_or_interrupted_state_preserved",
+        "incomplete_install_cannot_boot",
+        "incomplete_install_verification_fails",
+        "incomplete_install_rerun_refused",
+        "failed_configuration_not_overwritten",
+        "interrupted_during_actual_migration",
+        "failed_or_interrupted_state_preserved",
+        "incomplete_install_cannot_boot",
+        "incomplete_install_verification_fails",
+        "incomplete_install_rerun_refused",
+        "failed_configuration_not_overwritten"
+      ],
+      "failure_assertion_count": 26,
+      "unsupported_os_rejection": true,
+      "full_host_boot_tested": false,
+      "measurements": {
+        "install_seconds": 62.248,
+        "api_single_requests": [
+          {
+            "path": "/api/dashboard",
+            "milliseconds": 189.232
+          },
+          {
+            "path": "/api/sites",
+            "milliseconds": 17.683
+          },
+          {
+            "path": "/api/devices",
+            "milliseconds": 12.553
+          },
+          {
+            "path": "/api/links",
+            "milliseconds": 13.269
+          },
+          {
+            "path": "/api/sectors",
+            "milliseconds": 12.793
+          },
+          {
+            "path": "/api/integrations",
+            "milliseconds": 10.673
+          },
+          {
+            "path": "/api/incidents",
+            "milliseconds": 19.012
+          },
+          {
+            "path": "/api/rf/analytics/options",
+            "milliseconds": 35.441
+          },
+          {
+            "path": "/api/monitoring/reliability",
+            "milliseconds": 61.896
+          },
+          {
+            "path": "/api/ipam/vrfs",
+            "milliseconds": 100.442
+          },
+          {
+            "path": "/api/equipment/assets",
+            "milliseconds": 59.16
+          },
+          {
+            "path": "/api/field/labels",
+            "milliseconds": 46.609
+          },
+          {
+            "path": "/api/field/work-orders",
+            "milliseconds": 17.727
+          },
+          {
+            "path": "/api/maintenance-ops/schedules",
+            "milliseconds": 176.193
+          },
+          {
+            "path": "/api/maintenance-ops/documents",
+            "milliseconds": 19.908
+          },
+          {
+            "path": "/api/applications/plans",
+            "milliseconds": 48.346
+          },
+          {
+            "path": "/api/unified/graph",
+            "milliseconds": 84.768
+          },
+          {
+            "path": "/api/planning/catalog",
+            "milliseconds": 36.401
+          },
+          {
+            "path": "/api/fiber-designer/v1/contract",
+            "milliseconds": 61.188
+          },
+          {
+            "path": "/api/finance/v1/periods",
+            "milliseconds": 53.387
+          },
+          {
+            "path": "/api/analytics/v1/health",
+            "milliseconds": 45.852
+          },
+          {
+            "path": "/api/customer-status/v1/policy",
+            "milliseconds": 40.562
+          }
+        ],
+        "container_resource_snapshot": [
+          {
+            "Name": "noc113-48064a505d8b-backend-1",
+            "CPUPerc": "0.11%",
+            "MemUsage": "152.8MiB / 1GiB",
+            "BlockIO": "0B / 0B",
+            "PIDs": "9"
+          },
+          {
+            "Name": "noc113-48064a505d8b-db-1",
+            "CPUPerc": "4.92%",
+            "MemUsage": "29.71MiB / 2GiB",
+            "BlockIO": "0B / 618kB",
+            "PIDs": "9"
+          },
+          {
+            "Name": "noc113-48064a505d8b-frontend-1",
+            "CPUPerc": "0.00%",
+            "MemUsage": "4.469MiB / 128MiB",
+            "BlockIO": "0B / 0B",
+            "PIDs": "3"
+          },
+          {
+            "Name": "noc113-48064a505d8b-planning-worker-1",
+            "CPUPerc": "0.00%",
+            "MemUsage": "85.03MiB / 1GiB",
+            "BlockIO": "0B / 0B",
+            "PIDs": "4"
+          },
+          {
+            "Name": "noc113-48064a505d8b-redis-1",
+            "CPUPerc": "0.57%",
+            "MemUsage": "4.336MiB / 256MiB",
+            "BlockIO": "135kB / 20.5kB",
+            "PIDs": "6"
+          },
+          {
+            "Name": "noc113-48064a505d8b-worker-1",
+            "CPUPerc": "80.00%",
+            "MemUsage": "114.3MiB / 1GiB",
+            "BlockIO": "0B / 0B",
+            "PIDs": "4"
+          }
+        ],
+        "persistent_and_release_bytes": [
+          "296",
+          "5413594"
+        ],
+        "query_execution_ms": 0.098,
+        "scope": "clean host empty application after controlled restarts; single snapshots, not load p95 or lifetime peaks; representative synthetic scale is measured separately by existing RF/PostgreSQL benchmarks"
+      },
+      "verification": {
+        "checks": [
+          {
+            "check": "ubuntu24_04_amd64_root",
+            "status": "PASSED"
+          },
+          {
+            "check": "installation_state_ready",
+            "status": "PASSED"
+          },
+          {
+            "check": "recovery_gate",
+            "status": "PASSED"
+          },
+          {
+            "check": "private_configuration",
+            "status": "PASSED"
+          },
+          {
+            "check": "file_permissions_and_storage",
+            "status": "PASSED"
+          },
+          {
+            "check": "approved_source_inventory",
+            "status": "PASSED"
+          },
+          {
+            "check": "compose_configuration",
+            "status": "PASSED"
+          },
+          {
+            "check": "healthy_services_private_bindings_internal_network_bounded_logs",
+            "status": "PASSED"
+          },
+          {
+            "check": "postgres_connectivity_migration_head_least_privilege",
+            "status": "PASSED"
+          },
+          {
+            "check": "worker_heartbeat",
+            "status": "PASSED"
+          },
+          {
+            "check": "nginx_configuration",
+            "status": "PASSED"
+          },
+          {
+            "check": "frontend_backend_and_security_headers",
+            "status": "PASSED"
+          },
+          {
+            "check": "systemd_service",
+            "status": "PASSED"
+          },
+          {
+            "check": "unprivileged_ingress_service",
+            "status": "PASSED"
+          },
+          {
+            "check": "journald",
+            "status": "PASSED"
+          },
+          {
+            "check": "encrypted_backup_configuration",
+            "status": "PASSED"
+          },
+          {
+            "check": "live_integrations_public_status_and_external_delivery",
+            "status": "NOT_CONFIGURED",
+            "action": "Intentionally disabled; separately approved integration procedures required"
+          }
+        ]
+      }
+    },
+    {
+      "milestone": "NOC114 initial",
+      "commit": "a388b6413228e1b00519a08e6c06749460c60874",
+      "run": 590,
+      "run_id": 43898058781,
+      "job_id": 133406894044,
+      "url": "https://github.com/treichhart1/nwo-noc/actions/runs/43898058781/job/133406894044",
+      "status": "FAIL",
+      "failure": "dependencies_actual_preflight_failure",
+      "reproduced": true,
+      "resolution_commit": "d46ace336bce97ce52dffdcc4be0abbc203e3f84",
+      "root_cause": "Harness expected apt-install failure only; actual installer rejected absent package candidate earlier. Safe state/exit requirements were retained."
+    }
+  ],
+  "unexecuted": [
+    {
+      "test": "Minimal Ubuntu ISO VM Docker/Compose bootstrap with neither package installed",
+      "status": "NOT TESTED",
+      "reason": "Hosted runner already has Docker; container package installation is separate evidence"
+    },
+    {
+      "test": "Physical reboot/power-loss and unattended boot of the installed host",
+      "status": "NOT TESTED"
+    },
+    {
+      "test": "Off-host complete encrypted database/files/keys disaster recovery",
+      "status": "NOT TESTED"
+    },
+    {
+      "test": "Native Ubuntu/systemd installation in local Codex workspace",
+      "status": "BLOCKED",
+      "reason": "Debian13 workspace without systemd; actual VM evidence is from hosted Ubuntu Actions"
+    },
+    {
+      "test": "Real-device/provider/VPN/MFA production acceptance",
+      "status": "BLOCKED",
+      "reason": "Not authorized; high operational gates A111-15/16 remain"
+    }
+  ],
+  "classification_rule": "PASS requires executed check evidence in its stated scope; mocked device APIs do not establish live compatibility; failed historical jobs remain FAIL; not-tested/blocked cases are never promoted by green CI"
+}

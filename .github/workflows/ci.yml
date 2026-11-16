@@ -252,7 +252,7 @@ jobs:
           python -m pytest -q tests/test_customer_network_status.py
           python -m app.customer_status.benchmark
       - name: Validate combined NOC110 cross-module operational workflows
-        run: python -m pytest -q tests/test_full_integration.py
+        run: python -m pytest -q -s tests/test_full_integration.py tests/test_release_acceptance.py
       - name: Validate NOC111 audit security and profile site summaries
         env:
           APP_ENV: staging
@@ -668,7 +668,7 @@ jobs:
           NOC101_FIELD_BROWSER: "true"
         run: |
           scripts/release/manage.sh "$NOC_ACCEPTANCE_STATE" exec -T backend python -m app.field.rehearsal > "$NOC_ACCEPTANCE_STATE/field-fixture.json"
-          (cd frontend && npx playwright test field.spec.ts field-refresh.spec.ts)
+          (cd frontend && npx playwright test field.spec.ts field-refresh.spec.ts field-module-failure.spec.ts)
       - name: Validate preventive maintenance, secure documents and durable occurrence recovery
         env:
           NOC_PROJECT: noc84-wisp-test

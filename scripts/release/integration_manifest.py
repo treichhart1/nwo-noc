@@ -11,12 +11,18 @@ SNAPSHOT = ROOT / "docs/audits/NOC-110-pr-snapshot.json"
 REPLAY = "ad61cde731a7707af44734a7261474af3409671e"
 
 
+def git_argv(*args):
+    # Per-command exact checkout trust, matching the approved host installer.
+    # Never persist global configuration or trust wildcard/unrelated repositories.
+    return ["git", "-c", f"safe.directory={ROOT}", *args]
+
+
 def git(*args):
-    return subprocess.check_output(["git", *args], cwd=ROOT, text=True).strip()
+    return subprocess.check_output(git_argv(*args), cwd=ROOT, text=True).strip()
 
 
 def ancestor(a, b):
-    r = subprocess.run(["git", "merge-base", "--is-ancestor", a, b], cwd=ROOT)
+    r = subprocess.run(git_argv("merge-base", "--is-ancestor", a, b), cwd=ROOT)
     if r.returncode not in (0, 1):
         raise ValueError("Missing history; fetch the reviewed commits before auditing")
     return r.returncode == 0
@@ -24,7 +30,7 @@ def ancestor(a, b):
 
 def patch_id(sha):
     result = subprocess.check_output(
-        ["git", "patch-id", "--stable"],
+        git_argv("patch-id", "--stable"),
         input=git("show", "--pretty=format:", "--no-ext-diff", sha),
         text=True,
         cwd=ROOT,
@@ -34,9 +40,15 @@ def patch_id(sha):
     return result[0]
 
 
-def configuration_inventory():
+def source_text(path, candidate=None):
+    return (
+        git("show", candidate + ":" + path) if candidate else (ROOT / path).read_text()
+    )
+
+
+def configuration_inventory(candidate=None):
     """Names/types only; never serialize defaults or environment/secret values."""
-    tree = ast.parse((ROOT / "backend/app/core/config.py").read_text())
+    tree = ast.parse(source_text("backend/app/core/config.py", candidate))
     cls = next(
         n for n in tree.body if isinstance(n, ast.ClassDef) and n.name == "Settings"
     )
@@ -47,11 +59,21 @@ def configuration_inventory():
     ]
 
 
-def migration_inventory():
+def migration_inventory(candidate=None):
     rows = {}
-    for file in sorted((ROOT / "backend/alembic/versions").glob("*.py")):
+    files = (
+        git(
+            "ls-tree", "-r", "--name-only", candidate, "--", "backend/alembic/versions"
+        ).splitlines()
+        if candidate
+        else [
+            str(p.relative_to(ROOT))
+            for p in (ROOT / "backend/alembic/versions").glob("*.py")
+        ]
+    )
+    for file in sorted(p for p in files if p.endswith(".py")):
         values = {}
-        for n in ast.parse(file.read_text()).body:
+        for n in ast.parse(source_text(file, candidate)).body:
             if isinstance(n, ast.Assign):
                 for target in n.targets:
                     if isinstance(target, ast.Name) and target.id in (
@@ -67,7 +89,7 @@ def migration_inventory():
         rows[revision] = {
             "revision": revision,
             "parent": values["down_revision"],
-            "file": str(file.relative_to(ROOT)),
+            "file": file,
         }
     children = {}
     for row in rows.values():
@@ -131,8 +153,8 @@ def audit(candidate="HEAD", snapshot=SNAPSHOT):
         "pr86_merge_tree_unchanged": True,
         "integration_method": "branch from complete NOC109 ancestry; no PR merges or duplicate cherry-picks",
         "review_order": [r["number"] for r in rows],
-        "migrations": migration_inventory(),
-        "configuration": configuration_inventory(),
+        "migrations": migration_inventory(candidate),
+        "configuration": configuration_inventory(candidate),
         "external_calls": 0,
     }
 
