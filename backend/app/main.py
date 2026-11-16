@@ -141,3 +141,19 @@ async def bounded_analytics_requests(request,call_next):
 
 from app.customer_status.routes import router as customer_status_router
 app.include_router(customer_status_router)
+
+@app.middleware("http")
+async def bounded_login_request(request, call_next):
+    if request.method == "POST" and request.url.path == "/api/auth/login":
+        body = bytearray()
+        async for chunk in request.stream():
+            if len(body) + len(chunk) > 8192:
+                return JSONResponse({"detail": "Login request exceeds size limit"}, status_code=413,
+                    headers={"Cache-Control": "no-store"})
+            body.extend(chunk)
+        request._body = bytes(body)
+    response = await call_next(request)
+    # Every /api route is private; public gateways are separate ASGI apps.
+    if request.url.path.startswith("/api/"):
+        response.headers["Cache-Control"] = "no-store"
+    return response

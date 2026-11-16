@@ -1,0 +1,139 @@
+{
+  "scope": "40 synthetic POPs; complete ORM query/summary serialization; five warm-process runs; rolled-back transactions; zero external calls",
+  "before": [
+    {
+      "sites": 40,
+      "devices": 250,
+      "site_summary_ms": [
+        11.54,
+        8.49,
+        7.77,
+        8.07,
+        8.47
+      ],
+      "selects": [
+        2,
+        2,
+        2,
+        2,
+        2
+      ],
+      "max_rss_kib": 113164,
+      "transaction": "rolled_back",
+      "external_calls": 0,
+      "scope": "Complete ORM query plus summary serialization; warm five-run process, excludes PostgreSQL RSS"
+    },
+    {
+      "sites": 40,
+      "devices": 1000,
+      "site_summary_ms": [
+        26.6,
+        26.54,
+        28.24,
+        26.91,
+        27.2
+      ],
+      "selects": [
+        2,
+        2,
+        2,
+        2,
+        2
+      ],
+      "max_rss_kib": 135416,
+      "transaction": "rolled_back",
+      "external_calls": 0,
+      "scope": "Complete ORM query plus summary serialization; warm five-run process, excludes PostgreSQL RSS"
+    },
+    {
+      "sites": 40,
+      "devices": 10000,
+      "site_summary_ms": [
+        360.92,
+        414.85,
+        347.63,
+        331.51,
+        346.87
+      ],
+      "selects": [
+        2,
+        2,
+        2,
+        2,
+        2
+      ],
+      "max_rss_kib": 195076,
+      "transaction": "rolled_back",
+      "external_calls": 0,
+      "scope": "Complete ORM query plus summary serialization; warm five-run process, excludes PostgreSQL RSS"
+    }
+  ],
+  "after": [
+    {
+      "sites": 40,
+      "devices": 250,
+      "site_summary_ms": [
+        8.34,
+        5.86,
+        5.03,
+        5.16,
+        6.39
+      ],
+      "selects": [
+        2,
+        2,
+        2,
+        2,
+        2
+      ],
+      "max_rss_kib": 113072,
+      "transaction": "rolled_back",
+      "external_calls": 0,
+      "scope": "Complete ORM query plus summary serialization; warm five-run process, excludes PostgreSQL RSS"
+    },
+    {
+      "sites": 40,
+      "devices": 1000,
+      "site_summary_ms": [
+        17.59,
+        15.38,
+        15.47,
+        14.87,
+        15.37
+      ],
+      "selects": [
+        2,
+        2,
+        2,
+        2,
+        2
+      ],
+      "max_rss_kib": 135860,
+      "transaction": "rolled_back",
+      "external_calls": 0,
+      "scope": "Complete ORM query plus summary serialization; warm five-run process, excludes PostgreSQL RSS"
+    },
+    {
+      "sites": 40,
+      "devices": 10000,
+      "site_summary_ms": [
+        208.1,
+        236.34,
+        206.3,
+        214.21,
+        214.62
+      ],
+      "selects": [
+        2,
+        2,
+        2,
+        2,
+        2
+      ],
+      "max_rss_kib": 195488,
+      "transaction": "rolled_back",
+      "external_calls": 0,
+      "scope": "Complete ORM query plus summary serialization; warm five-run process, excludes PostgreSQL RSS"
+    }
+  ]
+}

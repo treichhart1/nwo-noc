@@ -1,1 +1,2 @@
-pytest==8.3.4
+# CVE-2025-71176 / PYSEC-2026-1845: fixed temporary-directory ownership checks.
+pytest==9.0.3

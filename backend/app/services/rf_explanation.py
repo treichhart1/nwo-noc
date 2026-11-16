@@ -49,16 +49,13 @@ class LocalOllamaProvider:
 
     def plan(self,evidence):
         import json,httpx,time
+        from app.core.http_json import bounded_json
         deadline=time.monotonic()+3
         with httpx.Client(base_url='http://127.0.0.1:11434',transport=self.transport,
                 trust_env=False,follow_redirects=False,timeout=httpx.Timeout(2,connect=.5),limits=httpx.Limits(max_connections=1)) as client:
             with client.stream('POST','/api/generate',json={'model':self.model,'stream':False,
                     'format':Plan.model_json_schema(),'system':'Return only a JSON plan selecting all supplied evidence IDs and reordering all allowed check IDs. Do not diagnose or propose actions.',
                     'prompt':json.dumps(evidence,allow_nan=False),'options':{'temperature':0,'num_predict':512}}) as response:
-                response.raise_for_status();body=bytearray()
-                for chunk in response.iter_bytes(chunk_size=4096):
-                    body.extend(chunk)
-                    if time.monotonic()>deadline:raise TimeoutError('Local provider time budget exceeded')
-                    if len(body)>32768:raise ValueError('Provider response too large')
-                envelope=json.loads(body)
+                response.raise_for_status()
+                envelope=bounded_json(response,32768,deadline=deadline)
                 return json.loads(envelope['response'])

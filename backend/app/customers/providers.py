@@ -9,6 +9,8 @@ import httpx
 from pydantic import ValidationError, BaseModel, Field, ConfigDict
 from app.customers.contracts import ExportBatch
 from app.services.integration_interlock import disabled
+from app.core.http_json import bounded_json
+import zlib
 
 
 class ProviderFailure(RuntimeError):
@@ -90,12 +92,7 @@ class FixtureAPI:
                             continue
                         if r.status_code != 200:
                             raise ProviderFailure("schema_mismatch")
-                        data = bytearray()
-                        for chunk in r.iter_bytes():
-                            data.extend(chunk)
-                            if len(data) > self.limits.max_bytes:
-                                raise ProviderFailure("schema_mismatch")
-                        return parse(json.loads(data))
+                        return parse(bounded_json(r, self.limits.max_bytes))
                 except (httpx.TimeoutException, httpx.TransportError) as exc:
                     if attempt == self.limits.retries:
                         raise ProviderFailure(
@@ -104,7 +101,11 @@ class FixtureAPI:
                             else "unavailable"
                         ) from None
                     self.sleep(self.limits.backoff_seconds * 2**attempt)
-                except (ValueError, UnicodeError, RecursionError):
+                except TimeoutError:
+                    if attempt == self.limits.retries:
+                        raise ProviderFailure("timeout") from None
+                    self.sleep(self.limits.backoff_seconds * 2**attempt)
+                except (ValueError, UnicodeError, RecursionError, zlib.error):
                     raise ProviderFailure("schema_mismatch") from None
         raise ProviderFailure("unavailable")
 

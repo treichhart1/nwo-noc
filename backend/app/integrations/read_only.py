@@ -1,10 +1,11 @@
 """Bounded, exact-origin, GET-only transport. No generic command facility."""
 from dataclasses import dataclass
-import json
 import threading
 import time
 from urllib.parse import urlsplit
 import httpx
+from app.core.http_json import bounded_json, ResponseBudgetExceeded
+import zlib
 
 UISP_PATHS=frozenset('/nms/api/v2.1/'+name for name in ('devices','sites','links','sectors'))
 MIKROTIK_PATHS=frozenset(('/rest/system/identity','/rest/system/resource','/rest/interface',
@@ -101,13 +102,10 @@ class ReadClient:
                         if not 0<=delay<=2:raise IntegrationFailure(code)
                         self.sleep(delay);continue
                     if status!=200:raise IntegrationFailure('unavailable')
-                    body=bytearray()
-                    for chunk in response.iter_bytes():
-                        if self.clock()>=request_deadline:raise IntegrationFailure('timeout')
-                        body.extend(chunk)
-                        if len(body)>self.policy.max_bytes:raise IntegrationFailure('response_too_large')
-                    try:return json.loads(body),dict(response.headers)
-                    except (ValueError,UnicodeError,RecursionError):raise IntegrationFailure('invalid_response') from None
+                    try:return bounded_json(response,self.policy.max_bytes,deadline=request_deadline,clock=self.clock),dict(response.headers)
+                    except ResponseBudgetExceeded:raise IntegrationFailure('response_too_large') from None
+                    except TimeoutError:raise IntegrationFailure('timeout') from None
+                    except (ValueError,UnicodeError,RecursionError,zlib.error):raise IntegrationFailure('invalid_response') from None
             except (httpx.TimeoutException,httpx.TransportError) as exc:
                 if attempt==self.policy.retries:
                     raise IntegrationFailure('timeout' if isinstance(exc,httpx.TimeoutException) else 'unavailable') from None

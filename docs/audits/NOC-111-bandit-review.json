@@ -1,0 +1,753 @@
+{
+  "tool": "bandit==1.8.6",
+  "scope": "backend/app",
+  "reviewed_results": [
+    {
+      "fingerprint": "892062a3c311fe178bd9b10c76dbaca82f010e4cb06571266f0078b3453ad26e",
+      "file": "backend/app/analytics/benchmark.py",
+      "line": 16,
+      "rule": "B106",
+      "severity": "LOW",
+      "source_context": "15         with SessionLocal() as db:\n16             actor = User(\n17                 username=\"analytics-bench-\" + uuid4().hex,\n18                 email=\"analytics-bench@example.invalid\",\n19                 role=\"admin\",\n20                 is_active=True,\n21                 password_hash=\"unusable\",\n22             )\n23             db.add(actor)\n",
+      "justification": "Synthetic benchmark actor has unusable credentials; no account or password is usable against production."
+    },
+    {
+      "fingerprint": "551fa416a1758265b7fb7ebf7b0bab71d780d682b6ba2c8659561dfd65a747d2",
+      "file": "backend/app/analytics/grafana.py",
+      "line": 38,
+      "rule": "B105",
+      "severity": "LOW",
+      "source_context": "37         transport = transport or fixture_transport()\n38         token = \"synthetic-mock-token-not-a-real-credential\"\n39     else:\n",
+      "justification": "Synthetic fixture token only, guarded by isolated staging; not a live secret or customer lookup credential."
+    },
+    {
+      "fingerprint": "e7abc5567580ea46616d0970b244fa7186c4dc113cdaa631d87f0feeec32b2c1",
+      "file": "backend/app/analytics/provision.py",
+      "line": 14,
+      "rule": "B608",
+      "severity": "MEDIUM",
+      "source_context": "13     # Long-range dashboards require prepared hourly bins; never scan months of raw samples.\n14     return f\"\"\"WITH points AS (\n15 SELECT observed_at,site_id,device_id,value AS total,CASE WHEN value IS NULL THEN 0 ELSE 1 END AS n\n16 FROM noc_analytics.metric_points WHERE metric='{metric}' AND $__timeFilter(observed_at)\n17 AND ($__unixEpochTo()-$__unixEpochFrom())<=86400 {FILTER}\n18 UNION ALL\n19 SELECT bucket,site_id,device_id,value_sum,valid_count FROM noc_analytics.hourly h\n20 WHERE EXISTS(SELECT 1 FROM noc_analytics.coverage c WHERE c.bucket=h.bucket AND c.complete) AND metric='{metric}' AND $__timeFilter(bucket) AND ($__unixEpochTo()-$__unixEpochFrom())>86400 {FILTER}\n21 ) SELECT $__timeGroupAlias(observed_at,'$__interval'),sum(total)/nullif(sum(n),0) AS value,coalesce(site_id,0)::text AS metric FROM points GROUP BY 1,3 ORDER BY 1 LIMIT 5000\"\"\"\n22 \n",
+      "justification": "Reviewed SQL interpolates fixed catalog expressions/validated identifiers or generated synthetic schema IDs. Values use bound parameters or approved Grafana SQL-string variable escaping; no untrusted SQL fragment accepted."
+    },
+    {
+      "fingerprint": "eeb719f988b069bc013a92e5ca6a4c1d84b9dd4b09971632250a77b2c09be068",
+      "file": "backend/app/analytics/provision.py",
+      "line": 81,
+      "rule": "B608",
+      "severity": "MEDIUM",
+      "source_context": "80             \"Authoritative NOC incident lifetimes \u00b7 impact is a recorded estimate\",\n81             f\"SELECT id,site_id,started_at,restored_at,severity,status,recorded_customer_impact_estimate FROM noc_analytics.incidents WHERE started_at<=$__timeTo() AND coalesce(restored_at,$__timeTo())>=$__timeFrom() {FILTER} ORDER BY started_at DESC LIMIT 1000\",\n82         )\n",
+      "justification": "Reviewed SQL interpolates fixed catalog expressions/validated identifiers or generated synthetic schema IDs. Values use bound parameters or approved Grafana SQL-string variable escaping; no untrusted SQL fragment accepted."
+    },
+    {
+      "fingerprint": "39a2e9596f791405f071acedcfa6bb329c2f4d9004d0ee7d2c611dfeef38b67e",
+      "file": "backend/app/analytics/provision.py",
+      "line": 86,
+      "rule": "B608",
+      "severity": "MEDIUM",
+      "source_context": "85             \"Installed equipment \u00b7 no financial/credential fields\",\n86             f\"SELECT asset_id,device_id,state FROM noc_analytics.equipment WHERE (CAST(${{site:sqlstring}} AS integer)=0 OR site_id=CAST(${{site:sqlstring}} AS integer)) LIMIT 1000\",\n87         )\n",
+      "justification": "Reviewed SQL interpolates fixed catalog expressions/validated identifiers or generated synthetic schema IDs. Values use bound parameters or approved Grafana SQL-string variable escaping; no untrusted SQL fragment accepted."
+    },
+    {
+      "fingerprint": "34570fad617292ff7c144fed6d2e0327039ed581f6bed41ee1aeee95cab30724",
+      "file": "backend/app/analytics/provision.py",
+      "line": 90,
+      "rule": "B608",
+      "severity": "MEDIUM",
+      "source_context": "89             \"Maintenance record references \u00b7 details remain in authorized NOC\",\n90             f\"SELECT id,site_id,asset_id,work_order_id,serviced_at FROM noc_analytics.maintenance WHERE $__timeFilter(serviced_at) AND (CAST(${{site:sqlstring}} AS integer)=0 OR site_id=CAST(${{site:sqlstring}} AS integer)) LIMIT 1000\",\n91         )\n",
+      "justification": "Reviewed SQL interpolates fixed catalog expressions/validated identifiers or generated synthetic schema IDs. Values use bound parameters or approved Grafana SQL-string variable escaping; no untrusted SQL fragment accepted."
+    },
+    {
+      "fingerprint": "85d7f3afca7bcb5119a7fb63027df78d10ce045c661c621d5e389e452faa88ee",
+      "file": "backend/app/analytics/provision.py",
+      "line": 100,
+      "rule": "B608",
+      "severity": "MEDIUM",
+      "source_context": "99             \"Hourly recorded capacity \u00b7 sample-weighted, not configured speed\",\n100             f\"SELECT bucket,site_id,metric,value_sum/nullif(valid_count,0) AS recorded_mean,valid_count,missing_count FROM noc_analytics.hourly h WHERE EXISTS(SELECT 1 FROM noc_analytics.coverage c WHERE c.bucket=h.bucket AND c.complete) AND $__timeFilter(bucket) AND metric IN ('rf_capacity_mbps','rf_utilization_percent','sector_utilization_percent') {FILTER} ORDER BY bucket DESC LIMIT 5000\",\n101         )\n",
+      "justification": "Reviewed SQL interpolates fixed catalog expressions/validated identifiers or generated synthetic schema IDs. Values use bound parameters or approved Grafana SQL-string variable escaping; no untrusted SQL fragment accepted."
+    },
+    {
+      "fingerprint": "0fc58d20fd1fd257242fa6f24707bcc4241ab028e8c853f0d22f959233fde95b",
+      "file": "backend/app/analytics/service.py",
+      "line": 325,
+      "rule": "B608",
+      "severity": "MEDIUM",
+      "source_context": "324         text(\n325             f\"SELECT count(*) FROM (SELECT 1 FROM {src} WHERE {filter_sql} LIMIT {budget+1}) bounded\"\n326         ),\n",
+      "justification": "Reviewed SQL interpolates fixed catalog expressions/validated identifiers or generated synthetic schema IDs. Values use bound parameters or approved Grafana SQL-string variable escaping; no untrusted SQL fragment accepted."
+    },
+    {
+      "fingerprint": "2e36709ab7ba53e49fe91178b4d83a4c7deee5a44575887fb96f0e2a5c8fe988",
+      "file": "backend/app/analytics/service.py",
+      "line": 333,
+      "rule": "B608",
+      "severity": "MEDIUM",
+      "source_context": "332         )\n333     sql = f\"SELECT date_bin(make_interval(secs=>:seconds),{time},'1970-01-01'::timestamptz) AS time,{group_col} AS scope_id,{sum_expr} AS total,{count_expr} AS valid_count,{missing_expr} AS missing_count,{min_expr} AS minimum,{max_expr} AS maximum,{last} AS last_observed FROM {src} WHERE {filter_sql} GROUP BY 1,2 ORDER BY 1,2 LIMIT 5001\"\n334     rows = [dict(r) for r in db.execute(text(sql), params).mappings()]\n",
+      "justification": "Reviewed SQL interpolates fixed catalog expressions/validated identifiers or generated synthetic schema IDs. Values use bound parameters or approved Grafana SQL-string variable escaping; no untrusted SQL fragment accepted."
+    },
+    {
+      "fingerprint": "b74038b24def34ace1b533cd05720850343b09d2f49a7b8d8ec09938e7b554fb",
+      "file": "backend/app/analytics/sql.py",
+      "line": 74,
+      "rule": "B608",
+      "severity": "MEDIUM",
+      "source_context": "73     def select_fields(source, fields, family):\n74         return f\"SELECT b.source_id,b.observed_at,b.device_id,b.site_id,b.sector_id,b.link_id,'{family}'::text AS family,b.component,b.mapping_basis,v.metric,CASE WHEN v.value>=limits.low AND v.value<=limits.high THEN v.value END AS value FROM ({source}) b CROSS JOIN LATERAL (VALUES {values(fields)}) v(metric,value) JOIN (VALUES {bounds(fields)}) limits(metric,low,high) ON limits.metric=v.metric\"\n75 \n",
+      "justification": "Reviewed SQL interpolates fixed catalog expressions/validated identifiers or generated synthetic schema IDs. Values use bound parameters or approved Grafana SQL-string variable escaping; no untrusted SQL fragment accepted."
+    },
+    {
+      "fingerprint": "c32400da4dfd33e1950200bbf6f3ed641b6d803fdc71818eee274fea35fca709",
+      "file": "backend/app/analytics/sql.py",
+      "line": 77,
+      "rule": "B608",
+      "severity": "MEDIUM",
+      "source_context": "76     # Expressions refer to their native alias inside LATERAL scopes.\n77     core_sql = f\"SELECT t.id AS source_id,t.sampled_at AS observed_at,t.device_id,d.wisp_site_id AS site_id,NULL::integer AS sector_id,NULL::integer AS link_id,'device'::text AS family,'0'::text AS component,'current_inventory'::text AS mapping_basis,v.metric,CASE WHEN v.value>=limits.low AND v.value<=limits.high THEN v.value END AS value FROM public.telemetry_samples t JOIN public.devices d ON d.id=t.device_id CROSS JOIN LATERAL (VALUES {values(core)}) v(metric,value) JOIN (VALUES {bounds(core)}) limits(metric,low,high) ON limits.metric=v.metric\"\n78     rf_fields = {\n",
+      "justification": "Reviewed SQL interpolates fixed catalog expressions/validated identifiers or generated synthetic schema IDs. Values use bound parameters or approved Grafana SQL-string variable escaping; no untrusted SQL fragment accepted."
+    },
+    {
+      "fingerprint": "d08ada1cc0caeee0f9411ae1c5e1e47bb558aaae16ab95518196052ae5e03955",
+      "file": "backend/app/analytics/sql.py",
+      "line": 81,
+      "rule": "B608",
+      "severity": "MEDIUM",
+      "source_context": "80     }\n81     rf_sql = f\"SELECT r.id,r.sampled_at,r.device_id,r.site_id,NULL::integer,r.link_id,'rf',md5(r.series_key||':'||r.mapping_digest),'recorded_snapshot',v.metric,CASE WHEN v.value>=limits.low AND v.value<=limits.high THEN v.value END FROM public.rf_analytics_points r CROSS JOIN LATERAL (VALUES {values(rf_fields)}) v(metric,value) JOIN (VALUES {bounds(rf_fields)}) limits(metric,low,high) ON limits.metric=v.metric\"\n82     tower_sql = f\"SELECT s.id,s.observed_at,s.device_id,s.site_id,s.sector_id,s.link_id,'tower',md5(s.scope_key),'recorded_snapshot',v.metric,v.value FROM public.tower_health_samples s CROSS JOIN LATERAL (VALUES {values(tower)}) v(metric,value)\"\n",
+      "justification": "Reviewed SQL interpolates fixed catalog expressions/validated identifiers or generated synthetic schema IDs. Values use bound parameters or approved Grafana SQL-string variable escaping; no untrusted SQL fragment accepted."
+    },
+    {
+      "fingerprint": "864058a1fd5d6100016fe0bda5d0d8dab505fbf74d319b30482729b8011872d5",
+      "file": "backend/app/analytics/sql.py",
+      "line": 82,
+      "rule": "B608",
+      "severity": "MEDIUM",
+      "source_context": "81     rf_sql = f\"SELECT r.id,r.sampled_at,r.device_id,r.site_id,NULL::integer,r.link_id,'rf',md5(r.series_key||':'||r.mapping_digest),'recorded_snapshot',v.metric,CASE WHEN v.value>=limits.low AND v.value<=limits.high THEN v.value END FROM public.rf_analytics_points r CROSS JOIN LATERAL (VALUES {values(rf_fields)}) v(metric,value) JOIN (VALUES {bounds(rf_fields)}) limits(metric,low,high) ON limits.metric=v.metric\"\n82     tower_sql = f\"SELECT s.id,s.observed_at,s.device_id,s.site_id,s.sector_id,s.link_id,'tower',md5(s.scope_key),'recorded_snapshot',v.metric,v.value FROM public.tower_health_samples s CROSS JOIN LATERAL (VALUES {values(tower)}) v(metric,value)\"\n83     interface = {\n",
+      "justification": "Reviewed SQL interpolates fixed catalog expressions/validated identifiers or generated synthetic schema IDs. Values use bound parameters or approved Grafana SQL-string variable escaping; no untrusted SQL fragment accepted."
+    },
+    {
+      "fingerprint": "a2ddb312218a1a02feb1d09e9d1a2485ce1b195bb014381cdd22b350d65b14ea",
+      "file": "backend/app/analytics/sql.py",
+      "line": 95,
+      "rule": "B608",
+      "severity": "MEDIUM",
+      "source_context": "94     )\n95     interface_sql = f\"SELECT t.id,t.sampled_at,t.device_id,d.wisp_site_id,NULL::integer,NULL::integer,'interface',md5(coalesce(i.value->>'id',i.ordinality::text)),'current_inventory',v.metric,v.value FROM public.telemetry_samples t JOIN public.devices d ON d.id=t.device_id CROSS JOIN LATERAL jsonb_array_elements(CASE WHEN jsonb_typeof(t.raw_data::jsonb->'mikrotik_v1'->'interfaces')='array' THEN t.raw_data::jsonb->'mikrotik_v1'->'interfaces' ELSE '[]'::jsonb END) WITH ORDINALITY i(value,ordinality) CROSS JOIN LATERAL (VALUES {values(interface)}) v(metric,value) WHERE i.ordinality<=16\"\n96     monitor_sql = \"SELECT m.id,m.checked_at,m.device_id,d.wisp_site_id,NULL::integer,NULL::integer,'monitor','0','current_inventory','reachability',CASE m.status WHEN 'up' THEN 1.0 WHEN 'down' THEN 0.0 END FROM public.monitor_checks m JOIN public.devices d ON d.id=m.device_id\"\n",
+      "justification": "Reviewed SQL interpolates fixed catalog expressions/validated identifiers or generated synthetic schema IDs. Values use bound parameters or approved Grafana SQL-string variable escaping; no untrusted SQL fragment accepted."
+    },
+    {
+      "fingerprint": "1b692990921ceacfc8cd863ea634e50e35dc4a38ac591eb4f630fa0b407d34c4",
+      "file": "backend/app/analytics/sql.py",
+      "line": 98,
+      "rule": "B608",
+      "severity": "MEDIUM",
+      "source_context": "97     return (\n98         \"\"\"CREATE SCHEMA noc_analytics;\n99 REVOKE ALL ON SCHEMA noc_analytics FROM PUBLIC;\n100 CREATE FUNCTION noc_analytics.number(j jsonb,low double precision,high double precision) RETURNS double precision LANGUAGE sql IMMUTABLE STRICT PARALLEL SAFE AS $$\n101  SELECT CASE WHEN jsonb_typeof(j)='number' AND length(j::text)<=48 AND j::text ~ '^-?[0-9]{1,24}([.][0-9]{1,16})?([eE][+-]?[0-9]{1,2})?$' THEN CASE WHEN (j::text)::numeric BETWEEN low AND high THEN (j::text)::double precision END END\n102 $$;\n103 CREATE VIEW noc_analytics.metric_points WITH(security_barrier=true) AS\n104 SELECT q.* FROM (\"\"\"\n105         + \" UNION ALL \".join([core_sql, rf_sql, tower_sql, interface_sql, monitor_sql])\n106         + \"\"\") q\n",
+      "justification": "Reviewed SQL interpolates fixed catalog expressions/validated identifiers or generated synthetic schema IDs. Values use bound parameters or approved Grafana SQL-string variable escaping; no untrusted SQL fragment accepted."
+    },
+    {
+      "fingerprint": "58bfdc272fe8e6f7097e106fa6944558d485de3d02e2d63031029959fd47a5db",
+      "file": "backend/app/analytics/sql.py",
+      "line": 106,
+      "rule": "B608",
+      "severity": "MEDIUM",
+      "source_context": "105         + \" UNION ALL \".join([core_sql, rf_sql, tower_sql, interface_sql, monitor_sql])\n106         + \"\"\") q\n107 WHERE q.observed_at >= now()-make_interval(days=>coalesce((SELECT retention_days FROM public.analytics_config WHERE id=1),90)) AND q.observed_at<=now();\n108 CREATE VIEW noc_analytics.hourly WITH(security_barrier=true) AS SELECT bucket,device_id,site_id,sector_id,link_id,family,component,mapping_basis,metric,valid_count,missing_count,value_sum,minimum,maximum,last_observed,projected_at FROM public.analytics_hourly_bins WHERE bucket>=now()-make_interval(days=>coalesce((SELECT retention_days FROM public.analytics_config WHERE id=1),90));\n109 CREATE VIEW noc_analytics.incidents WITH(security_barrier=true) AS SELECT id,site_id,device_id,sector_id,link_id,started_at,coalesce(resolved_at,closed_at) AS restored_at,CASE WHEN status IN ('open','acknowledged','investigating','resolved','closed') THEN status ELSE 'unknown' END AS status,CASE WHEN severity IN ('critical','warning','info','high','medium','low') THEN severity ELSE 'unknown' END AS severity,CASE WHEN customer_impact>=0 THEN customer_impact END AS recorded_customer_impact_estimate FROM public.incidents;\n110 CREATE VIEW noc_analytics.maintenance WITH(security_barrier=true) AS SELECT id,site_id,asset_id,work_order_id,serviced_at FROM public.maintenance_service_records;\n111 CREATE VIEW noc_analytics.equipment WITH(security_barrier=true) AS SELECT a.id AS asset_id,l.site_id,b.device_id,CASE WHEN a.state IN ('installed','in_service','failed','under_maintenance','retired','removed','available') THEN a.state ELSE 'other' END AS state FROM public.equipment_assets a LEFT JOIN public.equipment_locations l ON l.id=a.location_id LEFT JOIN public.equipment_device_bindings b ON b.asset_id=a.id AND b.ended_at IS NULL;\n112 CREATE VIEW noc_analytics.ipam_counts WITH(security_barrier=true) AS SELECT site_id,count(*)::integer AS prefix_count,count(DISTINCT vlan_id)::integer AS vlan_count FROM public.ipam_prefixes GROUP BY site_id;\n113 CREATE VIEW noc_analytics.topology_counts WITH(security_barrier=true) AS SELECT site_id,count(*)::integer AS node_count FROM public.unified_nodes GROUP BY site_id;\n114 CREATE VIEW noc_analytics.calibration WITH(security_barrier=true) AS SELECT id,created_at,job_id,point_index,predicted_dbm,observed_dbm,error_db,CASE WHEN rf_point_id IS NOT NULL THEN 'recorded_rf' ELSE 'operator_survey' END AS observation_kind FROM public.planning_calibrations;\n115 CREATE VIEW noc_analytics.alerts WITH(security_barrier=true) AS SELECT id,device_id,CASE WHEN state IN ('active','cleared') THEN state ELSE 'unknown' END AS status,first_seen_at AS opened_at,cleared_at FROM public.monitoring_alerts;\n116 DO $$ BEGIN IF EXISTS(SELECT 1 FROM pg_roles WHERE rolname='noc_app') THEN GRANT USAGE ON SCHEMA noc_analytics TO noc_app; GRANT SELECT ON ALL TABLES IN SCHEMA noc_analytics TO noc_app; END IF; END $$;\n117 \"\"\"\n118     )\n",
+      "justification": "Reviewed SQL interpolates fixed catalog expressions/validated identifiers or generated synthetic schema IDs. Values use bound parameters or approved Grafana SQL-string variable escaping; no untrusted SQL fragment accepted."
+    },
+    {
+      "fingerprint": "0b799afef0f218fd168d703bde422398dbd40fbe4f05dbd0393bb78bcd5d8142",
+      "file": "backend/app/audit_sites_benchmark.py",
+      "line": 61,
+      "rule": "B101",
+      "severity": "LOW",
+      "source_context": "60                 chosen = [s for s in result if s.id in ids]\n61                 assert (\n62                     len(chosen) == 40\n63                     and sum(s.device_count for s in chosen) == size\n64                     and all(s.health_score == 100 for s in chosen)\n65                 )\n66             print(\n",
+      "justification": "Assertion is synthetic benchmark/rehearsal acceptance, not runtime authorization. Explicit configuration guards and disabled live transports remain separate; never run acceptance with python -O."
+    },
+    {
+      "fingerprint": "56b1491b5bdc313ca6ca39cb96059ff9639cb628d335c57e7310ed1166c88f89",
+      "file": "backend/app/customer_status/benchmark.py",
+      "line": 35,
+      "rule": "B106",
+      "severity": "LOW",
+      "source_context": "34         with SessionLocal() as db:\n35             user = User(\n36                 username=\"status-bench-\" + uuid4().hex,\n37                 email=uuid4().hex + \"@example.invalid\",\n38                 role=\"admin\",\n39                 password_hash=\"unusable\",\n40                 is_active=True,\n41             )\n42             core = Site(name=\"Synthetic status core\", site_type=\"core-pop\")\n",
+      "justification": "Synthetic benchmark actor has unusable credentials; no account or password is usable against production."
+    },
+    {
+      "fingerprint": "4ba26bb1c0093ed5da5f981124ff82f70131d985a20e58dbf794e230cded54c0",
+      "file": "backend/app/customer_status/benchmark.py",
+      "line": 122,
+      "rule": "B101",
+      "severity": "LOW",
+      "source_context": "121             draft_ms = round((time.perf_counter() - start) * 1000, 2)\n122             assert len(result[\"impacts\"]) == size\n123             assert result[\"eligible_count\"] == (size + 39) // 40\n",
+      "justification": "Assertion is synthetic benchmark/rehearsal acceptance, not runtime authorization. Explicit configuration guards and disabled live transports remain separate; never run acceptance with python -O."
+    },
+    {
+      "fingerprint": "f38e8ebafef65fa686a9816d9d1547744dd5d7c32e0088b3693fc3cbd7d017cb",
+      "file": "backend/app/customer_status/benchmark.py",
+      "line": 123,
+      "rule": "B101",
+      "severity": "LOW",
+      "source_context": "122             assert len(result[\"impacts\"]) == size\n123             assert result[\"eligible_count\"] == (size + 39) // 40\n124             assert not db.scalar(select(s.NotificationDelivery.id))\n",
+      "justification": "Assertion is synthetic benchmark/rehearsal acceptance, not runtime authorization. Explicit configuration guards and disabled live transports remain separate; never run acceptance with python -O."
+    },
+    {
+      "fingerprint": "5d370fd3a682e5add779b3ce1dbc1a7ef7f56375e753f0eb6ce111ee0c42a10a",
+      "file": "backend/app/customer_status/benchmark.py",
+      "line": 124,
+      "rule": "B101",
+      "severity": "LOW",
+      "source_context": "123             assert result[\"eligible_count\"] == (size + 39) // 40\n124             assert not db.scalar(select(s.NotificationDelivery.id))\n125             print(\n",
+      "justification": "Assertion is synthetic benchmark/rehearsal acceptance, not runtime authorization. Explicit configuration guards and disabled live transports remain separate; never run acceptance with python -O."
+    },
+    {
+      "fingerprint": "fd61ef252d1af8ea1a3334dc6a8af37d6d6144fd5e8c0420adb5ea2417fe6e66",
+      "file": "backend/app/down_detector/benchmark.py",
+      "line": 79,
+      "rule": "B101",
+      "severity": "LOW",
+      "source_context": "78     replay = (time.monotonic() - at) * 1000\n79     assert (\n80         result[\"primary_incidents\"] == 1\n81         and result[\"symptoms\"] == count\n82         and again == result\n83     )\n84     return {\n",
+      "justification": "Assertion is synthetic benchmark/rehearsal acceptance, not runtime authorization. Explicit configuration guards and disabled live transports remain separate; never run acceptance with python -O."
+    },
+    {
+      "fingerprint": "fc062a2f87500968fe283bcfb72e29e5817052841d2be4d4f1e42d5193d071d6",
+      "file": "backend/app/down_detector/rehearsal.py",
+      "line": 100,
+      "rule": "B101",
+      "severity": "LOW",
+      "source_context": "99             d = db.scalar(select(Device).where(Device.external_id == \"noc97-restart\"))\n100             assert d\n101             eps = list(\n",
+      "justification": "Assertion is synthetic benchmark/rehearsal acceptance, not runtime authorization. Explicit configuration guards and disabled live transports remain separate; never run acceptance with python -O."
+    },
+    {
+      "fingerprint": "0fc3493dd8717b547187424a28245e638951abcd5ec4bd8ac4942042f9f6f9cf",
+      "file": "backend/app/down_detector/rehearsal.py",
+      "line": 106,
+      "rule": "B101",
+      "severity": "LOW",
+      "source_context": "105             )\n106             assert len(eps) == 1\n107             n = db.scalar(\n",
+      "justification": "Assertion is synthetic benchmark/rehearsal acceptance, not runtime authorization. Explicit configuration guards and disabled live transports remain separate; never run acceptance with python -O."
+    },
+    {
+      "fingerprint": "d61492e0542503f2ca5c2c0edf7aa06789f251877cc74a92f44dce8c3a6543fa",
+      "file": "backend/app/down_detector/rehearsal.py",
+      "line": 112,
+      "rule": "B101",
+      "severity": "LOW",
+      "source_context": "111             )\n112             assert n == 3\n113             consume(db, now=now)\n",
+      "justification": "Assertion is synthetic benchmark/rehearsal acceptance, not runtime authorization. Explicit configuration guards and disabled live transports remain separate; never run acceptance with python -O."
+    },
+    {
+      "fingerprint": "4638aea9b59ef92b369ac944e4926ca242dcbae70c73f68ef2f606f2c70dbfae",
+      "file": "backend/app/down_detector/rehearsal.py",
+      "line": 114,
+      "rule": "B101",
+      "severity": "LOW",
+      "source_context": "113             consume(db, now=now)\n114             assert (\n115                 db.scalar(\n116                     select(func.count(OutageEpisode.id)).where(\n117                         OutageEpisode.key == f\"device:{d.id}\"\n118                     )\n119                 )\n120                 == 1\n121             )\n122             result = {\n",
+      "justification": "Assertion is synthetic benchmark/rehearsal acceptance, not runtime authorization. Explicit configuration guards and disabled live transports remain separate; never run acceptance with python -O."
+    },
+    {
+      "fingerprint": "c066edcbe714ef403a3539d35ed5dbb50efaeefec7709a855f353926212bc31e",
+      "file": "backend/app/equipment/benchmark.py",
+      "line": 35,
+      "rule": "B106",
+      "severity": "LOW",
+      "source_context": "34         raise ValueError(\"Empty isolated equipment fixture required\")\n35     actor = User(\n36         username=\"noc100-scale\",\n37         email=\"noc100-scale@example.invalid\",\n38         password_hash=\"synthetic-unusable-hash\",\n39         role=\"operator\",\n40         is_active=True,\n41     )\n42     db.add(actor)\n",
+      "justification": "Synthetic benchmark actor has unusable credentials; no account or password is usable against production."
+    },
+    {
+      "fingerprint": "13a2073e087f08f6c9d261d30f07ca134ea68b1f4b01a858b14b81e847d40171",
+      "file": "backend/app/equipment/benchmark.py",
+      "line": 219,
+      "rule": "B101",
+      "severity": "LOW",
+      "source_context": "218         transfer_ms = (time.perf_counter() - at) * 1000\n219         assert (\n220             len(page) == 100\n221             and len(search) == 1\n222             and report[\"asset_count\"] == count\n223             and spare.location_id == office.id\n224         )\n225         assert (\n",
+      "justification": "Assertion is synthetic benchmark/rehearsal acceptance, not runtime authorization. Explicit configuration guards and disabled live transports remain separate; never run acceptance with python -O."
+    },
+    {
+      "fingerprint": "569addf6e990373cb8095319ab789dbda89687a6150d9252a75213bd21eb7760",
+      "file": "backend/app/equipment/benchmark.py",
+      "line": 225,
+      "rule": "B101",
+      "severity": "LOW",
+      "source_context": "224         )\n225         assert (\n226             len(report[\"by_tower\"]) == 40\n227             and db.scalar(select(func.count(DeviceBinding.id))) == 400\n228         )\n229         return {\n",
+      "justification": "Assertion is synthetic benchmark/rehearsal acceptance, not runtime authorization. Explicit configuration guards and disabled live transports remain separate; never run acceptance with python -O."
+    },
+    {
+      "fingerprint": "d77795bee3abb8b1b290a7b57f1d7302c977cfe9c2ef8fa2050d7b5e097e117e",
+      "file": "backend/app/fiber_sync/benchmark.py",
+      "line": 24,
+      "rule": "B106",
+      "severity": "LOW",
+      "source_context": "23         with SessionLocal() as db:\n24             actor = User(\n25                 username=\"fiber-bench-\" + str(uuid4()),\n26                 email=\"fiber-bench@example.invalid\",\n27                 password_hash=\"unusable\",\n28                 role=\"admin\",\n29                 is_active=True,\n30             )\n31             db.add(actor)\n",
+      "justification": "Synthetic benchmark actor has unusable credentials; no account or password is usable against production."
+    },
+    {
+      "fingerprint": "2a745d78aa61c80c30eb07447606e5e05d6dc3159d97ec75444607a46ad1e328",
+      "file": "backend/app/fiber_sync/benchmark.py",
+      "line": 109,
+      "rule": "B101",
+      "severity": "LOW",
+      "source_context": "108             preview_ms = (time.perf_counter() - start) * 1000\n109             assert preview[\"status\"] == \"preview\", preview[\"report\"]\n110             assert (\n",
+      "justification": "Assertion is synthetic benchmark/rehearsal acceptance, not runtime authorization. Explicit configuration guards and disabled live transports remain separate; never run acceptance with python -O."
+    },
+    {
+      "fingerprint": "c49f8e93a3fcdd9314ff5290db4744fe0360b93bcddcc73157be41eb902a170d",
+      "file": "backend/app/fiber_sync/benchmark.py",
+      "line": 110,
+      "rule": "B101",
+      "severity": "LOW",
+      "source_context": "109             assert preview[\"status\"] == \"preview\", preview[\"report\"]\n110             assert (\n111                 db.scalar(\n112                     select(func.count())\n113                     .select_from(Cable)\n114                     .where(Cable.code.like(f\"fd{source.id}:%\"))\n115                 )\n116                 == 0\n117             )\n118             start = time.perf_counter()\n",
+      "justification": "Assertion is synthetic benchmark/rehearsal acceptance, not runtime authorization. Explicit configuration guards and disabled live transports remain separate; never run acceptance with python -O."
+    },
+    {
+      "fingerprint": "e90bec87a5afe8fcf012c4bda34048df9d87b6bad37fe0f316b61173c8e3a15b",
+      "file": "backend/app/fiber_sync/benchmark.py",
+      "line": 131,
+      "rule": "B101",
+      "severity": "LOW",
+      "source_context": "130             apply_ms = (time.perf_counter() - start) * 1000\n131             assert result[\"status\"] == \"applied\", result\n132             print(\n",
+      "justification": "Assertion is synthetic benchmark/rehearsal acceptance, not runtime authorization. Explicit configuration guards and disabled live transports remain separate; never run acceptance with python -O."
+    },
+    {
+      "fingerprint": "a7988a3f3a057467aa8ffd23c6e51e6032c85bb043f3a05c64553c7dad7513cf",
+      "file": "backend/app/fiber_sync/rehearsal.py",
+      "line": 142,
+      "rule": "B101",
+      "severity": "LOW",
+      "source_context": "141         )\n142         assert preview[\"status\"] == \"preview\", preview\n143         assert before == db.scalar(\n",
+      "justification": "Assertion is synthetic benchmark/rehearsal acceptance, not runtime authorization. Explicit configuration guards and disabled live transports remain separate; never run acceptance with python -O."
+    },
+    {
+      "fingerprint": "39f4cf3b5ba9e8f345f56780f0b114f6381fc053fea31946a171b73f1bed8f66",
+      "file": "backend/app/fiber_sync/rehearsal.py",
+      "line": 143,
+      "rule": "B101",
+      "severity": "LOW",
+      "source_context": "142         assert preview[\"status\"] == \"preview\", preview\n143         assert before == db.scalar(\n144             select(__import__(\"sqlalchemy\").func.count()).select_from(Cable)\n145         )\n146         db.commit()\n",
+      "justification": "Assertion is synthetic benchmark/rehearsal acceptance, not runtime authorization. Explicit configuration guards and disabled live transports remain separate; never run acceptance with python -O."
+    },
+    {
+      "fingerprint": "eab3822818cd71c6327e036ffcc9556c20845b74e2ab8830012ff8b5da9be20a",
+      "file": "backend/app/field/benchmark.py",
+      "line": 23,
+      "rule": "B106",
+      "severity": "LOW",
+      "source_context": "22             raise ValueError(\"Empty isolated field fixture required\")\n23         tech = User(\n24             username=\"field-scale\",\n25             email=\"field-scale@example.invalid\",\n26             password_hash=\"synthetic-unusable\",\n27             role=\"technician\",\n28             is_active=True,\n29         )\n30         db.add(tech)\n",
+      "justification": "Synthetic benchmark actor has unusable credentials; no account or password is usable against production."
+    },
+    {
+      "fingerprint": "a02936ad92fc2572c1814080423a4427ca2773da8f02a3073396162c45a0299a",
+      "file": "backend/app/finance/benchmark.py",
+      "line": 23,
+      "rule": "B106",
+      "severity": "LOW",
+      "source_context": "22         with SessionLocal() as db:\n23             u = User(\n24                 username=\"finance-bench-\" + uuid4().hex,\n25                 email=\"finance@example.invalid\",\n26                 password_hash=\"unusable\",\n27                 role=\"admin\",\n28                 is_active=True,\n29             )\n30             db.add(u)\n",
+      "justification": "Synthetic benchmark actor has unusable credentials; no account or password is usable against production."
+    },
+    {
+      "fingerprint": "da23a8cd84ba130bb93f77432a57e9afeff6ccaac972e810a7b188b18a188d41",
+      "file": "backend/app/finance/benchmark.py",
+      "line": 101,
+      "rule": "B101",
+      "severity": "LOW",
+      "source_context": "100             )\n101             assert count == size\n102             assert sum(s.D(r[\"totals\"][\"revenue\"]) for r in rows) == s.D(\n",
+      "justification": "Assertion is synthetic benchmark/rehearsal acceptance, not runtime authorization. Explicit configuration guards and disabled live transports remain separate; never run acceptance with python -O."
+    },
+    {
+      "fingerprint": "d56723635e2ff5805ff9edeba37e51ece9a2a0606528739ad7634e9258caf1a0",
+      "file": "backend/app/finance/benchmark.py",
+      "line": 102,
+      "rule": "B101",
+      "severity": "LOW",
+      "source_context": "101             assert count == size\n102             assert sum(s.D(r[\"totals\"][\"revenue\"]) for r in rows) == s.D(\n103                 report[\"totals\"][\"revenue\"]\n104             )\n105             print(\n",
+      "justification": "Assertion is synthetic benchmark/rehearsal acceptance, not runtime authorization. Explicit configuration guards and disabled live transports remain separate; never run acceptance with python -O."
+    },
+    {
+      "fingerprint": "b5f3360e8467658791bd5467c534c72b2a24599f78f68d1188791b4eb19bfc64",
+      "file": "backend/app/ipam/benchmark.py",
+      "line": 24,
+      "rule": "B106",
+      "severity": "LOW",
+      "source_context": "23     now = s.clock()\n24     actor = User(\n25         username=\"noc99-benchmark\",\n26         email=\"noc99@example.invalid\",\n27         password_hash=\"synthetic-unusable\",\n28         role=\"operator\",\n29         is_active=True,\n30     )\n31     db.add(actor)\n",
+      "justification": "Synthetic benchmark actor has unusable credentials; no account or password is usable against production."
+    },
+    {
+      "fingerprint": "241e170b8937b27f1c2a0ee3e44eb620483753290c8430f9b34b32098a1c72de",
+      "file": "backend/app/ipam/benchmark.py",
+      "line": 131,
+      "rule": "B101",
+      "severity": "LOW",
+      "source_context": "130         prefix_page_ms = (time.perf_counter() - start) * 1000\n131         assert len(prefix_usage) == 50\n132         start = time.perf_counter()\n",
+      "justification": "Assertion is synthetic benchmark/rehearsal acceptance, not runtime authorization. Explicit configuration guards and disabled live transports remain separate; never run acceptance with python -O."
+    },
+    {
+      "fingerprint": "1dcb7aa41518e5e844faf7e5c998117b463b03d91ed3edfc16651c1b15300c94",
+      "file": "backend/app/ipam/benchmark.py",
+      "line": 140,
+      "rule": "B101",
+      "severity": "LOW",
+      "source_context": "139         planning = (time.perf_counter() - start) * 1000\n140         assert (\n141             len(page) == 100 and len(matches) == 2 and int(u[\"used\"]) == count // 1000\n142         )\n143         assert len(suggestion[\"candidates\"]) == 4\n",
+      "justification": "Assertion is synthetic benchmark/rehearsal acceptance, not runtime authorization. Explicit configuration guards and disabled live transports remain separate; never run acceptance with python -O."
+    },
+    {
+      "fingerprint": "42b19454e0d41e450b23795499c1a34a248245dc7eaedd840cfc5e668218fd66",
+      "file": "backend/app/ipam/benchmark.py",
+      "line": 143,
+      "rule": "B101",
+      "severity": "LOW",
+      "source_context": "142         )\n143         assert len(suggestion[\"candidates\"]) == 4\n144         return {\n",
+      "justification": "Assertion is synthetic benchmark/rehearsal acceptance, not runtime authorization. Explicit configuration guards and disabled live transports remain separate; never run acceptance with python -O."
+    },
+    {
+      "fingerprint": "ad91dcd13ac2b62914a6b917291dadd226a11943cbe4ca2b4a403fba588d2ff8",
+      "file": "backend/app/maintenance_ops/benchmark.py",
+      "line": 32,
+      "rule": "B106",
+      "severity": "LOW",
+      "source_context": "31             raise ValueError(\"Empty maintenance fixture required\")\n32         user = User(\n33             username=\"noc102-scale\",\n34             email=\"noc102-scale@example.invalid\",\n35             role=\"admin\",\n36             password_hash=\"synthetic-unusable\",\n37             is_active=True,\n38         )\n39         db.add(user)\n",
+      "justification": "Synthetic benchmark actor has unusable credentials; no account or password is usable against production."
+    },
+    {
+      "fingerprint": "c4e6741b939c167c551896a847ba946ddbf337e00a8598c6402128d0b3b4cd4a",
+      "file": "backend/app/monitoring_benchmark.py",
+      "line": 117,
+      "rule": "B101",
+      "severity": "LOW",
+      "source_context": "116                         break\n117                     assert r[\"success\"] == r[\"claimed\"], r\n118                 elapsed = time.perf_counter() - started\n",
+      "justification": "Assertion is synthetic benchmark/rehearsal acceptance, not runtime authorization. Explicit configuration guards and disabled live transports remain separate; never run acceptance with python -O."
+    },
+    {
+      "fingerprint": "170e8f65fb6824f998bad0b23f631f471e21e6627d91d091667b41c840d76372",
+      "file": "backend/app/monitoring_benchmark.py",
+      "line": 119,
+      "rule": "B101",
+      "severity": "LOW",
+      "source_context": "118                 elapsed = time.perf_counter() - started\n119                 assert accepted == size\n120                 with factory() as db:\n",
+      "justification": "Assertion is synthetic benchmark/rehearsal acceptance, not runtime authorization. Explicit configuration guards and disabled live transports remain separate; never run acceptance with python -O."
+    },
+    {
+      "fingerprint": "460f15ae29c5b050c1471d07a147e74f7f8205302fa851a9377300359564dcac",
+      "file": "backend/app/monitoring_benchmark.py",
+      "line": 127,
+      "rule": "B101",
+      "severity": "LOW",
+      "source_context": "126                 if n == 2:\n127                     assert active > 0\n128                 if n == 5:\n",
+      "justification": "Assertion is synthetic benchmark/rehearsal acceptance, not runtime authorization. Explicit configuration guards and disabled live transports remain separate; never run acceptance with python -O."
+    },
+    {
+      "fingerprint": "b4eed686e08a63b0efc6d8a30ed73950d8f8081b8e1106420ea0c7d99842e680",
+      "file": "backend/app/monitoring_benchmark.py",
+      "line": 129,
+      "rule": "B101",
+      "severity": "LOW",
+      "source_context": "128                 if n == 5:\n129                     assert active == 0\n130                 rounds.append(\n",
+      "justification": "Assertion is synthetic benchmark/rehearsal acceptance, not runtime authorization. Explicit configuration guards and disabled live transports remain separate; never run acceptance with python -O."
+    },
+    {
+      "fingerprint": "afbb58f8d9330f9a8e4c68b47eb7825877e5482bb303e49699933ae88cf2dabb",
+      "file": "backend/app/monitoring_benchmark.py",
+      "line": 144,
+      "rule": "B101",
+      "severity": "LOW",
+      "source_context": "143             health_ms = (time.perf_counter() - started) * 1000\n144             assert db.scalar(select(func.count(MonitoringReceipt.id))) == size * 6\n145             assert db.scalar(select(func.count(TelemetrySample.id))) == size * 6\n",
+      "justification": "Assertion is synthetic benchmark/rehearsal acceptance, not runtime authorization. Explicit configuration guards and disabled live transports remain separate; never run acceptance with python -O."
+    },
+    {
+      "fingerprint": "1324ab8ec6a5ccf063cd8a1ec19926d34f6929700596902c8fd8dab477b02fb8",
+      "file": "backend/app/monitoring_benchmark.py",
+      "line": 145,
+      "rule": "B101",
+      "severity": "LOW",
+      "source_context": "144             assert db.scalar(select(func.count(MonitoringReceipt.id))) == size * 6\n145             assert db.scalar(select(func.count(TelemetrySample.id))) == size * 6\n146             assert snapshot[\"failures_24h\"] == 0\n",
+      "justification": "Assertion is synthetic benchmark/rehearsal acceptance, not runtime authorization. Explicit configuration guards and disabled live transports remain separate; never run acceptance with python -O."
+    },
+    {
+      "fingerprint": "0785cf93de9da1851d87b5c6318132d3de30749c37ca35d793137b4ed4610f21",
+      "file": "backend/app/monitoring_benchmark.py",
+      "line": 146,
+      "rule": "B101",
+      "severity": "LOW",
+      "source_context": "145             assert db.scalar(select(func.count(TelemetrySample.id))) == size * 6\n146             assert snapshot[\"failures_24h\"] == 0\n147             latency = db.execute(\n",
+      "justification": "Assertion is synthetic benchmark/rehearsal acceptance, not runtime authorization. Explicit configuration guards and disabled live transports remain separate; never run acceptance with python -O."
+    },
+    {
+      "fingerprint": "f982555f72ec9dccd9101f6fc96b6aaf276264353cdc9043eb13973c37876de3",
+      "file": "backend/app/monitoring_benchmark.py",
+      "line": 149,
+      "rule": "B608",
+      "severity": "MEDIUM",
+      "source_context": "148                 text(\n149                     f'SELECT avg(duration_ms),max(duration_ms) FROM \"{schema}\".monitoring_attempts'\n150                 )\n",
+      "justification": "Reviewed SQL interpolates fixed catalog expressions/validated identifiers or generated synthetic schema IDs. Values use bound parameters or approved Grafana SQL-string variable escaping; no untrusted SQL fragment accepted."
+    },
+    {
+      "fingerprint": "b67b11df8b8628f5f132f80f64a9949bad761e6cdb400ae1c0cc740943bfa3c5",
+      "file": "backend/app/notification_rehearsal.py",
+      "line": 134,
+      "rule": "B101",
+      "severity": "LOW",
+      "source_context": "133             )\n134             assert (\n135                 pending == 0\n136                 and len(sms) >= 2\n137                 and all(d.state == \"simulated\" and d.attempts == 1 for d in sms)\n138             )\n139             assert len({d.provider_receipt for d in sms}) == len(sms)\n",
+      "justification": "Assertion is synthetic benchmark/rehearsal acceptance, not runtime authorization. Explicit configuration guards and disabled live transports remain separate; never run acceptance with python -O."
+    },
+    {
+      "fingerprint": "5ecb8f38726777fc8ef3f4e87e0a51c4ed8ab5acb1f3965efbfdafa930f2618f",
+      "file": "backend/app/notification_rehearsal.py",
+      "line": 139,
+      "rule": "B101",
+      "severity": "LOW",
+      "source_context": "138             )\n139             assert len({d.provider_receipt for d in sms}) == len(sms)\n140             return {\n",
+      "justification": "Assertion is synthetic benchmark/rehearsal acceptance, not runtime authorization. Explicit configuration guards and disabled live transports remain separate; never run acceptance with python -O."
+    },
+    {
+      "fingerprint": "84003e1aae49bc8ba8a638e0aa5c64252160ff0644d82276744c9f50b250a0c6",
+      "file": "backend/app/planning/benchmark.py",
+      "line": 41,
+      "rule": "B106",
+      "severity": "LOW",
+      "source_context": "40             with SessionLocal() as db:\n41                 u = User(\n42                     username=\"planning-benchmark-\" + str(uuid4()),\n43                     email=\"planning-benchmark@example.invalid\",\n44                     password_hash=\"unusable\",\n45                     role=\"admin\",\n46                     is_active=True,\n47                 )\n48                 db.add(u)\n",
+      "justification": "Synthetic benchmark actor has unusable credentials; no account or password is usable against production."
+    },
+    {
+      "fingerprint": "cb7a99a0247286f0db995d46bf7ff654bef68e2d2b07c739a4c81887aba43b21",
+      "file": "backend/app/planning/rehearsal.py",
+      "line": 77,
+      "rule": "B101",
+      "severity": "LOW",
+      "source_context": "76         db.expire_all()\n77         assert all(\n78             db.get(Dataset, id).state == \"ready\" for id in datasets\n79         ), \"Terrain subprocess failed\"\n80         p = s.create_profile(\n",
+      "justification": "Assertion is synthetic benchmark/rehearsal acceptance, not runtime authorization. Explicit configuration guards and disabled live transports remain separate; never run acceptance with python -O."
+    },
+    {
+      "fingerprint": "751ed20ca8a40b6e7527030453a72fafdb97b669d8ea26e2baca5ff7af2dbcf0",
+      "file": "backend/app/planning/rehearsal.py",
+      "line": 148,
+      "rule": "B101",
+      "severity": "LOW",
+      "source_context": "147         for id in [link[\"job_id\"], cov[\"job_id\"]]:\n148             assert db.get(Job, id).state == \"completed\", db.get(Job, id).error_code\n149         return {\n",
+      "justification": "Assertion is synthetic benchmark/rehearsal acceptance, not runtime authorization. Explicit configuration guards and disabled live transports remain separate; never run acceptance with python -O."
+    },
+    {
+      "fingerprint": "0de7ec946d000aa5185bc1dac9daf8183bd9244434c29da3eb3bd513630e8a25",
+      "file": "backend/app/planning/worker.py",
+      "line": 3,
+      "rule": "B404",
+      "severity": "LOW",
+      "source_context": "2 \n3 import json, os, subprocess, sys, time\n4 from datetime import timedelta\n",
+      "justification": "Subprocess is required for bounded terrain isolation; fixed executable/module, no shell or arbitrary command input."
+    },
+    {
+      "fingerprint": "4303867e3ab67b0692e1c04fc3f6962a174bbe8507bf339b7875d2a74384b5fe",
+      "file": "backend/app/planning/worker.py",
+      "line": 216,
+      "rule": "B603",
+      "severity": "LOW",
+      "source_context": "215         # No user-provided command, shell, path, URL or executable.\n216         p = subprocess.run(\n217             [sys.executable, \"-m\", \"app.planning.worker\", \"child\", str(id), token],\n218             env=env,\n219             timeout=90,\n220             stdout=subprocess.DEVNULL,\n221             stderr=subprocess.DEVNULL,\n222         )\n223         if p.returncode:\n",
+      "justification": "Fixed sys.executable/module subprocess uses bounded id/lease arguments, timeout and isolated geospatial resource controls; no shell."
+    },
+    {
+      "fingerprint": "09ac9e1fe4c6e83320493aad6f22f03c97a3858995e84ac08a3ef0425fb67beb",
+      "file": "backend/app/powercode_rehearsal.py",
+      "line": 130,
+      "rule": "B101",
+      "severity": "LOW",
+      "source_context": "129     result = synchronize(db, with_transport)\n130     assert result[\"status\"] == \"healthy\"\n131     for s in db.scalars(select(CustomerService).order_by(CustomerService.id)):\n",
+      "justification": "Assertion is synthetic benchmark/rehearsal acceptance, not runtime authorization. Explicit configuration guards and disabled live transports remain separate; never run acceptance with python -O."
+    },
+    {
+      "fingerprint": "06c2f8e29d0cd44c0ba8be63ba48b6ff28c26ca0890e9c974b6863b65d23aacd",
+      "file": "backend/app/powercode_rehearsal.py",
+      "line": 171,
+      "rule": "B101",
+      "severity": "LOW",
+      "source_context": "170     impact_ms = round((time.monotonic() - at) * 1000, 2)\n171     assert recipients(db, impacts)[\"eligible_count\"] == 0\n172     return {\n",
+      "justification": "Assertion is synthetic benchmark/rehearsal acceptance, not runtime authorization. Explicit configuration guards and disabled live transports remain separate; never run acceptance with python -O."
+    },
+    {
+      "fingerprint": "c7ffa7ba04ecde4cd81a81a08510f59a38e3c92f005826afc1d66b9eaffe131e",
+      "file": "backend/app/rf_analytics_benchmark.py",
+      "line": 61,
+      "rule": "B101",
+      "severity": "LOW",
+      "source_context": "60     finally:event.remove(bind,'before_cursor_execute',count)\n61     assert series==devices and maximum<=9 and detail_queries<=10\n62     assert max(times)<5000 and detail_ms<5000\n",
+      "justification": "Assertion is synthetic benchmark/rehearsal acceptance, not runtime authorization. Explicit configuration guards and disabled live transports remain separate; never run acceptance with python -O."
+    },
+    {
+      "fingerprint": "4a6c4efc32b0880278cce7d37cfbc457e7cb483b3242099c399732fe042a5162",
+      "file": "backend/app/rf_analytics_benchmark.py",
+      "line": 62,
+      "rule": "B101",
+      "severity": "LOW",
+      "source_context": "61     assert series==devices and maximum<=9 and detail_queries<=10\n62     assert max(times)<5000 and detail_ms<5000\n63     return {'devices':devices,'projection_points':devices*points_per_device,'points_per_device':points_per_device,\n",
+      "justification": "Assertion is synthetic benchmark/rehearsal acceptance, not runtime authorization. Explicit configuration guards and disabled live transports remain separate; never run acceptance with python -O."
+    },
+    {
+      "fingerprint": "879c6f802ea22be577c5b5bf14c0ac0f8c9ac3bbecc29a4aa45958c2628a4d27",
+      "file": "backend/app/rf_operations_benchmark.py",
+      "line": 59,
+      "rule": "B101",
+      "severity": "LOW",
+      "source_context": "58                 queries=len(query_count)\n59                 assert len(direct['inventory'])==50 and direct['incident_total']==3000 and queries<=20\n60         finally:event.remove(scoped,'before_cursor_execute',count)\n",
+      "justification": "Assertion is synthetic benchmark/rehearsal acceptance, not runtime authorization. Explicit configuration guards and disabled live transports remain separate; never run acceptance with python -O."
+    },
+    {
+      "fingerprint": "c5507f35e525a34b02d8debb0c2074f2866ddd563c476e48107299ebabe2ab8d",
+      "file": "backend/app/rf_operations_benchmark.py",
+      "line": 67,
+      "rule": "B101",
+      "severity": "LOW",
+      "source_context": "66                 incident_selects=len(query_count)\n67                 assert listed.status_code==200 and len(listed.json())==200 and incident_selects<=4\n68             finally:event.remove(scoped,'before_cursor_execute',count)\n",
+      "justification": "Assertion is synthetic benchmark/rehearsal acceptance, not runtime authorization. Explicit configuration guards and disabled live transports remain separate; never run acceptance with python -O."
+    },
+    {
+      "fingerprint": "81b3e6fac940aca04016008d914d11ab252b664acb2e4329fe2adb74d65457ad",
+      "file": "backend/app/rf_operations_benchmark.py",
+      "line": 71,
+      "rule": "B101",
+      "severity": "LOW",
+      "source_context": "70                 start=time.perf_counter();r=client.get(f'/api/rf/operations?window=30d&offset={offset}');elapsed=(time.perf_counter()-start)*1000\n71                 assert r.status_code==200,r.text\n72                 assert len(r.json()['inventory'])==50\n",
+      "justification": "Assertion is synthetic benchmark/rehearsal acceptance, not runtime authorization. Explicit configuration guards and disabled live transports remain separate; never run acceptance with python -O."
+    },
+    {
+      "fingerprint": "8ffbdc4c76382783851d146e28a864444620b596b071988f697c8147eb3ae550",
+      "file": "backend/app/rf_operations_benchmark.py",
+      "line": 72,
+      "rule": "B101",
+      "severity": "LOW",
+      "source_context": "71                 assert r.status_code==200,r.text\n72                 assert len(r.json()['inventory'])==50\n73                 api_times.append(elapsed)\n",
+      "justification": "Assertion is synthetic benchmark/rehearsal acceptance, not runtime authorization. Explicit configuration guards and disabled live transports remain separate; never run acceptance with python -O."
+    },
+    {
+      "fingerprint": "39b80a22f0d452300e9a629bcb32dfc0dc8f0c031974175bdefa429aa349375b",
+      "file": "backend/app/rf_operations_benchmark.py",
+      "line": 75,
+      "rule": "B101",
+      "severity": "LOW",
+      "source_context": "74             start=time.perf_counter();chart=client.get(f'/api/rf/operations/links/{link_id}?window=30d');chart_ms=(time.perf_counter()-start)*1000\n75             assert chart.status_code==200 and chart.json()['endpoints'][0]['buckets']\n76         def operator(offset):\n",
+      "justification": "Assertion is synthetic benchmark/rehearsal acceptance, not runtime authorization. Explicit configuration guards and disabled live transports remain separate; never run acceptance with python -O."
+    },
+    {
+      "fingerprint": "4c070f21076776ca7e6068037e6d1f5f4d0c8682579962926975750f63530888",
+      "file": "backend/app/rf_operations_benchmark.py",
+      "line": 79,
+      "rule": "B101",
+      "severity": "LOW",
+      "source_context": "78                 start=time.perf_counter();response=c.get(f'/api/rf/operations?window=30d&offset={offset}')\n79                 assert response.status_code==200\n80                 return (time.perf_counter()-start)*1000\n",
+      "justification": "Assertion is synthetic benchmark/rehearsal acceptance, not runtime authorization. Explicit configuration guards and disabled live transports remain separate; never run acceptance with python -O."
+    },
+    {
+      "fingerprint": "363f2fbd22c5bac4102dbc1d366aef125abf7351a88280b7545bccae2b2c1ce3",
+      "file": "backend/app/rf_operations_benchmark.py",
+      "line": 87,
+      "rule": "B101",
+      "severity": "LOW",
+      "source_context": "86             start=time.perf_counter();reconnect=client.get('/api/rf/operations');reconnect_ms=(time.perf_counter()-start)*1000\n87             assert reconnect.status_code==200\n88         assert max(api_times)<5000 and chart_ms<5000 and max(concurrent)<10000\n",
+      "justification": "Assertion is synthetic benchmark/rehearsal acceptance, not runtime authorization. Explicit configuration guards and disabled live transports remain separate; never run acceptance with python -O."
+    },
+    {
+      "fingerprint": "61fd29b7c17ea616b0d02a1c3ebb8da40034987974a64be19939f31bb289bc17",
+      "file": "backend/app/rf_operations_benchmark.py",
+      "line": 88,
+      "rule": "B101",
+      "severity": "LOW",
+      "source_context": "87             assert reconnect.status_code==200\n88         assert max(api_times)<5000 and chart_ms<5000 and max(concurrent)<10000\n89         return {'devices':size,'sites':40,'links':39,'sectors':80,'incidents':5000,'projection_points':48*size,\n",
+      "justification": "Assertion is synthetic benchmark/rehearsal acceptance, not runtime authorization. Explicit configuration guards and disabled live transports remain separate; never run acceptance with python -O."
+    },
+    {
+      "fingerprint": "49185ed97e04d05013f97bcf4ef819fedecaf042f1d143a69cb45ce64885555f",
+      "file": "backend/app/services/worker_runtime.py",
+      "line": 13,
+      "rule": "B108",
+      "severity": "MEDIUM",
+      "source_context": "12 \n13 ID_FILE = \"/tmp/nwo-noc-worker-id\"\n14 \n",
+      "justification": "Worker ID marker contains a random UUID, not a secret; random temporary suffix then atomic replace prevents following the destination symlink. Private container tmpfs remains required."
+    },
+    {
+      "fingerprint": "abef9759dfce8c2fff2c089b1b84237e24446876689593bb8f7c7a7a3a7437e4",
+      "file": "backend/app/signup/benchmark.py",
+      "line": 32,
+      "rule": "B106",
+      "severity": "LOW",
+      "source_context": "31                     raise ValueError(\"Empty isolated application fixture required\")\n32                 user = User(\n33                     username=\"signup-scale\",\n34                     email=\"signup-scale@example.invalid\",\n35                     password_hash=\"synthetic-unusable\",\n36                     role=\"admin\",\n37                     is_active=True,\n38                 )\n39                 db.add(user)\n",
+      "justification": "Synthetic benchmark actor has unusable credentials; no account or password is usable against production."
+    },
+    {
+      "fingerprint": "8deafb051beab073bd2f908172b98ad480f1e28452b64a525e11d4441121b79d",
+      "file": "backend/app/signup/public_service.py",
+      "line": 214,
+      "rule": "B105",
+      "severity": "LOW",
+      "source_context": "213             and settings.signup_public_test_mode\n214             and b.turnstile_token == \"synthetic-lookup\"\n215         )\n",
+      "justification": "Synthetic fixture token only, guarded by isolated staging; not a live secret or customer lookup credential."
+    },
+    {
+      "fingerprint": "d4ebe2fddf2de88992b2b0b4400af4a6310303fb353210f3fd07bd65d612cbc5",
+      "file": "backend/app/tower_health/benchmark.py",
+      "line": 201,
+      "rule": "B101",
+      "severity": "LOW",
+      "source_context": "200         assessment_queries = dict(counter)\n201         assert (\n202             len(reports) == 40\n203             and sum(r[\"coverage\"][\"registered_enabled_devices\"] for r in reports)\n204             == count\n205         )\n206         before = db.scalar(select(func.count(TowerFinding.id)))\n",
+      "justification": "Assertion is synthetic benchmark/rehearsal acceptance, not runtime authorization. Explicit configuration guards and disabled live transports remain separate; never run acceptance with python -O."
+    },
+    {
+      "fingerprint": "3d7979ca4feee4c3ca739526ef2776bfb62bd170b4273a9bc7975c005649db53",
+      "file": "backend/app/tower_health/benchmark.py",
+      "line": 211,
+      "rule": "B101",
+      "severity": "LOW",
+      "source_context": "210         replay = (time.monotonic() - at) * 1000\n211         assert (\n212             again[\"processed\"] == 0\n213             and db.scalar(select(func.count(TowerFinding.id))) == before\n214         )\n215         return {\n",
+      "justification": "Assertion is synthetic benchmark/rehearsal acceptance, not runtime authorization. Explicit configuration guards and disabled live transports remain separate; never run acceptance with python -O."
+    },
+    {
+      "fingerprint": "f11f7c349a570d1d0e34628046e97027835d3abcfed04f344543b451cca27507",
+      "file": "backend/app/tower_health/rehearsal.py",
+      "line": 69,
+      "rule": "B101",
+      "severity": "LOW",
+      "source_context": "68                 )\n69             assert finding\n70             result = {\n",
+      "justification": "Assertion is synthetic benchmark/rehearsal acceptance, not runtime authorization. Explicit configuration guards and disabled live transports remain separate; never run acceptance with python -O."
+    },
+    {
+      "fingerprint": "1bbd2df1f5a34f068a91a4813628e4dc30d70f94db13e8fe9d346e3e9ee97c71",
+      "file": "backend/app/tower_health/rehearsal.py",
+      "line": 108,
+      "rule": "B101",
+      "severity": "LOW",
+      "source_context": "107             )\n108             assert device\n109             n = db.scalar(\n",
+      "justification": "Assertion is synthetic benchmark/rehearsal acceptance, not runtime authorization. Explicit configuration guards and disabled live transports remain separate; never run acceptance with python -O."
+    },
+    {
+      "fingerprint": "95be542b4d46b147f95a445b977fa52bdcb6efb551ae852e5183ef24bee037fa",
+      "file": "backend/app/tower_health/rehearsal.py",
+      "line": 119,
+      "rule": "B101",
+      "severity": "LOW",
+      "source_context": "118             )\n119             assert n == 3 and findings == 1\n120             assert consume(db, now=now)[\"processed\"] == 0\n",
+      "justification": "Assertion is synthetic benchmark/rehearsal acceptance, not runtime authorization. Explicit configuration guards and disabled live transports remain separate; never run acceptance with python -O."
+    },
+    {
+      "fingerprint": "58a8b3001c5466d8d1cbd1127795cdfb19eba7b903ec90a2cfb3e0f4e4e96923",
+      "file": "backend/app/tower_health/rehearsal.py",
+      "line": 120,
+      "rule": "B101",
+      "severity": "LOW",
+      "source_context": "119             assert n == 3 and findings == 1\n120             assert consume(db, now=now)[\"processed\"] == 0\n121             assert (\n",
+      "justification": "Assertion is synthetic benchmark/rehearsal acceptance, not runtime authorization. Explicit configuration guards and disabled live transports remain separate; never run acceptance with python -O."
+    },
+    {
+      "fingerprint": "da2280b0bcbe1a77dfa38b7202dee92e9560018bd5ef70cd12d8e93b01282179",
+      "file": "backend/app/tower_health/rehearsal.py",
+      "line": 121,
+      "rule": "B101",
+      "severity": "LOW",
+      "source_context": "120             assert consume(db, now=now)[\"processed\"] == 0\n121             assert (\n122                 db.scalar(\n123                     select(func.count(TowerSample.id)).where(\n124                         TowerSample.device_id == device.id\n125                     )\n126                 )\n127                 == n\n128             )\n129             result = {\n",
+      "justification": "Assertion is synthetic benchmark/rehearsal acceptance, not runtime authorization. Explicit configuration guards and disabled live transports remain separate; never run acceptance with python -O."
+    },
+    {
+      "fingerprint": "3d7c954afb9381032bcffc58a41c129a573555749f200ebbe04f6527130730c5",
+      "file": "backend/app/unified/benchmark.py",
+      "line": 23,
+      "rule": "B106",
+      "severity": "LOW",
+      "source_context": "22             raise ValueError(\"Empty isolated unified graph required\")\n23         u = User(\n24             username=\"unified-scale\",\n25             email=\"unified-scale@example.invalid\",\n26             password_hash=\"synthetic-unusable\",\n27             role=\"admin\",\n28             is_active=True,\n29         )\n30         db.add(u)\n",
+      "justification": "Synthetic benchmark actor has unusable credentials; no account or password is usable against production."
+    },
+    {
+      "fingerprint": "65d4f81f87ca4235b23ac8dcea1d82c2c7ef40d0c3bcb7c97d233b7ad47c30ca",
+      "file": "backend/app/unified/benchmark.py",
+      "line": 243,
+      "rule": "B101",
+      "severity": "LOW",
+      "source_context": "242             impact_ms = (time.perf_counter() - begin) * 1000\n243             assert (\n244                 impact[\"unique_customer_count\"] == 0\n245                 and len(impact[\"preserved_services\"]) == customers\n246             )\n247             begin = time.perf_counter()\n",
+      "justification": "Assertion is synthetic benchmark/rehearsal acceptance, not runtime authorization. Explicit configuration guards and disabled live transports remain separate; never run acceptance with python -O."
+    }
+  ]
+}

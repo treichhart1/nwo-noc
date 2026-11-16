@@ -1,0 +1,79 @@
+{
+  "baseline": "f3de701d29f6ee12b310bd27a6b9f617747e24fa",
+  "baseline_ci": [
+    574,
+    575
+  ],
+  "source_scan": "repository-wide static inventory and risk-based manual review; not formal verification",
+  "python_vulnerability_scan": {
+    "tool": "pip-audit==2.10.1",
+    "packages": 55,
+    "known_vulnerabilities": 0
+  },
+  "npm_vulnerability_scan": {
+    "vulnerabilities": {
+      "info": 0,
+      "low": 0,
+      "moderate": 0,
+      "high": 0,
+      "critical": 0,
+      "total": 0
+    },
+    "dependencies": {
+      "prod": 10,
+      "dev": 121,
+      "optional": 53,
+      "peer": 0,
+      "peerOptional": 0,
+      "total": 130
+    }
+  },
+  "static_tools": {
+    "ruff": "0.14.5",
+    "undefined_name_findings": 0,
+    "bandit": "1.8.6",
+    "reviewed_results": 83,
+    "unreviewed_results": 0,
+    "high_severity_results": 0
+  },
+  "license_scope": "23 directly pinned runtime distributions plus installed license files; native/transitive redistribution needs separate review",
+  "locks": {
+    "npm_entries": 131,
+    "missing_integrity": [],
+    "python_transitive_hash_lock": false
+  },
+  "reproduction": {
+    "baseline_failed_cases": 8,
+    "baseline_passed_cases": 2,
+    "log": "local private work/noc111-reproduction.log"
+  },
+  "browser": {
+    "tests": 2,
+    "passed": 2,
+    "seconds": 4.0
+  },
+  "performance": "NOC-111-sites-profile.json",
+  "final_validation": "Exact final SHA, full test counts and CI outcomes are recorded in the draft PR after execution",
+  "source_modules": 237,
+  "duplicate_top_level_definitions": [],
+  "targeted_regression": {
+    "passed": 337,
+    "warnings": 2,
+    "seconds": 82.94
+  },
+  "audit_regression_cases": 36,
+  "full_python_dependency_scan": {
+    "scope": "runtime + test + audit requirements",
+    "baseline_packages": 84,
+    "vulnerable_packages_before": 1,
+    "unique_advisory": "PYSEC-2026-1845 / CVE-2025-71176",
+    "duplicate_advisory_feed_records": 2,
+    "pytest_before": "8.3.4",
+    "pytest_after": "9.0.3",
+    "fixed_requires_python": ">=3.10",
+    "project_python": "3.12",
+    "packages_after": 84,
+    "known_vulnerabilities_after": 0,
+    "full_pytest9_regression": "Final exact result in draft PR"
+  }
+}
