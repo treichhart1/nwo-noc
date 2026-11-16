@@ -177,7 +177,7 @@
       "skipped": 0
     },
     "supply_chain_negative_and_consistency": {
-      "passed": 11
+      "passed": 12
     },
     "ruff_undefined_names": "passed",
     "bandit_reviewed": 83,
@@ -187,10 +187,10 @@
     "full_backend": "Final PostgreSQL-backed result is recorded in the draft PR validation ledger; do not substitute unit skips",
     "ubuntu_24_04": "Final-commit CI userspace install/recovery result recorded in draft PR; no full host boot claim",
     "unit_backend": {
-      "passed": 763,
+      "passed": 764,
       "skipped": 949,
       "warnings": 2,
-      "seconds": 11.01
+      "seconds": 10.23
     }
   },
   "operational_blockers": [
@@ -199,5 +199,9 @@
     "off-host recovery keys/files, deployed AV, full Ubuntu host boot/firewall acceptance",
     "1000-device native polling throughput and sustained sizing",
     "provider/WordPress/Grafana/operator validation with external delivery disabled"
+  ],
+  "corrected_validation_issues": [
+    "Workflow580 rejected before jobs: quote pip :all: shell commands; YAML parsing regression added",
+    "Initial long test process retained pre-edit five-image assertion; final-source tests use six immutable image defaults"
   ]
 }

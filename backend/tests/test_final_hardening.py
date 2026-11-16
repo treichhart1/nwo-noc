@@ -53,3 +53,14 @@ def test_mutable_or_unreviewed_images_are_rejected(source):
 def test_reviewed_digest_is_accepted():
     image = "python:3.12-slim@sha256:" + "a" * 64
     chain.validate_image_source("FROM " + image + " AS build\n", {image})
+
+
+def test_workflow_yaml_and_run_steps_parse():
+    import yaml
+
+    workflow = yaml.safe_load((ROOT / ".github/workflows/ci.yml").read_text())
+    assert len(workflow["jobs"]) == 8
+    for job in workflow["jobs"].values():
+        for step in job.get("steps", []):
+            if "run" in step:
+                assert isinstance(step["run"], str)

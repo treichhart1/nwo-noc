@@ -142,15 +142,23 @@ Final commit CI links, exact test counts and remaining workflow failures are rec
 in the draft PR; CI is authoritative for that exact commit. Local machine-readable
 before/after evidence is in [NOC112 evidence](audits/NOC-112-evidence.json).
 
-Focused PostgreSQL tower/audit regressions:112 passed. Final unit run:763 passed,
-949 database-dependent skips, two warnings,11.01seconds. Supply-chain negative and
-consistency tests:11 passed. Actual Chromium focused tests:five passed, zero skipped
+Focused PostgreSQL tower/audit regressions:112 passed. Final unit run:764 passed,
+949 database-dependent skips, two warnings,10.23seconds. Supply-chain negative and
+consistency/workflow tests:12 passed. Actual Chromium focused tests:five passed, zero skipped
 in9.6seconds, covering authentication/logout, shell role restrictions, actionable
 errors and lazy navigation. Private, signup and public-status frontend builds pass.
 Full PostgreSQL-backed regression and isolated Ubuntu/recovery results are recorded
 in the final-commit PR validation ledger; these remain required completion gates.
 No live firmware, production operator workflow or physical host boot acceptance is
 claimed from mock/synthetic or Ubuntu-userspace-container tests.
+
+The first published workflow run580 failed before job creation because an unquoted
+pip command contained YAML-significant `:all:` syntax. Commands are now quoted and
+a regression test parses all eight jobs and checks shell-step types. An early local
+full run loaded a five-image assertion before the sixth pin was added; the final
+source assertion and negative tests pass. The final PR ledger distinguishes these
+initial failures from the subsequent final-source validations. No assertions or
+security checks were weakened.
 
 ## NOC113 installation prerequisites and recovery gates
 
