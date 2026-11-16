@@ -8,8 +8,8 @@ ROOT = Path(__file__).resolve().parents[2]
 DEFAULTS = {
     "NOC_BACKEND_IMAGE": "noc84-backend:rc",
     "NOC_FRONTEND_IMAGE": "noc84-frontend:rc",
-    "NOC_POSTGRES_IMAGE": "postgres:16-alpine",
-    "NOC_REDIS_IMAGE": "redis:7-alpine",
+    "NOC_POSTGRES_IMAGE": "postgres:16-alpine@sha256:81e77a4833487b8132fe4b00bedd39dc3f74b8641e387f19312a48f7de218c2e",
+    "NOC_REDIS_IMAGE": "redis:7-alpine@sha256:7f7d30b7fdd09467bac58198a1f166dd69789d348d4fe859cccb20e0cf287fbe",
 }
 IMAGE_ID = re.compile(r"^sha256:[a-f0-9]{64}$")
 

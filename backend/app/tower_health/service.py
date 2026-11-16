@@ -75,6 +75,16 @@ def ingest(db, o: Observation, *, now=None, emit_power=True):
     now = now or clock()
     p = policy(db)
     lock(db)
+    return _ingest_locked(db, o, p, now=now, emit_power=emit_power)
+
+
+def _ingest_locked(db, o: Observation, p: Policy, *, now, emit_power=True):
+    """Internal ingestion after the caller holds the tower transaction lock.
+
+    A worker batch uses one policy snapshot and lock; every row still validates
+    inventory references, event hashes and sample-time conflicts under its savepoint.
+    Direct callers must use ingest().
+    """
     if not now - timedelta(days=p.aggregate_retention_days) <= o.observed_at <= now:
         raise ValueError("Observation time outside retained history or in the future")
     device = db.get(Device, o.device_id)

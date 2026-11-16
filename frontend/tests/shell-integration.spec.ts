@@ -40,3 +40,16 @@ test('operator shell hides administrator-only actions without changing API permi
   await expect(page.getByRole('button', {name: 'Sync UISP', exact: true})).toHaveCount(0)
   await expect(page.locator('nav').getByRole('button', {name: 'Customer Communications', exact: true})).toBeVisible()
 })
+
+test('RF module loads on demand and navigation preserves the shared shell', async ({page}) => {
+  const loaded: string[] = []
+  page.on('request', request => { if (request.resourceType() === 'script') loaded.push(request.url()) })
+  await signIn(page)
+  await expect(page.locator('h1')).toHaveText('Dashboard')
+  expect(loaded.some(url => /\/RFDiagnostics-[^/]+\.js/.test(url))).toBe(false)
+  await page.locator('nav').getByRole('button', {name: 'RF Diagnostics', exact: true}).click()
+  await expect.poll(() => loaded.some(url => /\/RFDiagnostics-[^/]+\.js/.test(url))).toBe(true)
+  await page.locator('nav').getByRole('button', {name: 'Dashboard', exact: true}).click()
+  await expect(page.locator('h1')).toHaveText('Dashboard')
+  await expect(page.getByRole('button', {name: 'Sync UISP', exact: true})).toBeVisible()
+})
