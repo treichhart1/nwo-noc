@@ -1,9 +1,10 @@
 from app.core.config import settings
+from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy import and_, distinct, func, or_, select
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
 from app.api.deps import current_user, require_operator, require_admin
 from app.core.database import get_db
@@ -44,13 +45,27 @@ def audit(db: Session, user: User, request: Request, action: str, entity_type: s
 
 @router.post("/auth/login", response_model=Token)
 def login(request: Request, form: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
-    user = db.scalar(select(User).where(User.username == form.username))
-    if not user or not user.is_active or not verify_password(form.password, user.password_hash):
+    if not 1 <= len(form.username) <= 80 or not 1 <= len(form.password.encode()) <= 72:
         raise HTTPException(status_code=401, detail="Incorrect username or password")
-    if len(form.username)>80:raise HTTPException(401,"Incorrect username or password")
+    from app.core.login_guard import reserve
+    from app.core.security import pwd_context
+    try:
+        reserve(db, form.username, request.client.host if request.client else "unknown")
+        user = db.scalar(select(User).where(User.username == form.username))
+    except (SQLAlchemyError, ValueError):
+        db.rollback()
+        raise HTTPException(503, "Authentication storage unavailable") from None
+    if not user or not user.is_active:
+        pwd_context.dummy_verify()
+        raise HTTPException(status_code=401, detail="Incorrect username or password")
+    if not verify_password(form.password, user.password_hash):
+        raise HTTPException(status_code=401, detail="Incorrect username or password")
     token=create_access_token(user.username,user_id=user.id)
     audit(db,user,request,"auth.login","user",str(user.id),{"session_issued":True})
-    db.commit()
+    try: db.commit()
+    except SQLAlchemyError:
+        db.rollback()
+        raise HTTPException(503, "Authentication storage unavailable") from None
     return Token(access_token=token)
 
 @router.get("/auth/me", response_model=UserOut)
@@ -104,6 +119,10 @@ def patch_device(device_id: int, payload: DevicePatch, request: Request, db: Ses
     item = db.get(Device, device_id)
     if not item: raise HTTPException(status_code=404, detail="Device not found")
     changes = payload.model_dump(exclude_unset=True)
+    if changes.get("wisp_site_id") is not None and not db.get(Site, changes["wisp_site_id"]):
+        raise HTTPException(422, "Device site must reference existing inventory")
+    if changes.get("parent_device_id") is not None and not db.get(Device, changes["parent_device_id"]):
+        raise HTTPException(422, "Parent device must reference existing inventory")
     for key, value in changes.items(): setattr(item, key, value)
     if item.wisp_site_id:
         site = db.get(Site, item.wisp_site_id)
@@ -116,7 +135,13 @@ def patch_device(device_id: int, payload: DevicePatch, request: Request, db: Ses
 def sites(db: Session = Depends(get_db), _=Depends(current_user)):
     site_rows = list(db.scalars(select(Site).order_by(Site.name)))
     device_rows = list(db.scalars(select(Device)))
-    return sorted([site_out(s, device_rows) for s in site_rows], key=lambda x: (x.offline_count == 0, x.name.lower()))
+    canonical, legacy = defaultdict(list), defaultdict(list)
+    for device in device_rows:
+        if device.wisp_site_id:
+            canonical[device.wisp_site_id].append(device)
+        else:
+            legacy[device.site_name].append(device)
+    return sorted([site_out(s, canonical[s.id] + legacy[s.name]) for s in site_rows], key=lambda x: (x.offline_count == 0, x.name.lower()))
 
 @router.post("/sites", response_model=SiteOut, status_code=201)
 def create_site(payload: SiteCreate, request: Request, db: Session = Depends(get_db), user: User = Depends(require_operator)):
@@ -168,9 +193,7 @@ def links(db: Session = Depends(get_db), _=Depends(current_user)):
 
 @router.post("/links", response_model=NetworkLinkOut, status_code=201)
 def create_link(payload: NetworkLinkCreate, request: Request, db: Session = Depends(get_db), user: User = Depends(require_operator)):
-    if payload.a_site_id == payload.z_site_id: raise HTTPException(status_code=422, detail="A and Z sites must be different")
-    a,z=db.get(Site,payload.a_site_id),db.get(Site,payload.z_site_id)
-    if not a or not z: raise HTTPException(status_code=404, detail="One or both link sites were not found")
+    a,z = validated_link_endpoints(db, payload)
     item=NetworkLink(**payload.model_dump()); db.add(item)
     try: db.flush()
     except IntegrityError as exc:
@@ -180,11 +203,23 @@ def create_link(payload: NetworkLinkCreate, request: Request, db: Session = Depe
     data={c.name:getattr(item,c.name) for c in item.__table__.columns}
     return NetworkLinkOut(**data,a_site_name=a.name,z_site_name=z.name)
 
+
+def validated_link_endpoints(db, payload):
+    if payload.a_site_id == payload.z_site_id:
+        raise HTTPException(422, "A and Z sites must be different")
+    a, z = db.get(Site, payload.a_site_id), db.get(Site, payload.z_site_id)
+    if not a or not z:
+        raise HTTPException(404, "One or both link sites were not found")
+    for ident in (payload.a_device_id, payload.z_device_id):
+        if ident is not None and not db.get(Device, ident):
+            raise HTTPException(422, "Link endpoint device must reference existing inventory")
+    return a, z
+
 @router.put("/links/{link_id}", response_model=NetworkLinkOut)
 def update_link(link_id:int,payload:NetworkLinkCreate,request:Request,db:Session=Depends(get_db),user:User=Depends(require_operator)):
     item=db.get(NetworkLink,link_id)
     if not item: raise HTTPException(status_code=404,detail="Link not found")
-    if payload.a_site_id == payload.z_site_id: raise HTTPException(status_code=422, detail="A and Z sites must be different")
+    validated_link_endpoints(db, payload)
     for k,v in payload.model_dump().items(): setattr(item,k,v)
     audit(db,user,request,"link.update","network_link",str(item.id),payload.model_dump())
     db.commit(); db.refresh(item)

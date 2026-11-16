@@ -1,6 +1,6 @@
 """Opt-in mock/manual staging scheduler. Never applies topology or contacts either application."""
 
-import time
+import time, logging
 from datetime import timedelta
 from sqlalchemy import select
 from app.core.config import settings
@@ -116,5 +116,7 @@ if __name__ == "__main__":
                 with SessionLocal() as db:
                     tick(db)
             except Exception:
-                pass  # DB restart: uncommitted stage rolls back; next tick reclaims safely.
+                logging.getLogger("nwo-noc.fiber.worker").warning(
+                    "Fiber preview processing interrupted; uncommitted work rolled back and approval remains required"
+                )
             time.sleep(10)

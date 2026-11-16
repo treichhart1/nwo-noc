@@ -94,6 +94,13 @@ class DevicePatch(BaseModel):
     monitor_interval_seconds: int | None = Field(default=None, ge=15, le=3600)
     monitor_timeout_seconds: int | None = Field(default=None, ge=1, le=30)
 
+    @field_validator("monitor_enabled", "monitor_port", "monitor_interval_seconds", "monitor_timeout_seconds", mode="before")
+    @classmethod
+    def monitoring_values_cannot_be_cleared(cls, value):
+        if value is None:
+            raise ValueError("Monitoring settings cannot be null; omit unchanged fields")
+        return value
+
 class SiteCreate(BaseModel):
     name: str = Field(min_length=2, max_length=255)
     site_type: str = "tower"

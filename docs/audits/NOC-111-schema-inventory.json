@@ -1,0 +1,1736 @@
+{
+  "schema_head": "0028_customer_status",
+  "tables": 171,
+  "foreign_keys": 370,
+  "indexes": 240,
+  "operations": 377,
+  "tables_by_name": [
+    {
+      "name": "users",
+      "foreign_keys": [],
+      "indexes": []
+    },
+    {
+      "name": "integrations",
+      "foreign_keys": [],
+      "indexes": []
+    },
+    {
+      "name": "sites",
+      "foreign_keys": [],
+      "indexes": [
+        "ix_sites_name"
+      ]
+    },
+    {
+      "name": "devices",
+      "foreign_keys": [
+        "devices.id",
+        "sites.id"
+      ],
+      "indexes": [
+        "ix_devices_monitor_status",
+        "ix_devices_site_name",
+        "ix_devices_status",
+        "ix_devices_wisp_site_id"
+      ]
+    },
+    {
+      "name": "network_links",
+      "foreign_keys": [
+        "devices.id",
+        "devices.id",
+        "sites.id",
+        "sites.id"
+      ],
+      "indexes": [
+        "ix_network_links_a_site_id",
+        "ix_network_links_z_site_id"
+      ]
+    },
+    {
+      "name": "sectors",
+      "foreign_keys": [
+        "devices.id",
+        "sites.id"
+      ],
+      "indexes": [
+        "ix_sectors_site_id"
+      ]
+    },
+    {
+      "name": "audit_logs",
+      "foreign_keys": [
+        "users.id"
+      ],
+      "indexes": [
+        "ix_audit_entity_cursor"
+      ]
+    },
+    {
+      "name": "incidents",
+      "foreign_keys": [
+        "devices.id",
+        "network_links.id",
+        "sectors.id",
+        "sites.id",
+        "users.id",
+        "users.id"
+      ],
+      "indexes": [
+        "ix_incidents_assigned_to_user_id",
+        "ix_incidents_device_id",
+        "ix_incidents_link_id",
+        "ix_incidents_sector_id",
+        "ix_incidents_severity",
+        "ix_incidents_site_id",
+        "ix_incidents_status",
+        "ix_incidents_status_started_id",
+        "ix_incidents_title"
+      ]
+    },
+    {
+      "name": "maintenance_windows",
+      "foreign_keys": [
+        "network_links.id",
+        "sites.id",
+        "users.id"
+      ],
+      "indexes": [
+        "ix_maintenance_windows_link_id",
+        "ix_maintenance_windows_site_id",
+        "ix_maintenance_windows_starts_at",
+        "ix_maintenance_windows_status"
+      ]
+    },
+    {
+      "name": "telemetry_samples",
+      "foreign_keys": [
+        "devices.id"
+      ],
+      "indexes": [
+        "ix_telemetry_samples_device_id",
+        "ix_telemetry_samples_device_sampled_id",
+        "ix_telemetry_samples_sampled_at"
+      ]
+    },
+    {
+      "name": "monitor_checks",
+      "foreign_keys": [
+        "devices.id"
+      ],
+      "indexes": [
+        "ix_monitor_checks_checked_at",
+        "ix_monitor_checks_device_id",
+        "ix_monitor_checks_status"
+      ]
+    },
+    {
+      "name": "monitor_events",
+      "foreign_keys": [
+        "devices.id"
+      ],
+      "indexes": [
+        "ix_monitor_events_acknowledged",
+        "ix_monitor_events_created_at",
+        "ix_monitor_events_device_id",
+        "ix_monitor_events_event_type"
+      ]
+    },
+    {
+      "name": "rf_collection_runs",
+      "foreign_keys": [],
+      "indexes": [
+        "ix_rf_collection_runs_started_at"
+      ]
+    },
+    {
+      "name": "integration_bindings",
+      "foreign_keys": [
+        "devices.id",
+        "integrations.name",
+        "network_links.id",
+        "sectors.id",
+        "sites.id"
+      ],
+      "indexes": []
+    },
+    {
+      "name": "rf_analytics_points",
+      "foreign_keys": [
+        "devices.id",
+        "network_links.id",
+        "sites.id",
+        "telemetry_samples.id"
+      ],
+      "indexes": [
+        "ix_rf_analytics_device_series_time",
+        "ix_rf_analytics_link_time",
+        "ix_rf_analytics_site_time",
+        "ix_rf_analytics_time"
+      ]
+    },
+    {
+      "name": "rf_analytics_checkpoints",
+      "foreign_keys": [],
+      "indexes": []
+    },
+    {
+      "name": "rf_recommendations",
+      "foreign_keys": [
+        "devices.id"
+      ],
+      "indexes": [
+        "ix_rf_recommendations_status_updated"
+      ]
+    },
+    {
+      "name": "rf_recommendation_notes",
+      "foreign_keys": [
+        "rf_recommendations.id",
+        "users.id"
+      ],
+      "indexes": [
+        "ix_rf_recommendation_notes_recommendation_id"
+      ]
+    },
+    {
+      "name": "incident_notes",
+      "foreign_keys": [
+        "incidents.id",
+        "users.id"
+      ],
+      "indexes": [
+        "ix_incident_notes_incident_id"
+      ]
+    },
+    {
+      "name": "rf_alert_reviews",
+      "foreign_keys": [
+        "incidents.id",
+        "users.id"
+      ],
+      "indexes": [
+        "ix_rf_alert_reviews_incident_id"
+      ]
+    },
+    {
+      "name": "monitoring_jobs",
+      "foreign_keys": [
+        "devices.id"
+      ],
+      "indexes": [
+        "ix_monitoring_jobs_due"
+      ]
+    },
+    {
+      "name": "monitoring_attempts",
+      "foreign_keys": [
+        "monitoring_jobs.key"
+      ],
+      "indexes": [
+        "ix_monitoring_attempts_job_started"
+      ]
+    },
+    {
+      "name": "monitoring_receipts",
+      "foreign_keys": [
+        "monitoring_jobs.key",
+        "telemetry_samples.id"
+      ],
+      "indexes": []
+    },
+    {
+      "name": "monitoring_alerts",
+      "foreign_keys": [
+        "devices.id",
+        "incidents.id"
+      ],
+      "indexes": [
+        "ix_monitoring_alerts_state"
+      ]
+    },
+    {
+      "name": "monitoring_workers",
+      "foreign_keys": [],
+      "indexes": []
+    },
+    {
+      "name": "revoked_tokens",
+      "foreign_keys": [
+        "users.id"
+      ],
+      "indexes": [
+        "ix_revoked_tokens_expires_at",
+        "ix_revoked_tokens_user_id"
+      ]
+    },
+    {
+      "name": "customer_accounts",
+      "foreign_keys": [],
+      "indexes": []
+    },
+    {
+      "name": "customer_services",
+      "foreign_keys": [
+        "customer_accounts.id",
+        "devices.id",
+        "network_links.id",
+        "sectors.id",
+        "sites.id"
+      ],
+      "indexes": [
+        "ix_customer_service_status_site",
+        "ix_customer_services_customer_id",
+        "ix_customer_services_device_id",
+        "ix_customer_services_fiber_link_id",
+        "ix_customer_services_sector_id",
+        "ix_customer_services_site_id"
+      ]
+    },
+    {
+      "name": "customer_sync_state",
+      "foreign_keys": [],
+      "indexes": []
+    },
+    {
+      "name": "customer_sync_runs",
+      "foreign_keys": [],
+      "indexes": []
+    },
+    {
+      "name": "incident_customers",
+      "foreign_keys": [
+        "customer_services.id",
+        "incidents.id"
+      ],
+      "indexes": [
+        "ix_incident_customers_incident_id",
+        "ix_incident_customers_service_id"
+      ]
+    },
+    {
+      "name": "notification_policy",
+      "foreign_keys": [],
+      "indexes": []
+    },
+    {
+      "name": "notification_templates",
+      "foreign_keys": [],
+      "indexes": []
+    },
+    {
+      "name": "notification_maintenance",
+      "foreign_keys": [
+        "maintenance_windows.id",
+        "users.id"
+      ],
+      "indexes": []
+    },
+    {
+      "name": "notification_plans",
+      "foreign_keys": [
+        "incidents.id",
+        "notification_maintenance.id",
+        "users.id",
+        "users.id"
+      ],
+      "indexes": [
+        "ix_notification_plans_incident_id",
+        "ix_notification_plans_maintenance_id",
+        "ix_notification_plans_status"
+      ]
+    },
+    {
+      "name": "notification_recipients",
+      "foreign_keys": [
+        "customer_accounts.id",
+        "notification_plans.id"
+      ],
+      "indexes": [
+        "ix_notification_recipients_plan_id"
+      ]
+    },
+    {
+      "name": "notification_deliveries",
+      "foreign_keys": [
+        "notification_plans.id",
+        "notification_recipients.id"
+      ],
+      "indexes": [
+        "ix_notification_deliveries_next_attempt_at",
+        "ix_notification_deliveries_plan_id",
+        "ix_notification_due"
+      ]
+    },
+    {
+      "name": "notification_attempts",
+      "foreign_keys": [
+        "notification_deliveries.id"
+      ],
+      "indexes": [
+        "ix_notification_attempts_delivery_id"
+      ]
+    },
+    {
+      "name": "notification_suppressions",
+      "foreign_keys": [
+        "customer_accounts.id"
+      ],
+      "indexes": []
+    },
+    {
+      "name": "notification_credentials",
+      "foreign_keys": [],
+      "indexes": []
+    },
+    {
+      "name": "notification_control",
+      "foreign_keys": [
+        "users.id"
+      ],
+      "indexes": []
+    },
+    {
+      "name": "notification_provider_config",
+      "foreign_keys": [],
+      "indexes": []
+    },
+    {
+      "name": "notification_callbacks",
+      "foreign_keys": [
+        "notification_deliveries.id"
+      ],
+      "indexes": []
+    },
+    {
+      "name": "outage_observations",
+      "foreign_keys": [],
+      "indexes": [
+        "ix_outage_observation_key_time"
+      ]
+    },
+    {
+      "name": "outage_states",
+      "foreign_keys": [
+        "sites.id"
+      ],
+      "indexes": [
+        "ix_outage_states_last_seen",
+        "ix_outage_states_site_id"
+      ]
+    },
+    {
+      "name": "outage_episodes",
+      "foreign_keys": [
+        "incidents.id",
+        "outage_episodes.id",
+        "outage_states.key"
+      ],
+      "indexes": [
+        "ix_outage_episode_key_started",
+        "ix_outage_episode_status_started",
+        "ix_outage_episodes_incident_id",
+        "ix_outage_episodes_parent_id"
+      ]
+    },
+    {
+      "name": "outage_timeline",
+      "foreign_keys": [
+        "outage_episodes.id",
+        "users.id"
+      ],
+      "indexes": [
+        "ix_outage_timeline_episode_cursor"
+      ]
+    },
+    {
+      "name": "tower_health_events",
+      "foreign_keys": [],
+      "indexes": [
+        "ix_tower_health_events_observed_at"
+      ]
+    },
+    {
+      "name": "tower_health_samples",
+      "foreign_keys": [
+        "devices.id",
+        "network_links.id",
+        "sectors.id",
+        "sites.id",
+        "tower_health_events.event_id"
+      ],
+      "indexes": [
+        "ix_tower_health_samples_device_id",
+        "ix_tower_health_samples_observed_at",
+        "ix_tower_health_samples_site_id",
+        "ix_tower_sample_device_time",
+        "ix_tower_sample_scope_time",
+        "ix_tower_sample_site_time"
+      ]
+    },
+    {
+      "name": "tower_health_receipts",
+      "foreign_keys": [
+        "telemetry_samples.id"
+      ],
+      "indexes": []
+    },
+    {
+      "name": "tower_health_daily",
+      "foreign_keys": [
+        "sites.id"
+      ],
+      "indexes": [
+        "ix_tower_health_daily_site_id"
+      ]
+    },
+    {
+      "name": "tower_health_current",
+      "foreign_keys": [
+        "sites.id"
+      ],
+      "indexes": []
+    },
+    {
+      "name": "tower_health_history",
+      "foreign_keys": [
+        "sites.id"
+      ],
+      "indexes": []
+    },
+    {
+      "name": "tower_health_findings",
+      "foreign_keys": [
+        "devices.id",
+        "incidents.id",
+        "sites.id"
+      ],
+      "indexes": [
+        "ix_tower_finding_site_state"
+      ]
+    },
+    {
+      "name": "tower_health_notes",
+      "foreign_keys": [
+        "tower_health_findings.id",
+        "users.id"
+      ],
+      "indexes": [
+        "ix_tower_note_finding_cursor"
+      ]
+    },
+    {
+      "name": "tower_health_policy",
+      "foreign_keys": [
+        "users.id"
+      ],
+      "indexes": []
+    },
+    {
+      "name": "ipam_vrfs",
+      "foreign_keys": [],
+      "indexes": []
+    },
+    {
+      "name": "ipam_vlans",
+      "foreign_keys": [
+        "ipam_vrfs.id",
+        "sites.id"
+      ],
+      "indexes": [
+        "ix_ipam_vlans_site_id",
+        "ix_ipam_vlans_vrf_id"
+      ]
+    },
+    {
+      "name": "ipam_interfaces",
+      "foreign_keys": [
+        "devices.id",
+        "ipam_interfaces.id",
+        "ipam_vlans.id",
+        "ipam_vrfs.id"
+      ],
+      "indexes": [
+        "ix_ipam_interfaces_device_id",
+        "ix_ipam_interfaces_vrf_id"
+      ]
+    },
+    {
+      "name": "ipam_prefixes",
+      "foreign_keys": [
+        "ipam_prefixes.id",
+        "ipam_vlans.id",
+        "ipam_vrfs.id",
+        "network_links.id",
+        "sites.id"
+      ],
+      "indexes": [
+        "ix_ipam_prefix_network_gist",
+        "ix_ipam_prefixes_parent_id",
+        "ix_ipam_prefixes_site_id",
+        "ix_ipam_prefixes_vlan_id",
+        "ix_ipam_prefixes_vrf_id"
+      ]
+    },
+    {
+      "name": "ipam_pools",
+      "foreign_keys": [
+        "ipam_prefixes.id"
+      ],
+      "indexes": [
+        "ix_ipam_pools_prefix_id"
+      ]
+    },
+    {
+      "name": "ipam_assignments",
+      "foreign_keys": [
+        "customer_services.id",
+        "devices.id",
+        "ipam_interfaces.id",
+        "ipam_pools.id",
+        "ipam_prefixes.id",
+        "ipam_vrfs.id",
+        "users.id"
+      ],
+      "indexes": [
+        "ix_ipam_assignments_device_id",
+        "ix_ipam_assignments_prefix_id",
+        "ix_ipam_assignments_service_id",
+        "ix_ipam_assignments_vrf_id",
+        "uq_ipam_active_address"
+      ]
+    },
+    {
+      "name": "ipam_dns_records",
+      "foreign_keys": [
+        "ipam_assignments.id"
+      ],
+      "indexes": [
+        "ix_ipam_dns_records_assignment_id"
+      ]
+    },
+    {
+      "name": "ipam_observations",
+      "foreign_keys": [
+        "devices.id",
+        "ipam_vrfs.id"
+      ],
+      "indexes": [
+        "ix_ipam_observation_address",
+        "ix_ipam_observations_device_id",
+        "ix_ipam_observations_observed_at",
+        "ix_ipam_observations_vrf_id"
+      ]
+    },
+    {
+      "name": "ipam_discovery_batches",
+      "foreign_keys": [],
+      "indexes": []
+    },
+    {
+      "name": "ipam_import_batches",
+      "foreign_keys": [
+        "users.id"
+      ],
+      "indexes": []
+    },
+    {
+      "name": "ipam_changes",
+      "foreign_keys": [
+        "users.id"
+      ],
+      "indexes": [
+        "ix_ipam_changes_actor_id",
+        "ix_ipam_changes_at",
+        "ix_ipam_changes_entity_id"
+      ]
+    },
+    {
+      "name": "ipam_read_budgets",
+      "foreign_keys": [
+        "users.id"
+      ],
+      "indexes": []
+    },
+    {
+      "name": "equipment_categories",
+      "foreign_keys": [],
+      "indexes": []
+    },
+    {
+      "name": "equipment_manufacturers",
+      "foreign_keys": [],
+      "indexes": []
+    },
+    {
+      "name": "equipment_products",
+      "foreign_keys": [
+        "equipment_categories.id",
+        "equipment_manufacturers.id"
+      ],
+      "indexes": [
+        "ix_equipment_products_category_id",
+        "ix_equipment_products_manufacturer_id"
+      ]
+    },
+    {
+      "name": "equipment_locations",
+      "foreign_keys": [
+        "customer_services.id",
+        "sites.id",
+        "users.id"
+      ],
+      "indexes": [
+        "ix_equipment_locations_site_id"
+      ]
+    },
+    {
+      "name": "equipment_assets",
+      "foreign_keys": [
+        "devices.id",
+        "equipment_assets.id",
+        "equipment_locations.id",
+        "equipment_manufacturers.id",
+        "equipment_products.id",
+        "users.id"
+      ],
+      "indexes": [
+        "ix_equipment_asset_location_state",
+        "ix_equipment_assets_location_id",
+        "ix_equipment_assets_product_id",
+        "ix_equipment_assets_state",
+        "ix_equipment_assets_warranty_end"
+      ]
+    },
+    {
+      "name": "equipment_device_bindings",
+      "foreign_keys": [
+        "devices.id",
+        "equipment_assets.id"
+      ],
+      "indexes": [
+        "ix_equipment_device_bindings_asset_id",
+        "ix_equipment_device_bindings_device_id",
+        "uq_equipment_current_asset_binding",
+        "uq_equipment_current_device_binding"
+      ]
+    },
+    {
+      "name": "equipment_movements",
+      "foreign_keys": [
+        "equipment_assets.id",
+        "users.id"
+      ],
+      "indexes": [
+        "ix_equipment_movements_asset_id",
+        "ix_equipment_movements_at"
+      ]
+    },
+    {
+      "name": "equipment_bulk_balances",
+      "foreign_keys": [
+        "equipment_locations.id",
+        "equipment_products.id"
+      ],
+      "indexes": [
+        "ix_equipment_bulk_balances_location_id",
+        "ix_equipment_bulk_balances_product_id"
+      ]
+    },
+    {
+      "name": "equipment_bulk_movements",
+      "foreign_keys": [
+        "equipment_locations.id",
+        "equipment_locations.id",
+        "equipment_products.id",
+        "users.id"
+      ],
+      "indexes": [
+        "ix_equipment_bulk_movements_at",
+        "ix_equipment_bulk_movements_product_id"
+      ]
+    },
+    {
+      "name": "equipment_maintenance",
+      "foreign_keys": [
+        "equipment_assets.id",
+        "tower_health_findings.id",
+        "users.id",
+        "users.id"
+      ],
+      "indexes": [
+        "ix_equipment_maintenance_asset_id"
+      ]
+    },
+    {
+      "name": "equipment_attachments",
+      "foreign_keys": [
+        "equipment_maintenance.id",
+        "users.id"
+      ],
+      "indexes": [
+        "ix_equipment_attachments_maintenance_id"
+      ]
+    },
+    {
+      "name": "equipment_financials",
+      "foreign_keys": [
+        "equipment_assets.id",
+        "users.id"
+      ],
+      "indexes": []
+    },
+    {
+      "name": "equipment_cost_entries",
+      "foreign_keys": [
+        "equipment_assets.id",
+        "equipment_bulk_movements.id",
+        "equipment_locations.id",
+        "equipment_maintenance.id",
+        "users.id"
+      ],
+      "indexes": [
+        "ix_equipment_cost_entries_asset_id"
+      ]
+    },
+    {
+      "name": "equipment_stock_policies",
+      "foreign_keys": [
+        "equipment_categories.id",
+        "equipment_locations.id",
+        "equipment_products.id"
+      ],
+      "indexes": []
+    },
+    {
+      "name": "equipment_import_batches",
+      "foreign_keys": [
+        "users.id"
+      ],
+      "indexes": []
+    },
+    {
+      "name": "equipment_request_budgets",
+      "foreign_keys": [
+        "users.id"
+      ],
+      "indexes": []
+    },
+    {
+      "name": "equipment_financial_changes",
+      "foreign_keys": [
+        "equipment_assets.id",
+        "users.id"
+      ],
+      "indexes": [
+        "ix_equipment_financial_changes_asset_id"
+      ]
+    },
+    {
+      "name": "field_qr_labels",
+      "foreign_keys": [
+        "equipment_assets.id",
+        "sites.id",
+        "users.id"
+      ],
+      "indexes": [
+        "ix_field_qr_labels_asset_id",
+        "ix_field_qr_labels_site_id",
+        "uq_field_qr_asset_active",
+        "uq_field_qr_site_active"
+      ]
+    },
+    {
+      "name": "field_site_grants",
+      "foreign_keys": [
+        "sites.id",
+        "users.id",
+        "users.id"
+      ],
+      "indexes": [
+        "ix_field_site_grants_site_id",
+        "ix_field_site_grants_technician_id"
+      ]
+    },
+    {
+      "name": "field_inspection_templates",
+      "foreign_keys": [
+        "users.id"
+      ],
+      "indexes": [
+        "ix_field_inspection_templates_code"
+      ]
+    },
+    {
+      "name": "field_work_orders",
+      "foreign_keys": [
+        "equipment_assets.id",
+        "field_inspection_templates.id",
+        "incidents.id",
+        "sites.id",
+        "tower_health_findings.id",
+        "users.id",
+        "users.id"
+      ],
+      "indexes": [
+        "ix_field_work_assigned_status_id",
+        "ix_field_work_orders_asset_id",
+        "ix_field_work_orders_incident_id",
+        "ix_field_work_orders_site_id",
+        "ix_field_work_orders_technician_id",
+        "ix_field_work_site_created"
+      ]
+    },
+    {
+      "name": "field_work_events",
+      "foreign_keys": [
+        "field_work_orders.id",
+        "users.id"
+      ],
+      "indexes": [
+        "ix_field_event_work_id",
+        "ix_field_work_events_work_order_id"
+      ]
+    },
+    {
+      "name": "field_inspections",
+      "foreign_keys": [
+        "equipment_assets.id",
+        "equipment_maintenance.id",
+        "field_inspection_templates.id",
+        "field_work_orders.id",
+        "users.id"
+      ],
+      "indexes": [
+        "ix_field_inspection_work_id",
+        "ix_field_inspections_asset_id",
+        "ix_field_inspections_work_order_id"
+      ]
+    },
+    {
+      "name": "field_mutation_receipts",
+      "foreign_keys": [
+        "users.id"
+      ],
+      "indexes": []
+    },
+    {
+      "name": "field_attachments",
+      "foreign_keys": [
+        "field_inspections.id",
+        "field_work_orders.id",
+        "users.id"
+      ],
+      "indexes": [
+        "ix_field_attachments_work_order_id"
+      ]
+    },
+    {
+      "name": "maintenance_schedules",
+      "foreign_keys": [
+        "equipment_assets.id",
+        "field_inspection_templates.id",
+        "sites.id",
+        "users.id",
+        "users.id"
+      ],
+      "indexes": [
+        "ix_maintenance_due",
+        "ix_maintenance_schedules_asset_id",
+        "ix_maintenance_schedules_maintenance_type",
+        "ix_maintenance_schedules_next_due_at",
+        "ix_maintenance_schedules_site_id",
+        "ix_maintenance_schedules_technician_id"
+      ]
+    },
+    {
+      "name": "maintenance_occurrences",
+      "foreign_keys": [
+        "field_work_orders.id",
+        "maintenance_schedules.id"
+      ],
+      "indexes": [
+        "ix_maintenance_occurrence_due",
+        "ix_maintenance_occurrences_schedule_id"
+      ]
+    },
+    {
+      "name": "maintenance_service_records",
+      "foreign_keys": [
+        "equipment_assets.id",
+        "equipment_maintenance.id",
+        "field_work_orders.id",
+        "incidents.id",
+        "sites.id",
+        "users.id"
+      ],
+      "indexes": [
+        "ix_maintenance_service_asset_time",
+        "ix_maintenance_service_records_asset_id",
+        "ix_maintenance_service_records_technician_id",
+        "ix_maintenance_service_records_work_order_id",
+        "ix_maintenance_service_site_time"
+      ]
+    },
+    {
+      "name": "maintenance_availability",
+      "foreign_keys": [
+        "users.id",
+        "users.id"
+      ],
+      "indexes": [
+        "ix_maintenance_availability_starts_at",
+        "ix_maintenance_availability_technician_id"
+      ]
+    },
+    {
+      "name": "maintenance_reminders",
+      "foreign_keys": [
+        "equipment_assets.id",
+        "sites.id"
+      ],
+      "indexes": [
+        "ix_maintenance_reminders_active",
+        "ix_maintenance_reminders_site_id"
+      ]
+    },
+    {
+      "name": "document_categories",
+      "foreign_keys": [],
+      "indexes": []
+    },
+    {
+      "name": "maintenance_documents",
+      "foreign_keys": [
+        "document_categories.id",
+        "equipment_assets.id",
+        "sites.id",
+        "users.id"
+      ],
+      "indexes": [
+        "ix_document_site_category_id",
+        "ix_maintenance_documents_asset_id",
+        "ix_maintenance_documents_site_id"
+      ]
+    },
+    {
+      "name": "document_versions",
+      "foreign_keys": [
+        "maintenance_documents.id",
+        "users.id"
+      ],
+      "indexes": [
+        "ix_document_versions_document_id"
+      ]
+    },
+    {
+      "name": "document_events",
+      "foreign_keys": [
+        "document_versions.id",
+        "maintenance_documents.id",
+        "users.id"
+      ],
+      "indexes": [
+        "ix_document_events_document_id"
+      ]
+    },
+    {
+      "name": "signup_plans",
+      "foreign_keys": [],
+      "indexes": []
+    },
+    {
+      "name": "signup_coverage_areas",
+      "foreign_keys": [
+        "network_links.id",
+        "sectors.id",
+        "sites.id",
+        "users.id"
+      ],
+      "indexes": []
+    },
+    {
+      "name": "signup_applications",
+      "foreign_keys": [
+        "customer_accounts.id",
+        "signup_plans.id",
+        "sites.id",
+        "users.id"
+      ],
+      "indexes": [
+        "ix_signup_applications_address_hash",
+        "ix_signup_applications_created_at",
+        "ix_signup_applications_email_hash",
+        "ix_signup_applications_phone_hash",
+        "ix_signup_applications_plan_id",
+        "ix_signup_assignee_age",
+        "ix_signup_state_age"
+      ]
+    },
+    {
+      "name": "signup_events",
+      "foreign_keys": [
+        "signup_applications.id",
+        "users.id"
+      ],
+      "indexes": [
+        "ix_signup_events_application_id"
+      ]
+    },
+    {
+      "name": "signup_public_budgets",
+      "foreign_keys": [],
+      "indexes": []
+    },
+    {
+      "name": "signup_captcha_uses",
+      "foreign_keys": [],
+      "indexes": [
+        "ix_signup_captcha_uses_created_at"
+      ]
+    },
+    {
+      "name": "signup_qualifications",
+      "foreign_keys": [
+        "signup_applications.id",
+        "users.id"
+      ],
+      "indexes": [
+        "ix_signup_qualifications_application_id"
+      ]
+    },
+    {
+      "name": "signup_work_orders",
+      "foreign_keys": [
+        "field_work_orders.id",
+        "signup_applications.id"
+      ],
+      "indexes": [
+        "ix_signup_work_orders_application_id"
+      ]
+    },
+    {
+      "name": "signup_surveys",
+      "foreign_keys": [
+        "signup_applications.id",
+        "signup_work_orders.id",
+        "users.id"
+      ],
+      "indexes": [
+        "ix_signup_surveys_application_id"
+      ]
+    },
+    {
+      "name": "signup_quotes",
+      "foreign_keys": [
+        "signup_applications.id",
+        "signup_plans.id",
+        "users.id"
+      ],
+      "indexes": [
+        "ix_signup_quotes_application_id"
+      ]
+    },
+    {
+      "name": "signup_provision_drafts",
+      "foreign_keys": [
+        "signup_applications.id",
+        "users.id"
+      ],
+      "indexes": []
+    },
+    {
+      "name": "signup_notification_drafts",
+      "foreign_keys": [
+        "signup_applications.id",
+        "users.id"
+      ],
+      "indexes": [
+        "ix_signup_notification_drafts_application_id"
+      ]
+    },
+    {
+      "name": "signup_survey_photos",
+      "foreign_keys": [
+        "signup_applications.id",
+        "signup_work_orders.id",
+        "users.id"
+      ],
+      "indexes": [
+        "ix_signup_survey_photos_application_id"
+      ]
+    },
+    {
+      "name": "unified_nodes",
+      "foreign_keys": [
+        "customer_services.id",
+        "devices.id",
+        "equipment_assets.id",
+        "sectors.id",
+        "sites.id"
+      ],
+      "indexes": []
+    },
+    {
+      "name": "unified_ports",
+      "foreign_keys": [
+        "unified_nodes.id"
+      ],
+      "indexes": [
+        "ix_unified_ports_node_id"
+      ]
+    },
+    {
+      "name": "unified_edges",
+      "foreign_keys": [
+        "network_links.id",
+        "unified_nodes.id",
+        "unified_nodes.id",
+        "unified_ports.id",
+        "unified_ports.id"
+      ],
+      "indexes": [
+        "ix_unified_edge_layer_state",
+        "ix_unified_edges_a_id",
+        "ix_unified_edges_z_id",
+        "uq_unified_gpon_input"
+      ]
+    },
+    {
+      "name": "unified_cables",
+      "foreign_keys": [
+        "unified_edges.id"
+      ],
+      "indexes": []
+    },
+    {
+      "name": "unified_circuits",
+      "foreign_keys": [
+        "customer_services.id"
+      ],
+      "indexes": [
+        "ix_unified_circuits_service_id"
+      ]
+    },
+    {
+      "name": "unified_strands",
+      "foreign_keys": [
+        "unified_cables.id",
+        "unified_circuits.id"
+      ],
+      "indexes": [
+        "ix_unified_strand_state",
+        "ix_unified_strands_cable_id",
+        "ix_unified_strands_circuit_id"
+      ]
+    },
+    {
+      "name": "unified_strand_ends",
+      "foreign_keys": [
+        "unified_nodes.id",
+        "unified_ports.id",
+        "unified_strands.id"
+      ],
+      "indexes": [
+        "ix_unified_strand_ends_node_id",
+        "ix_unified_strand_ends_strand_id",
+        "uq_unified_terminal_port"
+      ]
+    },
+    {
+      "name": "unified_fiber_joins",
+      "foreign_keys": [
+        "maintenance_documents.id",
+        "unified_nodes.id"
+      ],
+      "indexes": [
+        "ix_unified_fiber_joins_node_id"
+      ]
+    },
+    {
+      "name": "unified_join_ends",
+      "foreign_keys": [
+        "unified_fiber_joins.id",
+        "unified_strand_ends.id"
+      ],
+      "indexes": [
+        "ix_unified_join_ends_join_id"
+      ]
+    },
+    {
+      "name": "unified_fiber_pairs",
+      "foreign_keys": [
+        "unified_cables.id"
+      ],
+      "indexes": [
+        "ix_unified_fiber_pairs_cable_id"
+      ]
+    },
+    {
+      "name": "unified_pair_members",
+      "foreign_keys": [
+        "unified_fiber_pairs.id",
+        "unified_strands.id"
+      ],
+      "indexes": [
+        "ix_unified_pair_members_pair_id"
+      ]
+    },
+    {
+      "name": "unified_paths",
+      "foreign_keys": [
+        "unified_circuits.id",
+        "unified_nodes.id",
+        "unified_nodes.id"
+      ],
+      "indexes": [
+        "ix_unified_paths_circuit_id"
+      ]
+    },
+    {
+      "name": "unified_path_hops",
+      "foreign_keys": [
+        "unified_edges.id",
+        "unified_paths.id",
+        "unified_strands.id"
+      ],
+      "indexes": [
+        "ix_unified_path_hops_edge_id",
+        "ix_unified_path_hops_strand_id"
+      ]
+    },
+    {
+      "name": "unified_observations",
+      "foreign_keys": [
+        "unified_ports.id"
+      ],
+      "indexes": [
+        "ix_unified_observation_latest",
+        "ix_unified_observations_port_id"
+      ]
+    },
+    {
+      "name": "unified_associations",
+      "foreign_keys": [
+        "field_work_orders.id",
+        "incidents.id",
+        "maintenance_documents.id",
+        "unified_edges.id",
+        "unified_nodes.id"
+      ],
+      "indexes": [
+        "ix_unified_associations_edge_id",
+        "ix_unified_associations_node_id"
+      ]
+    },
+    {
+      "name": "unified_events",
+      "foreign_keys": [
+        "users.id"
+      ],
+      "indexes": [
+        "ix_unified_events_created_at"
+      ]
+    },
+    {
+      "name": "planning_datasets",
+      "foreign_keys": [
+        "users.id"
+      ],
+      "indexes": [
+        "ix_planning_bounds",
+        "ix_planning_datasets_state"
+      ]
+    },
+    {
+      "name": "planning_tiles",
+      "foreign_keys": [
+        "planning_datasets.id"
+      ],
+      "indexes": [
+        "ix_planning_tile_bounds",
+        "ix_planning_tiles_dataset_id"
+      ]
+    },
+    {
+      "name": "planning_profiles",
+      "foreign_keys": [
+        "users.id"
+      ],
+      "indexes": []
+    },
+    {
+      "name": "planning_scenarios",
+      "foreign_keys": [
+        "users.id"
+      ],
+      "indexes": [
+        "ix_planning_scenarios_fingerprint"
+      ]
+    },
+    {
+      "name": "planning_jobs",
+      "foreign_keys": [
+        "planning_datasets.id",
+        "planning_scenarios.id",
+        "users.id"
+      ],
+      "indexes": [
+        "ix_planning_queue"
+      ]
+    },
+    {
+      "name": "planning_calibrations",
+      "foreign_keys": [
+        "planning_jobs.id",
+        "signup_surveys.id",
+        "users.id"
+      ],
+      "indexes": [
+        "ix_planning_calibrations_job_id"
+      ]
+    },
+    {
+      "name": "fiber_sync_sources",
+      "foreign_keys": [
+        "users.id"
+      ],
+      "indexes": []
+    },
+    {
+      "name": "fiber_sync_bindings",
+      "foreign_keys": [
+        "customer_services.id",
+        "devices.id",
+        "equipment_assets.id",
+        "fiber_sync_sources.id",
+        "field_work_orders.id",
+        "ipam_interfaces.id",
+        "ipam_prefixes.id",
+        "maintenance_documents.id",
+        "sites.id",
+        "unified_associations.id",
+        "unified_cables.id",
+        "unified_circuits.id",
+        "unified_edges.id",
+        "unified_fiber_joins.id",
+        "unified_nodes.id",
+        "unified_paths.id",
+        "unified_ports.id",
+        "unified_strands.id",
+        "users.id"
+      ],
+      "indexes": [
+        "ix_fiber_sync_bindings_edge_id",
+        "ix_fiber_sync_bindings_node_id",
+        "ix_fiber_sync_bindings_source_id"
+      ]
+    },
+    {
+      "name": "fiber_sync_runs",
+      "foreign_keys": [
+        "fiber_sync_sources.id",
+        "users.id",
+        "users.id"
+      ],
+      "indexes": [
+        "ix_fiber_run_latest",
+        "ix_fiber_sync_runs_source_id"
+      ]
+    },
+    {
+      "name": "fiber_sync_versions",
+      "foreign_keys": [
+        "fiber_sync_runs.id",
+        "fiber_sync_sources.id"
+      ],
+      "indexes": [
+        "ix_fiber_sync_versions_run_id",
+        "ix_fiber_sync_versions_source_id"
+      ]
+    },
+    {
+      "name": "fiber_sync_changes",
+      "foreign_keys": [
+        "fiber_sync_bindings.id",
+        "fiber_sync_runs.id"
+      ],
+      "indexes": [
+        "ix_fiber_sync_changes_run_id"
+      ]
+    },
+    {
+      "name": "fiber_sync_nonces",
+      "foreign_keys": [
+        "fiber_sync_sources.id"
+      ],
+      "indexes": [
+        "ix_fiber_sync_nonces_created_at"
+      ]
+    },
+    {
+      "name": "finance_periods",
+      "foreign_keys": [
+        "users.id"
+      ],
+      "indexes": []
+    },
+    {
+      "name": "finance_scopes",
+      "foreign_keys": [
+        "customer_services.id",
+        "equipment_assets.id",
+        "network_links.id",
+        "sectors.id",
+        "signup_plans.id",
+        "sites.id",
+        "unified_circuits.id",
+        "unified_edges.id",
+        "users.id"
+      ],
+      "indexes": [
+        "ix_finance_scopes_kind",
+        "ix_finance_scopes_sector_id",
+        "ix_finance_scopes_site_id"
+      ]
+    },
+    {
+      "name": "finance_group_members",
+      "foreign_keys": [
+        "customer_services.id",
+        "finance_scopes.id"
+      ],
+      "indexes": []
+    },
+    {
+      "name": "finance_entries",
+      "foreign_keys": [
+        "finance_entries.id",
+        "finance_periods.id",
+        "finance_scopes.id",
+        "users.id"
+      ],
+      "indexes": [
+        "ix_finance_entries_period_id",
+        "ix_finance_entries_scope_id",
+        "ix_finance_period_basis_kind"
+      ]
+    },
+    {
+      "name": "finance_allocations",
+      "foreign_keys": [
+        "finance_entries.id",
+        "users.id"
+      ],
+      "indexes": []
+    },
+    {
+      "name": "finance_shares",
+      "foreign_keys": [
+        "finance_allocations.id",
+        "finance_scopes.id"
+      ],
+      "indexes": []
+    },
+    {
+      "name": "finance_attestations",
+      "foreign_keys": [
+        "finance_periods.id",
+        "finance_scopes.id",
+        "users.id"
+      ],
+      "indexes": [
+        "ix_finance_attestations_period_id",
+        "ix_finance_attestations_scope_id"
+      ]
+    },
+    {
+      "name": "finance_recurring",
+      "foreign_keys": [
+        "finance_scopes.id",
+        "users.id"
+      ],
+      "indexes": []
+    },
+    {
+      "name": "finance_assumptions",
+      "foreign_keys": [
+        "finance_periods.id",
+        "finance_scopes.id",
+        "users.id"
+      ],
+      "indexes": [
+        "ix_finance_assumptions_period_id"
+      ]
+    },
+    {
+      "name": "finance_scenarios",
+      "foreign_keys": [
+        "finance_assumptions.id",
+        "users.id"
+      ],
+      "indexes": []
+    },
+    {
+      "name": "finance_imports",
+      "foreign_keys": [
+        "finance_periods.id",
+        "users.id"
+      ],
+      "indexes": [
+        "ix_finance_imports_period_id"
+      ]
+    },
+    {
+      "name": "finance_reports",
+      "foreign_keys": [
+        "finance_periods.id",
+        "finance_scopes.id",
+        "users.id"
+      ],
+      "indexes": [
+        "ix_finance_reports_period_id"
+      ]
+    },
+    {
+      "name": "analytics_config",
+      "foreign_keys": [
+        "users.id"
+      ],
+      "indexes": []
+    },
+    {
+      "name": "analytics_health_checks",
+      "foreign_keys": [
+        "users.id"
+      ],
+      "indexes": [
+        "ix_analytics_health_checks_checked_at"
+      ]
+    },
+    {
+      "name": "analytics_provisions",
+      "foreign_keys": [
+        "users.id"
+      ],
+      "indexes": []
+    },
+    {
+      "name": "analytics_hourly_bins",
+      "foreign_keys": [
+        "devices.id",
+        "network_links.id",
+        "sectors.id",
+        "sites.id"
+      ],
+      "indexes": [
+        "ix_analytics_hourly_bins_site_id",
+        "ix_analytics_hourly_metric_time"
+      ]
+    },
+    {
+      "name": "analytics_projection_state",
+      "foreign_keys": [],
+      "indexes": []
+    },
+    {
+      "name": "analytics_report_snapshots",
+      "foreign_keys": [
+        "users.id"
+      ],
+      "indexes": []
+    },
+    {
+      "name": "analytics_scrape_budget",
+      "foreign_keys": [],
+      "indexes": []
+    },
+    {
+      "name": "analytics_hour_coverage",
+      "foreign_keys": [],
+      "indexes": []
+    },
+    {
+      "name": "customer_status_policy",
+      "foreign_keys": [
+        "users.id"
+      ],
+      "indexes": []
+    },
+    {
+      "name": "customer_status_areas",
+      "foreign_keys": [
+        "users.id"
+      ],
+      "indexes": []
+    },
+    {
+      "name": "customer_status_publications",
+      "foreign_keys": [
+        "customer_status_revisions.id",
+        "field_work_orders.id",
+        "incidents.id",
+        "maintenance_schedules.id",
+        "notification_maintenance.id",
+        "users.id"
+      ],
+      "indexes": []
+    },
+    {
+      "name": "customer_status_recoveries",
+      "foreign_keys": [
+        "customer_status_publications.id",
+        "users.id"
+      ],
+      "indexes": [
+        "ix_customer_status_recoveries_publication_id"
+      ]
+    },
+    {
+      "name": "customer_status_revisions",
+      "foreign_keys": [
+        "customer_status_publications.id",
+        "customer_status_recoveries.id",
+        "users.id",
+        "users.id"
+      ],
+      "indexes": [
+        "ix_customer_status_revisions_publication_id",
+        "ix_status_revision_state_time"
+      ]
+    },
+    {
+      "name": "customer_status_events",
+      "foreign_keys": [
+        "customer_status_publications.id",
+        "customer_status_revisions.id",
+        "users.id"
+      ],
+      "indexes": [
+        "ix_customer_status_events_publication_id"
+      ]
+    },
+    {
+      "name": "customer_status_messages",
+      "foreign_keys": [
+        "customer_status_publications.id",
+        "customer_status_recoveries.id",
+        "notification_plans.id",
+        "users.id"
+      ],
+      "indexes": [
+        "ix_customer_status_messages_publication_id"
+      ]
+    },
+    {
+      "name": "customer_status_public_budgets",
+      "foreign_keys": [],
+      "indexes": []
+    }
+  ],
+  "private_paths": 329,
+  "path_count_includes_health": true,
+  "baseline": "f3de701d29f6ee12b310bd27a6b9f617747e24fa",
+  "historical_migrations_modified": false
+}

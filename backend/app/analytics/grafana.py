@@ -1,6 +1,6 @@
 """Least-privilege bounded health reads. No Grafana administration or device transport."""
 
-import json, time, re
+import time, re
 import httpx
 from datetime import timedelta
 from sqlalchemy import select
@@ -8,6 +8,8 @@ from app.core.config import settings
 from . import service as s
 from .models import HealthCheck
 from .catalog import DASHBOARDS
+from app.core.http_json import bounded_json, ResponseBudgetExceeded
+import zlib
 
 
 def fixture_transport():
@@ -72,14 +74,13 @@ def check(db, u, b, transport=None):
         with client.stream("GET", base + path) as response:
             if response.status_code != 200:
                 raise ValueError("grafana_response_unavailable")
-            data = b""
-            for chunk in response.iter_bytes():
-                data += chunk
-                if len(data) > 65536:
-                    raise ValueError("grafana_response_budget_exceeded")
             try:
-                v = json.loads(data)
-            except (ValueError, UnicodeError):
+                v = bounded_json(response, 65536, deadline=deadline)
+            except ResponseBudgetExceeded:
+                raise ValueError("grafana_response_budget_exceeded") from None
+            except TimeoutError:
+                raise ValueError("health_budget_exceeded") from None
+            except (ValueError, UnicodeError, RecursionError, zlib.error):
                 raise ValueError("grafana_invalid_json") from None
             if not isinstance(v, dict):
                 raise ValueError("grafana_invalid_response")

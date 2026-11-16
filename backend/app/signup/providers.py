@@ -1,11 +1,12 @@
 """Explicit, mockable HTTPS providers. Never accepts an applicant-supplied URL."""
 
-import json, logging, os, stat, ipaddress, socket
+import logging, os, stat, ipaddress, socket, zlib
 from pathlib import Path
 from urllib.parse import urlsplit
 from datetime import datetime, timezone
 import httpx
 from app.core.config import settings
+from app.core.http_json import bounded_json
 
 logging.getLogger("httpx").setLevel(logging.WARNING)
 logging.getLogger("httpcore").setLevel(logging.WARNING)
@@ -52,12 +53,16 @@ def turnstile(token, submission_key, client=None):
         timeout=3, verify=True, follow_redirects=False, trust_env=False
     )
     try:
-        r = client.post(
-            "https://challenges.cloudflare.com/turnstile/v0/siteverify", data=body
-        )
-        if r.status_code != 200 or len(r.content) > 32000:
+        with client.stream(
+            "POST",
+            "https://challenges.cloudflare.com/turnstile/v0/siteverify",
+            data=body,
+        ) as r:
+            if r.status_code != 200:
+                return False
+            data = bounded_json(r, 32000)
+        if not isinstance(data, dict):
             return False
-        data = r.json()
         stamp = datetime.fromisoformat(
             str(data.get("challenge_ts", "")).replace("Z", "+00:00")
         )
@@ -68,7 +73,15 @@ def turnstile(token, submission_key, client=None):
             and stamp.tzinfo is not None
             and 0 <= (datetime.now(timezone.utc) - stamp).total_seconds() <= 300
         )
-    except (httpx.HTTPError, ValueError, TypeError):
+    except (
+        httpx.HTTPError,
+        ValueError,
+        TypeError,
+        RecursionError,
+        OverflowError,
+        zlib.error,
+        TimeoutError,
+    ):
         return False
     finally:
         if own:
@@ -125,7 +138,8 @@ def geocode(address, client=None):
     try:
         for attempt in range(2):
             try:
-                r = client.get(
+                with client.stream(
+                    "GET",
                     origin + "/search",
                     params={
                         "q": ", ".join(
@@ -137,14 +151,14 @@ def geocode(address, client=None):
                         "limit": 2,
                     },
                     headers={"User-Agent": "NWO-NOC-Service-Qualification/1"},
-                )
-                if r.status_code in {401, 403, 429}:
-                    return None
-                if r.status_code >= 500 and attempt == 0:
-                    continue
-                if r.status_code != 200 or len(r.content) > 64000:
-                    return None
-                rows = r.json()
+                ) as r:
+                    if r.status_code in {401, 403, 429}:
+                        return None
+                    if r.status_code >= 500 and attempt == 0:
+                        continue
+                    if r.status_code != 200:
+                        return None
+                    rows = bounded_json(r, 64000)
                 if not isinstance(rows, list) or len(rows) != 1:
                     return None
                 lat, lon = float(rows[0]["lat"]), float(rows[0]["lon"])
@@ -155,7 +169,16 @@ def geocode(address, client=None):
                     "longitude": lon,
                     "source": "Configured Nominatim-compatible provider; address/rooftop accuracy unverified",
                 }
-            except (httpx.HTTPError, ValueError, KeyError, TypeError):
+            except (
+                httpx.HTTPError,
+                ValueError,
+                KeyError,
+                TypeError,
+                RecursionError,
+                OverflowError,
+                zlib.error,
+                TimeoutError,
+            ):
                 if attempt:
                     return None
     finally:

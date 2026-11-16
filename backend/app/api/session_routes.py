@@ -3,6 +3,7 @@
 from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.dialects.postgresql import insert
 from app.api.deps import current_user, oauth2_scheme
 from app.core.database import get_db
 from app.core.security import decode_access_claims
@@ -17,22 +18,26 @@ def logout(
 ):
     claims = decode_access_claims(token)
     try:
-        db.add(
-            RevokedToken(
+        inserted = db.scalar(
+            insert(RevokedToken)
+            .values(
                 token_id=claims["jti"],
                 user_id=user.id,
                 expires_at=datetime.fromtimestamp(claims["exp"], timezone.utc),
             )
+            .on_conflict_do_nothing(index_elements=[RevokedToken.token_id])
+            .returning(RevokedToken.token_id)
         )
-        db.add(
-            AuditLog(
-                user_id=user.id,
-                action="auth.logout",
-                entity_type="user",
-                entity_id=str(user.id),
-                details={"session_revoked": True},
+        if inserted:
+            db.add(
+                AuditLog(
+                    user_id=user.id,
+                    action="auth.logout",
+                    entity_type="user",
+                    entity_id=str(user.id),
+                    details={"session_revoked": True},
+                )
             )
-        )
         db.commit()
     except SQLAlchemyError:
         db.rollback()

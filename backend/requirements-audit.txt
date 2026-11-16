@@ -1,0 +1,4 @@
+# Audit tooling only; never installed into the application image.
+pip-audit==2.10.1
+ruff==0.14.5
+bandit==1.8.6

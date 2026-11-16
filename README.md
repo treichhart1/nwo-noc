@@ -150,3 +150,6 @@ NOC-109 adds independently approved public network-status announcements and cust
 communication review using the existing Powercode mappings and notification queue.
 See [architecture, WordPress examples and activation limits](docs/customer-status/NOC-109.md).
 Public access defaults off; all delivery remains mock-only.
+
+Comprehensive source/database/security findings, corrected defects and remaining
+production gates: [NOC-111 audit](docs/NOC-111-comprehensive-audit.md).

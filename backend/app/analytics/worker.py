@@ -1,6 +1,6 @@
 """Opt-in recorded-data aggregation, not a device collector."""
 
-import json, time
+import json, time, logging
 from datetime import timedelta
 from uuid import uuid4
 from sqlalchemy import select
@@ -55,5 +55,7 @@ if __name__ == "__main__":
                 with SessionLocal() as db:
                     tick(db)
             except Exception:
-                pass  # Uncommitted aggregate work rolls back on storage interruption.
+                logging.getLogger("nwo-noc.analytics.worker").warning(
+                    "Recorded analytics processing interrupted; uncommitted work rolled back and retained inputs will retry"
+                )
             time.sleep(300)
