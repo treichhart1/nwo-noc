@@ -1,0 +1,635 @@
+"""Disposable Ubuntu24.04 packaging acceptance; synthetic data and local test images only.
+
+Run as root only on the CI disposable host or inside the explicit rehearsal container.
+Never against an existing NOC installation. Outputs assertion metadata, never credentials.
+"""
+
+import argparse
+import hashlib
+import json
+import os
+from pathlib import Path
+import secrets
+import shutil
+import subprocess
+import sys
+import tarfile
+import tempfile
+import ssl
+import urllib.request
+import urllib.parse
+from uuid import uuid4
+
+
+def command(argv, *, data=None, success=True, cwd=None, env=None):
+    p = subprocess.run(
+        [str(v) for v in argv],
+        input=data,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        cwd=cwd,
+        env=env,
+        timeout=1800,
+    )
+    if success and p.returncode:
+        # Installer stderr is intentionally sanitized. Never print docker/config/provider output.
+        raise RuntimeError(
+            "Acceptance command failed: "
+            + str(argv[0])
+            + " / "
+            + p.stderr.decode()[-800:]
+        )
+    return p
+
+
+def main():
+    p = argparse.ArgumentParser()
+    p.add_argument("--workspace", required=True)
+    p.add_argument("--rehearsal", action="store_true")
+    p.add_argument("--worktree-snapshot", action="store_true")
+    p.add_argument("--backend", default="noc113-backend:base")
+    p.add_argument("--frontend", default="noc113-frontend:base")
+    args = p.parse_args()
+    if (
+        os.geteuid() != 0
+        or 'VERSION_ID="24.04"' not in Path("/etc/os-release").read_text()
+        or "ID=ubuntu" not in Path("/etc/os-release").read_text()
+    ):
+        raise RuntimeError("Disposable Ubuntu24.04 root environment required")
+    source = Path(__file__).resolve().parents[2]
+    work = Path(args.workspace)
+    work.mkdir(mode=0o700, parents=True, exist_ok=False)
+    os.chmod(work, 0o700)
+    home = work / "harness-home"
+    home.mkdir(mode=0o700)
+    (home / ".gitconfig").write_text(
+        "[safe]\n\tdirectory = "
+        + str(source)
+        + "\n\tdirectory = "
+        + str(source / ".git")
+        + "\n"
+    )
+    os.environ["HOME"] = str(home)
+    clone = work / "source"
+    command(
+        [
+            "git",
+            "-c",
+            f"safe.directory={source}",
+            "-c",
+            f"safe.directory={source / '.git'}",
+            "clone",
+            "--shared",
+            "--quiet",
+            source,
+            clone,
+        ]
+    )
+
+    def git(*argv):
+        return (
+            command(["git", "-c", f"safe.directory={clone}", "-C", clone, *argv])
+            .stdout.decode()
+            .strip()
+        )
+
+    git("config", "user.name", "NOC113 Synthetic Acceptance")
+    git("config", "user.email", "installer-acceptance@example.invalid")
+    git("remote", "set-url", "origin", "https://github.com/treichhart1/nwo-noc.git")
+    if args.worktree_snapshot:
+        files = (
+            command(
+                [
+                    "git",
+                    "-c",
+                    f"safe.directory={source}",
+                    "-C",
+                    source,
+                    "ls-files",
+                    "--modified",
+                    "--others",
+                    "--exclude-standard",
+                    "-z",
+                ]
+            )
+            .stdout.decode()
+            .split("\0")
+        )
+        for name in filter(None, files):
+            path = source / name
+            if path.is_file():
+                (clone / name).parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(path, clone / name)
+        git("add", ".")
+        git("commit", "--quiet", "-m", "Synthetic current worktree packaging snapshot")
+    # All commits are confined to this disposable clone, never the development branch.
+    git(
+        "commit",
+        "--allow-empty",
+        "--quiet",
+        "-m",
+        "Synthetic approved first packaging release",
+    )
+    root = work / "root" if args.rehearsal else Path("/")
+    if not args.rehearsal and any(
+        Path(v).exists() for v in ["/etc/nwo-noc", "/var/lib/nwo-noc", "/opt/nwo-noc"]
+    ):
+        raise RuntimeError("Refusing acceptance on an existing installation")
+    env = (
+        {**os.environ, "NOC_INSTALLER_REHEARSAL": "1"}
+        if args.rehearsal
+        else os.environ.copy()
+    )
+    approvals = work / "approvals"
+    approvals.mkdir(mode=0o700)
+    identities = work / "identities"
+    identities.mkdir(mode=0o700)
+    # age must be available before generating a public recipient; production install also provisions it.
+    if not shutil.which("age-keygen"):
+        command(["apt-get", "update"])
+        command(["apt-get", "install", "-y", "--no-install-recommends", "age"])
+    identity = identities / "backup.key"
+    command(["age-keygen", "-o", identity])
+    os.chmod(identity, 0o600)
+    recipient = command(["age-keygen", "-y", identity]).stdout.decode().strip()
+    tls = work / "tls"
+    tls.mkdir(mode=0o700)
+    certificate = tls / "certificate.pem"
+    tls_key = tls / "key.pem"
+    command(
+        [
+            "openssl",
+            "req",
+            "-x509",
+            "-newkey",
+            "rsa:2048",
+            "-sha256",
+            "-days",
+            "1",
+            "-nodes",
+            "-subj",
+            "/CN=localhost",
+            "-addext",
+            "subjectAltName=DNS:localhost",
+            "-keyout",
+            tls_key,
+            "-out",
+            certificate,
+        ]
+    )
+    certificate.chmod(0o600)
+    tls_key.chmod(0o600)
+    results = []
+
+    def passed(name, condition=True):
+        if not condition:
+            raise AssertionError(name)
+        results.append(name)
+        print(json.dumps({"check": name, "status": "PASSED"}), flush=True)
+
+    def image(kind, revision, bad=False):
+        tag = "noc113-test-" + kind + "-" + revision[:10]
+        base = args.backend if kind == "backend" else args.frontend
+        entry = (
+            "\nENTRYPOINT "
+            + json.dumps(
+                ["sh", "-c", 'if [ "$1" = uvicorn ]; then exit 42; fi; exec "$@"', "--"]
+            )
+            + "\n"
+            if bad
+            else "\n"
+        )
+        dockerfile = (
+            f'FROM {base}\nLABEL org.opencontainers.image.revision="{revision}"\n'
+            + entry
+        )
+        command(["docker", "build", "-t", tag, "-"], data=dockerfile.encode())
+        return (
+            command(["docker", "image", "inspect", "--format", "{{.Id}}", tag])
+            .stdout.decode()
+            .strip()
+        )
+
+    def approve(previous=(), bad=False):
+        revision = git("rev-parse", "HEAD")
+        value = {
+            "format": 1,
+            "repository": "treichhart1/nwo-noc",
+            "purpose": "controlled-test",
+            "approval_reference": "synthetic-disposable-acceptance",
+            "commit": revision,
+            "tree": git("rev-parse", "HEAD^{tree}"),
+            "migration_head": "0028_customer_status",
+            "upgrade_from": list(previous),
+            "images": {
+                "backend": image("backend", revision, bad),
+                "frontend": image("frontend", revision),
+            },
+        }
+        file = approvals / (revision + ".json")
+        file.write_text(json.dumps(value))
+        file.chmod(0o600)
+        return revision, file
+
+    def invoke(action, approved=None, secret=None, success=True, extra=()):
+        argv = [
+            "python3",
+            clone / "scripts/host/manager.py",
+            action,
+            "--controlled-test",
+        ]
+        if args.rehearsal:
+            argv += ["--root", root, "--rehearsal"]
+        if approved:
+            argv += ["--approval", approved]
+        if secret:
+            argv += ["--password-stdin"]
+        argv += list(extra)
+        return command(
+            argv,
+            data=(secret + "\n").encode() if secret else None,
+            success=success,
+            cwd=clone,
+            env=env,
+        )
+
+    command(["docker", "buildx", "version"])
+    first, first_approval = approve()
+    admin_secret = secrets.token_urlsafe(30)
+    installed = invoke(
+        "install",
+        first_approval,
+        admin_secret,
+        extra=[
+            "--backup-recipient",
+            recipient,
+            "--tls-cert",
+            certificate,
+            "--tls-key",
+            tls_key,
+            "--tls-ca",
+            certificate,
+        ],
+    )
+    passed("clean_complete_application_install", installed.returncode == 0)
+    state_path = root / "var/lib/nwo-noc/installation.json"
+    state = json.loads(state_path.read_text())
+    passed(
+        "administrator_password_not_retained",
+        admin_secret.encode() not in installed.stdout
+        and admin_secret.encode() not in installed.stderr
+        and admin_secret not in (root / "etc/nwo-noc/runtime.env").read_text()
+        and "ADMIN_PASSWORD=" in (root / "etc/nwo-noc/runtime.env").read_text(),
+    )
+    passed("ready_state", state["status"] == "ready" and state["commit"] == first)
+    before = hashlib.sha256((root / "etc/nwo-noc/runtime.env").read_bytes()).hexdigest()
+    repeated = invoke(
+        "install", first_approval, secrets.token_urlsafe(30), success=False
+    )
+    passed("repeated_install_refused", repeated.returncode != 0)
+    passed(
+        "configuration_not_overwritten",
+        before
+        == hashlib.sha256((root / "etc/nwo-noc/runtime.env").read_bytes()).hexdigest(),
+    )
+    verified = invoke("verify")
+    verification = json.loads(verified.stdout)
+    passed(
+        "verification_no_failed_checks",
+        all(v["status"] != "FAILED" for v in verification["checks"]),
+    )
+    passed(
+        "optional_integrations_not_configured",
+        any(
+            v["check"] == "live_integrations_public_status_and_external_delivery"
+            and v["status"] == "NOT_CONFIGURED"
+            for v in verification["checks"]
+        ),
+    )
+    context = ssl.create_default_context(cafile=str(certificate))
+    browser = urllib.request.build_opener(
+        urllib.request.ProxyHandler({}), urllib.request.HTTPSHandler(context=context)
+    )
+    form = urllib.parse.urlencode(
+        {"username": "admin", "password": admin_secret}
+    ).encode()
+    request = urllib.request.Request(
+        "https://localhost:18090/api/auth/login",
+        data=form,
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+    )
+    with browser.open(request, timeout=15) as response:
+        token = json.load(response)["access_token"]
+    passed("first_administrator_authentication_over_verified_private_tls", bool(token))
+    with browser.open(
+        urllib.request.Request(
+            "https://localhost:18090/api/auth/me",
+            headers={"Authorization": "Bearer " + token},
+        ),
+        timeout=15,
+    ) as response:
+        passed("administrator_role", json.load(response)["role"] == "admin")
+    with browser.open(
+        urllib.request.Request(
+            "https://localhost:18090/api/sites",
+            headers={"Authorization": "Bearer " + token},
+        ),
+        timeout=15,
+    ) as response:
+        passed("no_demonstration_inventory_seeded", json.load(response) == [])
+    if not args.rehearsal:
+        passed(
+            "real_systemd_service_active",
+            command(["systemctl", "is-active", "nwo-noc.service"]).stdout.strip()
+            == b"active",
+        )
+        passed(
+            "dedicated_account",
+            command(["id", "-u", "nwo-noc"]).stdout.strip() == b"10001",
+        )
+        passed(
+            "dedicated_account_has_no_docker_or_extra_groups",
+            command(["id", "-nG", "nwo-noc"]).stdout.decode().split() == ["nwo-noc"],
+        )
+        passed(
+            "unit_syntax",
+            command(
+                [
+                    "systemd-analyze",
+                    "verify",
+                    "/etc/systemd/system/nwo-noc.service",
+                    "/etc/systemd/system/nwo-noc-ingress.service",
+                    "/etc/systemd/system/nwo-noc-backup.service",
+                    "/etc/systemd/system/nwo-noc-backup.timer",
+                ]
+            ).returncode
+            == 0,
+        )
+        command(["systemctl", "restart", "nwo-noc.service"])
+        passed("systemd_restart_and_verification", invoke("verify").returncode == 0)
+    compose = [
+        "docker",
+        "compose",
+        "-p",
+        state["project"],
+        "-f",
+        root / "opt/nwo-noc/releases" / first / "compose.json",
+    ]
+
+    def db(sql):
+        return (
+            command(
+                [
+                    *compose,
+                    "exec",
+                    "-T",
+                    "db",
+                    "psql",
+                    "-U",
+                    "postgres",
+                    "-d",
+                    "nwo_noc",
+                    "-v",
+                    "ON_ERROR_STOP=1",
+                    "-t",
+                    "-A",
+                ],
+                data=sql.encode(),
+            )
+            .stdout.decode()
+            .strip()
+        )
+
+    passed(
+        "integrated_schema",
+        int(
+            db(
+                "SELECT count(*) FROM information_schema.tables WHERE table_schema='public';"
+            )
+        )
+        >= 171,
+    )
+    passed(
+        "single_admin_and_audit",
+        db("SELECT count(*) FROM users WHERE role='admin';") == "1"
+        and db(
+            "SELECT count(*) FROM audit_logs WHERE action='installer.admin_initialized';"
+        )
+        == "1",
+    )
+    # The stdin helper rejects repeated setup rather than resetting any account.
+    private = json.loads(
+        (root / "opt/nwo-noc/releases" / first / "release.json").read_text()
+    )
+    bootstrap = (
+        root / "opt/nwo-noc/releases" / first / "scripts/host/initialize_admin.py"
+    )
+    duplicate = command(
+        [
+            *compose,
+            "run",
+            "--rm",
+            "--no-deps",
+            "--volume",
+            f"{bootstrap}:/app/initialize_admin.py:ro",
+            "--entrypoint",
+            "python",
+            "backend",
+            "/app/initialize_admin.py",
+        ],
+        data=json.dumps(
+            {
+                "username": "admin",
+                "email": "synthetic@example.invalid",
+                "password": secrets.token_urlsafe(24),
+                "installation_id": state["installation_id"],
+            }
+        ).encode(),
+        success=False,
+    )
+    passed("administrator_bootstrap_one_time", duplicate.returncode != 0)
+    sentinel = root / "var/lib/nwo-noc/documents" / "synthetic-preservation.txt"
+    sentinel.write_text("synthetic document preservation")
+    sentinel.chmod(0o600)
+    os.chown(sentinel, 10001, 10001)
+    # The history marker is operational data in an existing audit model, not a competing table.
+    db(
+        "INSERT INTO audit_logs(action,entity_type,entity_id,details,created_at) VALUES ('installer.synthetic_sentinel','installation','synthetic','{}',now());"
+    )
+    git(
+        "commit",
+        "--allow-empty",
+        "--quiet",
+        "-m",
+        "Synthetic approved compatible packaging upgrade",
+    )
+    second, second_approval = approve([first])
+    passed("upgrade_success", invoke("upgrade", second_approval).returncode == 0)
+    passed("upgrade_verification", invoke("verify").returncode == 0)
+    passed(
+        "atomic_current_release",
+        (root / "opt/nwo-noc/current").resolve().name == second,
+    )
+    passed(
+        "document_preserved", sentinel.read_text() == "synthetic document preservation"
+    )
+    passed(
+        "database_history_preserved",
+        db(
+            "SELECT count(*) FROM audit_logs WHERE action='installer.synthetic_sentinel';"
+        )
+        == "1",
+    )
+    backups = sorted((root / "var/backups/nwo-noc").glob("*.tar.age"))
+    passed("encrypted_backup_exists", len(backups) == 1)
+    metadata = json.loads(backups[0].with_suffix(".age.json").read_text())
+    passed(
+        "ciphertext_checksum",
+        metadata["sha256"] == hashlib.sha256(backups[0].read_bytes()).hexdigest(),
+    )
+    passed(
+        "no_plaintext_staging_retained",
+        not list((root / "var/backups/nwo-noc").glob(".private-staging-*")),
+    )
+    archive = work / "restore-test.tar"
+    with archive.open("xb") as target:
+        archive.chmod(0o600)
+        p = subprocess.run(
+            ["age", "-d", "-i", identity, backups[0]],
+            stdout=target,
+            stderr=subprocess.PIPE,
+            timeout=120,
+        )
+    passed("encrypted_backup_decrypts", p.returncode == 0)
+    with tarfile.open(archive) as tar:
+        names = tar.getnames()
+        passed(
+            "configuration_keys_release_documents_backed_up",
+            all(
+                v in names
+                for v in [
+                    "database.dump",
+                    "redis.tar",
+                    "configuration/runtime.env",
+                    "configuration/keys/signup",
+                    "release/release.json",
+                    "data/documents/synthetic-preservation.txt",
+                ]
+            ),
+        )
+        dump = tar.extractfile("database.dump").read()
+    restore = "restore_noc113_" + uuid4().hex[:10]
+    command([*compose, "exec", "-T", "db", "createdb", "-U", "postgres", restore])
+    command(
+        [
+            *compose,
+            "exec",
+            "-T",
+            "db",
+            "pg_restore",
+            "-U",
+            "postgres",
+            "-d",
+            restore,
+            "--exit-on-error",
+            "--no-owner",
+            "--no-privileges",
+        ],
+        data=dump,
+    )
+    restored = (
+        command(
+            [
+                *compose,
+                "exec",
+                "-T",
+                "db",
+                "psql",
+                "-U",
+                "postgres",
+                "-d",
+                restore,
+                "-t",
+                "-A",
+                "-c",
+                "SELECT count(*) FROM audit_logs WHERE action='installer.synthetic_sentinel';",
+            ]
+        )
+        .stdout.decode()
+        .strip()
+    )
+    passed("isolated_restore_history", restored == "1")
+    passed(
+        "source_database_not_overwritten",
+        db(
+            "SELECT count(*) FROM audit_logs WHERE action='installer.synthetic_sentinel';"
+        )
+        == "1",
+    )
+    git(
+        "commit",
+        "--allow-empty",
+        "--quiet",
+        "-m",
+        "Synthetic approved release with startup failure",
+    )
+    bad, bad_approval = approve([second], bad=True)
+    failed = invoke("upgrade", bad_approval, success=False)
+    passed("failed_upgrade_rejected", failed.returncode != 0)
+    passed(
+        "failed_upgrade_old_pointer_preserved",
+        (root / "opt/nwo-noc/current").resolve().name == second,
+    )
+    recovery = json.loads((root / "var/lib/nwo-noc/recovery-required.json").read_text())
+    passed(
+        "postmigration_recovery_gate",
+        recovery["phase"] == "migration_started" and recovery["previous"] == second,
+    )
+    passed(
+        "failed_upgrade_verification_reports_failure",
+        invoke("verify", success=False).returncode != 0,
+    )
+    passed(
+        "no_automatic_old_release_start",
+        invoke("service-start", success=False).returncode != 0,
+    )
+    passed(
+        "no_automatic_database_restore",
+        db(
+            "SELECT count(*) FROM audit_logs WHERE action='installer.synthetic_sentinel';"
+        )
+        == "1",
+    )
+    passed(
+        "failed_upgrade_backup_retained",
+        len(list((root / "var/backups/nwo-noc").glob("*.tar.age"))) == 2,
+    )
+    if args.rehearsal:
+        invoke("service-stop")
+    # Stop only this disposable installation. Preserve volumes, keys, encrypted backups and evidence.
+    command([*compose, "stop"])
+    if not args.rehearsal:
+        command(["systemctl", "stop", "nwo-noc.service"])
+        command(["systemctl", "disable", "nwo-noc.service"])
+    print(
+        json.dumps(
+            {
+                "checks_passed": len(results),
+                "checks": results,
+                "os": "Ubuntu24.04",
+                "environment": (
+                    "userspace-container"
+                    if args.rehearsal
+                    else "disposable-systemd-host"
+                ),
+                "full_host_boot_tested": False,
+                "data": "synthetic only",
+                "external_integrations": "disabled; no device or provider access",
+                "retained": "test databases, encrypted backups, configuration and release history",
+            }
+        )
+    )
+
+
+if __name__ == "__main__":
+    main()

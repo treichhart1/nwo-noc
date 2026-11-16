@@ -1,0 +1,10 @@
+[Unit]
+Description=Daily AI NOC encrypted backup (disabled until operator enables)
+
+[Timer]
+OnCalendar=*-*-* 02:00:00 UTC
+RandomizedDelaySec=900
+Persistent=true
+
+[Install]
+WantedBy=timers.target

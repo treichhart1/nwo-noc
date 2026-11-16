@@ -43,5 +43,10 @@ def check_report(report, reviews):
 
 if __name__ == "__main__":
     report = json.loads(Path(sys.argv[1]).read_text())
-    reviews = json.loads((ROOT / "docs/audits/NOC-111-bandit-review.json").read_text())
+    review_path = (
+        Path(sys.argv[2])
+        if len(sys.argv) > 2
+        else ROOT / "docs/audits/NOC-111-bandit-review.json"
+    )
+    reviews = json.loads(review_path.read_text())
     print(json.dumps(check_report(report, reviews)))

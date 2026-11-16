@@ -27,6 +27,8 @@ jobs:
           ruff check backend/app scripts --select F821,F822,F823
           bandit -r backend/app -f json -o bandit.json --exit-zero
           python scripts/release/check_audit_findings.py bandit.json
+          bandit -r scripts/host -f json -o installer-bandit.json --exit-zero
+          python scripts/release/check_audit_findings.py installer-bandit.json docs/audits/NOC-113-installer-bandit-review.json
       - run: npm ci --no-audit --no-fund && npm audit --audit-level=low
         working-directory: frontend
   frontend:
@@ -394,11 +396,27 @@ jobs:
           NOC_STATUS_PG_CA_FILE: /dev/null
         run: docker compose -f deploy/compose.customer-status.yml config --quiet
 
+  host-package-acceptance:
+    name: Ubuntu 24.04 approved host package
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+      - name: Build complete application artifacts for controlled host acceptance
+        run: |
+          docker build -t noc113-backend:base backend
+          docker build -t noc113-frontend:base frontend
+      - name: Execute disposable Ubuntu systemd install, verification, encrypted restore and upgrade failure acceptance
+        run: sudo python3 tests/installer/test_ubuntu_host.py --workspace /var/tmp/noc113-acceptance
+
   rf-release-acceptance:
     name: RF offline release acceptance
     runs-on: ubuntu-24.04
     needs:
       - clean-install-acceptance
+      - host-package-acceptance
       - frontend
       - backend
       - database-migrations
@@ -409,6 +427,7 @@ jobs:
     steps:
       - name: Require all RF release dependencies to pass
         env:
+          HOST_PACKAGE_RESULT: ${{ needs.host-package-acceptance.result }}
           INSTALL_RESULT: ${{ needs.clean-install-acceptance.result }}
           FRONTEND_RESULT: ${{ needs.frontend.result }}
           BACKEND_RESULT: ${{ needs.backend.result }}
@@ -417,7 +436,7 @@ jobs:
           RF_RESULT: ${{ needs.rf-postgres-integration.result }}
           COMPOSE_RESULT: ${{ needs.compose-validation.result }}
         run: |
-          for name in INSTALL_RESULT FRONTEND_RESULT BACKEND_RESULT MIGRATIONS_RESULT RF_RESULT COMPOSE_RESULT SECURITY_RESULT; do
+          for name in HOST_PACKAGE_RESULT INSTALL_RESULT FRONTEND_RESULT BACKEND_RESULT MIGRATIONS_RESULT RF_RESULT COMPOSE_RESULT SECURITY_RESULT; do
             result="${!name}"
             if [ "$result" != "success" ]; then
               echo "::error::$name is $result, expected success"

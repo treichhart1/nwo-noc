@@ -1,0 +1,36 @@
+[Unit]
+Description=AI NOC bounded private Unix-socket ingress
+Requires=nwo-noc.service
+After=nwo-noc.service
+PartOf=nwo-noc.service
+StartLimitIntervalSec=300
+StartLimitBurst=3
+
+[Service]
+Type=simple
+User=nwo-noc
+Group=nwo-noc
+EnvironmentFile=/etc/nwo-noc/service.env
+Environment=PYTHONDONTWRITEBYTECODE=1
+ExecStart=/usr/bin/python3 /opt/nwo-noc/current/scripts/host/ingress.py --socket /run/nwo-noc-ingress/frontend.sock
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+RestrictAddressFamilies=AF_UNIX AF_INET
+IPAddressDeny=any
+IPAddressAllow=localhost
+CapabilityBoundingSet=
+LockPersonality=true
+RestrictSUIDSGID=true
+TasksMax=64
+MemoryMax=128M
+LimitNOFILE=256
+UMask=0077
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

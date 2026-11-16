@@ -1,0 +1,14 @@
+{
+  "format": 1,
+  "repository": "treichhart1/nwo-noc",
+  "purpose": "release",
+  "approval_reference": "REPLACE_WITH_OPERATOR_RELEASE_APPROVAL",
+  "commit": "REPLACE_WITH_APPROVED_40_CHARACTER_COMMIT",
+  "tree": "REPLACE_WITH_APPROVED_40_CHARACTER_TREE",
+  "migration_head": "0028_customer_status",
+  "upgrade_from": [],
+  "images": {
+    "backend": "registry.example.invalid/nwo-noc-backend@sha256:REPLACE",
+    "frontend": "registry.example.invalid/nwo-noc-frontend@sha256:REPLACE"
+  }
+}

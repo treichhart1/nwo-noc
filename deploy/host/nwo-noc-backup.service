@@ -1,0 +1,18 @@
+[Unit]
+Description=Encrypted quiesced AI NOC backup (operator-enabled)
+Requires=nwo-noc.service
+After=nwo-noc.service
+ConditionPathExists=/etc/nwo-noc/backup-recipient
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /opt/nwo-noc/current/scripts/host/manager.py backup --quiesce
+UMask=0077
+NoNewPrivileges=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/nwo-noc /var/log/nwo-noc /var/backups/nwo-noc /run/lock
+PrivateTmp=true
+TimeoutStartSec=1800
+StandardOutput=journal
+StandardError=journal
