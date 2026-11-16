@@ -210,3 +210,8 @@ def test_image_scan_unknown_or_mismatched_results_never_clean(tmp_path,monkeypat
     monkeypatch.setattr(image_security.subprocess,'run',lambda *a,**k:SimpleNamespace(returncode=0,stdout=json.dumps(body).encode()))
     monkeypatch.setattr(sys,'argv',['scan','--output',str(tmp_path/'output'),'synthetic-image'])
     with pytest.raises(RuntimeError,match='unavailable'):image_security.main()
+
+
+def test_recovery_without_terminal_requires_explicit_broker_input(monkeypatch):
+    monkeypatch.setattr(sys,'stdin',SimpleNamespace(isatty=lambda:False))
+    with pytest.raises(ValueError,match='Protected terminal'):read_password()

@@ -17,6 +17,8 @@ def read_password(*, stdin=False):
             raw = raw[:-1]
         value = raw.decode("utf-8")
     else:
+        if not sys.stdin.isatty():
+            raise ValueError("Protected terminal or explicit --password-stdin required")
         value = getpass.getpass("New recovery password: ")
         if value != getpass.getpass("Confirm recovery password: "):
             raise ValueError("Password confirmation mismatch")
