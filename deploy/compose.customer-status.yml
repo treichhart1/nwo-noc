@@ -1,0 +1,37 @@
+# Optional deployment preparation only. No published ports or private NOC env_file.
+services:
+  status-gateway:
+    image: ${NOC_STATUS_BACKEND_IMAGE:?Set reviewed pinned NOC backend image}
+    user: "1000:1000"
+    entrypoint: [python, /opt/noc/status-entrypoint.py]
+    environment:
+      APP_ENV: production
+      NOC_STATUS_TRUSTED_PROXIES: ${NOC_STATUS_TRUSTED_PROXIES:-127.0.0.1}
+      PGSSLROOTCERT: /run/secrets/status_pg_ca
+    volumes:
+      - ./customer-status/entrypoint.py:/opt/noc/status-entrypoint.py:ro
+    secrets: [status_db_url, status_rate_key, status_pg_ca]
+    networks: [status_private]
+    read_only: true
+    tmpfs: [/tmp:rw,noexec,nosuid,size=16m]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    pids_limit: 64
+    mem_limit: 256m
+    cpus: 0.5
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8002/health',timeout=2)"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+    restart: unless-stopped
+networks:
+  status_private:
+    internal: true
+secrets:
+  status_db_url:
+    file: ${NOC_STATUS_DB_URL_FILE:?Set private gateway-only PostgreSQL URL file}
+  status_rate_key:
+    file: ${NOC_STATUS_RATE_KEY_FILE:?Set independent private gateway rate key file}
+  status_pg_ca:
+    file: ${NOC_STATUS_PG_CA_FILE:?Set trusted private PostgreSQL CA file}

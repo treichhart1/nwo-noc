@@ -3,6 +3,7 @@ from pydantic import Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
+    customer_status_rate_key_file: str = Field("", repr=False)
     grafana_allowed_origins: str = ''
     grafana_live_health_enabled: bool = False
     grafana_embed_approved: bool = False

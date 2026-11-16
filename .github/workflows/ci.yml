@@ -39,6 +39,7 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci --no-audit --no-fund
       - run: npm run build
+      - run: npm run build:status
       - run: npm run build:signup
 
   backend:
@@ -234,6 +235,14 @@ jobs:
         run: |
           python -m pytest -q tests/test_grafana_analytics.py
           python -m app.analytics.benchmark
+      - name: Validate approved public status and native notification integration
+        env:
+          APP_ENV: staging
+          OFFLINE_MODE: "true"
+          SYNTHETIC_MONITORING_ENABLED: "true"
+        run: |
+          python -m pytest -q tests/test_customer_network_status.py
+          python -m app.customer_status.benchmark
       - name: Measure approved fiber reconciliation at40 synthetic POPs
         run: python -m app.fiber_sync.benchmark
       - name: Measure offline terrain coverage at40 synthetic POPs
@@ -361,6 +370,13 @@ jobs:
             exit 1
           fi
           echo "Offline staging lint and negative-control check passed; runtime isolation not verified"
+      - name: Validate isolated public status gateway configuration without starting services
+        env:
+          NOC_STATUS_BACKEND_IMAGE: synthetic-noc-status:ci
+          NOC_STATUS_DB_URL_FILE: /dev/null
+          NOC_STATUS_RATE_KEY_FILE: /dev/null
+          NOC_STATUS_PG_CA_FILE: /dev/null
+        run: docker compose -f deploy/compose.customer-status.yml config --quiet
 
   rf-release-acceptance:
     name: RF offline release acceptance
@@ -673,6 +689,23 @@ jobs:
         run: |
           scripts/release/manage.sh "$NOC_ACCEPTANCE_STATE" exec -T backend python -m app.analytics.rehearsal > "$NOC_ACCEPTANCE_STATE/analytics-fixture.json"
           (cd frontend && npx playwright test '(^|/)analytics\.spec\.ts$')
+      - name: Validate approval-controlled customer communications and public-only WordPress status
+        env:
+          NOC_PROJECT: noc84-wisp-test
+          NOC_ACCEPTANCE_STATE: ${{ runner.temp }}/noc85-wisp-state
+          NOC109_STATUS_BROWSER: "true"
+        run: |
+          (cd frontend && npm run build:status)
+          scripts/release/manage.sh "$NOC_ACCEPTANCE_STATE" exec -T backend python -m app.customer_status.rehearsal > "$NOC_ACCEPTANCE_STATE/customer-status-fixture.json"
+          scripts/release/manage.sh "$NOC_ACCEPTANCE_STATE" exec -T -d backend sh -c 'exec env CUSTOMER_STATUS_RATE_KEY_FILE=/var/lib/nwo-noc/monitoring/customer-status-rate-key uvicorn app.customer_status.public_app:app --host 127.0.0.1 --port 8002 --no-access-log'
+          nohup python3 scripts/release/status-access.py "$NOC_ACCEPTANCE_STATE" > "$RUNNER_TEMP/noc109-access.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/noc109-access.pid"
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:18092/health >/dev/null; then break; fi
+            sleep 1
+          done
+          curl --fail --silent http://127.0.0.1:18092/health >/dev/null
+          (cd frontend && npx playwright test customer-status.spec.ts)
       - name: Validate immutable old-release upgrade, failed-upgrade rollback and matching restore
         run: scripts/release/rehearse-upgrade.sh "$RUNNER_TEMP/noc93-upgrade-state"
       - name: Stop isolated acceptance services, retain volumes
