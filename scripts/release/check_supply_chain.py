@@ -78,6 +78,7 @@ def validate(root=ROOT):
             raise ValueError("Invalid immutable image reference")
     for filename in (
         "deploy/Dockerfile.ubuntu-rehearsal",
+        "deploy/Dockerfile.installer-failures",
         "examples/signup/compose.yml",
         "backend/Dockerfile",
         "frontend/Dockerfile",

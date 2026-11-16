@@ -1,0 +1,12 @@
+{
+  "format": 1,
+  "activation_enabled": false,
+  "selection_mode": "one-device-at-a-time; independent approval per device",
+  "tower": {"existing_site_id": null, "display_name": "Synthetic pilot tower; replace with an authorized existing Site identifier"},
+  "customer_mapping": {"source": "synthetic", "external_customer_id": "SYN-NOC114-CUSTOMER", "external_service_id": "SYN-NOC114-SERVICE", "consent": "unknown", "notification_delivery_enabled": false},
+  "retention": {"raw_days_proposed": 30, "rollup_days_proposed": 90, "approved": false},
+  "observation_days_proposed": 7,
+  "live_powercode_enabled": false,
+  "automatic_remediation_enabled": false,
+  "public_publication_enabled": false
+}

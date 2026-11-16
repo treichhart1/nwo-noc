@@ -13,6 +13,8 @@ import secrets
 import shutil
 import subprocess
 import sys
+import time
+import signal
 import tarfile
 import tempfile
 import ssl
@@ -106,12 +108,20 @@ def command(argv, *, data=None, success=True, cwd=None, env=None):
                     ),
                     flush=True,
                 )
-        # Installer stderr is intentionally sanitized. Never print docker/config/provider output.
+        # Only the installer's deliberately sanitized diagnostics may enter CI output.
+        # A database/library exception may otherwise include credential-bearing URLs.
+        safe_errors = [
+            line
+            for line in p.stderr.decode(errors="replace").splitlines()
+            if line.startswith("NOC packaging")
+        ]
         raise RuntimeError(
             "Acceptance command failed: "
             + str(argv[0])
+            + " / exit "
+            + str(p.returncode)
             + " / "
-            + p.stderr.decode()[-800:]
+            + "\n".join(safe_errors)[-800:]
         )
     return p
 
@@ -121,6 +131,18 @@ def main():
     p.add_argument("--workspace", required=True)
     p.add_argument("--rehearsal", action="store_true")
     p.add_argument("--worktree-snapshot", action="store_true")
+    p.add_argument("--extended", action="store_true")
+    p.add_argument(
+        "--failure-stage",
+        choices=[
+            "database",
+            "migration",
+            "startup",
+            "interrupted",
+            "resources",
+            "dependencies",
+        ],
+    )
     p.add_argument("--backend", default="noc113-backend:base")
     p.add_argument("--frontend", default="noc113-frontend:base")
     args = p.parse_args()
@@ -205,6 +227,10 @@ def main():
         "Synthetic approved first packaging release",
     )
     root = work / "root" if args.rehearsal else Path("/")
+    if args.failure_stage == "resources":
+        if not args.rehearsal or not Path("/noc114-small").is_dir():
+            raise RuntimeError("Resource probe requires the disposable64MiB tmpfs")
+        root = Path("/noc114-small")
     if not args.rehearsal and any(
         Path(v).exists() for v in ["/etc/nwo-noc", "/var/lib/nwo-noc", "/opt/nwo-noc"]
     ):
@@ -264,15 +290,29 @@ def main():
     def image(kind, revision, bad=False):
         tag = "noc113-test-" + kind + "-" + revision[:10]
         base = args.backend if kind == "backend" else args.frontend
-        entry = (
-            "\nENTRYPOINT "
-            + json.dumps(
-                ["sh", "-c", 'if [ "$1" = uvicorn ]; then exit 42; fi; exec "$@"', "--"]
+        failure = args.failure_stage if kind == "backend" else None
+        if failure in ("migration", "interrupted"):
+            shell = (
+                'if [ "$1" = alembic ] && [ "$2" = upgrade ]; then '
+                + ("sleep 300; " if failure == "interrupted" else "")
+                + 'exit 42; fi; exec "$@"'
             )
-            + "\n"
-            if bad
-            else "\n"
-        )
+            entry = "\nENTRYPOINT " + json.dumps(["sh", "-c", shell, "--"]) + "\n"
+        else:
+            entry = (
+                "\nENTRYPOINT "
+                + json.dumps(
+                    [
+                        "sh",
+                        "-c",
+                        'if [ "$1" = uvicorn ]; then exit 42; fi; exec "$@"',
+                        "--",
+                    ]
+                )
+                + "\n"
+                if bad
+                else "\n"
+            )
         dockerfile = (
             f'FROM {base}\nLABEL org.opencontainers.image.revision="{revision}"\n'
             + entry
@@ -306,12 +346,15 @@ def main():
         return revision, file
 
     def invoke(action, approved=None, secret=None, success=True, extra=()):
-        argv = [
-            "python3",
-            clone / "scripts/host/manager.py",
-            action,
-            "--controlled-test",
-        ]
+        argv = (
+            [clone / (action + ".sh")]
+            if action in ("install", "upgrade", "verify")
+            else [
+                "python3",
+                clone / "scripts/host/manager.py",
+                action,
+            ]
+        ) + ["--controlled-test"]
         if args.rehearsal:
             argv += ["--root", root, "--rehearsal"]
         if approved:
@@ -328,8 +371,43 @@ def main():
         )
 
     command(["docker", "buildx", "version"])
-    first, first_approval = approve()
+    if args.failure_stage == "database":
+        # Only this disposable clone changes: no real image, migration or development file is edited.
+        import yaml
+
+        file = clone / "deploy/compose.isolated.yml"
+        config = yaml.safe_load(file.read_text())
+        config["services"]["db"]["command"] = ["sh", "-c", "exit 42"]
+        file.write_text(yaml.safe_dump(config))
+        git("add", "deploy/compose.isolated.yml")
+        git("commit", "--quiet", "-m", "Synthetic PostgreSQL startup failure fixture")
+    first, first_approval = approve(bad=args.failure_stage == "startup")
     admin_secret = secrets.token_urlsafe(30)
+    if args.failure_stage:
+        if not args.rehearsal:
+            raise RuntimeError(
+                "Fresh failure matrix requires its disposable container/root"
+            )
+        from failure_acceptance import fresh_failure
+
+        fresh_failure(
+            args,
+            clone,
+            root,
+            work,
+            first_approval,
+            admin_secret,
+            env,
+            command,
+            invoke,
+            passed,
+        )
+        return
+    if args.extended:
+        from failure_acceptance import preinstall_failures
+
+        preinstall_failures(invoke, first_approval, admin_secret, root, passed)
+    started = time.monotonic()
     installed = invoke(
         "install",
         first_approval,
@@ -346,6 +424,7 @@ def main():
         ],
     )
     passed("clean_complete_application_install", installed.returncode == 0)
+    install_seconds = round(time.monotonic() - started, 3)
     state_path = root / "var/lib/nwo-noc/installation.json"
     state = json.loads(state_path.read_text())
     passed(
@@ -368,6 +447,16 @@ def main():
     )
     verified = invoke("verify")
     verification = json.loads(verified.stdout)
+    if args.extended:
+        print(
+            json.dumps(
+                {
+                    "verification_output": verification,
+                    "install_seconds": install_seconds,
+                }
+            ),
+            flush=True,
+        )
     passed(
         "verification_no_failed_checks",
         all(v["status"] != "FAILED" for v in verification["checks"]),
@@ -472,6 +561,13 @@ def main():
             )
             .stdout.decode()
             .strip()
+        )
+
+    if args.extended:
+        from failure_acceptance import installed_failures_and_smoke
+
+        installed_failures_and_smoke(
+            root, compose, invoke, command, browser, token, passed, db, install_seconds
         )
 
     passed(
@@ -633,6 +729,47 @@ def main():
         .strip()
     )
     passed("isolated_restore_history", restored == "1")
+    if args.extended:
+        # Start the installed application against the restored database, never the source DB.
+        db(f'GRANT CONNECT ON DATABASE "{restore}" TO noc_app;')
+        command(
+            [
+                *compose,
+                "exec",
+                "-T",
+                "db",
+                "psql",
+                "-U",
+                "postgres",
+                "-d",
+                restore,
+                "-c",
+                "GRANT USAGE ON SCHEMA public TO noc_app; GRANT SELECT,INSERT,UPDATE,DELETE ON ALL TABLES IN SCHEMA public TO noc_app; GRANT USAGE,SELECT ON ALL SEQUENCES IN SCHEMA public TO noc_app;",
+            ]
+        )
+        runtime = dict(
+            line.split("=", 1)
+            for line in (root / "etc/nwo-noc/runtime.env").read_text().splitlines()
+        )
+        restored_url = runtime["DATABASE_URL"].rsplit("/", 1)[0] + "/" + restore
+        script = "import asyncio,httpx; from app.main import app; from app.core.database import SessionLocal; from sqlalchemy import text; db=SessionLocal(); assert db.execute(text(\"SELECT count(*) FROM audit_logs WHERE action='installer.synthetic_sentinel'\")).scalar()==1; db.close(); exec(\"async def check():\\n async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app),base_url='http://restored.invalid') as c:\\n  assert (await c.get('/health')).status_code==200\\n\"); asyncio.run(check())"
+        command(
+            [
+                *compose,
+                "run",
+                "--rm",
+                "--no-deps",
+                "-e",
+                "DATABASE_URL",
+                "--entrypoint",
+                "python",
+                "backend",
+                "-c",
+                script,
+            ],
+            env={**env, "DATABASE_URL": restored_url},
+        )
+        passed("restored_application_health_and_history")
     passed(
         "source_database_not_overwritten",
         db(
