@@ -100,6 +100,17 @@
       "tests": "test_release_blockers.py plus existing targeted/full CI; exact executions in README and final PR ledger",
       "external_dependency": "Disposable hypervisor image and approved VPN/MFA/egress controls",
       "operator_action": "Execute minimal-host bootstrap/boot and independent network boundary tests"
+    },
+    {
+      "finding": "N116-06-native-images",
+      "severity": "CRITICAL",
+      "status": "FAIL",
+      "original_evidence": "Actual Trivy603 PostgreSQL image1CRITICAL/25HIGH in bundled gosu; backend52HIGH/frontend3HIGH; exact native-image-baseline.json",
+      "reproduction": "Executed GitHub Actions scan with pinned tool; full JSON archive retained",
+      "correction": "Targeted same-distro zlib/libxslt patch updates; strict optional release gate; no findings waived",
+      "tests": "Final image rescans plus complete installer/backup/migration/regression CI required",
+      "external_dependency": "Compatible trusted upstream PostgreSQL16 image with patched gosu/toolchain or reviewed VEX; unfixed Debian packages; Redis license approval",
+      "operator_action": "Review each exact CVE/version/license; approve trusted patched artifact and test restore/init; do not deploy this candidate"
     }
   ]
 }

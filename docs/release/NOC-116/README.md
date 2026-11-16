@@ -142,3 +142,33 @@ host offline-to-live activation configuration. Do not bypass host safety validat
 
 No production/live network/Powercode access, real messages, public incidents,
 deployments, merges, equipment changes or other repository changes occurred.
+
+## Newly executed native-image findings — release blocked
+
+The first actual Trivy job603/133669768022 retained artifact14279351987. Its
+[exact baseline findings](native-image-baseline.json) include backend52 HIGH/224 total,
+frontend3 HIGH/5 total, PostgreSQL1 CRITICAL+25 HIGH/62 total, Redis0 HIGH/CRITICAL/1 total.
+The worker is the same backend image ID and must not be counted twice. These are
+scanner package findings, not demonstrated exploits; none are suppressed or waived.
+
+The PostgreSQL CRITICAL finding CVE-2025-68121 is in the bundled /usr/local/bin/gosu
+Go1.24.6 executable, not a claim that the SQL engine itself has that specific defect.
+Other bundled Go findings require a vendor-published/rebuilt compatible PostgreSQL16
+image with patched toolchain (or independently reviewed VEX/reachability evidence).
+Removing/replacing the privilege-drop tool without validated initialization/upgrade/
+backup behavior is not a safe blind fix. Upstream artifact/build trust remains blocked.
+
+Supported same-distro patch updates are applied to backend zlib1g (fixed version
+reported by scanner for CVE-2026-85091) and frontend libxslt (three fixed HIGH findings).
+No Python major, PostgreSQL major, Redis implementation or distro was replaced.
+Final image scans must verify resulting package versions/findings; package indexes
+are not a bit-identical build guarantee. Immutable published digests and retained SBOM
+bind the actual release. Many Debian HIGH findings reported no FixedVersion and remain
+open; green dependency audits do not overrule these native results.
+
+The image evidence tool de-duplicates image IDs, shares only a CI scanner database cache,
+retains license-review BLOCKED status, and supports --require-no-high for a fail-closed
+release gate after saving results. Development CI collects evidence informationally;
+it does not authorize publication, override critical findings or pass a release gate.
+Source SBOM now preserves only recognized SPDX declarations, records ambiguous licenses
+as NOASSERTION, and percent-encodes scoped package URLs. Formal legal approval is absent.

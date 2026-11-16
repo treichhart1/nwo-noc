@@ -2,6 +2,7 @@
 import hashlib
 import json
 from pathlib import Path
+from urllib.parse import quote
 from check_supply_chain import read_lock
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -27,8 +28,13 @@ def build(root=ROOT):
     images=json.loads((root/'deploy/image-lock.json').read_text())['images']
     fingerprint=hashlib.sha256(json.dumps([packages,images],sort_keys=True).encode()).hexdigest()
     spdx=[]
+    # Ambiguous legacy strings are not valid SPDX expressions or license approval.
+    aliases={'Apache License, Version 2.0':'Apache-2.0'}
+    accepted={'MIT','BSD-2-Clause','BSD-3-Clause','Apache-2.0','Apache-2.0 OR BSD-3-Clause','ISC','Unlicense','NOASSERTION'}
     for i,p in enumerate(packages):
-        spdx.append({'SPDXID':f'SPDXRef-Package-{i}','name':p['name'],'versionInfo':p['version'],'downloadLocation':'NOASSERTION','filesAnalyzed':False,'licenseConcluded':'NOASSERTION','licenseDeclared':p['license'],'copyrightText':'NOASSERTION','externalRefs':[{'referenceCategory':'PACKAGE-MANAGER','referenceType':'purl','referenceLocator':f"pkg:{p['ecosystem']}/{p['name']}@{p['version']}"}]})
+        license=aliases.get(p['license'],p['license'])
+        if not isinstance(license,str) or license not in accepted:license='NOASSERTION'
+        spdx.append({'SPDXID':f'SPDXRef-Package-{i}','name':p['name'],'versionInfo':p['version'],'downloadLocation':'NOASSERTION','filesAnalyzed':False,'licenseConcluded':'NOASSERTION','licenseDeclared':license,'copyrightText':'NOASSERTION','externalRefs':[{'referenceCategory':'PACKAGE-MANAGER','referenceType':'purl','referenceLocator':f"pkg:{p['ecosystem']}/{quote(p['name'],safe='/')}@{quote(p['version'],safe='')}"}]})
     return {'spdxVersion':'SPDX-2.3','dataLicense':'CC0-1.0','SPDXID':'SPDXRef-DOCUMENT','name':'nwo-noc-source-locks','documentNamespace':'https://nwo-noc.invalid/sbom/'+fingerprint,'creationInfo':{'creators':['Tool: nwo-noc-lock-inventory'],'created':'2026-11-16T00:00:00Z'},'packages':spdx,'annotations':[{'annotationType':'OTHER','annotator':'Tool: nwo-noc-lock-inventory','annotationDate':'2026-11-16T00:00:00Z','comment':'Source lock inventory only. NOASSERTION requires review. Installed OS/native/container components require separate image scans. Redis server licensing remains an operator/legal decision. No license approval is granted.'}]}
 
 

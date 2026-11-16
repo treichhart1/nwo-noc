@@ -182,3 +182,31 @@ def test_legacy_password_argument_is_rejected_without_echo(monkeypatch,capsys):
     monkeypatch.setattr(sys,'argv',['recovery','--approve-local-recovery','--reason','Synthetic recovery test','--password','must-not-be-echoed'])
     with pytest.raises(SystemExit):main()
     assert 'must-not-be-echoed' not in capsys.readouterr().err
+
+
+def test_image_scan_records_high_findings_deduplicates_and_can_gate(tmp_path,monkeypatch):
+    import json
+    sys.path.insert(0,str(Path(__file__).resolve().parents[2]/'scripts/release'))
+    import image_security
+    immutable='sha256:'+'e'*64
+    report={'Metadata':{'ImageID':immutable},'Results':[{'Vulnerabilities':[{'Severity':'HIGH'}],'Licenses':[{'Name':'SYNTHETIC-REVIEW'}]}]}
+    monkeypatch.setattr(image_security.subprocess,'check_output',lambda argv:json.dumps([{'Id':immutable}]).encode())
+    calls=[]
+    def scan(argv,**kwargs):calls.append(argv);return SimpleNamespace(returncode=0,stdout=json.dumps(report).encode())
+    monkeypatch.setattr(image_security.subprocess,'run',scan)
+    monkeypatch.setattr(sys,'argv',['scan','--output',str(tmp_path/'output'),'--require-no-high','synthetic-image','same-image'])
+    with pytest.raises(SystemExit,match='security gate failed'):image_security.main()
+    rows=json.loads((tmp_path/'output/summary.json').read_text())
+    assert len(calls)==len(rows)==1 and rows[0]['high']==1 and rows[0]['status']=='FAIL'
+    assert rows[0]['license_review'].startswith('BLOCKED') and calls[0][-1]==immutable
+
+
+@pytest.mark.parametrize('body',[{}, {'Metadata':{'ImageID':'wrong'},'Results':[{}]}, {'Metadata':{'ImageID':'sha256:'+'e'*64},'Results':[]}])
+def test_image_scan_unknown_or_mismatched_results_never_clean(tmp_path,monkeypatch,body):
+    import json
+    sys.path.insert(0,str(Path(__file__).resolve().parents[2]/'scripts/release'))
+    import image_security
+    monkeypatch.setattr(image_security.subprocess,'check_output',lambda argv:json.dumps([{'Id':'sha256:'+'e'*64}]).encode())
+    monkeypatch.setattr(image_security.subprocess,'run',lambda *a,**k:SimpleNamespace(returncode=0,stdout=json.dumps(body).encode()))
+    monkeypatch.setattr(sys,'argv',['scan','--output',str(tmp_path/'output'),'synthetic-image'])
+    with pytest.raises(RuntimeError,match='unavailable'):image_security.main()
