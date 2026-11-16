@@ -171,3 +171,8 @@ NOC114 controlled acceptance:
 See [release acceptance](docs/NOC-114-release-acceptance.md) and the
 [disabled, future pilot review plan](docs/NOC-114-controlled-pilot.md).
 Neither authorizes production deployment or live-device access.
+
+NOC115 [final release acceptance](docs/release/NOC-115/README.md) pins the exact
+commit/feature manifest, executed installation evidence, acceptance matrix and
+operator runbook. High operational gates remain **NO-GO for live pilot/production**;
+isolated installation acceptance uses independently approved test inputs.

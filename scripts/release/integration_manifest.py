@@ -34,9 +34,15 @@ def patch_id(sha):
     return result[0]
 
 
-def configuration_inventory():
+def source_text(path, candidate=None):
+    return (
+        git("show", candidate + ":" + path) if candidate else (ROOT / path).read_text()
+    )
+
+
+def configuration_inventory(candidate=None):
     """Names/types only; never serialize defaults or environment/secret values."""
-    tree = ast.parse((ROOT / "backend/app/core/config.py").read_text())
+    tree = ast.parse(source_text("backend/app/core/config.py", candidate))
     cls = next(
         n for n in tree.body if isinstance(n, ast.ClassDef) and n.name == "Settings"
     )
@@ -47,11 +53,21 @@ def configuration_inventory():
     ]
 
 
-def migration_inventory():
+def migration_inventory(candidate=None):
     rows = {}
-    for file in sorted((ROOT / "backend/alembic/versions").glob("*.py")):
+    files = (
+        git(
+            "ls-tree", "-r", "--name-only", candidate, "--", "backend/alembic/versions"
+        ).splitlines()
+        if candidate
+        else [
+            str(p.relative_to(ROOT))
+            for p in (ROOT / "backend/alembic/versions").glob("*.py")
+        ]
+    )
+    for file in sorted(p for p in files if p.endswith(".py")):
         values = {}
-        for n in ast.parse(file.read_text()).body:
+        for n in ast.parse(source_text(file, candidate)).body:
             if isinstance(n, ast.Assign):
                 for target in n.targets:
                     if isinstance(target, ast.Name) and target.id in (
@@ -67,7 +83,7 @@ def migration_inventory():
         rows[revision] = {
             "revision": revision,
             "parent": values["down_revision"],
-            "file": str(file.relative_to(ROOT)),
+            "file": file,
         }
     children = {}
     for row in rows.values():
@@ -131,8 +147,8 @@ def audit(candidate="HEAD", snapshot=SNAPSHOT):
         "pr86_merge_tree_unchanged": True,
         "integration_method": "branch from complete NOC109 ancestry; no PR merges or duplicate cherry-picks",
         "review_order": [r["number"] for r in rows],
-        "migrations": migration_inventory(),
-        "configuration": configuration_inventory(),
+        "migrations": migration_inventory(candidate),
+        "configuration": configuration_inventory(candidate),
         "external_calls": 0,
     }
 

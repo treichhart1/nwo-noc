@@ -1,0 +1,439 @@
+{
+  "format": 1,
+  "features": [
+    {
+      "id": "mikrotik",
+      "name": "MikroTik monitoring",
+      "source_pr": 90,
+      "backend": [
+        "backend/app/integrations/mikrotik.py",
+        "backend/app/integrations/read_only.py"
+      ],
+      "frontend": [
+        "frontend/src/IntegrationStatus.tsx",
+        "frontend/src/RFFoundation.tsx"
+      ],
+      "migrations": [
+        "backend/alembic/versions/0007_integration_readiness.py"
+      ],
+      "tests": [
+        "backend/tests/test_read_only_integrations_postgres.py",
+        "backend/tests/test_read_only_transport.py"
+      ],
+      "integration_status": "implemented; integrated synthetic acceptance; live activation disabled",
+      "limitations": "RouterOS6/7 mock contracts only; live REST permissions/TLS and firmware unverified."
+    },
+    {
+      "id": "rf",
+      "name": "RF monitoring, history and diagnostics",
+      "source_pr": 96,
+      "backend": [
+        "backend/app/services/rf_metrics.py",
+        "backend/app/services/rf_diagnostics.py",
+        "backend/app/services/monitoring_scheduler.py"
+      ],
+      "frontend": [
+        "frontend/src/RFOperations.tsx",
+        "frontend/src/RFAnalytics.tsx",
+        "frontend/src/MonitoringReliability.tsx"
+      ],
+      "migrations": [
+        "backend/alembic/versions/0001_initial.py",
+        "backend/alembic/versions/0008_rf_analytics.py",
+        "backend/alembic/versions/0009_rf_troubleshooting.py",
+        "backend/alembic/versions/0010_rf_operations.py",
+        "backend/alembic/versions/0011_monitoring_reliability.py"
+      ],
+      "tests": [
+        "backend/tests/test_rf_postgres_integration.py",
+        "backend/tests/test_rf_analytics_postgres.py",
+        "backend/tests/test_rf_troubleshooting_postgres.py",
+        "backend/tests/test_monitoring_reliability.py"
+      ],
+      "integration_status": "implemented; integrated synthetic acceptance; live activation disabled",
+      "limitations": "Stored/synthetic RF is validated; no measured firmware compatibility or automatic remediation.1000-device15-second throughput not achieved."
+    },
+    {
+      "id": "ubiquiti-cambium",
+      "name": "Ubiquiti and Cambium RF",
+      "source_pr": 91,
+      "backend": [
+        "backend/app/integrations/radio_snmp.py",
+        "backend/app/radio_poll.py"
+      ],
+      "frontend": [
+        "frontend/src/RadioTelemetry.tsx"
+      ],
+      "migrations": [
+        "backend/alembic/versions/0001_initial.py",
+        "backend/alembic/versions/0007_integration_readiness.py"
+      ],
+      "tests": [
+        "backend/tests/test_radio_postgres.py",
+        "backend/tests/test_radio_snmp.py"
+      ],
+      "integration_status": "implemented; integrated synthetic acceptance; live activation disabled",
+      "limitations": "Uses existing normalized telemetry storage; no dedicated migration needed. Actual model/MIB/firmware capabilities require validation."
+    },
+    {
+      "id": "racom-aviat",
+      "name": "Racom and Aviat microwave",
+      "source_pr": 92,
+      "backend": [
+        "backend/app/integrations/microwave_snmp.py",
+        "backend/app/services/microwave_model.py"
+      ],
+      "frontend": [
+        "frontend/src/MicrowaveTelemetry.tsx"
+      ],
+      "migrations": [
+        "backend/alembic/versions/0001_initial.py",
+        "backend/alembic/versions/0007_integration_readiness.py"
+      ],
+      "tests": [
+        "backend/tests/test_microwave_postgres.py",
+        "backend/tests/test_microwave.py"
+      ],
+      "integration_status": "implemented; integrated synthetic acceptance; live activation disabled",
+      "limitations": "Carrier/adaptive modulation mocks only; no real radio/OID validation."
+    },
+    {
+      "id": "tower-health",
+      "name": "Tower health and capacity",
+      "source_pr": 102,
+      "backend": [
+        "backend/app/tower_health/service.py",
+        "backend/app/tower_health/models.py"
+      ],
+      "frontend": [
+        "frontend/src/TowerHealth.tsx"
+      ],
+      "migrations": [
+        "backend/alembic/versions/0017_tower_health.py"
+      ],
+      "tests": [
+        "backend/tests/test_tower_health.py"
+      ],
+      "integration_status": "implemented; integrated synthetic acceptance; live activation disabled",
+      "limitations": "Missing power/capacity remains unknown; forecasts require sufficient history; no failure guarantees."
+    },
+    {
+      "id": "outages",
+      "name": "Outage detection and customer impact",
+      "source_pr": 101,
+      "backend": [
+        "backend/app/down_detector/engine.py",
+        "backend/app/customers/impact.py"
+      ],
+      "frontend": [
+        "frontend/src/DownDetector.tsx",
+        "frontend/src/CustomerImpact.tsx"
+      ],
+      "migrations": [
+        "backend/alembic/versions/0013_customer_foundation.py",
+        "backend/alembic/versions/0016_down_detector.py"
+      ],
+      "tests": [
+        "backend/tests/test_down_detector.py",
+        "backend/tests/test_powercode_customers.py"
+      ],
+      "integration_status": "implemented; integrated synthetic acceptance; live activation disabled",
+      "limitations": "Mapping/topology/alternate-path uncertainty preserved; actual Powercode compatibility unverified."
+    },
+    {
+      "id": "ipam",
+      "name": "AI IPAM",
+      "source_pr": 103,
+      "backend": [
+        "backend/app/ipam/service.py",
+        "backend/app/ipam/discovery.py"
+      ],
+      "frontend": [
+        "frontend/src/IPAM.tsx"
+      ],
+      "migrations": [
+        "backend/alembic/versions/0018_ai_ipam.py"
+      ],
+      "tests": [
+        "backend/tests/test_ipam.py"
+      ],
+      "integration_status": "implemented; integrated synthetic acceptance; live activation disabled",
+      "limitations": "Documentation-only reservations/reconciliation; discovery disabled, no unrestricted scanning or router writes."
+    },
+    {
+      "id": "equipment",
+      "name": "Equipment inventory",
+      "source_pr": 104,
+      "backend": [
+        "backend/app/equipment/service.py",
+        "backend/app/equipment/models.py"
+      ],
+      "frontend": [
+        "frontend/src/EquipmentInventory.tsx"
+      ],
+      "migrations": [
+        "backend/alembic/versions/0019_equipment_inventory.py"
+      ],
+      "tests": [
+        "backend/tests/test_equipment.py"
+      ],
+      "integration_status": "implemented; integrated synthetic acceptance; live activation disabled",
+      "limitations": "Uses canonical Device/Site bindings; physical inventory reconciliation and attachment scanning need operator acceptance."
+    },
+    {
+      "id": "qr",
+      "name": "Tower and equipment QR",
+      "source_pr": 105,
+      "backend": [
+        "backend/app/field/service.py",
+        "backend/app/field/models.py"
+      ],
+      "frontend": [
+        "frontend/src/FieldManagement.tsx"
+      ],
+      "migrations": [
+        "backend/alembic/versions/0020_field_technician_workflows.py"
+      ],
+      "tests": [
+        "backend/tests/test_field.py"
+      ],
+      "integration_status": "implemented; integrated synthetic acceptance; live activation disabled",
+      "limitations": "Authenticated identifiers; operator-approved HTTPS FIELD_PUBLIC_BASE_URL required before printable real labels resolve."
+    },
+    {
+      "id": "work-orders",
+      "name": "Technician work orders",
+      "source_pr": 105,
+      "backend": [
+        "backend/app/field/routes.py",
+        "backend/app/field/service.py"
+      ],
+      "frontend": [
+        "frontend/src/FieldManagement.tsx",
+        "frontend/src/ApplicationFieldContext.tsx"
+      ],
+      "migrations": [
+        "backend/alembic/versions/0020_field_technician_workflows.py"
+      ],
+      "tests": [
+        "backend/tests/test_field.py",
+        "backend/tests/test_full_integration.py"
+      ],
+      "integration_status": "implemented; integrated synthetic acceptance; live activation disabled",
+      "limitations": "Online-first drafts/replay; no full offline synchronization or automatic dispatch."
+    },
+    {
+      "id": "maintenance",
+      "name": "Preventive maintenance",
+      "source_pr": 106,
+      "backend": [
+        "backend/app/maintenance_ops/service.py",
+        "backend/app/maintenance_ops/worker.py"
+      ],
+      "frontend": [
+        "frontend/src/MaintenanceOps.tsx"
+      ],
+      "migrations": [
+        "backend/alembic/versions/0021_maintenance_documents.py"
+      ],
+      "tests": [
+        "backend/tests/test_maintenance_documents.py"
+      ],
+      "integration_status": "implemented; integrated synthetic acceptance; live activation disabled",
+      "limitations": "Uses existing work orders; scheduler enabled locally, external delivery disabled."
+    },
+    {
+      "id": "documents",
+      "name": "Secure document management",
+      "source_pr": 106,
+      "backend": [
+        "backend/app/maintenance_ops/service.py",
+        "backend/app/maintenance_ops/routes.py"
+      ],
+      "frontend": [
+        "frontend/src/MaintenanceOps.tsx"
+      ],
+      "migrations": [
+        "backend/alembic/versions/0021_maintenance_documents.py"
+      ],
+      "tests": [
+        "backend/tests/test_maintenance_documents.py"
+      ],
+      "integration_status": "implemented; integrated synthetic acceptance; live activation disabled",
+      "limitations": "Protected revisions/checksums/storage; deployed malware scanner, retention and off-host key/file recovery outstanding."
+    },
+    {
+      "id": "signup",
+      "name": "Customer signup and qualification",
+      "source_pr": 107,
+      "backend": [
+        "backend/app/signup/service.py",
+        "backend/app/signup/public_app.py"
+      ],
+      "frontend": [
+        "frontend/src/Applications.tsx",
+        "frontend/src/PublicSignup.tsx"
+      ],
+      "migrations": [
+        "backend/alembic/versions/0022_customer_signup.py"
+      ],
+      "tests": [
+        "backend/tests/test_signup.py",
+        "backend/tests/test_full_integration.py"
+      ],
+      "integration_status": "implemented; integrated synthetic acceptance; live activation disabled",
+      "limitations": "Preliminary qualification only; public entrypoint/Turnstile/geocoder disabled; no real WordPress, billing, provisioning or payments."
+    },
+    {
+      "id": "unified",
+      "name": "Wireless/fiber/hybrid topology",
+      "source_pr": 108,
+      "backend": [
+        "backend/app/unified/service.py",
+        "backend/app/unified/models.py"
+      ],
+      "frontend": [
+        "frontend/src/UnifiedNetwork.tsx"
+      ],
+      "migrations": [
+        "backend/alembic/versions/0023_unified_network.py"
+      ],
+      "tests": [
+        "backend/tests/test_unified.py"
+      ],
+      "integration_status": "implemented; integrated synthetic acceptance; live activation disabled",
+      "limitations": "Documented continuity and alternate paths; no optical proof, OLT writes or live provisioning."
+    },
+    {
+      "id": "planning",
+      "name": "LiDAR and RF planning",
+      "source_pr": 109,
+      "backend": [
+        "backend/app/planning/service.py",
+        "backend/app/planning/worker.py"
+      ],
+      "frontend": [
+        "frontend/src/RFPlanning.tsx"
+      ],
+      "migrations": [
+        "backend/alembic/versions/0024_rf_planning.py"
+      ],
+      "tests": [
+        "backend/tests/test_planning.py"
+      ],
+      "integration_status": "implemented; integrated synthetic acceptance; live activation disabled",
+      "limitations": "Offline/synthetic terrain and bounded predictions; missing terrain/antenna inputs remain unknown, predictions are not field measurements."
+    },
+    {
+      "id": "fiber-designer",
+      "name": "Approved Fiber Designer synchronization",
+      "source_pr": 110,
+      "backend": [
+        "backend/app/fiber_sync/service.py",
+        "backend/app/fiber_sync/adapters.py"
+      ],
+      "frontend": [
+        "frontend/src/FiberDesignerIntegration.tsx"
+      ],
+      "migrations": [
+        "backend/alembic/versions/0025_fiber_designer_sync.py"
+      ],
+      "tests": [
+        "backend/tests/test_fiber_sync.py",
+        "backend/tests/test_full_integration.py"
+      ],
+      "integration_status": "implemented; integrated synthetic acceptance; live activation disabled",
+      "limitations": "Mock versioned approved export contract; real external API unverified. Engineering remains in the separate application."
+    },
+    {
+      "id": "roi",
+      "name": "Tower and network ROI",
+      "source_pr": 111,
+      "backend": [
+        "backend/app/finance/service.py",
+        "backend/app/finance/models.py"
+      ],
+      "frontend": [
+        "frontend/src/NetworkFinance.tsx"
+      ],
+      "migrations": [
+        "backend/alembic/versions/0026_network_finance.py"
+      ],
+      "tests": [
+        "backend/tests/test_finance.py",
+        "backend/tests/test_full_integration.py"
+      ],
+      "integration_status": "implemented; integrated synthetic acceptance; live activation disabled",
+      "limitations": "Explicit actual/estimated/allocated bases; no accounting certification, billing writes or fiber construction ROI."
+    },
+    {
+      "id": "grafana",
+      "name": "Grafana and historical analytics",
+      "source_pr": 112,
+      "backend": [
+        "backend/app/analytics/service.py",
+        "backend/app/analytics/grafana.py",
+        "backend/app/analytics/provision.py"
+      ],
+      "frontend": [
+        "frontend/src/NetworkAnalytics.tsx"
+      ],
+      "migrations": [
+        "backend/alembic/versions/0027_grafana_analytics.py"
+      ],
+      "tests": [
+        "backend/tests/test_grafana_analytics.py"
+      ],
+      "integration_status": "implemented; integrated synthetic acceptance; live activation disabled",
+      "limitations": "Mock private service/data-source contracts; real VPN/auth/embedding unverified; no duplicate device polling."
+    },
+    {
+      "id": "public-status",
+      "name": "Approved public network status",
+      "source_pr": 113,
+      "backend": [
+        "backend/app/customer_status/public_app.py",
+        "backend/app/customer_status/service.py"
+      ],
+      "frontend": [
+        "frontend/src/publicStatus.ts",
+        "frontend/src/CustomerCommunications.tsx"
+      ],
+      "migrations": [
+        "backend/alembic/versions/0028_customer_status.py"
+      ],
+      "tests": [
+        "backend/tests/test_customer_network_status.py"
+      ],
+      "integration_status": "implemented; integrated synthetic acceptance; live activation disabled",
+      "limitations": "Separate allowlisted projection; disabled gateway, no automatic publication or live WordPress modification."
+    },
+    {
+      "id": "notifications",
+      "name": "Approval-controlled notifications",
+      "source_pr": 113,
+      "backend": [
+        "backend/app/notifications/service.py",
+        "backend/app/notifications/worker.py",
+        "backend/app/customer_status/service.py"
+      ],
+      "frontend": [
+        "frontend/src/NotificationCenter.tsx",
+        "frontend/src/CustomerCommunications.tsx"
+      ],
+      "migrations": [
+        "backend/alembic/versions/0014_notifications.py",
+        "backend/alembic/versions/0015_notification_controls.py",
+        "backend/alembic/versions/0028_customer_status.py"
+      ],
+      "tests": [
+        "backend/tests/test_notifications.py",
+        "backend/tests/test_notification_expansion.py",
+        "backend/tests/test_customer_network_status.py",
+        "backend/tests/test_full_integration.py"
+      ],
+      "integration_status": "implemented; integrated synthetic acceptance; live activation disabled",
+      "limitations": "Mock delivery only; consent/opt-out/ambiguity gates retained; actual carrier delivery unsupported/unverified."
+    }
+  ]
+}
