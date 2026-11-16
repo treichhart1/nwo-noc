@@ -176,3 +176,5 @@ NOC115 [final release acceptance](docs/release/NOC-115/README.md) pins the exact
 commit/feature manifest, executed installation evidence, acceptance matrix and
 operator runbook. High operational gates remain **NO-GO for live pilot/production**;
 isolated installation acceptance uses independently approved test inputs.
+
+NOC-116 release blocker remediation: [report, compatibility, evidence and operator acceptance](docs/release/NOC-116/README.md). This candidate remains NO-GO for operational release/live pilot.

@@ -19,8 +19,8 @@ validate:
 	./scripts/validate.sh
 
 reset-admin:
-	@test -n "$(PASSWORD)" || (echo "Usage: make reset-admin PASSWORD='new-password'" && exit 1)
-	docker compose exec backend python -m app.reset_admin --password "$(PASSWORD)"
+	@echo "Use the approved local recovery runbook; never supply PASSWORD in make arguments."
+	@exit 1
 
 backup:
 	./scripts/backup.sh

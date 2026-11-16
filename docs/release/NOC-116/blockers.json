@@ -1,0 +1,116 @@
+{
+  "source": "6de7931f94a0b79f3808af84b182492c59fc5d1c",
+  "assessment": "NO-GO",
+  "rows": [
+    {
+      "finding": "A111-15",
+      "severity": "HIGH",
+      "status": "BLOCKED",
+      "original_evidence": "NOC115 no real equipment/provider compatibility evidence",
+      "reproduction": "Executed locally or existing evidence as explicitly scoped in README; external portions not executed",
+      "correction": "Compatibility/provider matrices; synthetic fixture and error/version contracts",
+      "tests": "test_release_blockers.py plus existing targeted/full CI; exact executions in README and final PR ledger",
+      "external_dependency": "Real firmware/OIDs/read-only scopes, Powercode/provider deployments",
+      "operator_action": "Operator execute each compatibility row with approved device/account and redacted evidence"
+    },
+    {
+      "finding": "A111-16",
+      "severity": "HIGH",
+      "status": "BLOCKED",
+      "original_evidence": "NOC115 trusted artifacts, AV, licensing, host security and off-host DR incomplete",
+      "reproduction": "Executed locally or existing evidence as explicitly scoped in README; external portions not executed",
+      "correction": "Mandatory production approval signatures, SBOM/native image evidence, scanner parsing, secure recovery",
+      "tests": "test_release_blockers.py plus existing targeted/full CI; exact executions in README and final PR ledger",
+      "external_dependency": "Trust keys/published images/CVEs/Redis license/deployed scanner/VPN/MFA/off-host recovery",
+      "operator_action": "Independent trust/license/network/scanner/minimal-host and second-host restore sign-off"
+    },
+    {
+      "finding": "A111-12",
+      "severity": "MEDIUM",
+      "status": "FAIL",
+      "original_evidence": "NOC115 1,000device rounds17.918\u201319.409s; local baseline27.642\u201331.646s",
+      "reproduction": "Executed locally or existing evidence as explicitly scoped in README; external portions not executed",
+      "correction": "Per-call locked alert inventory; local after16.851\u201319.398s",
+      "tests": "test_release_blockers.py plus existing targeted/full CI; exact executions in README and final PR ledger",
+      "external_dependency": "Dedicated sustained-history and real adapter sizing",
+      "operator_action": "Keep measured conservative intervals; repeat benchmark and sustained approved load"
+    },
+    {
+      "finding": "N116-01",
+      "severity": "MEDIUM",
+      "status": "PASS",
+      "original_evidence": "Repeated per-rule SELECTs reproduced in original source",
+      "reproduction": "Executed locally or existing evidence as explicitly scoped in README; external portions not executed",
+      "correction": "At most3 SELECT regression with alert/stale safety",
+      "tests": "test_release_blockers.py plus existing targeted/full CI; exact executions in README and final PR ledger",
+      "external_dependency": "Real transport/long-history performance not certified",
+      "operator_action": "Review final CI and performance.json; do not claim15s passed locally"
+    },
+    {
+      "finding": "N116-02",
+      "severity": "HIGH",
+      "status": "PASS",
+      "original_evidence": "Unsigned root approval lacked cryptographic publisher verification",
+      "reproduction": "Executed locally or existing evidence as explicitly scoped in README; external portions not executed",
+      "correction": "Release-purpose Ed25519 fail-closed validation; tamper/unsigned tests",
+      "tests": "test_release_blockers.py plus existing targeted/full CI; exact executions in README and final PR ledger",
+      "external_dependency": "Production signing and artifact publication unavailable",
+      "operator_action": "Provision independent key/manifest signature; controlled-test evidence cannot approve a release"
+    },
+    {
+      "finding": "N116-03",
+      "severity": "MEDIUM",
+      "status": "PASS",
+      "original_evidence": "Single recv accepted incomplete arbitrary suffix and rejected fragmented clean replies",
+      "reproduction": "Executed locally or existing evidence as explicitly scoped in README; external portions not executed",
+      "correction": "Bounded terminated exact protocol parsing; mock error/fragmentation tests",
+      "tests": "test_release_blockers.py plus existing targeted/full CI; exact executions in README and final PR ledger",
+      "external_dependency": "No deployed scanner validation",
+      "operator_action": "Install/update scanner; actual EICAR/upload/approval/outage/retrieval test"
+    },
+    {
+      "finding": "N116-04",
+      "severity": "MEDIUM",
+      "status": "PASS",
+      "original_evidence": "Legacy password argv/history and no audit/session cutoff",
+      "reproduction": "Executed locally or existing evidence as explicitly scoped in README; external portions not executed",
+      "correction": "Hidden prompt/bounded stdin, explicit approval/reason, audit and old-session denial",
+      "tests": "test_release_blockers.py plus existing targeted/full CI; exact executions in README and final PR ledger",
+      "external_dependency": "Privileged operator console custody/logging",
+      "operator_action": "Approve downtime/backup/recovery; no public recovery endpoint"
+    },
+    {
+      "finding": "DR-independent-host",
+      "severity": "HIGH",
+      "status": "NOT TESTED",
+      "original_evidence": "Same-host isolated restore is not independent recovery",
+      "reproduction": "Executed locally or existing evidence as explicitly scoped in README; external portions not executed",
+      "correction": "Exact second-host procedure prepared; existing CI recovery revalidated separately",
+      "tests": "test_release_blockers.py plus existing targeted/full CI; exact executions in README and final PR ledger",
+      "external_dependency": "Second isolated host and separately held recovery identity",
+      "operator_action": "Execute and record full files/keys/DB/history RPO/RTO; never overwrite newer data"
+    },
+    {
+      "finding": "Host-boot-VPN-MFA",
+      "severity": "HIGH",
+      "status": "NOT TESTED",
+      "original_evidence": "Hosted Ubuntu preprovisioned; no minimal ISO/reboot/power-loss or actual access deployment",
+      "reproduction": "Executed locally or existing evidence as explicitly scoped in README; external portions not executed",
+      "correction": "Read-only host checklist and private defaults retained",
+      "tests": "test_release_blockers.py plus existing targeted/full CI; exact executions in README and final PR ledger",
+      "external_dependency": "Disposable hypervisor image and approved VPN/MFA/egress controls",
+      "operator_action": "Execute minimal-host bootstrap/boot and independent network boundary tests"
+    },
+    {
+      "finding": "N116-06-native-images",
+      "severity": "CRITICAL",
+      "status": "FAIL",
+      "original_evidence": "Actual Trivy603 PostgreSQL image1CRITICAL/25HIGH in bundled gosu; backend52HIGH/frontend3HIGH; exact native-image-baseline.json",
+      "reproduction": "Executed GitHub Actions scan with pinned tool; full JSON archive retained",
+      "correction": "Targeted same-distro zlib/libxslt patch updates; strict optional release gate; no findings waived",
+      "tests": "Final image rescans plus complete installer/backup/migration/regression CI required",
+      "external_dependency": "Compatible trusted upstream PostgreSQL16 image with patched gosu/toolchain or reviewed VEX; unfixed Debian packages; Redis license approval",
+      "operator_action": "Review each exact CVE/version/license; approve trusted patched artifact and test restore/init; do not deploy this candidate"
+    }
+  ]
+}

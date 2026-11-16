@@ -4,7 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.security import decode_access_claims
-from app.models.entities import User, RevokedToken
+from app.models.entities import User, RevokedToken, AuditLog
 from sqlalchemy.exc import SQLAlchemyError
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
@@ -19,18 +19,20 @@ def current_user(
     try:
         revoked = db.get(RevokedToken, claims["jti"])
         user = db.scalar(select(User).where(User.username == claims["sub"]))
+        reset_at = db.scalar(select(AuditLog.created_at).where(
+            AuditLog.entity_type == "user", AuditLog.entity_id == str(user.id),
+            AuditLog.action == "auth.password_reset",
+        ).order_by(AuditLog.id.desc()).limit(1)) if user else None
     except SQLAlchemyError:
         db.rollback()
         raise HTTPException(503, "Authentication storage unavailable") from None
-    if revoked or not user or not user.is_active or claims.get("uid") != user.id:
+    if revoked or not user or not user.is_active or claims.get("uid") != user.id or (reset_at and claims["iat"] <= int(reset_at.timestamp())):
         raise HTTPException(401, "Invalid or expired session")
     # Field-only technicians must not bypass assignment scope through legacy APIs.
     if user.role == "technician" and not (
         request.url.path.startswith(("/api/field/", "/api/maintenance-ops/", "/api/applications/"))
         or request.url.path in {"/api/auth/me", "/api/auth/logout"}
     ):
-        from app.models.entities import AuditLog
-
         db.add(
             AuditLog(
                 user_id=user.id,

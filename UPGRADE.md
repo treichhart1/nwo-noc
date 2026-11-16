@@ -39,3 +39,12 @@ and verify restored data before a separately authorized recovery decision. Never
 over newer production data. Archive failed releases for diagnosis rather than deleting
 history. Unit/protocol changes require an explicit compatibility review; do not blindly
 replace local unit customizations.
+
+## NOC116 signed release prerequisite
+
+Production-purpose install/upgrade now fails closed unless the exact approved JSON
+has a detached Ed25519 signature at <approval-path>.sig and an independently trusted
+root-owned0600 public key at /etc/nwo-noc-release.pub. No private signing key belongs
+on the NOC host. /usr/bin/openssl must be available before release verification. See
+[trusted-artifact procedure](docs/release/NOC-116/trusted-artifacts.md). Explicit
+controlled-test approval remains isolated and does not authorize a release/live pilot.

@@ -86,7 +86,15 @@ def approval(path, *, controlled=False, source=None):
     p = Path(path)
     if source and p.resolve().is_relative_to(Path(source).resolve()):
         raise Reject("Release approval must be outside the source repository")
-    data = json.loads(private_file(p))
+    raw = private_file(p)
+    if not controlled:
+        from artifacts import verify_signature
+        try:
+            verify_signature(raw, private_file(Path(str(p) + ".sig")),
+                             private_file(Path("/etc/nwo-noc-release.pub")))
+        except (OSError, ValueError):
+            raise Reject("Signed release approval and protected independently trusted Ed25519 key required") from None
+    data = json.loads(raw)
     if data.get("format") != 1 or data.get("repository") != REPOSITORY:
         raise Reject("Unsupported release approval contract/repository")
     if not SHA.fullmatch(data.get("commit", "")) or not SHA.fullmatch(

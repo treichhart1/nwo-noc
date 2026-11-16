@@ -228,7 +228,7 @@ class Host:
         )
 
     def dependencies(self):
-        required = ["python3", "ca-certificates", "python3-yaml", "age", "logrotate"]
+        required = ["python3", "ca-certificates", "python3-yaml", "age", "logrotate", "openssl"]
         missing = [
             p
             for p in required
