@@ -83,6 +83,21 @@ This is actual filesystem ownership validation, not a mocked Git success.
 
 ## Evidence and decision
 
+### A115-04 — Medium immutable artifact transport resilience — corrected
+
+PR600 failed before application initialization with Approved immutable artifact
+download failed. The underlying registry error was sanitized and is not established;
+it must not be claimed to be a confirmed rate limit. Only the exact pinned artifact
+pull now has3 bounded transport attempts,2/4-second backoff and600-second per-attempt
+timeout. Failure still stops preflight with explicit registry connectivity/rate-limit
+guidance and preserves application data. No tag fallback, digest/UID validation,
+migration/startup retry or security assertion is changed. Tests cover transient
+success, exhausted nonzero exits/timeouts, unchanged refs and state preservation.
+The workspace is unavailable, so these new regression tests require final Actions
+execution; they are not claimed locally passed.
+
+
+
 ### A115-03 — Medium field reliability — corrected reproducible failure mode
 
 PR598 attempt1 timed out looking for Field change reason after reload/offline/online;
@@ -149,6 +164,7 @@ host activation configuration in this candidate.
 | A115-01 | Medium / corrected | Historical candidate inventories now read that Git tree; regression required in CI |
 | A115-02 | Medium / corrected | Exact per-command checkout trust supports root automation; non-root-owned fixture regression in real host acceptance |
 | A115-03 | Medium / corrected reproduction; original CI cause uncertain | Failed optional deferred document module is isolated from field controls/draft; original phone flow and new browser regression remain required |
+| A115-04 | Medium / corrected | Bounded pinned-artifact transport retries; exhausted failures preserve state and stop installation |
 
 No new critical application defect was reproduced. This is not a deployed-host
 penetration test or proof of vulnerability absence. Physical reboot/power-loss,

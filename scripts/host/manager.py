@@ -281,7 +281,27 @@ class Host:
 
     def image(self, ref):
         if run([*DOCKER, "image", "inspect", ref], check=False).returncode:
-            run([*DOCKER, "pull", ref], label="Approved immutable artifact download")
+            # Only immutable artifact transport is retried. Application/migration
+            # failures retain their original fail-closed behavior.
+            for attempt in range(3):
+                try:
+                    pulled = run(
+                        [*DOCKER, "pull", ref],
+                        check=False,
+                        timeout=600,
+                        label="Approved immutable artifact download",
+                    )
+                except subprocess.TimeoutExpired:
+                    pulled = None
+                if pulled is not None and pulled.returncode == 0:
+                    break
+                if attempt == 2:
+                    raise Reject(
+                        "Approved immutable artifact download failed after 3 bounded attempts; "
+                        "check registry connectivity/rate limits and protected Docker logs. "
+                        "Existing application data is preserved."
+                    )
+                time.sleep(2 ** (attempt + 1))
         return json.loads(run([*DOCKER, "image", "inspect", ref]).stdout)[0]
 
     def images(self, a):
