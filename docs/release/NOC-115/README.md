@@ -65,6 +65,22 @@ Git-repository regression changes both configuration and migration HEAD after a
 commit and proves the historical inventory is unaffected. No migration or application
 behavior is changed. Missing feature source is also a hard manifest failure.
 
+## Verified correction A115-02 — Medium, root checkout compatibility
+
+Root execution without a matching SUDO_UID rejected the operator-owned checkout
+inside child Git audits, while the host manager already scopes Git trust to that
+exact approved repository. Reproduced in the Ubuntu control container as root with
+global/system Git configuration disabled: audit exit1 with dubious-ownership error;
+after correction the same audit exits0 and verifies28 migrations/112 ancestors/replay.
+Normal sudo can already trust its original user via SUDO_UID; this defect concerns
+the supported root/automation path where that variable is absent or differs.
+
+All manifest Git subprocesses now use per-command safe.directory for only their
+exact repository, matching Host.approved. No wildcard trust, global Git configuration
+or source/image/approval check is changed. Actual host acceptance now installs from
+a real non-root-owned fixture checkout (UID65534), adding a regression assertion.
+This is actual filesystem ownership validation, not a mocked Git success.
+
 ## Evidence and decision
 
 - [Installation evidence audit](installation-evidence.md), [pinned evidence](evidence.json).
@@ -104,6 +120,7 @@ host activation configuration in this candidate.
 | A111-16 | High / BLOCKED | OS/native-image scan, Redis server license decision, trusted signed/published artifacts, deployed malware scanner, off-host complete key/file recovery, minimal-host boot/firewall/VPN/MFA |
 | A111-12 | Medium / FAIL at15-second target | Native1000-device synthetic rounds exceed15seconds; choose measured intervals and run sustained history/concurrency sizing |
 | A115-01 | Medium / corrected | Historical candidate inventories now read that Git tree; regression required in CI |
+| A115-02 | Medium / corrected | Exact per-command checkout trust supports root automation; non-root-owned fixture regression in real host acceptance |
 
 No new critical application defect was reproduced. This is not a deployed-host
 penetration test or proof of vulnerability absence. Physical reboot/power-loss,

@@ -98,3 +98,10 @@ exists. The documented bare sudo install.sh therefore deliberately refuses an
 unapproved development checkout. This is a release prerequisite, not a claim that
 the ordinary command works without trusted inputs. Reboot, off-host recovery and
 real operational credentials require the remaining procedures in the runbook.
+
+NOC115 also reproduced a root-automation failure with an operator-owned checkout
+when no matching SUDO_UID is present. Scoped per-command Git trust fixes the child
+audit without global/wildcard trust or relaxing approval. The final host rerun now
+uses a non-root-owned source checkout and adds one explicit assertion; baseline77
+counts remain historical and are not retroactively increased. Normal sudo sessions
+can already inherit the invoking user's trust through SUDO_UID.

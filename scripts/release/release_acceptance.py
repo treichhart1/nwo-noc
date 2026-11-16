@@ -35,7 +35,15 @@ FEATURE_IDS = {
 
 def resolve(ref):
     return subprocess.check_output(
-        ["git", "rev-parse", "--verify", "--end-of-options", ref + "^{commit}"],
+        [
+            "git",
+            "-c",
+            f"safe.directory={ROOT}",
+            "rev-parse",
+            "--verify",
+            "--end-of-options",
+            ref + "^{commit}",
+        ],
         cwd=ROOT,
         text=True,
     ).strip()
@@ -44,7 +52,10 @@ def resolve(ref):
 def file_record(candidate, path):
     if Path(path).is_absolute() or ".." in Path(path).parts:
         raise ValueError("Only tracked repository paths are permitted")
-    data = subprocess.check_output(["git", "show", candidate + ":" + path], cwd=ROOT)
+    data = subprocess.check_output(
+        ["git", "-c", f"safe.directory={ROOT}", "show", candidate + ":" + path],
+        cwd=ROOT,
+    )
     entry = git("ls-tree", candidate, "--", path).split()
     if len(entry) != 4 or entry[1] != "blob" or entry[0] not in ("100644", "100755"):
         raise ValueError("Manifest requires regular tracked source files")
