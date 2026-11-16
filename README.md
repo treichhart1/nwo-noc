@@ -171,3 +171,8 @@ NOC-104 adds [unified wireless/fiber/hybrid topology, strand documentation and e
 NOC-108 adds private Grafana provisioning and recorded monitoring reports without
 additional device polling. See [configuration, security and operations](docs/analytics/NOC-108.md)
 and [validation evidence](docs/analytics/NOC-108-results.md). Integrations remain disabled by default.
+
+NOC-109 adds independently approved public network-status announcements and customer
+communication review using the existing Powercode mappings and notification queue.
+See [architecture, WordPress examples and activation limits](docs/customer-status/NOC-109.md).
+Public access defaults off; all delivery remains mock-only.

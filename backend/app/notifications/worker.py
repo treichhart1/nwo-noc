@@ -89,6 +89,8 @@ def run_batch(db, *, sms=None, slack=None, now=None, limit=20):
                 or actor.role not in {"operator", "admin"}
             ):
                 raise ValueError("approval_invalid")
+            from app.customer_status.service import linked_approval
+            linked_approval(db, plan, actor.id)
             current, _ = snapshot(
                 db, PlanRequest.model_validate(plan.snapshot["request"]), now
             )
@@ -251,10 +253,12 @@ def run_batch(db, *, sms=None, slack=None, now=None, limit=20):
                 attempt=d.attempts,
             )
         except DeliveryFailure as error:
-            d.last_error = error.code
+            linked = plan.snapshot.get("request",{}).get("evidence",{}).get("reference","").startswith("noc109:")
+            ambiguous = linked and error.code in {"timeout", "invalid_response"}
+            d.last_error = "ambiguous_requires_reconciliation" if ambiguous else error.code
             d.state = (
                 "dead_letter"
-                if error.permanent or d.attempts >= p.max_attempts
+                if ambiguous or error.permanent or d.attempts >= p.max_attempts
                 else "retry"
             )
             d.next_attempt_at = now + timedelta(

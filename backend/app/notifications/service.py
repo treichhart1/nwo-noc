@@ -304,6 +304,8 @@ def snapshot(db, request, now=None):
             ],
         )
         impacts.append(best)
+    from app.customer_status.service import refine_impacts
+    impacts = refine_impacts(db, request, impacts)
     selected = recipients(db, impacts)["recipients"]
     accounts = (
         {
@@ -769,6 +771,8 @@ def approve(db, ident, user_id, now=None, *, expected_fingerprint=None):
         )
     if plan.status != "draft":
         return plan
+    from app.customer_status.service import linked_approval
+    linked_approval(db, plan, user_id)
     current, _ = snapshot(db, PlanRequest.model_validate(plan.snapshot["request"]), now)
     if digest(current) != plan.fingerprint:
         raise ValueError(

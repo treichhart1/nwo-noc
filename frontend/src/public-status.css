@@ -1,0 +1,65 @@
+:root {
+  font-family: system-ui, sans-serif;
+  color: #183047;
+  background: #f4f7fa;
+  color-scheme: light;
+}
+body {
+  margin: 0;
+}
+[data-nwo-network-status] {
+  max-width: 900px;
+  margin: auto;
+  padding: 1rem;
+  overflow-wrap: anywhere;
+}
+h1 {
+  font-size: clamp(1.6rem, 5vw, 2.3rem);
+}
+.status-summary,
+article {
+  padding: 1rem;
+  background: white;
+  border: 1px solid #b6c8d7;
+  border-radius: 0.6rem;
+  margin: 1rem 0;
+}
+.status-label {
+  font-weight: 700;
+}
+article h3 {
+  margin-top: 0;
+}
+.status-disruption {
+  border-left: 6px solid #a52626;
+}
+.status-operational {
+  border-left: 6px solid #187246;
+}
+.status-investigating {
+  border-left: 6px solid #8b5c10;
+}
+button {
+  font: inherit;
+  min-height: 44px;
+  padding: 0.6rem 1rem;
+  cursor: pointer;
+}
+time {
+  font-variant-numeric: tabular-nums;
+}
+.status-note {
+  font-size: 0.9rem;
+  color: #40596e;
+}
+@media print {
+  button {
+    display: none;
+  }
+  body {
+    background: white;
+  }
+  article {
+    break-inside: avoid;
+  }
+}

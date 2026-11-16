@@ -38,7 +38,7 @@ from fastapi.responses import JSONResponse
 
 @app.exception_handler(RequestValidationError)
 async def private_customer_validation(request, exc):
-    if request.url.path.startswith(('/api/customers','/api/notifications','/api/down-detector','/api/tower-health','/api/ipam','/api/equipment','/api/field','/api/maintenance-ops','/api/applications','/api/unified','/api/planning','/api/fiber-designer','/api/finance','/api/analytics')):
+    if request.url.path.startswith(('/api/customers','/api/notifications','/api/down-detector','/api/tower-health','/api/ipam','/api/equipment','/api/field','/api/maintenance-ops','/api/applications','/api/unified','/api/planning','/api/fiber-designer','/api/finance','/api/analytics','/api/customer-status')):
         return JSONResponse(status_code=422, content={'detail':'Invalid customer request; check the documented field types and bounds'})
     return await request_validation_exception_handler(request, exc)
 
@@ -131,10 +131,13 @@ app.include_router(analytics_scrape_router)
 
 @app.middleware("http")
 async def bounded_analytics_requests(request,call_next):
-    if request.method=="POST" and request.url.path.startswith("/api/analytics/"):
+    if request.method=="POST" and request.url.path.startswith(("/api/analytics/","/api/customer-status/")):
         try:
             if request.headers.get("transfer-encoding") or not 0<int(request.headers.get("content-length","0"))<=65536:raise ValueError()
         except ValueError:return JSONResponse({"detail":"Bounded analytics request required"},status_code=413)
     response=await call_next(request)
-    if request.url.path.startswith(("/api/analytics/","/api/analytics-scrape/")):response.headers["Cache-Control"]="no-store"
+    if request.url.path.startswith(("/api/analytics/","/api/analytics-scrape/","/api/customer-status/")):response.headers["Cache-Control"]="no-store"
     return response
+
+from app.customer_status.routes import router as customer_status_router
+app.include_router(customer_status_router)

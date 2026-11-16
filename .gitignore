@@ -38,3 +38,5 @@ frontend/test-results/
 frontend/playwright-report/
 
 frontend/dist-signup/
+
+frontend/dist-status/

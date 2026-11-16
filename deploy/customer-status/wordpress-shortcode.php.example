@@ -1,0 +1,12 @@
+<?php
+/**
+ * Plugin Name: NWO Approved Network Status
+ * Requires at least: 6.5
+ * Installation example only. Deploy generated dist-status/assets under /noc-status/.
+ * Add [nwo_network_status] to the existing WordPress Network Status page.
+ */
+add_shortcode('nwo_network_status', function () {
+    wp_enqueue_style('nwo-network-status', '/noc-status/assets/network-status.css', array(), '109');
+    wp_enqueue_script_module('nwo-network-status', '/noc-status/assets/network-status.js', array(), '109');
+    return '<section data-nwo-network-status data-status-endpoint="/network-status-api/v1" aria-label="Approved Northwest Ohio Broadband network status"><h2>Network status</h2><p>Loading approved public updates. Contact support through the usual channels if updates are unavailable.</p></section>';
+});
