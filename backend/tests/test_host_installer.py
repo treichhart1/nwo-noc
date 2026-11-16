@@ -205,6 +205,10 @@ def test_compose_reuses_all_core_services_without_owner_secrets_or_public_ports(
     assert "migrate" not in rendered["services"]["backend"]["depends_on"]
     assert "app.seed" not in json.dumps(rendered)
     assert "migration.env" in rendered["services"]["migrate"]["env_file"][-1]
+    assert rendered["services"]["migrate"]["volumes"] == []
+    assert rendered["services"]["planning-worker"]["volumes"] == [
+        f"{host.lib / 'planning'}:/var/lib/nwo-noc/planning"
+    ]
     assert "x-app" not in rendered
     assert all(
         v["restart"] == "on-failure:3"
@@ -491,3 +495,29 @@ def test_missing_dependencies_use_signed_ubuntu_without_replacing_compatible_doc
     assert "python3-yaml" in install and "age" in install and "logrotate" in install
     assert "docker.io" not in install and "docker-compose-v2" not in install
     assert not any(a[0] == "systemctl" for a in commands)
+
+
+def test_systemd_stop_explicitly_includes_profile_workers(tmp_path, monkeypatch):
+    calls = []
+    host = SimpleNamespace(
+        environment=lambda: None,
+        state=lambda: {"commit": "a" * 40},
+        opt=tmp_path,
+        compose=lambda *a, **k: calls.append(a),
+    )
+    monkeypatch.setattr(host_manager, "Host", lambda args: host)
+    monkeypatch.setattr(sys, "argv", ["manager.py", "service-stop"])
+    old = os.umask(0o077)
+    try:
+        assert host_manager.main() == 0
+    finally:
+        os.umask(old)
+    assert calls[0][2:] == (
+        "stop",
+        "frontend",
+        "planning-worker",
+        "worker",
+        "backend",
+        "redis",
+        "db",
+    )

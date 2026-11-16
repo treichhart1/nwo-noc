@@ -32,6 +32,56 @@ def command(argv, *, data=None, success=True, cwd=None, env=None):
         timeout=1800,
     )
     if success and p.returncode:
+        if str(argv[0]) == "systemctl" and any("nwo-noc" in str(v) for v in argv):
+            journal = subprocess.run(
+                [
+                    "journalctl",
+                    "-u",
+                    "nwo-noc.service",
+                    "-u",
+                    "nwo-noc-ingress.service",
+                    "-n",
+                    "80",
+                    "--no-pager",
+                    "-o",
+                    "cat",
+                ],
+                capture_output=True,
+                text=True,
+                timeout=15,
+            )
+            safe = [
+                line
+                for line in journal.stdout.splitlines()
+                if line.startswith("NOC packaging")
+                or line.startswith("nwo-noc.service:")
+                or line.startswith("nwo-noc-ingress.service:")
+                or "Failed at step" in line
+            ]
+            print(json.dumps({"sanitized_unit_diagnostics": safe}), flush=True)
+            state_path = Path("/var/lib/nwo-noc/installation.json")
+            if state_path.exists():
+                state = json.loads(state_path.read_text())
+                statuses = subprocess.run(
+                    [
+                        "docker",
+                        "ps",
+                        "-a",
+                        "--filter",
+                        "label=com.docker.compose.project=" + state["project"],
+                        "--format",
+                        "{{.Names}} {{.Status}}",
+                    ],
+                    capture_output=True,
+                    text=True,
+                    timeout=15,
+                )
+                print(
+                    json.dumps(
+                        {"managed_container_status": statuses.stdout.splitlines()}
+                    ),
+                    flush=True,
+                )
         # Installer stderr is intentionally sanitized. Never print docker/config/provider output.
         raise RuntimeError(
             "Acceptance command failed: "

@@ -590,7 +590,15 @@ class Host:
                     f"{self.lib / directory}:/var/lib/nwo-noc/{directory}"
                     for directory in DATA_DIRS
                 ] + [f"{self.etc / 'keys'}:/run/nwo-noc-keys:ro"]
+            if name == "planning-worker":
+                svc["volumes"] = [f"{self.lib / 'planning'}:/var/lib/nwo-noc/planning"]
+            if name == "fiber-sync-worker":
+                svc["volumes"] = [
+                    f"{self.lib / 'documents'}:/var/lib/nwo-noc/documents",
+                    f"{self.etc / 'keys/fiber'}:/run/nwo-noc-keys/fiber:ro",
+                ]
             if name == "migrate":
+                svc["volumes"] = []
                 svc["env_file"].append(str(self.etc / "migration.env"))
                 svc["profiles"] = ["migration"]
             if name == "backend":
@@ -1650,7 +1658,17 @@ def main():
         else:
             if args.rehearsal:
                 host.stop_ingress()
-            host.compose(release, state, "stop")
+            host.compose(
+                release,
+                state,
+                "stop",
+                "frontend",
+                "planning-worker",
+                "worker",
+                "backend",
+                "redis",
+                "db",
+            )
         return 0
     with operation_lock(host):
         if args.action == "verify":
