@@ -1,0 +1,36 @@
+# NOC-110 configuration inventory
+
+Generated names/types from `Settings`; no environment values or secrets are captured.
+Regenerate with `python scripts/release/integration_manifest.py`. The complete safe
+example remains [`.env.example`](../.env.example). The isolated installer generates
+private nonproduction configuration; do not copy its credentials into a pilot.
+
+| Group | Settings |
+| --- | --- |
+| Public status | `CUSTOMER_STATUS_RATE_KEY_FILE` |
+| Grafana/analytics | `GRAFANA_ALLOWED_ORIGINS`, `GRAFANA_LIVE_HEALTH_ENABLED`, `GRAFANA_EMBED_APPROVED`, `GRAFANA_SERVICE_TOKEN_FILE`, `ANALYTICS_METRICS_TOKEN_FILE`, `ANALYTICS_ROLLUP_ENABLED` |
+| Backend/runtime | `APP_NAME`, `APP_ENV`, `API_DOCS_ENABLED`, `OFFLINE_MODE`, `SYNTHETIC_MONITORING_ENABLED`, `IPAM_DISCOVERY_ENABLED`, `PLANNING_WORKER_ENABLED`, `PLANNING_STORAGE_ROOT`, `PLANNING_MAX_UPLOAD_BYTES`, `INTEGRATIONS_ADMIN_APPROVED`, `CORS_ORIGINS` |
+| Powercode | `POWERCODE_FIXTURE_ENABLED`, `POWERCODE_LIVE_ENABLED` |
+| Signup/public API | `SIGNUP_PII_KEY_FILE`, `SIGNUP_PUBLIC_ORIGIN`, `SIGNUP_PUBLIC_ENABLED`, `SIGNUP_PUBLIC_TEST_MODE`, `SIGNUP_TURNSTILE_MODE`, `SIGNUP_TURNSTILE_SITE_KEY`, `SIGNUP_TURNSTILE_SECRET_FILE`, `SIGNUP_GEOCODER`, `SIGNUP_GEOCODER_ORIGIN`, `SIGNUP_GEOCODER_APPROVED_ORIGINS`, `SIGNUP_GEOCODER_ADMIN_APPROVED`, `SIGNUP_TRUSTED_PROXY_CIDRS`, `SIGNUP_RETENTION_DAYS` |
+| Documents/field | `MAINTENANCE_SCHEDULER_ENABLED`, `MAINTENANCE_WARRANTY_WARNING_DAYS`, `MAINTENANCE_REPEAT_SERVICE_COUNT`, `MAINTENANCE_SERVICE_HISTORY_DAYS`, `MAINTENANCE_DOCUMENT_ROOT`, `MAINTENANCE_DOCUMENT_MAX_BYTES`, `MAINTENANCE_DOCUMENT_SCANNER`, `MAINTENANCE_CLAMAV_SOCKET`, `FIELD_PUBLIC_BASE_URL` |
+| Fiber Designer | `FIBER_DESIGNER_HEARTBEAT_FILE`, `FIBER_DESIGNER_WORKER_ENABLED`, `FIBER_DESIGNER_INGEST_ENABLED`, `FIBER_DESIGNER_KEY_FILE` |
+| Monitoring | `TOWER_HEALTH_ENABLED`, `TOWER_HEALTH_INTERVAL_SECONDS`, `TOWER_HEALTH_POLICY`, `DOWN_DETECTOR_ENABLED`, `DOWN_DETECTOR_INTERVAL_SECONDS`, `DOWN_DETECTOR_POLICY`, `UISP_BASE_URL`, `UISP_TOKEN`, `UISP_TOKEN_FILE`, `MIKROTIK_PASSWORD_FILE`, `UISP_ENABLED`, `UISP_ALLOWED_ORIGINS`, `MIKROTIK_ENABLED`, `MIKROTIK_BASE_URL`, `MIKROTIK_ALLOWED_ORIGINS`, `MIKROTIK_USERNAME`, `MIKROTIK_PASSWORD`, `MIKROTIK_DEVICE_ID`, `MIKROTIK_SYNC_INTERVAL_SECONDS`, `UISP_VERIFY_TLS`, `UISP_SYNC_INTERVAL_SECONDS`, `RF_SCHEDULER_ENABLED`, `RF_SCHEDULER_SPOOL_DIR`, `RF_SCHEDULER_MANIFEST_FILE`, `RF_SCHEDULER_CONCURRENCY`, `RF_SCHEDULER_BATCH_SIZE`, `RF_RELIABILITY_POLICY`, `RF_COLLECTION_ENABLED`, `RF_SNMP_ENABLED`, `RF_SNMP_CONFIG_FILE`, `RF_RADIO_THRESHOLDS`, `RF_MICROWAVE_ENABLED`, `RF_MICROWAVE_CONFIG_FILE`, `RF_MICROWAVE_THRESHOLDS`, `RF_ANALYTICS_PROJECTION_ENABLED`, `RF_ANALYTICS_POLICY`, `RF_EXPLANATION_PROVIDER`, `RF_EXPLANATION_ADMIN_APPROVED`, `RF_EXPLANATION_MODEL`, `RF_TROUBLESHOOTING_TEMPERATURE_WARNING_C`, `RF_ANALYTICS_RETENTION_ENABLED`, `RF_ANALYTICS_RETENTION_DAYS`, `RF_ANALYTICS_RETENTION_BATCH`, `RF_COLLECTION_MIN_INTERVAL_SECONDS`, `RF_COLLECTION_MAX_DEVICES`, `RF_HISTORY_PRUNING_ENABLED`, `RF_HISTORY_RETENTION_DAYS`, `RF_HISTORY_MAX_DELETE_PER_RUN` |
+| Notifications | `NOTIFICATIONS_WORKER_ENABLED`, `NOTIFICATIONS_AUTO_DRAFTS_ENABLED`, `NOTIFICATIONS_LIVE_DELIVERY_ENABLED`, `NOTIFICATIONS_VAULT_KEY_FILE` |
+| Authentication | `SECRET_KEY`, `ACCESS_TOKEN_EXPIRE_MINUTES`, `ADMIN_USERNAME`, `ADMIN_PASSWORD`, `ADMIN_EMAIL` |
+| PostgreSQL | `DATABASE_URL` |
+| Redis/queue | `REDIS_URL` |
+
+Frontend configuration is build-time: same-origin private `/api`, separate signup
+and status bundles. Never place service credentials in Vite variables.
+Public status runtime uses dedicated least-privilege PostgreSQL credentials and an
+independent private rate-key file; it does not mount the private API.
+
+VPN-only private ingress and outbound restrictions are deployment/network controls,
+not inferred from CORS or a URL allowlist. Preserve the internal Compose network and
+explicitly review any proxy/database network attachments. Integrations remain disabled
+by default; database policy approvals are additional to environment flags.
+
+Secrets and uploaded files live outside the repository. Use owned private files,
+verified TLS, encrypted backup/configuration storage and rotation procedures. Never
+include credential values in integration manifests, audit reasons, metrics labels,
+public status copy or generated reports.
