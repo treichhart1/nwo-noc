@@ -1,0 +1,2276 @@
+{
+  "repository": "treichhart1/nwo-noc",
+  "candidate": "6e7f489f8f194324abaa406c07d74812c7345489",
+  "baseline": "6e7f489f8f194324abaa406c07d74812c7345489",
+  "default_sha": "5a5f21138339f522d7e6de6ad38b83f47d14f83c",
+  "default_merge_base": "5a5f21138339f522d7e6de6ad38b83f47d14f83c",
+  "baseline_commits_beyond_default": 298,
+  "pull_requests": [
+    {
+      "number": 1,
+      "title": "NOC Priority 1: Foundation audit and security verification plan",
+      "base": "develop",
+      "base_sha": "13a737f32bcf5dad8321f5e725a169805a96caa8",
+      "head": "audit/noc-foundation-2026-11",
+      "sha": "6e3d0acc8799101e78100f00655d962f53e232a0",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/1",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "6e3d0acc8799101e78100f00655d962f53e232a0",
+      "default_contains_tip": false
+    },
+    {
+      "number": 2,
+      "title": "NOC-73A: RF telemetry normalization foundation",
+      "base": "audit/noc-foundation-2026-11",
+      "base_sha": "6e3d0acc8799101e78100f00655d962f53e232a0",
+      "head": "feature/noc-73a-rf-telemetry-normalization",
+      "sha": "c7402a6b134b3313fa1397168918c6cc8da1b200",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/2",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "c7402a6b134b3313fa1397168918c6cc8da1b200",
+      "default_contains_tip": false
+    },
+    {
+      "number": 3,
+      "title": "NOC-73B: conservative UISP RF telemetry adapter",
+      "base": "feature/noc-73a-rf-telemetry-normalization",
+      "base_sha": "c7402a6b134b3313fa1397168918c6cc8da1b200",
+      "head": "feature/noc-73b-uisp-rf-adapter",
+      "sha": "a361cc7f469b478585211edc1374cfa6a9a6ca6a",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/3",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "a361cc7f469b478585211edc1374cfa6a9a6ca6a",
+      "default_contains_tip": false
+    },
+    {
+      "number": 4,
+      "title": "NOC-73C: opt-in RF telemetry persistence",
+      "base": "feature/noc-73b-uisp-rf-adapter",
+      "base_sha": "a361cc7f469b478585211edc1374cfa6a9a6ca6a",
+      "head": "feature/noc-73c-rf-telemetry-persistence",
+      "sha": "c02b4c1056a2991587aee737f456072e7f0c70c3",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/4",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "c02b4c1056a2991587aee737f456072e7f0c70c3",
+      "default_contains_tip": false
+    },
+    {
+      "number": 5,
+      "title": "NOC-73D: opt-in bounded UISP RF collection integration",
+      "base": "feature/noc-73c-rf-telemetry-persistence",
+      "base_sha": "c02b4c1056a2991587aee737f456072e7f0c70c3",
+      "head": "feature/noc-73d-rf-collection-integration",
+      "sha": "19985f98d166c3ce6aa9575e1222dae30b4e6bff",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/5",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "19985f98d166c3ce6aa9575e1222dae30b4e6bff",
+      "default_contains_tip": false
+    },
+    {
+      "number": 6,
+      "title": "NOC-73E: read-only RF degradation detection",
+      "base": "feature/noc-73d-rf-collection-integration",
+      "base_sha": "19985f98d166c3ce6aa9575e1222dae30b4e6bff",
+      "head": "feature/noc-73e-rf-degradation-detection",
+      "sha": "ecc7def7d5fe3228b505dbf8b7946d45212d99b2",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/6",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "ecc7def7d5fe3228b505dbf8b7946d45212d99b2",
+      "default_contains_tip": false
+    },
+    {
+      "number": 7,
+      "title": "NOC-73F: historical RF trend analysis",
+      "base": "feature/noc-73e-rf-degradation-detection",
+      "base_sha": "ecc7def7d5fe3228b505dbf8b7946d45212d99b2",
+      "head": "feature/noc-73f-rf-trend-analysis",
+      "sha": "7af5fb19dd1a55a673a2960f9dd7e246f089db46",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/7",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "7af5fb19dd1a55a673a2960f9dd7e246f089db46",
+      "default_contains_tip": false
+    },
+    {
+      "number": 8,
+      "title": "NOC-73G: read-only RF diagnostics service",
+      "base": "feature/noc-73f-rf-trend-analysis",
+      "base_sha": "7af5fb19dd1a55a673a2960f9dd7e246f089db46",
+      "head": "feature/noc-73g-rf-diagnostics-service",
+      "sha": "dc0f90e3a469954f375bbf4f2e157e4db2198b89",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/8",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "dc0f90e3a469954f375bbf4f2e157e4db2198b89",
+      "default_contains_tip": false
+    },
+    {
+      "number": 9,
+      "title": "NOC-73H: authenticated read-only RF diagnostics API",
+      "base": "feature/noc-73g-rf-diagnostics-service",
+      "base_sha": "dc0f90e3a469954f375bbf4f2e157e4db2198b89",
+      "head": "feature/noc-73h-authenticated-rf-api",
+      "sha": "88a213e13df081532d65d8dfecdd69a498145bab",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/9",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "88a213e13df081532d65d8dfecdd69a498145bab",
+      "default_contains_tip": false
+    },
+    {
+      "number": 10,
+      "title": "NOC-73I: read-only RF diagnostics dashboard",
+      "base": "feature/noc-73h-authenticated-rf-api",
+      "base_sha": "88a213e13df081532d65d8dfecdd69a498145bab",
+      "head": "feature/noc-73i-rf-dashboard",
+      "sha": "e6b1b0aa70947806c5742471cb0d194684371781",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/10",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "e6b1b0aa70947806c5742471cb0d194684371781",
+      "default_contains_tip": false
+    },
+    {
+      "number": 11,
+      "title": "NOC-73J: opt-in RF telemetry collection in UISP worker sync",
+      "base": "feature/noc-73i-rf-dashboard",
+      "base_sha": "e6b1b0aa70947806c5742471cb0d194684371781",
+      "head": "feature/noc-73j-opt-in-rf-collection",
+      "sha": "f2ba3544fce60535e8adcc1ba087c95a6923fa11",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/11",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "f2ba3544fce60535e8adcc1ba087c95a6923fa11",
+      "default_contains_tip": false
+    },
+    {
+      "number": 12,
+      "title": "NOC-73K: RF telemetry freshness classification",
+      "base": "feature/noc-73j-opt-in-rf-collection",
+      "base_sha": "f2ba3544fce60535e8adcc1ba087c95a6923fa11",
+      "head": "feature/noc-73k-rf-freshness",
+      "sha": "1f67fe1e8d9dc724dcfaa9d881cce0a0d3d8d3af",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/12",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "1f67fe1e8d9dc724dcfaa9d881cce0a0d3d8d3af",
+      "default_contains_tip": false
+    },
+    {
+      "number": 13,
+      "title": "NOC-73L: authenticated RF collection health reporting",
+      "base": "feature/noc-73k-rf-freshness",
+      "base_sha": "1f67fe1e8d9dc724dcfaa9d881cce0a0d3d8d3af",
+      "head": "feature/noc-73l-rf-collection-health",
+      "sha": "35516689a0f8a0d6ae9de3e5b736cb36a5839249",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/13",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "35516689a0f8a0d6ae9de3e5b736cb36a5839249",
+      "default_contains_tip": false
+    },
+    {
+      "number": 14,
+      "title": "NOC-73M: persistent sanitized RF collection history",
+      "base": "feature/noc-73l-rf-collection-health",
+      "base_sha": "35516689a0f8a0d6ae9de3e5b736cb36a5839249",
+      "head": "feature/noc-73m-rf-collection-history",
+      "sha": "145f0083ffc970b0073f2f94a3ae561a0527a53e",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/14",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "145f0083ffc970b0073f2f94a3ae561a0527a53e",
+      "default_contains_tip": false
+    },
+    {
+      "number": 15,
+      "title": "NOC-73N: RF collection reliability and opt-in retention",
+      "base": "feature/noc-73m-rf-collection-history",
+      "base_sha": "145f0083ffc970b0073f2f94a3ae561a0527a53e",
+      "head": "feature/noc-73n-rf-reliability-retention",
+      "sha": "0301d3928e29beff5f2de070ab647e3cdaa80610",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/15",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "0301d3928e29beff5f2de070ab647e3cdaa80610",
+      "default_contains_tip": false
+    },
+    {
+      "number": 16,
+      "title": "NOC-73O: RF diagnostics operational readiness and failure isolation",
+      "base": "feature/noc-73n-rf-reliability-retention",
+      "base_sha": "0301d3928e29beff5f2de070ab647e3cdaa80610",
+      "head": "feature/noc-73o-rf-operational-readiness",
+      "sha": "d6be2c8f823c4008c4de78ad2564b15265254f78",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/16",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "d6be2c8f823c4008c4de78ad2564b15265254f78",
+      "default_contains_tip": false
+    },
+    {
+      "number": 17,
+      "title": "NOC-73P: RF deployment-readiness audit and collection health correction",
+      "base": "feature/noc-73o-rf-operational-readiness",
+      "base_sha": "d6be2c8f823c4008c4de78ad2564b15265254f78",
+      "head": "feature/noc-73p-rf-readiness-audit",
+      "sha": "e7f17882cd5ab2be5e113f1ec9bde90ab86ae1b0",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/17",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "e7f17882cd5ab2be5e113f1ec9bde90ab86ae1b0",
+      "default_contains_tip": false
+    },
+    {
+      "number": 18,
+      "title": "NOC-73Q: real PostgreSQL RF integration CI",
+      "base": "feature/noc-73p-rf-readiness-audit",
+      "base_sha": "e7f17882cd5ab2be5e113f1ec9bde90ab86ae1b0",
+      "head": "feature/noc-73q-postgres-rf-integration",
+      "sha": "aff4aeaa8fdb0a2ba2a8234704e9add2fc66fe9b",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/18",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "aff4aeaa8fdb0a2ba2a8234704e9add2fc66fe9b",
+      "default_contains_tip": false
+    },
+    {
+      "number": 19,
+      "title": "NOC-73R: simulated UISP-to-diagnostics PostgreSQL E2E CI",
+      "base": "feature/noc-73q-postgres-rf-integration",
+      "base_sha": "aff4aeaa8fdb0a2ba2a8234704e9add2fc66fe9b",
+      "head": "feature/noc-73r-rf-end-to-end-validation",
+      "sha": "2889ae7b5268da05ca5b4bd5bb4932a3df3f5152",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/19",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "2889ae7b5268da05ca5b4bd5bb4932a3df3f5152",
+      "default_contains_tip": false
+    },
+    {
+      "number": 20,
+      "title": "NOC-73S: indexed and bounded RF diagnostics queries",
+      "base": "feature/noc-73r-rf-end-to-end-validation",
+      "base_sha": "2889ae7b5268da05ca5b4bd5bb4932a3df3f5152",
+      "head": "feature/noc-73s-rf-query-scalability",
+      "sha": "765cc8c3941108a4b17eebfc4f49d8f10fd116d5",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/20",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "765cc8c3941108a4b17eebfc4f49d8f10fd116d5",
+      "default_contains_tip": false
+    },
+    {
+      "number": 21,
+      "title": "NOC-73T: indexed latest RF collection health lookup",
+      "base": "feature/noc-73s-rf-query-scalability",
+      "base_sha": "765cc8c3941108a4b17eebfc4f49d8f10fd116d5",
+      "head": "feature/noc-73t-rf-health-query-optimization",
+      "sha": "f393a9ab6b4e1973b6a6d63ba2e5126b178d875b",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/21",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "f393a9ab6b4e1973b6a6d63ba2e5126b178d875b",
+      "default_contains_tip": false
+    },
+    {
+      "number": 22,
+      "title": "NOC-73U: disposable PostgreSQL RF health performance benchmarks",
+      "base": "feature/noc-73t-rf-health-query-optimization",
+      "base_sha": "f393a9ab6b4e1973b6a6d63ba2e5126b178d875b",
+      "head": "feature/noc-73u-rf-performance-benchmarks",
+      "sha": "3161fe260c539b3d3d31eeb35a7fceaf2d7ffbce",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/22",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "3161fe260c539b3d3d31eeb35a7fceaf2d7ffbce",
+      "default_contains_tip": false
+    },
+    {
+      "number": 23,
+      "title": "NOC-73V: RF health scalability baseline at 250 and 1000 radios",
+      "base": "feature/noc-73u-rf-performance-benchmarks",
+      "base_sha": "3161fe260c539b3d3d31eeb35a7fceaf2d7ffbce",
+      "head": "feature/noc-73v-rf-performance-baselines",
+      "sha": "e56031b5d69855c80fade3fe804954988afe81d0",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/23",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "e56031b5d69855c80fade3fe804954988afe81d0",
+      "default_contains_tip": false
+    },
+    {
+      "number": 24,
+      "title": "NOC-73W: RF rollout safety and savepoint failure reporting",
+      "base": "feature/noc-73v-rf-performance-baselines",
+      "base_sha": "e56031b5d69855c80fade3fe804954988afe81d0",
+      "head": "feature/noc-73w-rf-rollout-safety",
+      "sha": "3f16619101112a178faf3a3a2f46cd170fecce8b",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/24",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "3f16619101112a178faf3a3a2f46cd170fecce8b",
+      "default_contains_tip": false
+    },
+    {
+      "number": 25,
+      "title": "NOC-73X: simulated RF staging repeat-sync validation",
+      "base": "feature/noc-73w-rf-rollout-safety",
+      "base_sha": "3f16619101112a178faf3a3a2f46cd170fecce8b",
+      "head": "feature/noc-73x-rf-staging-validation",
+      "sha": "e7689f027050fe1559b6e7235adc77fc829b0dbe",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/25",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "e7689f027050fe1559b6e7235adc77fc829b0dbe",
+      "default_contains_tip": false
+    },
+    {
+      "number": 26,
+      "title": "NOC-73Y: RF collection failure recovery integration regression",
+      "base": "feature/noc-73x-rf-staging-validation",
+      "base_sha": "e7689f027050fe1559b6e7235adc77fc829b0dbe",
+      "head": "feature/noc-73y-rf-failure-recovery",
+      "sha": "527c8b39c9f529521de10f198e416a06ade15119",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/26",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "527c8b39c9f529521de10f198e416a06ade15119",
+      "default_contains_tip": false
+    },
+    {
+      "number": 27,
+      "title": "NOC-73Z: interrupted RF write rollback and safe retry",
+      "base": "feature/noc-73y-rf-failure-recovery",
+      "base_sha": "527c8b39c9f529521de10f198e416a06ade15119",
+      "head": "feature/noc-73z-rf-interrupted-sync",
+      "sha": "53d89b46b48ae549c85ab1d8f391d1ba078277a2",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/27",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "53d89b46b48ae549c85ab1d8f391d1ba078277a2",
+      "default_contains_tip": false
+    },
+    {
+      "number": 28,
+      "title": "NOC-74A: RF measurement accuracy and endpoint authentication audit",
+      "base": "feature/noc-73z-rf-interrupted-sync",
+      "base_sha": "53d89b46b48ae549c85ab1d8f391d1ba078277a2",
+      "head": "feature/noc-74a-rf-data-security-audit",
+      "sha": "b9667d680870f61a3f01504e8afe7d0d254b2c50",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/28",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "b9667d680870f61a3f01504e8afe7d0d254b2c50",
+      "default_contains_tip": false
+    },
+    {
+      "number": 29,
+      "title": "NOC-74B: fail-closed RF staging configuration preflight",
+      "base": "feature/noc-74a-rf-data-security-audit",
+      "base_sha": "b9667d680870f61a3f01504e8afe7d0d254b2c50",
+      "head": "feature/noc-74b-rf-staging-preflight",
+      "sha": "c57123e35197174caefd08b33c945cf0aa051e48",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/29",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "c57123e35197174caefd08b33c945cf0aa051e48",
+      "default_contains_tip": false
+    },
+    {
+      "number": 30,
+      "title": "NOC-74C: CI staging safety gate before RF PostgreSQL integration",
+      "base": "feature/noc-74b-rf-staging-preflight",
+      "base_sha": "c57123e35197174caefd08b33c945cf0aa051e48",
+      "head": "feature/noc-74c-rf-staging-validation",
+      "sha": "230cfa080b5b8905eac117e41482c93765208716",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/30",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "230cfa080b5b8905eac117e41482c93765208716",
+      "default_contains_tip": false
+    },
+    {
+      "number": 31,
+      "title": "NOC-74D: RF release-readiness evidence and operator acceptance gates",
+      "base": "feature/noc-74c-rf-staging-validation",
+      "base_sha": "230cfa080b5b8905eac117e41482c93765208716",
+      "head": "feature/noc-74d-rf-release-readiness",
+      "sha": "6c18e657fc2af347533cb391f605e483d459276f",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/31",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "6c18e657fc2af347533cb391f605e483d459276f",
+      "default_contains_tip": false
+    },
+    {
+      "number": 32,
+      "title": "NOC-74E: cumulative RF integration audit and staging blockers",
+      "base": "feature/noc-74d-rf-release-readiness",
+      "base_sha": "6c18e657fc2af347533cb391f605e483d459276f",
+      "head": "feature/noc-74e-rf-integration-audit",
+      "sha": "0dbe5dac4a61ad7cfc74cee6e5cb201246c4edec",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/32",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "0dbe5dac4a61ad7cfc74cee6e5cb201246c4edec",
+      "default_contains_tip": false
+    },
+    {
+      "number": 33,
+      "title": "NOC-74F: controlled offline RF staging rollout runbook",
+      "base": "feature/noc-74e-rf-integration-audit",
+      "base_sha": "0dbe5dac4a61ad7cfc74cee6e5cb201246c4edec",
+      "head": "feature/noc-74f-rf-staging-rollout",
+      "sha": "4895573fbff9ee559898350f38222055245b58ca",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/33",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "4895573fbff9ee559898350f38222055245b58ca",
+      "default_contains_tip": false
+    },
+    {
+      "number": 34,
+      "title": "NOC-74G: offline RF staging acceptance against PostgreSQL",
+      "base": "feature/noc-74f-rf-staging-rollout",
+      "base_sha": "4895573fbff9ee559898350f38222055245b58ca",
+      "head": "feature/noc-74g-rf-staging-acceptance",
+      "sha": "06c7a28083df0e6f2a69b99deb8cb12348f3ca9b",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/34",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "06c7a28083df0e6f2a69b99deb8cb12348f3ca9b",
+      "default_contains_tip": false
+    },
+    {
+      "number": 35,
+      "title": "NOC-74H: operator staging acceptance and approval gates",
+      "base": "feature/noc-74g-rf-staging-acceptance",
+      "base_sha": "06c7a28083df0e6f2a69b99deb8cb12348f3ca9b",
+      "head": "feature/noc-74h-rf-staging-approval",
+      "sha": "57f05d0d9705a38c5de7e5aa365dcdc4df7aaace",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/35",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "57f05d0d9705a38c5de7e5aa365dcdc4df7aaace",
+      "default_contains_tip": false
+    },
+    {
+      "number": 36,
+      "title": "NOC-75A: integrate read-only RF health into main NOC dashboard",
+      "base": "feature/noc-74h-rf-staging-approval",
+      "base_sha": "57f05d0d9705a38c5de7e5aa365dcdc4df7aaace",
+      "head": "feature/noc-75a-rf-dashboard-integration",
+      "sha": "87d9a5b1bd295f6f9d6031068769638d4bf2391a",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/36",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "87d9a5b1bd295f6f9d6031068769638d4bf2391a",
+      "default_contains_tip": false
+    },
+    {
+      "number": 37,
+      "title": "NOC-75B: correlate RF diagnostics with device reachability",
+      "base": "feature/noc-75a-rf-dashboard-integration",
+      "base_sha": "87d9a5b1bd295f6f9d6031068769638d4bf2391a",
+      "head": "feature/noc-75b-rf-device-correlation",
+      "sha": "813298ce764c0d0b352039541af5a9f0f797c68a",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/37",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "813298ce764c0d0b352039541af5a9f0f797c68a",
+      "default_contains_tip": false
+    },
+    {
+      "number": 38,
+      "title": "NOC-75C: RF freshness and degradation summaries by tower/POP",
+      "base": "feature/noc-75b-rf-device-correlation",
+      "base_sha": "813298ce764c0d0b352039541af5a9f0f797c68a",
+      "head": "feature/noc-75c-rf-site-summary",
+      "sha": "065e244899d12d7a9f4470d819db872f76f161af",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/38",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "065e244899d12d7a9f4470d819db872f76f161af",
+      "default_contains_tip": false
+    },
+    {
+      "number": 39,
+      "title": "NOC-75D: validate RF site counts and bounded PostgreSQL scale",
+      "base": "feature/noc-75c-rf-site-summary",
+      "base_sha": "065e244899d12d7a9f4470d819db872f76f161af",
+      "head": "feature/noc-75d-rf-site-validation",
+      "sha": "a8dd8b304db596dc2af94e4c61bd309220af1287",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/39",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "a8dd8b304db596dc2af94e4c61bd309220af1287",
+      "default_contains_tip": false
+    },
+    {
+      "number": 40,
+      "title": "NOC-75E: batch RF site future-sample lookups",
+      "base": "feature/noc-75d-rf-site-validation",
+      "base_sha": "a8dd8b304db596dc2af94e4c61bd309220af1287",
+      "head": "feature/noc-75e-rf-site-query-optimization",
+      "sha": "9d8532a491184fb35510727b68e28640c46c1e03",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/40",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "9d8532a491184fb35510727b68e28640c46c1e03",
+      "default_contains_tip": false
+    },
+    {
+      "number": 41,
+      "title": "NOC-75F: RF site aggregation SQL query budget review",
+      "base": "feature/noc-75e-rf-site-query-optimization",
+      "base_sha": "9d8532a491184fb35510727b68e28640c46c1e03",
+      "head": "feature/noc-75f-rf-query-budget",
+      "sha": "26c3db54dda02704c55e3d3fd97572fb5349e601",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/41",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "26c3db54dda02704c55e3d3fd97572fb5349e601",
+      "default_contains_tip": false
+    },
+    {
+      "number": 42,
+      "title": "NOC-75G: bulk bounded RF history aggregation by site",
+      "base": "feature/noc-75f-rf-query-budget",
+      "base_sha": "26c3db54dda02704c55e3d3fd97572fb5349e601",
+      "head": "feature/noc-75g-rf-bulk-history",
+      "sha": "22286c8b2dfcb27d0a41fa0cc30ef9271e55b921",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/42",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "22286c8b2dfcb27d0a41fa0cc30ef9271e55b921",
+      "default_contains_tip": false
+    },
+    {
+      "number": 43,
+      "title": "NOC-75H: integrated RF review and release gates",
+      "base": "feature/noc-75g-rf-bulk-history",
+      "base_sha": "22286c8b2dfcb27d0a41fa0cc30ef9271e55b921",
+      "head": "feature/noc-75h-rf-final-review",
+      "sha": "f0b8d24744fc99f1cf2004efc70ccff40b2e8550",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/43",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "f0b8d24744fc99f1cf2004efc70ccff40b2e8550",
+      "default_contains_tip": false
+    },
+    {
+      "number": 44,
+      "title": "NOC-75I: RF PR consolidation and release preparation",
+      "base": "feature/noc-75h-rf-final-review",
+      "base_sha": "f0b8d24744fc99f1cf2004efc70ccff40b2e8550",
+      "head": "feature/noc-75i-rf-release-preparation",
+      "sha": "1908dbd466f5f3093259d560378757630be0df68",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/44",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "1908dbd466f5f3093259d560378757630be0df68",
+      "default_contains_tip": false
+    },
+    {
+      "number": 45,
+      "title": "NOC-75J: verify RF branch ancestry and integration blockers",
+      "base": "feature/noc-75i-rf-release-preparation",
+      "base_sha": "1908dbd466f5f3093259d560378757630be0df68",
+      "head": "feature/noc-75j-rf-stack-audit",
+      "sha": "0ddfb750de433c6c29dd8cccee710ae02e728a6f",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/45",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "0ddfb750de433c6c29dd8cccee710ae02e728a6f",
+      "default_contains_tip": false
+    },
+    {
+      "number": 46,
+      "title": "NOC-75K: verify foundation ancestry against main and develop",
+      "base": "feature/noc-75j-rf-stack-audit",
+      "base_sha": "0ddfb750de433c6c29dd8cccee710ae02e728a6f",
+      "head": "feature/noc-75k-foundation-integration-audit",
+      "sha": "8ed179f66e46bc1f1ac4379b6c9c69c5847dc5f8",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/46",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "8ed179f66e46bc1f1ac4379b6c9c69c5847dc5f8",
+      "default_contains_tip": false
+    },
+    {
+      "number": 47,
+      "title": "NOC-75L: consolidated RF security and release-risk review",
+      "base": "feature/noc-75k-foundation-integration-audit",
+      "base_sha": "8ed179f66e46bc1f1ac4379b6c9c69c5847dc5f8",
+      "head": "feature/noc-75l-consolidated-security-review",
+      "sha": "1317ebd527d77fba40fa9a78387c6fcbf8279a11",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/47",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "1317ebd527d77fba40fa9a78387c6fcbf8279a11",
+      "default_contains_tip": false
+    },
+    {
+      "number": 48,
+      "title": "NOC-75M: enforce RF endpoint role authorization",
+      "base": "feature/noc-75l-consolidated-security-review",
+      "base_sha": "1317ebd527d77fba40fa9a78387c6fcbf8279a11",
+      "head": "feature/noc-75m-rf-authorization",
+      "sha": "1dfb02fa3f28a9ef2468fa5cc08f63071f0b439b",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/48",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "1dfb02fa3f28a9ef2468fa5cc08f63071f0b439b",
+      "default_contains_tip": false
+    },
+    {
+      "number": 49,
+      "title": "NOC-75N: HTTP-level RF authorization regression coverage",
+      "base": "feature/noc-75m-rf-authorization",
+      "base_sha": "1dfb02fa3f28a9ef2468fa5cc08f63071f0b439b",
+      "head": "feature/noc-75n-rf-security-regression",
+      "sha": "d2d2075da27c77da1136605489a802b1a3321cf5",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/49",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "d2d2075da27c77da1136605489a802b1a3321cf5",
+      "default_contains_tip": false
+    },
+    {
+      "number": 50,
+      "title": "NOC-75O: disable API docs and schema by default",
+      "base": "feature/noc-75n-rf-security-regression",
+      "base_sha": "d2d2075da27c77da1136605489a802b1a3321cf5",
+      "head": "feature/noc-75o-deployment-security",
+      "sha": "b4680a6ee7a117003f007c96a117fd331a7c7849",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/50",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "b4680a6ee7a117003f007c96a117fd331a7c7849",
+      "default_contains_tip": false
+    },
+    {
+      "number": 51,
+      "title": "NOC-75P: fail-closed production configuration safeguards",
+      "base": "feature/noc-75o-deployment-security",
+      "base_sha": "b4680a6ee7a117003f007c96a117fd331a7c7849",
+      "head": "feature/noc-75p-config-safeguards",
+      "sha": "fff876b754248ed1a641366f50fabbc889d218c4",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/51",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "fff876b754248ed1a641366f50fabbc889d218c4",
+      "default_contains_tip": false
+    },
+    {
+      "number": 52,
+      "title": "NOC-75Q: validate Compose network exposure in CI",
+      "base": "feature/noc-75p-config-safeguards",
+      "base_sha": "fff876b754248ed1a641366f50fabbc889d218c4",
+      "head": "feature/noc-75q-compose-network-guard",
+      "sha": "c591bee9287b4050c28a63397ad02cb66448a590",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/52",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "c591bee9287b4050c28a63397ad02cb66448a590",
+      "default_contains_tip": false
+    },
+    {
+      "number": 53,
+      "title": "NOC-75R: offline deployment environment preflight",
+      "base": "feature/noc-75q-compose-network-guard",
+      "base_sha": "c591bee9287b4050c28a63397ad02cb66448a590",
+      "head": "feature/noc-75r-deployment-preflight",
+      "sha": "7b9810abe123fef6b7c685f4a307063f226e65cb",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/53",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "7b9810abe123fef6b7c685f4a307063f226e65cb",
+      "default_contains_tip": false
+    },
+    {
+      "number": 54,
+      "title": "NOC-75S: consolidated offline deployment readiness audit",
+      "base": "feature/noc-75r-deployment-preflight",
+      "base_sha": "7b9810abe123fef6b7c685f4a307063f226e65cb",
+      "head": "feature/noc-75s-readiness-audit",
+      "sha": "8a34ca8c3c64aaeaa88660146723c22db0ed4d0b",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/54",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "8a34ca8c3c64aaeaa88660146723c22db0ed4d0b",
+      "default_contains_tip": false
+    },
+    {
+      "number": 55,
+      "title": "NOC-75T: fail-closed staging evidence gate",
+      "base": "feature/noc-75s-readiness-audit",
+      "base_sha": "8a34ca8c3c64aaeaa88660146723c22db0ed4d0b",
+      "head": "feature/noc-75t-staging-readiness-gate",
+      "sha": "95aa37bddf4a37a07146234705772bfc42f4a5a7",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/55",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "95aa37bddf4a37a07146234705772bfc42f4a5a7",
+      "default_contains_tip": false
+    },
+    {
+      "number": 56,
+      "title": "NOC-75U: audit draft PR chain and staging blockers",
+      "base": "feature/noc-75t-staging-readiness-gate",
+      "base_sha": "95aa37bddf4a37a07146234705772bfc42f4a5a7",
+      "head": "feature/noc-75u-pr-chain-audit",
+      "sha": "7b06aadde555ece5cf32458c196e4d485ff68363",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/56",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "7b06aadde555ece5cf32458c196e4d485ff68363",
+      "default_contains_tip": false
+    },
+    {
+      "number": 57,
+      "title": "NOC-75V: isolated staging validation and rollback procedure",
+      "base": "feature/noc-75u-pr-chain-audit",
+      "base_sha": "7b06aadde555ece5cf32458c196e4d485ff68363",
+      "head": "feature/noc-75v-staging-procedure",
+      "sha": "33b70c0f7f3a517c4fa62c3f6c28a78b85be4f09",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/57",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "33b70c0f7f3a517c4fa62c3f6c28a78b85be4f09",
+      "default_contains_tip": false
+    },
+    {
+      "number": 58,
+      "title": "NOC-75W: offline staging isolation configuration validation",
+      "base": "feature/noc-75v-staging-procedure",
+      "base_sha": "33b70c0f7f3a517c4fa62c3f6c28a78b85be4f09",
+      "head": "feature/noc-75w-staging-isolation-check",
+      "sha": "1b20a69685fecd317c879be4b720a32d773891d8",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/58",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "1b20a69685fecd317c879be4b720a32d773891d8",
+      "default_contains_tip": false
+    },
+    {
+      "number": 59,
+      "title": "NOC-75X: offline staging egress policy manifest validation",
+      "base": "feature/noc-75w-staging-isolation-check",
+      "base_sha": "1b20a69685fecd317c879be4b720a32d773891d8",
+      "head": "feature/noc-75x-staging-egress-policy",
+      "sha": "0adcbcdfe56b0eb38ec2c10a02a2d8144ef12857",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/59",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "0adcbcdfe56b0eb38ec2c10a02a2d8144ef12857",
+      "default_contains_tip": false
+    },
+    {
+      "number": 60,
+      "title": "NOC-75Y: staging network isolation acceptance test plan",
+      "base": "feature/noc-75x-staging-egress-policy",
+      "base_sha": "0adcbcdfe56b0eb38ec2c10a02a2d8144ef12857",
+      "head": "feature/noc-75y-staging-network-test-plan",
+      "sha": "5a56b81524bb0acd6d5f6ac4cff4a127d875d9d1",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/60",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "5a56b81524bb0acd6d5f6ac4cff4a127d875d9d1",
+      "default_contains_tip": false
+    },
+    {
+      "number": 61,
+      "title": "NOC-75Z: enforce offline staging policy checks in CI",
+      "base": "feature/noc-75y-staging-network-test-plan",
+      "base_sha": "5a56b81524bb0acd6d5f6ac4cff4a127d875d9d1",
+      "head": "feature/noc-75z-offline-staging-ci",
+      "sha": "296a9be82202ad59a8a8043feb416465a869ce47",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/61",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "296a9be82202ad59a8a8043feb416465a869ce47",
+      "default_contains_tip": false
+    },
+    {
+      "number": 62,
+      "title": "NOC-76A: RF integration and authorization regression CI gate",
+      "base": "feature/noc-75z-offline-staging-ci",
+      "base_sha": "296a9be82202ad59a8a8043feb416465a869ce47",
+      "head": "feature/noc-76a-rf-regression-gate",
+      "sha": "1f9677739845781753f3ede54325b02cbfb5604f",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/62",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "1f9677739845781753f3ede54325b02cbfb5604f",
+      "default_contains_tip": false
+    },
+    {
+      "number": 63,
+      "title": "NOC-76B: RF release security regression tests",
+      "base": "feature/noc-76a-rf-regression-gate",
+      "base_sha": "1f9677739845781753f3ede54325b02cbfb5604f",
+      "head": "feature/noc-76b-rf-release-regression",
+      "sha": "871772f92c13ee339c00afaba57d2e56ce6fc7eb",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/63",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "871772f92c13ee339c00afaba57d2e56ce6fc7eb",
+      "default_contains_tip": false
+    },
+    {
+      "number": 64,
+      "title": "NOC-76C: fail-closed aggregate RF offline acceptance gate",
+      "base": "feature/noc-76b-rf-release-regression",
+      "base_sha": "871772f92c13ee339c00afaba57d2e56ce6fc7eb",
+      "head": "feature/noc-76c-rf-acceptance-gate",
+      "sha": "667dc2aea76d762b4f22575ccd930e1b4363d705",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/64",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "667dc2aea76d762b4f22575ccd930e1b4363d705",
+      "default_contains_tip": false
+    },
+    {
+      "number": 65,
+      "title": "NOC-76D: RF offline development completion review",
+      "base": "feature/noc-76c-rf-acceptance-gate",
+      "base_sha": "667dc2aea76d762b4f22575ccd930e1b4363d705",
+      "head": "feature/noc-76d-rf-completion-review",
+      "sha": "10b697b830c9206b55bbd6713acd5985e5b0927e",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/65",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "10b697b830c9206b55bbd6713acd5985e5b0927e",
+      "default_contains_tip": false
+    },
+    {
+      "number": 66,
+      "title": "NOC-77A: authenticated dashboard operational contract regression",
+      "base": "feature/noc-76d-rf-completion-review",
+      "base_sha": "10b697b830c9206b55bbd6713acd5985e5b0927e",
+      "head": "feature/noc-77a-dashboard-contract",
+      "sha": "65c9c394c4c32a4d6c06706dd67c914eb91de0f4",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/66",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "65c9c394c4c32a4d6c06706dd67c914eb91de0f4",
+      "default_contains_tip": false
+    },
+    {
+      "number": 67,
+      "title": "NOC-77B: dashboard health reflects confirmed online devices",
+      "base": "feature/noc-77a-dashboard-contract",
+      "base_sha": "65c9c394c4c32a4d6c06706dd67c914eb91de0f4",
+      "head": "feature/noc-77b-dashboard-status-consistency",
+      "sha": "f711b0a96a59138e495541fa26114941d75a4fd6",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/67",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "f711b0a96a59138e495541fa26114941d75a4fd6",
+      "default_contains_tip": false
+    },
+    {
+      "number": 68,
+      "title": "NOC-77C: consolidate dashboard device counts into one SQL aggregate",
+      "base": "feature/noc-77b-dashboard-status-consistency",
+      "base_sha": "f711b0a96a59138e495541fa26114941d75a4fd6",
+      "head": "feature/noc-77c-dashboard-query-performance",
+      "sha": "530619f65961366312cd84f52b97aeb8c035741e",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/68",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "530619f65961366312cd84f52b97aeb8c035741e",
+      "default_contains_tip": false
+    },
+    {
+      "number": 69,
+      "title": "NOC-77D: enforce dashboard database query budget",
+      "base": "feature/noc-77c-dashboard-query-performance",
+      "base_sha": "530619f65961366312cd84f52b97aeb8c035741e",
+      "head": "feature/noc-77d-dashboard-query-budget",
+      "sha": "0ec9493f115be51a2ba631def42bc7fc1596ed8d",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/69",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "0ec9493f115be51a2ba631def42bc7fc1596ed8d",
+      "default_contains_tip": false
+    },
+    {
+      "number": 70,
+      "title": "NOC-77E: PostgreSQL dashboard scale regression with 1000 synthetic devices",
+      "base": "feature/noc-77d-dashboard-query-budget",
+      "base_sha": "0ec9493f115be51a2ba631def42bc7fc1596ed8d",
+      "head": "feature/noc-77e-dashboard-large-inventory",
+      "sha": "998919f92fbbc6a836eb7414e45c4c589331439d",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/70",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "998919f92fbbc6a836eb7414e45c4c589331439d",
+      "default_contains_tip": false
+    },
+    {
+      "number": 71,
+      "title": "NOC-77F: operations and monitoring HTTP summary contract tests",
+      "base": "feature/noc-77e-dashboard-large-inventory",
+      "base_sha": "998919f92fbbc6a836eb7414e45c4c589331439d",
+      "head": "feature/noc-77f-operations-monitoring-contract",
+      "sha": "cc189552f8ea90642b20a530a7c73754eb5aeb30",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/71",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "cc189552f8ea90642b20a530a7c73754eb5aeb30",
+      "default_contains_tip": false
+    },
+    {
+      "number": 72,
+      "title": "NOC-77G: optimize monitoring summary to two SQL queries",
+      "base": "feature/noc-77f-operations-monitoring-contract",
+      "base_sha": "cc189552f8ea90642b20a530a7c73754eb5aeb30",
+      "head": "feature/noc-77g-monitoring-query-optimization",
+      "sha": "9c51d9916617a913cd330dcbe4e45c12484b01bb",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/72",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "9c51d9916617a913cd330dcbe4e45c12484b01bb",
+      "default_contains_tip": false
+    },
+    {
+      "number": 73,
+      "title": "NOC-77H: reduce operations summary to four database queries",
+      "base": "feature/noc-77g-monitoring-query-optimization",
+      "base_sha": "9c51d9916617a913cd330dcbe4e45c12484b01bb",
+      "head": "feature/noc-77h-operations-query-optimization",
+      "sha": "92f8c847b92e96a9c322caa71c2668edba05489a",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/73",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "92f8c847b92e96a9c322caa71c2668edba05489a",
+      "default_contains_tip": false
+    },
+    {
+      "number": 74,
+      "title": "NOC-77I: validate operations summary with disposable PostgreSQL",
+      "base": "feature/noc-77h-operations-query-optimization",
+      "base_sha": "92f8c847b92e96a9c322caa71c2668edba05489a",
+      "head": "feature/noc-77i-operations-postgres",
+      "sha": "dc32980f3993e039b70c8213b0b162c1fd4522cd",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/74",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "dc32980f3993e039b70c8213b0b162c1fd4522cd",
+      "default_contains_tip": false
+    },
+    {
+      "number": 75,
+      "title": "NOC-77J: validate monitoring summary against disposable PostgreSQL",
+      "base": "feature/noc-77i-operations-postgres",
+      "base_sha": "dc32980f3993e039b70c8213b0b162c1fd4522cd",
+      "head": "feature/noc-77j-monitoring-postgres",
+      "sha": "a0e7a56a4af23993043ff73147ec46be63cb219a",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/75",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "a0e7a56a4af23993043ff73147ec46be63cb219a",
+      "default_contains_tip": false
+    },
+    {
+      "number": 76,
+      "title": "NOC-77K: expose stale monitoring checks in summary API",
+      "base": "feature/noc-77j-monitoring-postgres",
+      "base_sha": "a0e7a56a4af23993043ff73147ec46be63cb219a",
+      "head": "feature/noc-77k-monitoring-freshness",
+      "sha": "7a8b17c16eaad02c7f0dc41587cb04d60ee63c6d",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/76",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "7a8b17c16eaad02c7f0dc41587cb04d60ee63c6d",
+      "default_contains_tip": false
+    },
+    {
+      "number": 77,
+      "title": "NOC-77L: display stale monitoring checks on NOC dashboard",
+      "base": "feature/noc-77k-monitoring-freshness",
+      "base_sha": "7a8b17c16eaad02c7f0dc41587cb04d60ee63c6d",
+      "head": "feature/noc-77l-monitoring-freshness-ui",
+      "sha": "cca5b09d985633b7e54859da9b1dd6b6392371ec",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/77",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "cca5b09d985633b7e54859da9b1dd6b6392371ec",
+      "default_contains_tip": false
+    },
+    {
+      "number": 78,
+      "title": "NOC-77M: clarify last-reported monitoring status versus stale checks",
+      "base": "feature/noc-77l-monitoring-freshness-ui",
+      "base_sha": "cca5b09d985633b7e54859da9b1dd6b6392371ec",
+      "head": "feature/noc-77m-monitoring-status-clarity",
+      "sha": "7c3418c32ca2f38915abc640bfb2836aaa2b4261",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/78",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "7c3418c32ca2f38915abc640bfb2836aaa2b4261",
+      "default_contains_tip": false
+    },
+    {
+      "number": 79,
+      "title": "NOC-77N: distinguish recently checked up/down from stale monitoring",
+      "base": "feature/noc-77m-monitoring-status-clarity",
+      "base_sha": "7c3418c32ca2f38915abc640bfb2836aaa2b4261",
+      "head": "feature/noc-77n-fresh-monitoring-counts",
+      "sha": "6492beb6ae4961bec78f1df87f8e71c6adf90b63",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/79",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "6492beb6ae4961bec78f1df87f8e71c6adf90b63",
+      "default_contains_tip": false
+    },
+    {
+      "number": 80,
+      "title": "NOC-77O: distinguish never-checked monitoring devices",
+      "base": "feature/noc-77n-fresh-monitoring-counts",
+      "base_sha": "6492beb6ae4961bec78f1df87f8e71c6adf90b63",
+      "head": "feature/noc-77o-never-checked-monitoring",
+      "sha": "92a1de46b3f88dc8c11f4b7310b8a854dd4b5122",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/80",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "92a1de46b3f88dc8c11f4b7310b8a854dd4b5122",
+      "default_contains_tip": false
+    },
+    {
+      "number": 81,
+      "title": "NOC-77P: device-level monitoring attention list",
+      "base": "feature/noc-77o-never-checked-monitoring",
+      "base_sha": "92a1de46b3f88dc8c11f4b7310b8a854dd4b5122",
+      "head": "feature/noc-77p-monitoring-attention",
+      "sha": "5eec8f2804dc06d3c6f00daeb238c40524c457fe",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/81",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "5eec8f2804dc06d3c6f00daeb238c40524c457fe",
+      "default_contains_tip": false
+    },
+    {
+      "number": 82,
+      "title": "RF-78: refresh RF collection health and fail closed on polling errors",
+      "base": "feature/noc-77p-monitoring-attention",
+      "base_sha": "5eec8f2804dc06d3c6f00daeb238c40524c457fe",
+      "head": "feature/noc-78-rf-health-refresh",
+      "sha": "085111e56f80086438527d581b545c08586af44d",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/82",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "085111e56f80086438527d581b545c08586af44d",
+      "default_contains_tip": false
+    },
+    {
+      "number": 83,
+      "title": "RF-79: fail-closed simulated self-healing proposals and approvals",
+      "base": "feature/noc-78-rf-health-refresh",
+      "base_sha": "085111e56f80086438527d581b545c08586af44d",
+      "head": "feature/rf-79-simulated-self-healing",
+      "sha": "f7856391361cbcbfc0287786b2409a2c69c3d069",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/83",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "f7856391361cbcbfc0287786b2409a2c69c3d069",
+      "default_contains_tip": false
+    },
+    {
+      "number": 84,
+      "title": "RF-80: authenticated fail-closed self-healing preview API",
+      "base": "feature/rf-79-simulated-self-healing",
+      "base_sha": "f7856391361cbcbfc0287786b2409a2c69c3d069",
+      "head": "feature/rf-80-self-healing-preview",
+      "sha": "653bac6acd43ea71d301b3e1b2b3a6e779174e8b",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/84",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "653bac6acd43ea71d301b3e1b2b3a6e779174e8b",
+      "default_contains_tip": false
+    },
+    {
+      "number": 85,
+      "title": "RF-81: validated stored RF telemetry for simulation-only self-healing",
+      "base": "feature/rf-80-self-healing-preview",
+      "base_sha": "653bac6acd43ea71d301b3e1b2b3a6e779174e8b",
+      "head": "feature/rf-81-validated-self-healing-telemetry",
+      "sha": "c7e7eddca8a044d1efc24d953303cb376daf0f74",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/85",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "c7e7eddca8a044d1efc24d953303cb376daf0f74",
+      "default_contains_tip": false
+    },
+    {
+      "number": 86,
+      "title": "NOC-82: release consolidation audit and clean-install readiness gates",
+      "base": "feature/rf-81-validated-self-healing-telemetry",
+      "base_sha": "b27e53a5437d04612f6adbf41605e22501d1bbb5",
+      "head": "feature/noc-82-release-readiness-audit",
+      "sha": "34e54e226f93159adf7d2dc52548d36aad277b46",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/86",
+      "direct_ancestor": false,
+      "replay": "ad61cde731a7707af44734a7261474af3409671e",
+      "merge_base_with_candidate": "b27e53a5437d04612f6adbf41605e22501d1bbb5",
+      "default_contains_tip": false
+    },
+    {
+      "number": 87,
+      "title": "NOC-83: stabilize CI and prepare Ubuntu 24.04 release candidate",
+      "base": "feature/noc-82-release-readiness-audit",
+      "base_sha": "34e54e226f93159adf7d2dc52548d36aad277b46",
+      "head": "feature/noc-83-ci-release-validation",
+      "sha": "2f3f5edff1925104327d1f2c06f5504bf8398ae2",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/87",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "2f3f5edff1925104327d1f2c06f5504bf8398ae2",
+      "default_contains_tip": false
+    },
+    {
+      "number": 88,
+      "title": "NOC-84: isolated Ubuntu clean installation and release acceptance",
+      "base": "feature/noc-83-ci-release-validation",
+      "base_sha": "2f3f5edff1925104327d1f2c06f5504bf8398ae2",
+      "head": "feature/noc-84-clean-install-release-acceptance",
+      "sha": "a0161602cd013ce76048b799631dd5e2ba746310",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/88",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "a0161602cd013ce76048b799631dd5e2ba746310",
+      "default_contains_tip": false
+    },
+    {
+      "number": 89,
+      "title": "NOC-85: synthetic WISP monitoring and operational readiness",
+      "base": "feature/noc-84-clean-install-release-acceptance",
+      "base_sha": "a0161602cd013ce76048b799631dd5e2ba746310",
+      "head": "feature/noc-85-operational-readiness",
+      "sha": "07ac49c150d3d972c3326e6106370b4fa68699b1",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/89",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "07ac49c150d3d972c3326e6106370b4fa68699b1",
+      "default_contains_tip": false
+    },
+    {
+      "number": 90,
+      "title": "NOC-86: read-only integrations and normalized vendor RF monitoring foundation",
+      "base": "feature/noc-85-operational-readiness",
+      "base_sha": "07ac49c150d3d972c3326e6106370b4fa68699b1",
+      "head": "feature/noc-86-read-only-integration-readiness",
+      "sha": "3dd74d6c9c5855fc01fa6de5ff0d9f947c79970e",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/90",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "3dd74d6c9c5855fc01fa6de5ff0d9f947c79970e",
+      "default_contains_tip": false
+    },
+    {
+      "number": 91,
+      "title": "NOC-87: read-only Ubiquiti and Cambium RF telemetry and diagnostics",
+      "base": "feature/noc-86-read-only-integration-readiness",
+      "base_sha": "3dd74d6c9c5855fc01fa6de5ff0d9f947c79970e",
+      "head": "feature/noc-87-ubiquiti-cambium-rf-telemetry",
+      "sha": "f31b35eceeb99d6167c284fa15777825206f6616",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/91",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "f31b35eceeb99d6167c284fa15777825206f6616",
+      "default_contains_tip": false
+    },
+    {
+      "number": 92,
+      "title": "NOC-88: read-only Racom and Aviat microwave backhaul monitoring",
+      "base": "feature/noc-87-ubiquiti-cambium-rf-telemetry",
+      "base_sha": "f31b35eceeb99d6167c284fa15777825206f6616",
+      "head": "feature/noc-88-racom-aviat-microwave-monitoring",
+      "sha": "47ec94159ffb2e41ea8b75720566301e2d196358",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/92",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "47ec94159ffb2e41ea8b75720566301e2d196358",
+      "default_contains_tip": false
+    },
+    {
+      "number": 93,
+      "title": "NOC-89: historical RF analytics and suspected interference evidence",
+      "base": "feature/noc-88-racom-aviat-microwave-monitoring",
+      "base_sha": "47ec94159ffb2e41ea8b75720566301e2d196358",
+      "head": "feature/noc-89-rf-historical-analytics",
+      "sha": "1258347a8e24a007620270bb10a4f431bb382c98",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/93",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "1258347a8e24a007620270bb10a4f431bb382c98",
+      "default_contains_tip": false
+    },
+    {
+      "number": 94,
+      "title": "NOC-90: evidence-based RF troubleshooting and audited operator workflow",
+      "base": "feature/noc-89-rf-historical-analytics",
+      "base_sha": "1258347a8e24a007620270bb10a4f431bb382c98",
+      "head": "feature/noc-90-ai-rf-troubleshooting",
+      "sha": "b343c39a9b58ccb1a720c2c4aaaabe2b55008e68",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/94",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "b343c39a9b58ccb1a720c2c4aaaabe2b55008e68",
+      "default_contains_tip": false
+    },
+    {
+      "number": 95,
+      "title": "NOC-91: unified RF operations dashboard and shared technician investigations",
+      "base": "feature/noc-90-ai-rf-troubleshooting",
+      "base_sha": "b343c39a9b58ccb1a720c2c4aaaabe2b55008e68",
+      "head": "feature/noc-91-rf-operations-dashboard",
+      "sha": "bf642bdb467b696c9a3778d51bf4ce816d0f82f7",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/95",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "bf642bdb467b696c9a3778d51bf4ce816d0f82f7",
+      "default_contains_tip": false
+    },
+    {
+      "number": 96,
+      "title": "NOC-92: RF monitoring reliability, alert accuracy and recovery",
+      "base": "feature/noc-91-rf-operations-dashboard",
+      "base_sha": "bf642bdb467b696c9a3778d51bf4ce816d0f82f7",
+      "head": "feature/noc-92-rf-monitoring-reliability",
+      "sha": "a5f318e333e3e0fe06bf7fa29b51818ddce27e41",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/96",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "a5f318e333e3e0fe06bf7fa29b51818ddce27e41",
+      "default_contains_tip": false
+    },
+    {
+      "number": 97,
+      "title": "NOC-93: consolidate 3.2.1-rc.2 and validate controlled pilot readiness",
+      "base": "feature/noc-92-rf-monitoring-reliability",
+      "base_sha": "a5f318e333e3e0fe06bf7fa29b51818ddce27e41",
+      "head": "feature/noc-93-release-consolidation",
+      "sha": "b5329506a34ce0fe5b6889b20a559ab4f1646a0c",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/97",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "b5329506a34ce0fe5b6889b20a559ab4f1646a0c",
+      "default_contains_tip": false
+    },
+    {
+      "number": 98,
+      "title": "NOC-94: final release security verification and controlled pilot preparation",
+      "base": "feature/noc-93-release-consolidation",
+      "base_sha": "b5329506a34ce0fe5b6889b20a559ab4f1646a0c",
+      "head": "feature/noc-94-final-release-verification",
+      "sha": "4eb327fb96f00520493e9907b3a21e4f78cc908f",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/98",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "4eb327fb96f00520493e9907b3a21e4f78cc908f",
+      "default_contains_tip": false
+    },
+    {
+      "number": 99,
+      "title": "NOC-95: private Powercode customer foundation and network impact mapping",
+      "base": "feature/noc-94-final-release-verification",
+      "base_sha": "4eb327fb96f00520493e9907b3a21e4f78cc908f",
+      "head": "feature/noc-95-powercode-integration",
+      "sha": "b27a4683f1300e108e748260cac2940f1cefa224",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/99",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "b27a4683f1300e108e748260cac2940f1cefa224",
+      "default_contains_tip": false
+    },
+    {
+      "number": 100,
+      "title": "NOC-96: approval-controlled SMS and Slack notification platform",
+      "base": "feature/noc-95-powercode-integration",
+      "base_sha": "b27a4683f1300e108e748260cac2940f1cefa224",
+      "head": "feature/noc-96-slack-sms-notifications",
+      "sha": "1f401d0aebdc8159a0bc23b46fd25969adc9aa91",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/100",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "1f401d0aebdc8159a0bc23b46fd25969adc9aa91",
+      "default_contains_tip": false
+    },
+    {
+      "number": 101,
+      "title": "NOC-97: topology-aware Down Detector and outage correlation",
+      "base": "feature/noc-96-slack-sms-notifications",
+      "base_sha": "1f401d0aebdc8159a0bc23b46fd25969adc9aa91",
+      "head": "feature/noc-97-intelligent-down-detector",
+      "sha": "cc4a9b79177a1bffa300a15c0f14184731cf1bdb",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/101",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "cc4a9b79177a1bffa300a15c0f14184731cf1bdb",
+      "default_contains_tip": false
+    },
+    {
+      "number": 102,
+      "title": "NOC-98: Tower health, power monitoring and capacity analytics",
+      "base": "feature/noc-97-intelligent-down-detector",
+      "base_sha": "cc4a9b79177a1bffa300a15c0f14184731cf1bdb",
+      "head": "feature/noc-98-tower-health-capacity",
+      "sha": "5a8c1a893d16082cffe2b4604df9275e2282a5b4",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/102",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "5a8c1a893d16082cffe2b4604df9275e2282a5b4",
+      "default_contains_tip": false
+    },
+    {
+      "number": 103,
+      "title": "NOC-99: AI IPAM, IPv4/IPv6 allocation and read-only discovery",
+      "base": "feature/noc-98-tower-health-capacity",
+      "base_sha": "5a8c1a893d16082cffe2b4604df9275e2282a5b4",
+      "head": "feature/noc-99-ai-ipam",
+      "sha": "af5a97cc94dedbb7bdb22a71ffdb5eb204cfdd15",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/103",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "af5a97cc94dedbb7bdb22a71ffdb5eb204cfdd15",
+      "default_contains_tip": false
+    },
+    {
+      "number": 104,
+      "title": "NOC-100: Equipment inventory, lifecycle and spare-stock management",
+      "base": "feature/noc-99-ai-ipam",
+      "base_sha": "af5a97cc94dedbb7bdb22a71ffdb5eb204cfdd15",
+      "head": "feature/noc-100-equipment-inventory",
+      "sha": "552287c31e7951c3dbd1b50ddfbe14309ab54761",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/104",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "552287c31e7951c3dbd1b50ddfbe14309ab54761",
+      "default_contains_tip": false
+    },
+    {
+      "number": 105,
+      "title": "NOC-101: Tower QR labels, field technicians and maintenance workflows",
+      "base": "feature/noc-100-equipment-inventory",
+      "base_sha": "552287c31e7951c3dbd1b50ddfbe14309ab54761",
+      "head": "feature/noc-101-tower-qr-field-management",
+      "sha": "45e7487ec3087b53b9d416df7da72feafaf24a48",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/105",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "45e7487ec3087b53b9d416df7da72feafaf24a48",
+      "default_contains_tip": false
+    },
+    {
+      "number": 106,
+      "title": "NOC-102: Preventive maintenance, private documents and equipment service records",
+      "base": "feature/noc-101-tower-qr-field-management",
+      "base_sha": "45e7487ec3087b53b9d416df7da72feafaf24a48",
+      "head": "feature/noc-102-maintenance-documents",
+      "sha": "78c6343ab67ce2718b775d578ad200efb41df458",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/106",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "78c6343ab67ce2718b775d578ad200efb41df458",
+      "default_contains_tip": false
+    },
+    {
+      "number": 107,
+      "title": "NOC-103: Customer signup, preliminary qualification and installation workflows",
+      "base": "feature/noc-102-maintenance-documents",
+      "base_sha": "78c6343ab67ce2718b775d578ad200efb41df458",
+      "head": "feature/noc-103-customer-signup",
+      "sha": "973351c29283661c4d51c84671cd9e755cc6be95",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/107",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "973351c29283661c4d51c84671cd9e755cc6be95",
+      "default_contains_tip": false
+    },
+    {
+      "number": 108,
+      "title": "NOC-104: Unified wireless, fiber and hybrid network management",
+      "base": "feature/noc-103-customer-signup",
+      "base_sha": "973351c29283661c4d51c84671cd9e755cc6be95",
+      "head": "feature/noc-104-unified-network",
+      "sha": "e41a2d89c9cd99a416bcf33216b6255af7286580",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/108",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "e41a2d89c9cd99a416bcf33216b6255af7286580",
+      "default_contains_tip": false
+    },
+    {
+      "number": 109,
+      "title": "NOC-105: LiDAR terrain, LOS and advisory RF coverage planning",
+      "base": "feature/noc-104-unified-network",
+      "base_sha": "e41a2d89c9cd99a416bcf33216b6255af7286580",
+      "head": "feature/noc-105-lidar-rf-planning",
+      "sha": "495182d86e3f90fb6d86be6794c2bbf8457a92d2",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/109",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "495182d86e3f90fb6d86be6794c2bbf8457a92d2",
+      "default_contains_tip": false
+    },
+    {
+      "number": 110,
+      "title": "NOC-106: Approved Fiber Designer integration and operational reconciliation",
+      "base": "feature/noc-105-lidar-rf-planning",
+      "base_sha": "495182d86e3f90fb6d86be6794c2bbf8457a92d2",
+      "head": "feature/noc-106-fiber-designer-integration",
+      "sha": "8829664bb23bde7fa3c07d309412b3bcde0af8a0",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/110",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "8829664bb23bde7fa3c07d309412b3bcde0af8a0",
+      "default_contains_tip": false
+    },
+    {
+      "number": 111,
+      "title": "NOC-107: Network profitability, cost allocation and operational ROI",
+      "base": "feature/noc-106-fiber-designer-integration",
+      "base_sha": "8829664bb23bde7fa3c07d309412b3bcde0af8a0",
+      "head": "feature/noc-107-network-roi",
+      "sha": "d0078b5b2e7307575d6d0864eac87160c3532e5a",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/111",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "d0078b5b2e7307575d6d0864eac87160c3532e5a",
+      "default_contains_tip": false
+    },
+    {
+      "number": 112,
+      "title": "NOC-108: Private Grafana integration and unified monitoring analytics",
+      "base": "feature/noc-107-network-roi",
+      "base_sha": "d0078b5b2e7307575d6d0864eac87160c3532e5a",
+      "head": "feature/noc-108-grafana-analytics",
+      "sha": "0097b4eda5f77ad691470459007f93f5cd4fb7e1",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/112",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "0097b4eda5f77ad691470459007f93f5cd4fb7e1",
+      "default_contains_tip": false
+    },
+    {
+      "number": 113,
+      "title": "NOC-109: Approved public network status and customer outage communications",
+      "base": "feature/noc-108-grafana-analytics",
+      "base_sha": "0097b4eda5f77ad691470459007f93f5cd4fb7e1",
+      "head": "feature/noc-109-customer-network-status",
+      "sha": "6e7f489f8f194324abaa406c07d74812c7345489",
+      "draft": true,
+      "url": "https://github.com/treichhart1/nwo-noc/pull/113",
+      "direct_ancestor": true,
+      "replay": null,
+      "merge_base_with_candidate": "6e7f489f8f194324abaa406c07d74812c7345489",
+      "default_contains_tip": false
+    }
+  ],
+  "direct_ancestors": 112,
+  "logical_replays": 1,
+  "pr86_merge_tree_unchanged": true,
+  "integration_method": "branch from complete NOC109 ancestry; no PR merges or duplicate cherry-picks",
+  "review_order": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    35,
+    36,
+    37,
+    38,
+    39,
+    40,
+    41,
+    42,
+    43,
+    44,
+    45,
+    46,
+    47,
+    48,
+    49,
+    50,
+    51,
+    52,
+    53,
+    54,
+    55,
+    56,
+    57,
+    58,
+    59,
+    60,
+    61,
+    62,
+    63,
+    64,
+    65,
+    66,
+    67,
+    68,
+    69,
+    70,
+    71,
+    72,
+    73,
+    74,
+    75,
+    76,
+    77,
+    78,
+    79,
+    80,
+    81,
+    82,
+    83,
+    84,
+    85,
+    86,
+    87,
+    88,
+    89,
+    90,
+    91,
+    92,
+    93,
+    94,
+    95,
+    96,
+    97,
+    98,
+    99,
+    100,
+    101,
+    102,
+    103,
+    104,
+    105,
+    106,
+    107,
+    108,
+    109,
+    110,
+    111,
+    112,
+    113
+  ],
+  "migrations": [
+    {
+      "revision": "0001_initial",
+      "parent": null,
+      "file": "backend/alembic/versions/0001_initial.py"
+    },
+    {
+      "revision": "0002_wisp_foundation",
+      "parent": "0001_initial",
+      "file": "backend/alembic/versions/0002_wisp_foundation.py"
+    },
+    {
+      "revision": "0003_operations",
+      "parent": "0002_wisp_foundation",
+      "file": "backend/alembic/versions/0003_operations.py"
+    },
+    {
+      "revision": "0004_live_monitoring",
+      "parent": "0003_operations",
+      "file": "backend/alembic/versions/0004_live_monitoring.py"
+    },
+    {
+      "revision": "0005_rf_collection_runs",
+      "parent": "0004_live_monitoring",
+      "file": "backend/alembic/versions/0005_rf_collection_runs.py"
+    },
+    {
+      "revision": "0006_rf_query_index",
+      "parent": "0005_rf_collection_runs",
+      "file": "backend/alembic/versions/0006_rf_query_index.py"
+    },
+    {
+      "revision": "0007_integration_readiness",
+      "parent": "0006_rf_query_index",
+      "file": "backend/alembic/versions/0007_integration_readiness.py"
+    },
+    {
+      "revision": "0008_rf_analytics",
+      "parent": "0007_integration_readiness",
+      "file": "backend/alembic/versions/0008_rf_analytics.py"
+    },
+    {
+      "revision": "0009_rf_troubleshooting",
+      "parent": "0008_rf_analytics",
+      "file": "backend/alembic/versions/0009_rf_troubleshooting.py"
+    },
+    {
+      "revision": "0010_rf_operations",
+      "parent": "0009_rf_troubleshooting",
+      "file": "backend/alembic/versions/0010_rf_operations.py"
+    },
+    {
+      "revision": "0011_monitoring_reliability",
+      "parent": "0010_rf_operations",
+      "file": "backend/alembic/versions/0011_monitoring_reliability.py"
+    },
+    {
+      "revision": "0012_session_revocation",
+      "parent": "0011_monitoring_reliability",
+      "file": "backend/alembic/versions/0012_session_revocation.py"
+    },
+    {
+      "revision": "0013_customer_foundation",
+      "parent": "0012_session_revocation",
+      "file": "backend/alembic/versions/0013_customer_foundation.py"
+    },
+    {
+      "revision": "0014_notifications",
+      "parent": "0013_customer_foundation",
+      "file": "backend/alembic/versions/0014_notifications.py"
+    },
+    {
+      "revision": "0015_notification_controls",
+      "parent": "0014_notifications",
+      "file": "backend/alembic/versions/0015_notification_controls.py"
+    },
+    {
+      "revision": "0016_down_detector",
+      "parent": "0015_notification_controls",
+      "file": "backend/alembic/versions/0016_down_detector.py"
+    },
+    {
+      "revision": "0017_tower_health",
+      "parent": "0016_down_detector",
+      "file": "backend/alembic/versions/0017_tower_health.py"
+    },
+    {
+      "revision": "0018_ai_ipam",
+      "parent": "0017_tower_health",
+      "file": "backend/alembic/versions/0018_ai_ipam.py"
+    },
+    {
+      "revision": "0019_equipment_inventory",
+      "parent": "0018_ai_ipam",
+      "file": "backend/alembic/versions/0019_equipment_inventory.py"
+    },
+    {
+      "revision": "0020_field_technician_workflows",
+      "parent": "0019_equipment_inventory",
+      "file": "backend/alembic/versions/0020_field_technician_workflows.py"
+    },
+    {
+      "revision": "0021_maintenance_documents",
+      "parent": "0020_field_technician_workflows",
+      "file": "backend/alembic/versions/0021_maintenance_documents.py"
+    },
+    {
+      "revision": "0022_customer_signup",
+      "parent": "0021_maintenance_documents",
+      "file": "backend/alembic/versions/0022_customer_signup.py"
+    },
+    {
+      "revision": "0023_unified_network",
+      "parent": "0022_customer_signup",
+      "file": "backend/alembic/versions/0023_unified_network.py"
+    },
+    {
+      "revision": "0024_rf_planning",
+      "parent": "0023_unified_network",
+      "file": "backend/alembic/versions/0024_rf_planning.py"
+    },
+    {
+      "revision": "0025_fiber_designer_sync",
+      "parent": "0024_rf_planning",
+      "file": "backend/alembic/versions/0025_fiber_designer_sync.py"
+    },
+    {
+      "revision": "0026_network_finance",
+      "parent": "0025_fiber_designer_sync",
+      "file": "backend/alembic/versions/0026_network_finance.py"
+    },
+    {
+      "revision": "0027_grafana_analytics",
+      "parent": "0026_network_finance",
+      "file": "backend/alembic/versions/0027_grafana_analytics.py"
+    },
+    {
+      "revision": "0028_customer_status",
+      "parent": "0027_grafana_analytics",
+      "file": "backend/alembic/versions/0028_customer_status.py"
+    }
+  ],
+  "configuration": [
+    {
+      "environment": "CUSTOMER_STATUS_RATE_KEY_FILE",
+      "type": "str"
+    },
+    {
+      "environment": "GRAFANA_ALLOWED_ORIGINS",
+      "type": "str"
+    },
+    {
+      "environment": "GRAFANA_LIVE_HEALTH_ENABLED",
+      "type": "bool"
+    },
+    {
+      "environment": "GRAFANA_EMBED_APPROVED",
+      "type": "bool"
+    },
+    {
+      "environment": "GRAFANA_SERVICE_TOKEN_FILE",
+      "type": "str"
+    },
+    {
+      "environment": "ANALYTICS_METRICS_TOKEN_FILE",
+      "type": "str"
+    },
+    {
+      "environment": "ANALYTICS_ROLLUP_ENABLED",
+      "type": "bool"
+    },
+    {
+      "environment": "APP_NAME",
+      "type": "str"
+    },
+    {
+      "environment": "APP_ENV",
+      "type": "str"
+    },
+    {
+      "environment": "API_DOCS_ENABLED",
+      "type": "bool"
+    },
+    {
+      "environment": "OFFLINE_MODE",
+      "type": "bool"
+    },
+    {
+      "environment": "SYNTHETIC_MONITORING_ENABLED",
+      "type": "bool"
+    },
+    {
+      "environment": "POWERCODE_FIXTURE_ENABLED",
+      "type": "bool"
+    },
+    {
+      "environment": "POWERCODE_LIVE_ENABLED",
+      "type": "bool"
+    },
+    {
+      "environment": "IPAM_DISCOVERY_ENABLED",
+      "type": "bool"
+    },
+    {
+      "environment": "SIGNUP_PII_KEY_FILE",
+      "type": "str"
+    },
+    {
+      "environment": "SIGNUP_PUBLIC_ORIGIN",
+      "type": "str"
+    },
+    {
+      "environment": "SIGNUP_PUBLIC_ENABLED",
+      "type": "bool"
+    },
+    {
+      "environment": "SIGNUP_PUBLIC_TEST_MODE",
+      "type": "bool"
+    },
+    {
+      "environment": "SIGNUP_TURNSTILE_MODE",
+      "type": "Literal['disabled', 'turnstile', 'fixture']"
+    },
+    {
+      "environment": "SIGNUP_TURNSTILE_SITE_KEY",
+      "type": "str"
+    },
+    {
+      "environment": "SIGNUP_TURNSTILE_SECRET_FILE",
+      "type": "str"
+    },
+    {
+      "environment": "SIGNUP_GEOCODER",
+      "type": "Literal['disabled', 'nominatim', 'fixture']"
+    },
+    {
+      "environment": "SIGNUP_GEOCODER_ORIGIN",
+      "type": "str"
+    },
+    {
+      "environment": "SIGNUP_GEOCODER_APPROVED_ORIGINS",
+      "type": "str"
+    },
+    {
+      "environment": "SIGNUP_GEOCODER_ADMIN_APPROVED",
+      "type": "bool"
+    },
+    {
+      "environment": "SIGNUP_TRUSTED_PROXY_CIDRS",
+      "type": "str"
+    },
+    {
+      "environment": "SIGNUP_RETENTION_DAYS",
+      "type": "int"
+    },
+    {
+      "environment": "MAINTENANCE_SCHEDULER_ENABLED",
+      "type": "bool"
+    },
+    {
+      "environment": "MAINTENANCE_WARRANTY_WARNING_DAYS",
+      "type": "int"
+    },
+    {
+      "environment": "MAINTENANCE_REPEAT_SERVICE_COUNT",
+      "type": "int"
+    },
+    {
+      "environment": "MAINTENANCE_SERVICE_HISTORY_DAYS",
+      "type": "int"
+    },
+    {
+      "environment": "MAINTENANCE_DOCUMENT_ROOT",
+      "type": "str"
+    },
+    {
+      "environment": "MAINTENANCE_DOCUMENT_MAX_BYTES",
+      "type": "int"
+    },
+    {
+      "environment": "MAINTENANCE_DOCUMENT_SCANNER",
+      "type": "Literal['disabled', 'clamav', 'synthetic']"
+    },
+    {
+      "environment": "MAINTENANCE_CLAMAV_SOCKET",
+      "type": "str"
+    },
+    {
+      "environment": "FIBER_DESIGNER_HEARTBEAT_FILE",
+      "type": "str"
+    },
+    {
+      "environment": "FIBER_DESIGNER_WORKER_ENABLED",
+      "type": "bool"
+    },
+    {
+      "environment": "FIBER_DESIGNER_INGEST_ENABLED",
+      "type": "bool"
+    },
+    {
+      "environment": "FIBER_DESIGNER_KEY_FILE",
+      "type": "str"
+    },
+    {
+      "environment": "PLANNING_WORKER_ENABLED",
+      "type": "bool"
+    },
+    {
+      "environment": "PLANNING_STORAGE_ROOT",
+      "type": "str"
+    },
+    {
+      "environment": "PLANNING_MAX_UPLOAD_BYTES",
+      "type": "int"
+    },
+    {
+      "environment": "FIELD_PUBLIC_BASE_URL",
+      "type": "str"
+    },
+    {
+      "environment": "TOWER_HEALTH_ENABLED",
+      "type": "bool"
+    },
+    {
+      "environment": "TOWER_HEALTH_INTERVAL_SECONDS",
+      "type": "int"
+    },
+    {
+      "environment": "TOWER_HEALTH_POLICY",
+      "type": "dict"
+    },
+    {
+      "environment": "DOWN_DETECTOR_ENABLED",
+      "type": "bool"
+    },
+    {
+      "environment": "DOWN_DETECTOR_INTERVAL_SECONDS",
+      "type": "int"
+    },
+    {
+      "environment": "DOWN_DETECTOR_POLICY",
+      "type": "dict"
+    },
+    {
+      "environment": "NOTIFICATIONS_WORKER_ENABLED",
+      "type": "bool"
+    },
+    {
+      "environment": "NOTIFICATIONS_AUTO_DRAFTS_ENABLED",
+      "type": "bool"
+    },
+    {
+      "environment": "NOTIFICATIONS_LIVE_DELIVERY_ENABLED",
+      "type": "bool"
+    },
+    {
+      "environment": "NOTIFICATIONS_VAULT_KEY_FILE",
+      "type": "str"
+    },
+    {
+      "environment": "SECRET_KEY",
+      "type": "str"
+    },
+    {
+      "environment": "ACCESS_TOKEN_EXPIRE_MINUTES",
+      "type": "int"
+    },
+    {
+      "environment": "DATABASE_URL",
+      "type": "str"
+    },
+    {
+      "environment": "REDIS_URL",
+      "type": "str"
+    },
+    {
+      "environment": "ADMIN_USERNAME",
+      "type": "str"
+    },
+    {
+      "environment": "ADMIN_PASSWORD",
+      "type": "str"
+    },
+    {
+      "environment": "ADMIN_EMAIL",
+      "type": "str"
+    },
+    {
+      "environment": "UISP_BASE_URL",
+      "type": "str"
+    },
+    {
+      "environment": "UISP_TOKEN",
+      "type": "SecretStr"
+    },
+    {
+      "environment": "UISP_TOKEN_FILE",
+      "type": "str"
+    },
+    {
+      "environment": "MIKROTIK_PASSWORD_FILE",
+      "type": "str"
+    },
+    {
+      "environment": "UISP_ENABLED",
+      "type": "bool"
+    },
+    {
+      "environment": "UISP_ALLOWED_ORIGINS",
+      "type": "str"
+    },
+    {
+      "environment": "INTEGRATIONS_ADMIN_APPROVED",
+      "type": "bool"
+    },
+    {
+      "environment": "MIKROTIK_ENABLED",
+      "type": "bool"
+    },
+    {
+      "environment": "MIKROTIK_BASE_URL",
+      "type": "str"
+    },
+    {
+      "environment": "MIKROTIK_ALLOWED_ORIGINS",
+      "type": "str"
+    },
+    {
+      "environment": "MIKROTIK_USERNAME",
+      "type": "str"
+    },
+    {
+      "environment": "MIKROTIK_PASSWORD",
+      "type": "SecretStr"
+    },
+    {
+      "environment": "MIKROTIK_DEVICE_ID",
+      "type": "int | None"
+    },
+    {
+      "environment": "MIKROTIK_SYNC_INTERVAL_SECONDS",
+      "type": "int"
+    },
+    {
+      "environment": "UISP_VERIFY_TLS",
+      "type": "bool"
+    },
+    {
+      "environment": "UISP_SYNC_INTERVAL_SECONDS",
+      "type": "int"
+    },
+    {
+      "environment": "RF_SCHEDULER_ENABLED",
+      "type": "bool"
+    },
+    {
+      "environment": "RF_SCHEDULER_SPOOL_DIR",
+      "type": "str"
+    },
+    {
+      "environment": "RF_SCHEDULER_MANIFEST_FILE",
+      "type": "str"
+    },
+    {
+      "environment": "RF_SCHEDULER_CONCURRENCY",
+      "type": "int"
+    },
+    {
+      "environment": "RF_SCHEDULER_BATCH_SIZE",
+      "type": "int"
+    },
+    {
+      "environment": "RF_RELIABILITY_POLICY",
+      "type": "dict"
+    },
+    {
+      "environment": "RF_COLLECTION_ENABLED",
+      "type": "bool"
+    },
+    {
+      "environment": "RF_SNMP_ENABLED",
+      "type": "bool"
+    },
+    {
+      "environment": "RF_SNMP_CONFIG_FILE",
+      "type": "str"
+    },
+    {
+      "environment": "RF_RADIO_THRESHOLDS",
+      "type": "dict"
+    },
+    {
+      "environment": "RF_MICROWAVE_ENABLED",
+      "type": "bool"
+    },
+    {
+      "environment": "RF_MICROWAVE_CONFIG_FILE",
+      "type": "str"
+    },
+    {
+      "environment": "RF_MICROWAVE_THRESHOLDS",
+      "type": "dict"
+    },
+    {
+      "environment": "RF_ANALYTICS_PROJECTION_ENABLED",
+      "type": "bool"
+    },
+    {
+      "environment": "RF_ANALYTICS_POLICY",
+      "type": "dict"
+    },
+    {
+      "environment": "RF_EXPLANATION_PROVIDER",
+      "type": "Literal['disabled', 'local_ollama']"
+    },
+    {
+      "environment": "RF_EXPLANATION_ADMIN_APPROVED",
+      "type": "bool"
+    },
+    {
+      "environment": "RF_EXPLANATION_MODEL",
+      "type": "str"
+    },
+    {
+      "environment": "RF_TROUBLESHOOTING_TEMPERATURE_WARNING_C",
+      "type": "float"
+    },
+    {
+      "environment": "RF_ANALYTICS_RETENTION_ENABLED",
+      "type": "bool"
+    },
+    {
+      "environment": "RF_ANALYTICS_RETENTION_DAYS",
+      "type": "int"
+    },
+    {
+      "environment": "RF_ANALYTICS_RETENTION_BATCH",
+      "type": "int"
+    },
+    {
+      "environment": "RF_COLLECTION_MIN_INTERVAL_SECONDS",
+      "type": "int"
+    },
+    {
+      "environment": "RF_COLLECTION_MAX_DEVICES",
+      "type": "int"
+    },
+    {
+      "environment": "RF_HISTORY_PRUNING_ENABLED",
+      "type": "bool"
+    },
+    {
+      "environment": "RF_HISTORY_RETENTION_DAYS",
+      "type": "int"
+    },
+    {
+      "environment": "RF_HISTORY_MAX_DELETE_PER_RUN",
+      "type": "int"
+    },
+    {
+      "environment": "CORS_ORIGINS",
+      "type": "str"
+    }
+  ],
+  "external_calls": 0
+}

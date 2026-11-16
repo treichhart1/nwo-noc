@@ -38,36 +38,16 @@ The project is being developed specifically for WISP operations with support for
 
 ---
 
-## Planned Features
+## Integrated development candidate
 
-### Operations
+The stacked development candidate includes customer impact and approved communications,
+IPAM, physical inventory, field work, maintenance/documents, preliminary signup,
+unified operational topology, advisory RF planning, approved Fiber Designer imports,
+financial analytics and Grafana contracts. These features are not yet merged into main.
+Live integrations, production activation and automatic remediation are not authorized.
 
-- Root cause analysis
-- Customer impact engine
-- Revenue impact calculations
-- Dependency graph
-- Intelligent alert suppression
-
-### Integrations
-
-- MikroTik RouterOS API
-- UISP synchronization
-- SNMP polling
-- Syslog collection
-
-### GIS
-
-- Interactive tower map
-- Fiber routes
-- Microwave paths
-- Customer mapping
-
-### AI
-
-- Automated troubleshooting
-- Capacity forecasting
-- Predictive maintenance
-- Network recommendations
+See [NOC-110 integration manifest and release findings](docs/NOC-110-full-integration.md)
+for exact ancestry, ownership boundaries, validation and remaining blockers.
 
 ---
 
@@ -96,13 +76,9 @@ Infrastructure
 
 ## Installation
 
-```bash
-git clone <repository>
-
-cd nwo-noc
-
-docker compose up -d --build
-```
+Use the [isolated Ubuntu installation and recovery guide](docs/NOC-84-installation-and-recovery.md)
+with generated nonproduction configuration and an internal-only Compose project.
+Do not treat a green feature-branch CI run as production deployment authorization.
 
 ---
 
@@ -112,9 +88,7 @@ Current Version
 
 v3.2.1-rc.3
 
-Current Sprint
-
-Sprint 1 – Project Foundation
+Release integration: isolated synthetic candidate; see the NOC-110 report.
 
 ---
 
