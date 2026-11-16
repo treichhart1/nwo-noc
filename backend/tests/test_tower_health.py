@@ -942,3 +942,34 @@ def test_dense_recent_history_keeps_hourly_temperature_evidence(health):
     }
     decisions = rule_decisions(rows, x.now, Policy())
     assert decisions["rising_temperature"]["state"] == "warning"
+
+
+def test_batch_ingestion_reuses_transaction_lock_and_policy(health, monkeypatch):
+    """Batch optimization must keep validation and savepoints, not per-row locks."""
+    from app.tower_health import worker
+
+    x = health
+    calls = {"lock": 0, "policy": 0}
+    for name in calls:
+        original = getattr(worker, name)
+
+        def counted(db, _name=name, _original=original):
+            calls[_name] += 1
+            return _original(db)
+
+        monkeypatch.setattr(worker, name, counted)
+    for i in range(3):
+        x.db.add(
+            TelemetrySample(
+                device_id=x.ap.id,
+                sampled_at=x.now - timedelta(seconds=60 - i),
+                raw_data={"tower_health_v1": {"metrics": {"temperature_c": 50 + i}}},
+            )
+        )
+    x.db.flush()
+    result = consume(x.db, now=x.now, assess_changed=False)
+    assert result["processed"] == 3
+    assert calls == {"lock": 1, "policy": 1}
+    assert x.db.scalar(select(func.count(TowerSample.id))) == 3
+    assert consume(x.db, now=x.now, assess_changed=False)["processed"] == 0
+    assert x.db.scalar(select(func.count(TowerSample.id))) == 3

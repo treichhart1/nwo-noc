@@ -1,4 +1,4 @@
-FROM node:22-alpine AS build
+FROM node:22-alpine@sha256:1314fb30ec37592d5845e5a160d522c0e680972aa534549940b8d73bde88481a AS build
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN --mount=type=secret,id=proxy_ca \
@@ -7,7 +7,7 @@ RUN --mount=type=secret,id=proxy_ca \
 COPY . .
 RUN npm run build
 
-FROM nginx:stable-alpine
+FROM nginx:stable-alpine@sha256:901e593c95dc85f5a729f5765516321366ef4ac401821431d408897e95287d0a
 COPY nginx-main.conf /etc/nginx/nginx.conf
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /app/dist /usr/share/nginx/html

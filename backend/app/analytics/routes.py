@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, Request, HTTPException, Query
 from fastapi.responses import Response
-from sqlalchemy import select, func, text
+from sqlalchemy import select, text
 from sqlalchemy.exc import SQLAlchemyError
 from app.core.database import get_db
 from app.field.routes import access, run

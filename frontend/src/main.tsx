@@ -1,8 +1,3 @@
-import IPAM from "./IPAM"
-import TowerHealth from "./TowerHealth"
-import DownDetector from "./DownDetector"
-import NotificationCenter from "./NotificationCenter"
-import CustomerImpact from "./CustomerImpact"
 import packageInfo from "../package.json"
 import React,{FormEvent,useEffect,useMemo,useState} from "react"
 import {createRoot} from "react-dom/client"
@@ -12,14 +7,20 @@ import "leaflet/dist/leaflet.css"
 import L from "leaflet"
 import {getToken,login,logout,request,setToken} from "./lib/api"
 import "./styles.css"
-import RFDiagnostics from "./RFDiagnostics"
-import RFAnalytics from "./RFAnalytics"
-import RFOperations from "./RFOperations"
-import RFTroubleshooting from "./RFTroubleshooting"
-import IntegrationStatus from "./IntegrationStatus"
-import OperationalReadiness from "./OperationalReadiness"
-import RFOverview from "./RFOverview"
-import DeviceRFHealth from "./DeviceRFHealth"
+
+const IPAM=React.lazy(()=>import("./IPAM"))
+const TowerHealth=React.lazy(()=>import("./TowerHealth"))
+const DownDetector=React.lazy(()=>import("./DownDetector"))
+const NotificationCenter=React.lazy(()=>import("./NotificationCenter"))
+const CustomerImpact=React.lazy(()=>import("./CustomerImpact"))
+const RFDiagnostics=React.lazy(()=>import("./RFDiagnostics"))
+const RFAnalytics=React.lazy(()=>import("./RFAnalytics"))
+const RFOperations=React.lazy(()=>import("./RFOperations"))
+const RFTroubleshooting=React.lazy(()=>import("./RFTroubleshooting"))
+const IntegrationStatus=React.lazy(()=>import("./IntegrationStatus"))
+const OperationalReadiness=React.lazy(()=>import("./OperationalReadiness"))
+const RFOverview=React.lazy(()=>import("./RFOverview"))
+const DeviceRFHealth=React.lazy(()=>import("./DeviceRFHealth"))
 
 const CustomerCommunications=React.lazy(()=>import("./CustomerCommunications"))
 const NetworkAnalytics=React.lazy(()=>import("./NetworkAnalytics"))
@@ -102,4 +103,4 @@ function num(v:any){return v===""||v==null?null:Number(v)}
 function PageHead({title,text,add,onAdd}:{title:string,text:string,add:string,onAdd:()=>void}){return <div className="pageHead"><div><h2>{title}</h2><p className="muted">{text}</p></div><button className="primary" onClick={onAdd}><Plus/>{add}</button></div>}
 function Stat({icon,title,value,danger=false}:{icon:React.ReactNode,title:string,value:number,danger?:boolean}){return <article className={`stat ${danger?"dangerStat":""}`}><div className="statIcon">{icon}</div><div><span>{title}</span><b>{value}</b></div></article>}
 function Empty({icon,text}:{icon:React.ReactNode,text:string}){return <div className="empty">{icon}<b>{text}</b></div>}
-createRoot(document.getElementById("root")!).render(getToken()?(new URLSearchParams(location.search).has("customer-status")?<React.Suspense fallback={<p>Loading customer communications…</p>}><CustomerCommunications/></React.Suspense>:new URLSearchParams(location.search).has("monitoring-analytics")?<React.Suspense fallback={<p>Loading network analytics…</p>}><NetworkAnalytics/></React.Suspense>:new URLSearchParams(location.search).has("network-roi")?<React.Suspense fallback={<p>Loading financial analytics…</p>}><NetworkFinance/></React.Suspense>:new URLSearchParams(location.search).has("fiber-integration")?<React.Suspense fallback={<p>Loading fiber integration…</p>}><FiberDesignerIntegration/></React.Suspense>:new URLSearchParams(location.search).has("planning")?<React.Suspense fallback={<p>Loading RF planning…</p>}><RFPlanning/></React.Suspense>:new URLSearchParams(location.search).has("unified")?<React.Suspense fallback={<p>Loading unified network…</p>}><UnifiedNetwork/></React.Suspense>:new URLSearchParams(location.search).has("applications")?<React.Suspense fallback={<p>Loading applications…</p>}><Applications/></React.Suspense>:new URLSearchParams(location.search).has("maintenance")?<React.Suspense fallback={<p>Loading maintenance…</p>}><MaintenanceOps/></React.Suspense>:new URLSearchParams(location.search).has("field")||new URLSearchParams(location.search).has("qr")?<React.Suspense fallback={<p>Loading field management…</p>}><FieldManagement/></React.Suspense>:<App/>):<Login/>)
+createRoot(document.getElementById("root")!).render(getToken()?(new URLSearchParams(location.search).has("customer-status")?<React.Suspense fallback={<p>Loading customer communications…</p>}><CustomerCommunications/></React.Suspense>:new URLSearchParams(location.search).has("monitoring-analytics")?<React.Suspense fallback={<p>Loading network analytics…</p>}><NetworkAnalytics/></React.Suspense>:new URLSearchParams(location.search).has("network-roi")?<React.Suspense fallback={<p>Loading financial analytics…</p>}><NetworkFinance/></React.Suspense>:new URLSearchParams(location.search).has("fiber-integration")?<React.Suspense fallback={<p>Loading fiber integration…</p>}><FiberDesignerIntegration/></React.Suspense>:new URLSearchParams(location.search).has("planning")?<React.Suspense fallback={<p>Loading RF planning…</p>}><RFPlanning/></React.Suspense>:new URLSearchParams(location.search).has("unified")?<React.Suspense fallback={<p>Loading unified network…</p>}><UnifiedNetwork/></React.Suspense>:new URLSearchParams(location.search).has("applications")?<React.Suspense fallback={<p>Loading applications…</p>}><Applications/></React.Suspense>:new URLSearchParams(location.search).has("maintenance")?<React.Suspense fallback={<p>Loading maintenance…</p>}><MaintenanceOps/></React.Suspense>:new URLSearchParams(location.search).has("field")||new URLSearchParams(location.search).has("qr")?<React.Suspense fallback={<p>Loading field management…</p>}><FieldManagement/></React.Suspense>:<React.Suspense fallback={<p role="status">Loading NWO NOC module…</p>}><App/></React.Suspense>):<Login/>)

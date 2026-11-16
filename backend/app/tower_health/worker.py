@@ -8,7 +8,7 @@ from app.core.database import SessionLocal
 from app.models.entities import Device, Sector, TelemetrySample
 from .contracts import Observation, Metrics, Power
 from .models import TowerReceipt
-from .service import ingest, assess, clock, policy, lock
+from .service import _ingest_locked, assess, clock, policy, lock
 
 
 def normalize(row, device, sectors):
@@ -270,7 +270,7 @@ def consume(db, *, now=None, limit=200, assess_changed=True):
         # A malformed association is isolated under a savepoint without dropping later queued rows.
         try:
             with db.begin_nested():
-                ingest(db, o, now=now)
+                _ingest_locked(db, o, p, now=now)
             result = "processed"
             changed.add(d.wisp_site_id)
         except (ValueError, LookupError):

@@ -1,0 +1,207 @@
+{
+  "baseline_commit": "3901106c7ed848a0d786e36bd3d4a69e99d2a8c1",
+  "baseline_pr": 115,
+  "scope": "synthetic isolated cloud only; no production or live-device acceptance",
+  "tower_benchmark": {
+    "before": [
+      {
+        "devices": 250,
+        "sites": 40,
+        "source_samples": 750,
+        "normalized_samples": 750,
+        "ingestion_ms": 6856.08,
+        "assessment_ms": 647.64,
+        "ingestion_queries": {
+          "selects": 3572,
+          "statements": 9159
+        },
+        "assessment_queries": {
+          "selects": 93,
+          "statements": 267
+        },
+        "repeat_assessment_ms": 585.59,
+        "maintenance_findings": 85,
+        "duplicate_findings": 0,
+        "customer_services": 420,
+        "peak_process_rss_kib": 107600,
+        "external_calls": 0,
+        "limitations": "Three synthetic frames/device and reviewed synthetic assignments; not dense90-day history, native polling throughput or production sizing"
+      },
+      {
+        "devices": 500,
+        "sites": 40,
+        "source_samples": 1500,
+        "normalized_samples": 1500,
+        "ingestion_ms": 16100.52,
+        "assessment_ms": 1343.97,
+        "ingestion_queries": {
+          "selects": 7092,
+          "statements": 18185
+        },
+        "assessment_queries": {
+          "selects": 93,
+          "statements": 403
+        },
+        "repeat_assessment_ms": 1025.33,
+        "maintenance_findings": 153,
+        "duplicate_findings": 0,
+        "customer_services": 835,
+        "peak_process_rss_kib": 134744,
+        "external_calls": 0,
+        "limitations": "Three synthetic frames/device and reviewed synthetic assignments; not dense90-day history, native polling throughput or production sizing"
+      },
+      {
+        "devices": 1000,
+        "sites": 40,
+        "source_samples": 3000,
+        "normalized_samples": 3000,
+        "ingestion_ms": 39647.94,
+        "assessment_ms": 3809.32,
+        "ingestion_queries": {
+          "selects": 14116,
+          "statements": 36214
+        },
+        "assessment_queries": {
+          "selects": 93,
+          "statements": 675
+        },
+        "repeat_assessment_ms": 4438.88,
+        "maintenance_findings": 289,
+        "duplicate_findings": 0,
+        "customer_services": 1670,
+        "peak_process_rss_kib": 183052,
+        "external_calls": 0,
+        "limitations": "Three synthetic frames/device and reviewed synthetic assignments; not dense90-day history, native polling throughput or production sizing"
+      }
+    ],
+    "after": [
+      {
+        "devices": 250,
+        "sites": 40,
+        "source_samples": 750,
+        "normalized_samples": 750,
+        "ingestion_ms": 6151.29,
+        "assessment_ms": 786.89,
+        "ingestion_queries": {
+          "selects": 2822,
+          "statements": 7659
+        },
+        "assessment_queries": {
+          "selects": 93,
+          "statements": 267
+        },
+        "repeat_assessment_ms": 758.1,
+        "maintenance_findings": 85,
+        "duplicate_findings": 0,
+        "customer_services": 420,
+        "peak_process_rss_kib": 107564,
+        "external_calls": 0,
+        "limitations": "Three synthetic frames/device and reviewed synthetic assignments; not dense90-day history, native polling throughput or production sizing"
+      },
+      {
+        "devices": 500,
+        "sites": 40,
+        "source_samples": 1500,
+        "normalized_samples": 1500,
+        "ingestion_ms": 12757.71,
+        "assessment_ms": 1912.16,
+        "ingestion_queries": {
+          "selects": 5592,
+          "statements": 15185
+        },
+        "assessment_queries": {
+          "selects": 93,
+          "statements": 403
+        },
+        "repeat_assessment_ms": 1248.94,
+        "maintenance_findings": 153,
+        "duplicate_findings": 0,
+        "customer_services": 835,
+        "peak_process_rss_kib": 134644,
+        "external_calls": 0,
+        "limitations": "Three synthetic frames/device and reviewed synthetic assignments; not dense90-day history, native polling throughput or production sizing"
+      },
+      {
+        "devices": 1000,
+        "sites": 40,
+        "source_samples": 3000,
+        "normalized_samples": 3000,
+        "ingestion_ms": 32312.17,
+        "assessment_ms": 3673.88,
+        "ingestion_queries": {
+          "selects": 11116,
+          "statements": 30214
+        },
+        "assessment_queries": {
+          "selects": 93,
+          "statements": 675
+        },
+        "repeat_assessment_ms": 6131.03,
+        "maintenance_findings": 289,
+        "duplicate_findings": 0,
+        "customer_services": 1670,
+        "peak_process_rss_kib": 184592,
+        "external_calls": 0,
+        "limitations": "Three synthetic frames/device and reviewed synthetic assignments; not dense90-day history, native polling throughput or production sizing"
+      }
+    ],
+    "repetitions": 1,
+    "limitations": "shared host; not p95/p99, native collector throughput, dense90-day history or production sizing"
+  },
+  "frontend_build": {
+    "before_entry_kb": 504.87,
+    "after_entry_kb": 353.11,
+    "before_gzip_kb": 144.93,
+    "after_gzip_kb": 106.32,
+    "before_build_s": 5.21,
+    "after_build_s": 5.02,
+    "chunk_warning_after": false
+  },
+  "dependencies": {
+    "audited_unique_packages": 84,
+    "advisories": 0,
+    "npm_advisories": 0,
+    "runtime_lock_packages": 55,
+    "test_lock_packages": 60,
+    "audit_lock_packages": 33,
+    "fresh_hash_verified_install": true,
+    "native_imports_network_disabled": true,
+    "os_image_scan": "not completed; release blocker"
+  },
+  "local_checks": {
+    "focused_postgres": {
+      "passed": 112
+    },
+    "chromium_focused": {
+      "passed": 5,
+      "skipped": 0
+    },
+    "supply_chain_negative_and_consistency": {
+      "passed": 12
+    },
+    "ruff_undefined_names": "passed",
+    "bandit_reviewed": 83,
+    "bandit_high_or_unreviewed": 0,
+    "fresh_migrations": "passed through0028; no drift; repeat upgrade passed",
+    "supported_upgrade": "0011_monitoring_reliability to0028; no drift",
+    "full_backend": "Final PostgreSQL-backed result is recorded in the draft PR validation ledger; do not substitute unit skips",
+    "ubuntu_24_04": "Final-commit CI userspace install/recovery result recorded in draft PR; no full host boot claim",
+    "unit_backend": {
+      "passed": 764,
+      "skipped": 949,
+      "warnings": 2,
+      "seconds": 10.23
+    }
+  },
+  "operational_blockers": [
+    "real firmware/read-only credentials/approved one-device VPN/TLS/egress acceptance",
+    "OS/native image vulnerability scan and Redis/server licensing approval",
+    "off-host recovery keys/files, deployed AV, full Ubuntu host boot/firewall acceptance",
+    "1000-device native polling throughput and sustained sizing",
+    "provider/WordPress/Grafana/operator validation with external delivery disabled"
+  ],
+  "corrected_validation_issues": [
+    "Workflow580 rejected before jobs: quote pip :all: shell commands; YAML parsing regression added",
+    "Initial long test process retained pre-edit five-image assertion; final-source tests use six immutable image defaults"
+  ]
+}
