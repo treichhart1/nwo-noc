@@ -316,6 +316,18 @@ class Host:
         os.chown(directory, 0, 10001)
         os.chmod(directory, 0o770)
 
+    def clear_stopped_frontend_socket(self):
+        path = self.path("run/nwo-noc-ingress/frontend.sock")
+        try:
+            value = path.lstat()
+        except FileNotFoundError:
+            return
+        if not stat.S_ISSOCK(value.st_mode) or value.st_uid not in (0, 101):
+            raise Reject(
+                "Unexpected ingress entry retained; only the stopped frontend's owned Unix socket may be replaced"
+            )
+        path.unlink()
+
     def start_ingress(self, release, state):
         if not self.args.rehearsal:
             run(
@@ -636,6 +648,11 @@ class Host:
             if name == "frontend":
                 svc["group_add"] = ["10001"]
                 svc["image"] = a["images"]["frontend"]
+                svc["command"] = [
+                    "sh",
+                    "-ec",
+                    "if [ -S /ingress/frontend.sock ]; then rm /ingress/frontend.sock; elif [ -e /ingress/frontend.sock ]; then exit 1; fi; exec nginx -g 'daemon off;'",
+                ]
                 svc.pop("ports", None)
                 svc["volumes"] = [
                     f"{release / 'nginx.conf'}:/etc/nginx/conf.d/default.conf:ro",
@@ -877,7 +894,10 @@ class Host:
         os.replace(pending, self.opt / "current")
 
     def start(self, release, state):
+        self.compose(release, state, "stop", "frontend")
         self.prepare_ingress()
+        self.clear_stopped_frontend_socket()
+
         self.compose(
             release,
             state,

@@ -521,3 +521,21 @@ def test_systemd_stop_explicitly_includes_profile_workers(tmp_path, monkeypatch)
         "redis",
         "db",
     )
+
+
+def test_stale_socket_cleanup_never_removes_regular_files_or_links(tmp_path):
+    host = fake_host(tmp_path)
+    folder = host.path("run/nwo-noc-ingress")
+    folder.mkdir(parents=True)
+    target = folder / "frontend.sock"
+    target.write_text("preserve unexpected operator file")
+    with pytest.raises(ValueError):
+        host.clear_stopped_frontend_socket()
+    assert target.read_text() == "preserve unexpected operator file"
+    target.unlink()
+    outside = tmp_path / "preserved"
+    outside.write_text("data")
+    target.symlink_to(outside)
+    with pytest.raises(ValueError):
+        host.clear_stopped_frontend_socket()
+    assert outside.read_text() == "data" and target.is_symlink()

@@ -100,7 +100,7 @@ No broad image/volume prune or backup/data cleanup was used.
 Corrections found through tests include explicit Nginx file permissions under a private
 umask, bootstrap script import path, complete readable frontend checks, private Unix ingress
 instead of relying on unpublished internal-network ports, explicit service port configuration,
-source-directory execute permission for the unprivileged ingress, strict internal owner URL
+source-directory execute permission for the unprivileged ingress, explicit profile-worker shutdown and replacement of only owned stale Unix sockets after stopping the frontend, strict internal owner URL
 validation and preservation of the post-migration guard after a later service-start error.
 The corresponding focused tests cover invalid approvals, missing resources, archive traversal,
 permissions, no public ports, role separation, single-use setup, stream reliability and failures.

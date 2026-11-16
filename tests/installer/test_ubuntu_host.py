@@ -82,6 +82,30 @@ def command(argv, *, data=None, success=True, cwd=None, env=None):
                     ),
                     flush=True,
                 )
+                errors = subprocess.run(
+                    [
+                        "docker",
+                        "logs",
+                        "--tail",
+                        "20",
+                        state["project"] + "-frontend-1",
+                    ],
+                    capture_output=True,
+                    text=True,
+                    timeout=15,
+                )
+                print(
+                    json.dumps(
+                        {
+                            "nginx_startup_errors": [
+                                line
+                                for line in errors.stderr.splitlines()
+                                if "[emerg]" in line
+                            ]
+                        }
+                    ),
+                    flush=True,
+                )
         # Installer stderr is intentionally sanitized. Never print docker/config/provider output.
         raise RuntimeError(
             "Acceptance command failed: "
