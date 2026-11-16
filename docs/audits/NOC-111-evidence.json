@@ -61,5 +61,19 @@
     "warnings": 2,
     "seconds": 82.94
   },
-  "audit_regression_cases": 36
+  "audit_regression_cases": 36,
+  "full_python_dependency_scan": {
+    "scope": "runtime + test + audit requirements",
+    "baseline_packages": 84,
+    "vulnerable_packages_before": 1,
+    "unique_advisory": "PYSEC-2026-1845 / CVE-2025-71176",
+    "duplicate_advisory_feed_records": 2,
+    "pytest_before": "8.3.4",
+    "pytest_after": "9.0.3",
+    "fixed_requires_python": ">=3.10",
+    "project_python": "3.12",
+    "packages_after": 84,
+    "known_vulnerabilities_after": 0,
+    "full_pytest9_regression": "Final exact result in draft PR"
+  }
 }

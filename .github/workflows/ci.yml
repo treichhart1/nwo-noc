@@ -20,7 +20,7 @@ jobs:
         with:
           node-version: 22
       - run: pip install -r backend/requirements-audit.txt
-      - run: pip-audit -r backend/requirements.txt --vulnerability-service pypi --format json --output pip-audit.json
+      - run: pip-audit -r backend/requirements.txt -r backend/requirements-dev.txt -r backend/requirements-audit.txt --vulnerability-service pypi --format json --output pip-audit.json
       - name: Audit undefined Python names and reviewed security findings
         run: |
           ruff check backend/app scripts --select F821,F822,F823

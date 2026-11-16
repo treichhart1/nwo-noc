@@ -268,6 +268,26 @@ independently of the MIT-licensed Python Redis client. LGPL psycopg/binary and n
 GDAL/PROJ bundled notices require redistribution review. **Required:** review exact
 platform images/SBOM/licenses and execute off-host recovery before production approval.
 
+### A111-17 — High — vulnerable test dependency — corrected
+
+The expanded runtime+test+audit dependency scan found pytest8.3.4 affected by
+**CVE-2025-71176 / PYSEC-2026-1845** (GHSA-6w46-j5rx-g56g): UNIX temporary-directory
+ownership handling can permit local denial of service or privilege escalation.
+The feed returned two identical records for this **one unique advisory in one
+package**, not two separate vulnerabilities. The initial55-package runtime-only
+scan could not detect a test-only dependency; that coverage gap is corrected.
+
+The advisory reports9.0.3 as the fixed version. The pytest pin is deliberately
+updated to9.0.3, requiring Python>=3.10 and compatible with the project's3.12.
+Deprecated pytest API usage was searched before the change; no implicated removed
+API/plugin requirement was found. This is an advisory-driven, reviewed test-runner
+major upgrade, not a blind runtime dependency upgrade. Pytest remains outside the
+application image. CI now scans all three requirements files (runtime, test, audit).
+The post-fix84-package scan reports0 known vulnerabilities. The complete backend
+suite and all final-commit CI jobs are rerun on9.0.3; exact results are in the PR.
+Remaining risk: shared runner isolation and future dependency advisories still
+require ongoing review; no local-privilege exploitation was attempted.
+
 ## Architecture and domain coverage
 
 The registered schema has171 tables,370 FKs and240 metadata indexes; the private
@@ -308,7 +328,9 @@ Static scans cover application modules and undefined names in release scripts;
 dependency scans use pinned audit tools in `requirements-audit.txt`, outside runtime
 images. pip-audit2.10.1 resolved55 Python packages with0 known vulnerabilities;
 npm audit reports0 at all severities across130 installed dependency entries.
-These are time-bound registry results, not proof of absence of undisclosed flaws.
+The expanded runtime/test/audit scan initially found the pytest advisory described
+in A111-17; after correction all84 packages scan clean. These are time-bound
+registry results, not proof of absence of undisclosed flaws.
 [Runtime license metadata](audits/NOC-111-runtime-licenses.json) covers23 pinned direct
 packages; inspected license files fill missing pysnmp/lazrs metadata. Most are
 permissive, with LGPL psycopg and native/binary notices needing explicit packaging
@@ -328,7 +350,8 @@ the complete backend suite and must not be summed as unique tests.
 Chromium audit checks:2 passed/4.0s. Private/public-status/signup builds and strict
 TypeScript passed. Python compilation, whitespace checks and the static gate passed.
 The earlier full run was intentionally interrupted when the shared HTTP correction
-expanded; it is not counted as passed. The final source is rerun completely.
+expanded; it is not counted as passed. The final source is rerun completely, including a new full run on pytest9.0.3 after
+the test-only CVE was discovered. Earlier8.3.4 results are not substituted for it.
 [Structured evidence](audits/NOC-111-evidence.json) and
 [before/after profile](audits/NOC-111-sites-profile.json) contain no secrets/PII.
 
