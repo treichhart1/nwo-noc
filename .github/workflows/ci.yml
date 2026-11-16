@@ -668,7 +668,7 @@ jobs:
           NOC101_FIELD_BROWSER: "true"
         run: |
           scripts/release/manage.sh "$NOC_ACCEPTANCE_STATE" exec -T backend python -m app.field.rehearsal > "$NOC_ACCEPTANCE_STATE/field-fixture.json"
-          (cd frontend && npx playwright test field.spec.ts field-refresh.spec.ts)
+          (cd frontend && npx playwright test field.spec.ts field-refresh.spec.ts field-module-failure.spec.ts)
       - name: Validate preventive maintenance, secure documents and durable occurrence recovery
         env:
           NOC_PROJECT: noc84-wisp-test

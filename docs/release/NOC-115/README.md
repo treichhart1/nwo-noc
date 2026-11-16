@@ -83,6 +83,33 @@ This is actual filesystem ownership validation, not a mocked Git success.
 
 ## Evidence and decision
 
+### A115-03 — Medium field reliability — corrected reproducible failure mode
+
+PR598 attempt1 timed out looking for Field change reason after reload/offline/online;
+the identical push597 passed68 browser tests. An explicit failed-job rerun preserves
+that failed attempt; no assertion, timeout or retry configuration is weakened.
+The failed job did not retain a browser trace, so its exact cause is not established.
+
+Local Chromium fault injection independently reproduced a matching failure mode:
+aborting the deferred MaintenanceOps module unmounted the surrounding field page.
+The optional embedded documents panel now has a bounded React error boundary with
+generic reconnect/reload guidance. Primary field controls, approval reason, session
+and private inspection draft remain intact; backend authorization is unchanged.
+The new browser regression fails before the fix and passes3/3 in a clean local rerun
+afterward,10.7s. An earlier hot-reload-interrupted attempt is not counted as passing.
+The frontend production build passed. Final CI adds this regression to existing field
+tests; the original phone flow remains. This is not proof of the earlier CI timeout's
+exact cause or full offline synchronization. Final provenance includes this targeted
+frontend change; baseline file hashes are historical, not relabeled as final.
+
+The workspace became unavailable after those local tests/build passed, before local
+commit completion. The same source change was reconstructed from the pinned GitHub
+parent, published through the repository connector, and requires final CI. Local
+checkout synchronization and cleanup cannot be verified while that environment is
+unavailable; no existing/uncommitted files were deleted.
+
+
+
 - [Installation evidence audit](installation-evidence.md), [pinned evidence](evidence.json).
 - [Acceptance matrix](acceptance-matrix.md), [machine-readable matrix](acceptance-matrix.json).
 - [Operator runbook](deployment-runbook.md), [safe configuration worksheet](../../../deploy/host/installation-review.example.json).
@@ -121,6 +148,7 @@ host activation configuration in this candidate.
 | A111-12 | Medium / FAIL at15-second target | Native1000-device synthetic rounds exceed15seconds; choose measured intervals and run sustained history/concurrency sizing |
 | A115-01 | Medium / corrected | Historical candidate inventories now read that Git tree; regression required in CI |
 | A115-02 | Medium / corrected | Exact per-command checkout trust supports root automation; non-root-owned fixture regression in real host acceptance |
+| A115-03 | Medium / corrected reproduction; original CI cause uncertain | Failed optional deferred document module is isolated from field controls/draft; original phone flow and new browser regression remain required |
 
 No new critical application defect was reproduced. This is not a deployed-host
 penetration test or proof of vulnerability absence. Physical reboot/power-loss,
