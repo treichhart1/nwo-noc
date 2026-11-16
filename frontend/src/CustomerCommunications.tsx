@@ -93,9 +93,23 @@ export default function CustomerCommunications() {
     D(undefined);
     I(undefined);
     PF("");
+    T("");
+    DE("");
+    AI([]);
+    PS("investigating");
+    ETA("");
+    EA(false);
+    PR(false);
+    W(false);
+    CF(false);
+    UP(0);
     if (!id) return;
     const d = await api("/cases/" + id);
-    if (g === generation.current) D(d);
+    if (g === generation.current) {
+      D(d);
+      K(d.maintenance_id ? "maintenance" : "outage");
+      EV(d.maintenance_id ? "planned_maintenance" : "tower_outage");
+    }
   }
   async function refresh() {
     await load();
@@ -339,6 +353,9 @@ export default function CustomerCommunications() {
           {detail && (
             <section aria-label="Communication detail">
               <h2>Case {detail.id}</h2>
+              <button disabled={busy} onClick={() => act(refresh)}>
+                Refresh communication case
+              </button>
               <p>
                 Native source status: {detail.source.status} · Case version{" "}
                 {detail.version} · Published revision:{" "}

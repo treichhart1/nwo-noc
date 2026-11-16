@@ -709,7 +709,17 @@ def message_view(db, m):
 
 def decide_message(db, u, m, b):
     admin(u)
-    p = get(db, NotificationPlan, m.plan_id)
+    # Share the native worker lock before reading state; cancellation cannot
+    # overwrite a receipt committed while the operator was waiting.
+    ns.lock(db)
+    p = db.scalar(
+        select(NotificationPlan)
+        .where(NotificationPlan.id == m.plan_id)
+        .with_for_update()
+        .execution_options(populate_existing=True)
+    )
+    if not p:
+        raise LookupError("Notification plan unavailable")
     if p.fingerprint != b.fingerprint:
         raise ValueError("Recipient/content preview changed")
     if b.action == "approve":

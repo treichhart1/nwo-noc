@@ -6,8 +6,8 @@ with CI567/568 passing. All upstream source/dependency relationships are retaine
 ## Actual local evidence
 
 * Complete backend run:1,648 passed,58 existing dependency warnings,460.77s.
-  This run preceded the final six regressions. Final focused module:62 passed,
-  2 dependency warnings,23.55s; includes those regressions and final security checks.
+  This run preceded the final eight regressions. Final focused module:64 passed,
+  2 dependency warnings,30.49s; includes those regressions and final security checks.
 * Combined new status/native notification suites:179 passed before the final three
   unit-only privacy/credential regressions. Suites overlap and are not additive.
 * Native/public browser acceptance:5 passed,12.8s. Covers disabled public defaults,
@@ -55,3 +55,8 @@ concurrent load testing. No live equipment, production Powercode, real messages,
 customer account creation, merges or deployment occurred. RF remediation remains
 simulation-only. Exact final commit, CI links/counts and any failures are recorded
 in the draft PR after all GitHub Actions finish.
+
+Final queue review added a real concurrent PostgreSQL delivery/cancellation regression.
+Cancellation now uses the native queue lock before refreshing the plan; busy workers
+return a retryable conflict instead of allowing accepted receipts to be overwritten.
+The private SMS browser workflow passed again after clearing case-specific form drafts.

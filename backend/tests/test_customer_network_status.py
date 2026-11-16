@@ -833,3 +833,240 @@ def test_gateway_database_password_errors_are_sanitized():
         pytest.fail("Expected sanitized failure")
     except ValueError as exc:
         assert secret not in "".join(traceback.format_exception(exc))
+
+
+def test_concurrent_cancellation_cannot_overwrite_an_accepted_worker_receipt(
+    postgres_db, monkeypatch
+):
+    import os, threading
+    from datetime import datetime, timezone
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import sessionmaker
+    from app.core.database import Base
+    from app.core.config import settings
+    from app.models.entities import Site, Device
+    from app.notifications.contracts import Policy as NotificationSettings
+    from app.notifications.models import NotificationPolicy
+
+    monkeypatch.setattr(settings, "app_env", "staging")
+    monkeypatch.setattr(settings, "offline_mode", True)
+    engine = create_engine(os.environ["RF_INTEGRATION_TEST_DATABASE_URL"])
+    schema = "noc109_cancel_" + uuid4().hex[:12]
+    with engine.begin() as c:
+        assert c.scalar(text("SELECT current_database()")) == "nwo_noc"
+        c.execute(text('CREATE SCHEMA "' + schema + '"'))
+    scoped = engine.execution_options(schema_translate_map={None: schema})
+    factory = sessionmaker(scoped)
+    entered = threading.Event()
+    release = threading.Event()
+    finished = threading.Event()
+    attempted = threading.Event()
+    errors = []
+    outcomes = []
+    threads = []
+
+    class HeldSender(MockSender):
+        def send(self, **kw):
+            self.calls.append(kw["key"])
+            entered.set()
+            if not release.wait(10):
+                raise RuntimeError("Synthetic provider release not received")
+            return "mock-accepted-once"
+
+    try:
+        Base.metadata.create_all(scoped)
+        with factory() as db:
+            now = datetime.now(timezone.utc)
+            user = User(
+                username="synthetic-cancel-admin",
+                email="cancel@example.invalid",
+                password_hash="unusable",
+                role="admin",
+                is_active=True,
+            )
+            site = Site(name="Synthetic cancellation POP")
+            db.add_all([user, site])
+            db.flush()
+            device = Device(
+                source="synthetic",
+                external_id="cancel-device",
+                name="Synthetic radio",
+                wisp_site_id=site.id,
+                enabled=True,
+            )
+            account = CustomerAccount(
+                external_id="cancel-customer",
+                name="Synthetic customer",
+                phone="+15005550123",
+                sms_consent="granted",
+                sms_opt_out=False,
+                communication_preference="sms",
+                consent_record="synthetic consent",
+                consent_recorded_at=now,
+                source_updated_at=now,
+                last_synced_at=now,
+            )
+            db.add_all([device, account])
+            db.flush()
+            db.add(
+                CustomerService(
+                    external_id="cancel-service",
+                    customer_id=account.id,
+                    status="active",
+                    service_type="wireless",
+                    site_id=site.id,
+                    device_id=device.id,
+                    mapping_state="verified",
+                    source_updated_at=now,
+                    last_synced_at=now,
+                )
+            )
+            incident = Incident(
+                title="Synthetic cancellation outage",
+                site_id=site.id,
+                severity="warning",
+                started_at=now - timedelta(hours=1),
+            )
+            db.add(incident)
+            db.add(
+                NotificationPolicy(
+                    id=1,
+                    config=NotificationSettings(
+                        timezone="UTC",
+                        quiet_start=(now.hour + 12) % 24,
+                        quiet_end=(now.hour + 13) % 24,
+                    ).model_dump(),
+                )
+            )
+            db.flush()
+            pub = s.get(
+                db,
+                Publication,
+                s.create(db, user, b(SourceInput, incident_id=incident.id))["id"],
+            )
+            msg = s.prepare_message(
+                db, user, pub, b(MessageInput, impact_confirmed=True)
+            )
+            s.decide_message(
+                db,
+                user,
+                s.get(db, Message, msg["id"]),
+                b(MessageDecision, action="approve", fingerprint=msg["fingerprint"]),
+            )
+            uid = user.id
+            mid = msg["id"]
+            pid = msg["plan_id"]
+            fingerprint = msg["fingerprint"]
+            db.commit()
+
+        def worker():
+            try:
+                with factory() as db:
+                    run_batch(db, sms=HeldSender(), slack=MockSender())
+                    db.commit()
+            except Exception as exc:
+                errors.append(repr(exc))
+                entered.set()
+
+        def cancel():
+            try:
+                with factory() as db:
+                    attempted.set()
+                    try:
+                        s.decide_message(
+                            db,
+                            db.get(User, uid),
+                            db.get(Message, mid),
+                            b(
+                                MessageDecision,
+                                action="cancel",
+                                fingerprint=fingerprint,
+                            ),
+                        )
+                        db.commit()
+                        outcomes.append("cancelled")
+                    except ValueError as exc:
+                        assert "in progress; retry" in str(exc)
+                        db.rollback()
+                        outcomes.append("queue_busy")
+            except Exception as exc:
+                errors.append(repr(exc))
+            finally:
+                finished.set()
+
+        threads = [threading.Thread(target=worker), threading.Thread(target=cancel)]
+        threads[0].start()
+        assert entered.wait(10)
+        assert not errors, errors
+        threads[1].start()
+        assert attempted.wait(5)
+        assert finished.wait(5)
+        assert outcomes == ["queue_busy"]
+        release.set()
+        for t in threads:
+            t.join(15)
+            assert not t.is_alive()
+        assert not errors, errors
+        assert outcomes == ["queue_busy"]
+        with factory() as db:
+            d = db.scalar(
+                select(NotificationDelivery).where(
+                    NotificationDelivery.plan_id == pid,
+                    NotificationDelivery.channel == "sms",
+                )
+            )
+            assert d.state == "simulated"
+            assert d.provider_receipt == "mock-accepted-once"
+            assert d.attempts == 1
+            assert db.get(NotificationPlan, pid).status == "complete"
+    finally:
+        release.set()
+        for t in threads:
+            if t.ident:
+                t.join(15)
+        with engine.begin() as c:
+            c.execute(text('DROP SCHEMA "' + schema + '" CASCADE'))
+        engine.dispose()
+
+
+def test_cancelling_future_escalation_preserves_already_accepted_sms(x):
+    m = s.prepare_message(x.db, x.admin, x.p, b(MessageInput, impact_confirmed=True))
+    row = s.get(x.db, Message, m["id"])
+    s.decide_message(
+        x.db,
+        x.admin,
+        row,
+        b(MessageDecision, action="approve", fingerprint=m["fingerprint"]),
+    )
+    sender = MockSender()
+    run_batch(x.db, sms=sender)
+    x.db.flush()
+    sms = x.db.scalar(
+        select(NotificationDelivery).where(
+            NotificationDelivery.plan_id == m["plan_id"],
+            NotificationDelivery.channel == "sms",
+        )
+    )
+    assert sms.state == "simulated"
+    receipt = sms.provider_receipt
+    s.decide_message(
+        x.db,
+        x.admin,
+        row,
+        b(MessageDecision, action="cancel", fingerprint=m["fingerprint"]),
+    )
+    x.db.flush()
+    assert sms.state == "simulated"
+    assert sms.provider_receipt == receipt
+    assert len(sender.calls) == 1
+    assert (
+        x.db.scalar(
+            select(func.count())
+            .select_from(NotificationDelivery)
+            .where(
+                NotificationDelivery.plan_id == m["plan_id"],
+                NotificationDelivery.state.in_(["queued", "retry"]),
+            )
+        )
+        == 0
+    )
