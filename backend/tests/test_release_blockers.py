@@ -215,3 +215,17 @@ def test_image_scan_unknown_or_mismatched_results_never_clean(tmp_path,monkeypat
 def test_recovery_without_terminal_requires_explicit_broker_input(monkeypatch):
     monkeypatch.setattr(sys,'stdin',SimpleNamespace(isatty=lambda:False))
     with pytest.raises(ValueError,match='Protected terminal'):read_password()
+
+
+def test_alert_cache_retains_original_lookup_scope_for_legacy_categories(postgres_db):
+    db=postgres_db;now=datetime.now(timezone.utc)
+    d=Device(source='synthetic',external_id='noc116-legacy-alert',name='Synthetic legacy alert')
+    db.add(d);db.flush()
+    old=MonitoringAlert(device_id=d.id,series='network',rule='overheating',category='monitoring',severity='warning',state='active',first_seen_at=now,updated_at=now,evidence={})
+    db.add(old)
+    for n in range(3):db.add(TelemetrySample(device_id=d.id,sampled_at=now-timedelta(seconds=30*(2-n)),raw_data={'mikrotik_v1':{'temperature_c':90,'uptime_seconds':100+n,'interfaces':[]}}))
+    db.flush()
+    process(db,d.id,now=now,policy=ReliabilityPolicy())
+    db.flush()
+    rows=list(db.scalars(select(MonitoringAlert).where(MonitoringAlert.device_id==d.id)))
+    assert len(rows)==1 and rows[0].id==old.id and old.state=='active'

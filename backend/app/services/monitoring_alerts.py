@@ -385,8 +385,7 @@ def process(db, device_id, *, now, policy):
     # rather than querying the same device for every rule. No cross-poll cache.
     alerts = list(db.scalars(select(MonitoringAlert).where(
         MonitoringAlert.device_id == device_id,
-        MonitoringAlert.category != "monitoring",
-    ).with_for_update()))
+    ).order_by(MonitoringAlert.id).with_for_update()))
     cache = {(a.series, a.rule): a for a in alerts}
     seen = set()
     for key, points in series.items():
@@ -430,7 +429,7 @@ def process(db, device_id, *, now, policy):
                 },
             )
     for row in alerts:
-        if (row.series, row.rule) not in seen and row.state != "cleared":
+        if row.category != "monitoring" and (row.series, row.rule) not in seen and row.state != "cleared":
             update_alert(
                 db,
                 device_id,
