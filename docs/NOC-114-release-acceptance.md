@@ -91,6 +91,28 @@ limits, read-only allowlists, bounded retries and dependency/security gates rema
 | High gates | A111-15/16 remain explicit blockers, not waived by packaging acceptance |
 | Pilot | Disabled templates and procedure ready for independent review; no connection |
 
+## Initial observed NOC114 evidence
+
+On commit `a388b6413228e1b00519a08e6c06749460c60874`, runs590/591 actually
+passed77 host checks each, including real systemd install/restart,22 authenticated
+module endpoints, four anonymous denials, DB/Redis/worker interruptions, full-state
+backup, upgraded application and restored-application startup. Run591 installed in
+57.274seconds with prebuilt local artifacts; single private API calls were5.743–
+114.694ms, device-page EXPLAIN ANALYZE execution0.050ms. A single idle/recovery snapshot
+showed backend152.6MiB, PostgreSQL28.93MiB, Redis4.418MiB and core worker75.87MiB;
+these are not workload maxima. Source release bytes5,411,186 and host persistent
+directory296 exclude Docker-volume database/Redis bytes and image storage.
+
+The real64MiB tmpfs resource refusal passed. The missing-package scenario initially
+failed its harness assertion because it expected the apt-install stage only, whereas
+an unavailable or untrusted package candidate can be rejected earlier. The corrected
+assertion permits only the installer's specific repository/candidate/install failure
+messages and still requires nonzero exit and no installation state/configuration.
+Sanitized stage diagnostics are now printed. The initial overall jobs are **failed**;
+later final-commit CI must validate the complete matrix before acceptance. Local
+validation:807 unit passed/951 database-dependent skipped;55 focused tests (overlap);
+10 PostgreSQL workflow tests passed. Final counts/results are in draft PR118.
+
 ## Go/no-go and unresolved gates
 
 **GO only for continued isolated controlled acceptance after final CI passes. NO-GO

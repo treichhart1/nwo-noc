@@ -51,15 +51,35 @@ def fresh_failure(
             # Remove only the disposable container package; denied egress makes reinstall fail safely.
             command(["dpkg", "--remove", "logrotate"])
         p = invoke("install", approval, secret, success=False)
+        # With apt indexes absent and egress denied, failure can occur during candidate
+        # provenance validation before apt install. Both are required fail-closed paths.
         expected = (
-            b"Insufficient free disk"
+            (b"Insufficient free disk",)
             if args.failure_stage == "resources"
-            else b"Supported system dependency installation failed"
+            else (
+                b"Ubuntu repository refresh failed",
+                b"Required Ubuntu24.04 package candidate unavailable",
+                b"Candidate must come from an official signed Ubuntu noble repository",
+                b"Supported system dependency installation failed",
+            )
+        )
+        print(
+            json.dumps(
+                {
+                    "failure_stage": args.failure_stage,
+                    "sanitized_installer_errors": [
+                        line
+                        for line in p.stderr.decode(errors="replace").splitlines()
+                        if line.startswith("NOC packaging")
+                    ],
+                }
+            ),
+            flush=True,
         )
         passed(
             args.failure_stage + "_actual_preflight_failure",
             p.returncode != 0
-            and expected in p.stderr
+            and any(message in p.stderr for message in expected)
             and not state_path.exists()
             and not (root / "etc/nwo-noc").exists(),
         )
