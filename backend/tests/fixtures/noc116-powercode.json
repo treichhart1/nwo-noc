@@ -1,0 +1,93 @@
+{
+  "schema_version": "noc-powercode-export-v1",
+  "snapshot_id": "noc116-compatibility-synthetic",
+  "mode": "full",
+  "complete": true,
+  "as_of": "2026-11-01T12:00:00Z",
+  "cursor": "noc116-cursor-1",
+  "accounts": [
+    {
+      "external_id": "SYN116-C1",
+      "name": "Synthetic household 1",
+      "phone": "+15555550101",
+      "email": "synthetic1@example.invalid",
+      "updated_at": "2026-11-01T12:00:00Z"
+    },
+    {
+      "external_id": "SYN116-C2",
+      "name": "Synthetic household 2",
+      "phone": "+15555550102",
+      "email": "synthetic2@example.invalid",
+      "updated_at": "2026-11-01T12:00:00Z"
+    },
+    {
+      "external_id": "SYN116-C3",
+      "name": "Synthetic household 3",
+      "phone": "+15555550103",
+      "email": "synthetic3@example.invalid",
+      "updated_at": "2026-11-01T12:00:00Z"
+    }
+  ],
+  "services": [
+    {
+      "external_id": "SYN116-S1",
+      "account_id": "SYN116-C1",
+      "status": "active",
+      "service_type": "wireless",
+      "plan": "SYNTHETIC-configured-plan",
+      "source_refs": {
+        "tower": "SYN116-T1",
+        "sector": "SYN116-SEC1"
+      },
+      "updated_at": "2026-11-01T12:00:00Z"
+    },
+    {
+      "external_id": "SYN116-S2",
+      "account_id": "SYN116-C2",
+      "status": "active",
+      "service_type": "hybrid",
+      "plan": "SYNTHETIC-configured-plan",
+      "source_refs": {
+        "tower": "SYN116-T2",
+        "sector": "SYN116-SEC2"
+      },
+      "updated_at": "2026-11-01T12:00:00Z"
+    },
+    {
+      "external_id": "SYN116-S3",
+      "account_id": "SYN116-C3",
+      "status": "suspended",
+      "service_type": "fiber",
+      "plan": "SYNTHETIC-configured-plan",
+      "source_refs": {
+        "tower": "SYN116-T1",
+        "sector": "SYN116-SEC3"
+      },
+      "updated_at": "2026-11-01T12:00:00Z"
+    },
+    {
+      "external_id": "SYN116-S4",
+      "account_id": "SYN116-C1",
+      "status": "disconnected",
+      "service_type": "wireless",
+      "plan": "SYNTHETIC-configured-plan",
+      "source_refs": {
+        "tower": "SYN116-T2",
+        "sector": "SYN116-SEC4"
+      },
+      "updated_at": "2026-11-01T12:00:00Z"
+    },
+    {
+      "external_id": "SYN116-S5",
+      "account_id": "SYN116-C2",
+      "status": "unknown",
+      "service_type": "unknown",
+      "plan": "SYNTHETIC-configured-plan",
+      "source_refs": {
+        "tower": "SYN116-T1",
+        "sector": "SYN116-SEC5"
+      },
+      "updated_at": "2026-11-01T12:00:00Z"
+    }
+  ]
+}

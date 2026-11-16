@@ -24,6 +24,7 @@ jobs:
       - name: Audit undefined Python names and reviewed security findings
         run: |
           python scripts/release/check_supply_chain.py
+          python scripts/release/sbom.py > source-locks.spdx.json
           ruff check backend/app scripts --select F821,F822,F823
           bandit -r backend/app -f json -o bandit.json --exit-zero
           python scripts/release/check_audit_findings.py bandit.json
@@ -31,6 +32,14 @@ jobs:
           python scripts/release/check_audit_findings.py installer-bandit.json docs/audits/NOC-113-installer-bandit-review.json
       - run: npm ci --no-audit --no-fund && npm audit --audit-level=low
         working-directory: frontend
+      - name: Retain source dependency inventory
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: always()
+        with:
+          name: source-dependency-evidence
+          path: |
+            pip-audit.json
+            source-locks.spdx.json
   frontend:
     runs-on: ubuntu-24.04
     defaults:
@@ -252,7 +261,7 @@ jobs:
           python -m pytest -q tests/test_customer_network_status.py
           python -m app.customer_status.benchmark
       - name: Validate combined NOC110 cross-module operational workflows
-        run: python -m pytest -q -s tests/test_full_integration.py tests/test_release_acceptance.py
+        run: python -m pytest -q -s tests/test_full_integration.py tests/test_release_acceptance.py tests/test_release_blockers.py
       - name: Validate NOC111 audit security and profile site summaries
         env:
           APP_ENV: staging
@@ -367,6 +376,17 @@ jobs:
           python3 scripts/validate_compose_network.py /tmp/noc-compose.json
       - name: Build release images without starting services
         run: docker compose build
+      - name: Record native and application image vulnerability and license evidence
+        run: |
+          docker compose pull db redis
+          python3 scripts/release/image_security.py --output image-security-evidence $(docker compose config --images | sort -u)
+      - name: Retain image security findings (not release approval)
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: native-image-security-evidence
+          path: image-security-evidence
+          if-no-files-found: error
       - name: Validate offline staging egress policy and synthetic staging config
         run: |
           python3 scripts/validate_staging_egress_policy.py docs/noc-75x-staging-egress-policy.json

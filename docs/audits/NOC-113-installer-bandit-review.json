@@ -2,6 +2,20 @@
   "scope": "scripts/host only; exact reviewed fingerprints, no blanket ignores; high/new/stale findings fail",
   "reviewed_results": [
     {
+      "fingerprint": "f3099a3646f4f02b3c68c9ac5b6f2933882bdc41dd2175c553d6d683333e01ac",
+      "path": "scripts/host/artifacts.py",
+      "test_id": "B404",
+      "severity": "LOW",
+      "justification": "Reviewed NOC116: fixed absolute /usr/bin/openssl pkeyutl verification argv, no shell or external downloads; protected temporary files, fixed Ed25519 key encoding, bounded10s execution, static errors. Trust key separately root-owned; no secret output."
+    },
+    {
+      "fingerprint": "7261eddf518c3096e60535e0c27fd27554e56f13c759446dc825bd835807aac0",
+      "path": "scripts/host/artifacts.py",
+      "test_id": "B603",
+      "severity": "LOW",
+      "justification": "Reviewed NOC116: fixed absolute /usr/bin/openssl pkeyutl verification argv, no shell or external downloads; protected temporary files, fixed Ed25519 key encoding, bounded10s execution, static errors. Trust key separately root-owned; no secret output."
+    },
+    {
       "fingerprint": "dc8a1845b21754163ab56e3390d628e851257e04e52aa59b60a82ab41e2b6a80",
       "path": "scripts/host/manager.py",
       "test_id": "B404",

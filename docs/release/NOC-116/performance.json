@@ -1,0 +1,199 @@
+{
+  "before": {
+    "devices": 1000,
+    "sites": 40,
+    "concurrency": 8,
+    "rounds": [
+      {
+        "round": 1,
+        "samples": 1000,
+        "elapsed_seconds": 28.99,
+        "polls_per_second": 34.5,
+        "active_alerts": 0,
+        "resources": {
+          "cpu_seconds": 29.15,
+          "cpu_one_core_percent": 100.55,
+          "rss_kib": 114144,
+          "process_peak_rss_kib": 122976,
+          "scope": "Python polling process; peak RSS since process start; excludes PostgreSQL/other containers"
+        }
+      },
+      {
+        "round": 2,
+        "samples": 1000,
+        "elapsed_seconds": 27.642,
+        "polls_per_second": 36.18,
+        "active_alerts": 0,
+        "resources": {
+          "cpu_seconds": 27.828,
+          "cpu_one_core_percent": 100.67,
+          "rss_kib": 115096,
+          "process_peak_rss_kib": 122976,
+          "scope": "Python polling process; peak RSS since process start; excludes PostgreSQL/other containers"
+        }
+      },
+      {
+        "round": 3,
+        "samples": 1000,
+        "elapsed_seconds": 30.314,
+        "polls_per_second": 32.99,
+        "active_alerts": 1200,
+        "resources": {
+          "cpu_seconds": 30.398,
+          "cpu_one_core_percent": 100.28,
+          "rss_kib": 115128,
+          "process_peak_rss_kib": 122976,
+          "scope": "Python polling process; peak RSS since process start; excludes PostgreSQL/other containers"
+        }
+      },
+      {
+        "round": 4,
+        "samples": 1000,
+        "elapsed_seconds": 31.524,
+        "polls_per_second": 31.72,
+        "active_alerts": 1200,
+        "resources": {
+          "cpu_seconds": 31.28,
+          "cpu_one_core_percent": 99.23,
+          "rss_kib": 114608,
+          "process_peak_rss_kib": 122976,
+          "scope": "Python polling process; peak RSS since process start; excludes PostgreSQL/other containers"
+        }
+      },
+      {
+        "round": 5,
+        "samples": 1000,
+        "elapsed_seconds": 31.309,
+        "polls_per_second": 31.94,
+        "active_alerts": 1200,
+        "resources": {
+          "cpu_seconds": 30.988,
+          "cpu_one_core_percent": 98.97,
+          "rss_kib": 114328,
+          "process_peak_rss_kib": 122976,
+          "scope": "Python polling process; peak RSS since process start; excludes PostgreSQL/other containers"
+        }
+      },
+      {
+        "round": 6,
+        "samples": 1000,
+        "elapsed_seconds": 31.646,
+        "polls_per_second": 31.6,
+        "active_alerts": 0,
+        "resources": {
+          "cpu_seconds": 31.241,
+          "cpu_one_core_percent": 98.72,
+          "rss_kib": 114328,
+          "process_peak_rss_kib": 122976,
+          "scope": "Python polling process; peak RSS since process start; excludes PostgreSQL/other containers"
+        }
+      }
+    ],
+    "samples_and_unique_receipts": 6000,
+    "health_query_ms": 52.44,
+    "source_history_bytes": 11370496,
+    "collection_mean_ms": 183.73,
+    "collection_max_ms": 959.64,
+    "recovery_validation": "three distinct normal samples clear RF condition; virtual 30-second schedule, actual concurrent PostgreSQL processing",
+    "transport": "synthetic 2ms fixture; not real-device capacity or production SLA"
+  },
+  "after": {
+    "devices": 1000,
+    "sites": 40,
+    "concurrency": 8,
+    "rounds": [
+      {
+        "round": 1,
+        "samples": 1000,
+        "elapsed_seconds": 16.851,
+        "polls_per_second": 59.34,
+        "active_alerts": 0,
+        "resources": {
+          "cpu_seconds": 17.119,
+          "cpu_one_core_percent": 101.59,
+          "rss_kib": 114940,
+          "process_peak_rss_kib": 122876,
+          "scope": "Python polling process; peak RSS since process start; excludes PostgreSQL/other containers"
+        }
+      },
+      {
+        "round": 2,
+        "samples": 1000,
+        "elapsed_seconds": 19.027,
+        "polls_per_second": 52.56,
+        "active_alerts": 0,
+        "resources": {
+          "cpu_seconds": 18.484,
+          "cpu_one_core_percent": 97.15,
+          "rss_kib": 115892,
+          "process_peak_rss_kib": 122876,
+          "scope": "Python polling process; peak RSS since process start; excludes PostgreSQL/other containers"
+        }
+      },
+      {
+        "round": 3,
+        "samples": 1000,
+        "elapsed_seconds": 18.834,
+        "polls_per_second": 53.09,
+        "active_alerts": 1200,
+        "resources": {
+          "cpu_seconds": 19.062,
+          "cpu_one_core_percent": 101.21,
+          "rss_kib": 115964,
+          "process_peak_rss_kib": 122876,
+          "scope": "Python polling process; peak RSS since process start; excludes PostgreSQL/other containers"
+        }
+      },
+      {
+        "round": 4,
+        "samples": 1000,
+        "elapsed_seconds": 19.398,
+        "polls_per_second": 51.55,
+        "active_alerts": 1200,
+        "resources": {
+          "cpu_seconds": 18.483,
+          "cpu_one_core_percent": 95.28,
+          "rss_kib": 116008,
+          "process_peak_rss_kib": 122876,
+          "scope": "Python polling process; peak RSS since process start; excludes PostgreSQL/other containers"
+        }
+      },
+      {
+        "round": 5,
+        "samples": 1000,
+        "elapsed_seconds": 18.966,
+        "polls_per_second": 52.73,
+        "active_alerts": 1200,
+        "resources": {
+          "cpu_seconds": 19.191,
+          "cpu_one_core_percent": 101.18,
+          "rss_kib": 116036,
+          "process_peak_rss_kib": 122876,
+          "scope": "Python polling process; peak RSS since process start; excludes PostgreSQL/other containers"
+        }
+      },
+      {
+        "round": 6,
+        "samples": 1000,
+        "elapsed_seconds": 18.77,
+        "polls_per_second": 53.28,
+        "active_alerts": 0,
+        "resources": {
+          "cpu_seconds": 18.989,
+          "cpu_one_core_percent": 101.17,
+          "rss_kib": 116072,
+          "process_peak_rss_kib": 122876,
+          "scope": "Python polling process; peak RSS since process start; excludes PostgreSQL/other containers"
+        }
+      }
+    ],
+    "samples_and_unique_receipts": 6000,
+    "health_query_ms": 38.84,
+    "source_history_bytes": 11575296,
+    "collection_mean_ms": 98.94,
+    "collection_max_ms": 352.72,
+    "recovery_validation": "three distinct normal samples clear RF condition; virtual 30-second schedule, actual concurrent PostgreSQL processing",
+    "transport": "synthetic 2ms fixture; not real-device capacity or production SLA"
+  },
+  "scope": "Sequential runs, same local Python3.12/locked dependencies and disposable PostgreSQL16; synthetic2ms transport,8 threads; temporary schema per run; focused tests ran intermittently. Not a live-device SLA."
+}

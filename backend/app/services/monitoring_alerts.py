@@ -294,9 +294,10 @@ def update_alert(
     now,
     category="rf",
     severity="warning",
-    evidence=None
+    evidence=None,
+    cache=None,
 ):
-    row = db.scalar(
+    row = cache.get((series, rule)) if cache is not None else db.scalar(
         select(MonitoringAlert)
         .where(
             MonitoringAlert.device_id == device_id,
@@ -321,6 +322,8 @@ def update_alert(
         )
         db.add(row)
         db.flush()
+        if cache is not None:
+            cache[(series, rule)] = row
         event = "opened"
     else:
         old = row.state
@@ -378,6 +381,13 @@ def process(db, device_id, *, now, policy):
     series = defaultdict(list)
     for (_, at), point in sorted(unique.items(), key=lambda kv: kv[0][1]):
         series[point["series"]].append(point)
+    # execute() holds the per-device advisory lock. Lock existing alerts once,
+    # rather than querying the same device for every rule. No cross-poll cache.
+    alerts = list(db.scalars(select(MonitoringAlert).where(
+        MonitoringAlert.device_id == device_id,
+        MonitoringAlert.category != "monitoring",
+    ).with_for_update()))
+    cache = {(a.series, a.rule): a for a in alerts}
     seen = set()
     for key, points in series.items():
         latest = points[-1]
@@ -392,6 +402,7 @@ def process(db, device_id, *, now, policy):
                 key,
                 name,
                 state["state"],
+                cache=cache,
                 now=now,
                 category=state["category"],
                 severity=state["severity"],
@@ -418,12 +429,7 @@ def process(db, device_id, *, now, policy):
                     ),
                 },
             )
-    for row in db.scalars(
-        select(MonitoringAlert).where(
-            MonitoringAlert.device_id == device_id,
-            MonitoringAlert.category != "monitoring",
-        )
-    ):
+    for row in alerts:
         if (row.series, row.rule) not in seen and row.state != "cleared":
             update_alert(
                 db,
@@ -431,6 +437,7 @@ def process(db, device_id, *, now, policy):
                 row.series,
                 row.rule,
                 "unknown",
+                cache=cache,
                 now=now,
                 category=row.category,
                 severity=row.severity,

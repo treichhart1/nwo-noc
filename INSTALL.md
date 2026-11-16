@@ -101,3 +101,12 @@ sudo ./verify.sh
 
 The core worker and the bounded local terrain-planning worker each start once. The maintenance scheduler runs inside the existing core worker. The Fiber integration profile, external providers, public endpoints and optional network schedules remain off. See CONFIGURATION.md before any change. A clean install refuses existing
 managed paths and never silently becomes an upgrade.
+
+## NOC116 signed release prerequisite
+
+Production-purpose install/upgrade now fails closed unless the exact approved JSON
+has a detached Ed25519 signature at <approval-path>.sig and an independently trusted
+root-owned0600 public key at /etc/nwo-noc-release.pub. No private signing key belongs
+on the NOC host. /usr/bin/openssl must be available before release verification. See
+[trusted-artifact procedure](docs/release/NOC-116/trusted-artifacts.md). Explicit
+controlled-test approval remains isolated and does not authorize a release/live pilot.

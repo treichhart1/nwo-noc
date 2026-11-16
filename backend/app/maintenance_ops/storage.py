@@ -183,10 +183,19 @@ def scan(raw):
             if remaining <= 0:
                 raise TimeoutError("Scan deadline")
             sock.settimeout(min(3, remaining))
-            response = sock.recv(1024)
-        if response.rstrip(b"\0\n").endswith(b": OK"):
+            response = b""
+            while not response.endswith(b"\0") and len(response) < 1024:
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    raise TimeoutError("Scan deadline")
+                sock.settimeout(min(3, remaining))
+                chunk = sock.recv(1024 - len(response))
+                if not chunk:
+                    return "error", "clamav"
+                response += chunk
+        if response == b"stream: OK\0":
             return "clean", "clamav"
-        if b" FOUND" in response:
+        if response.startswith(b"stream: ") and response.endswith(b" FOUND\0") and response.count(b"\0") == 1:
             return "infected", "clamav"
         return "error", "clamav"
     except (OSError, ValueError):
