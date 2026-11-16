@@ -1,0 +1,76 @@
+{
+  "baseline": {
+    "repository": "treichhart1/nwo-noc",
+    "pr": 116,
+    "commit": "b85d1af7ca1e2de1d449dac6ab1c40131012b308",
+    "ci_runs": [
+      581,
+      582
+    ],
+    "ci_conclusion": "success"
+  },
+  "scope": "Complete integrated application, no synthetic inventory seeded; all live integrations and external delivery disabled",
+  "migration_head": "0028_customer_status",
+  "migration_count": 28,
+  "local": {
+    "full_postgres_regression": {
+      "passed": 1748,
+      "warnings": 58,
+      "seconds": 599.72,
+      "database": "new disposable PostgreSQL16 nwo_noc; loopback55513; WAL128MiB/checkpoint30s for local disk capacity"
+    },
+    "backend_unit_prior_final": {
+      "passed": 800,
+      "skipped": 949,
+      "warnings": 2,
+      "seconds": 12.29
+    },
+    "ubuntu_24_04_userspace": {
+      "executed": true,
+      "snapshot": "interim NOC113 worktree; private evidence work/noc113-rehearsal-7",
+      "passed_checkpoints": [
+        "clean_complete_application_install",
+        "administrator_password_not_retained",
+        "ready_state",
+        "repeated_install_refused",
+        "configuration_not_overwritten",
+        "verification_no_failed_checks",
+        "optional_integrations_not_configured",
+        "integrated_schema",
+        "single_admin_and_audit",
+        "administrator_bootstrap_one_time"
+      ],
+      "overall_upgrade_harness_passed": false,
+      "limitation": "Upgrade attempt blocked by local filesystem exhaustion and missing Buildx causing legacy builder copies; final snapshot and full systemd host acceptance are required in final-commit CI",
+      "systemd_and_host_boot_passed": false
+    },
+    "static_security": {
+      "backend_reviewed": 83,
+      "installer_reviewed": 9,
+      "high": 0,
+      "unreviewed": 0
+    },
+    "backend_unit_final": {
+      "passed": 801,
+      "skipped": 949,
+      "warnings": 2,
+      "seconds": 9.89
+    },
+    "installer_contracts": {
+      "passed": 49,
+      "scope": "host packaging plus unchanged NOC112 hardening contracts; included in unit results"
+    }
+  },
+  "ci": {
+    "required_jobs": 9,
+    "new_job": "Ubuntu24.04 approved host package",
+    "result": "See final commit draft PR validation ledger; not inferred from local container checkpoints"
+  },
+  "production_blockers": [
+    "trusted release approval and immutable artifact publication/signing",
+    "OS/native image vulnerability assessment and Redis server licensing",
+    "full host reboot/firewall/VPN/MFA and deployed malware scanning",
+    "off-host keys/files disaster recovery and sustained sizing",
+    "actual firmware/read-only adapter contracts and separately approved live integrations"
+  ]
+}

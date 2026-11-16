@@ -59,7 +59,7 @@ def test_workflow_yaml_and_run_steps_parse():
     import yaml
 
     workflow = yaml.safe_load((ROOT / ".github/workflows/ci.yml").read_text())
-    assert len(workflow["jobs"]) == 8
+    assert len(workflow["jobs"]) == 9
     for job in workflow["jobs"].values():
         for step in job.get("steps", []):
             if "run" in step:

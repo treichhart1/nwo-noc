@@ -1,0 +1,38 @@
+[Unit]
+Description=Northwest Ohio Broadband AI NOC container services
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target nwo-noc-ingress.service
+StartLimitIntervalSec=300
+StartLimitBurst=3
+
+[Service]
+Type=oneshot
+RuntimeDirectory=nwo-noc-ingress
+RuntimeDirectoryMode=0710
+RuntimeDirectoryPreserve=yes
+RemainAfterExit=yes
+EnvironmentFile=-/etc/nwo-noc/service.env
+Environment=HOME=/var/lib/nwo-noc PYTHONDONTWRITEBYTECODE=1
+ExecStart=/usr/bin/python3 /opt/nwo-noc/current/scripts/host/manager.py service-start
+ExecStop=/usr/bin/python3 /opt/nwo-noc/current/scripts/host/manager.py service-stop
+Restart=on-failure
+RestartSec=10
+TimeoutStartSec=240
+TimeoutStopSec=90
+UMask=0077
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/var/lib/nwo-noc /var/log/nwo-noc /var/backups/nwo-noc /run/lock /run/nwo-noc-ingress
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+RestrictSUIDSGID=true
+LockPersonality=true
+TasksMax=512
+LimitNOFILE=65536
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

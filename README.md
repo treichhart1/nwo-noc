@@ -51,6 +51,18 @@ for exact ancestry, ownership boundaries, validation and remaining blockers.
 
 ---
 
+## Approved Ubuntu host packaging
+
+The stacked NOC113 candidate adds root-level `install.sh`, `upgrade.sh` and `verify.sh`.
+Start with [INSTALL.md](INSTALL.md), then [CONFIGURATION.md](CONFIGURATION.md),
+[UPGRADE.md](UPGRADE.md), [VERIFY.md](VERIFY.md), [BACKUP_RESTORE.md](BACKUP_RESTORE.md)
+and [TROUBLESHOOTING.md](TROUBLESHOOTING.md). An independently approved exact release
+and immutable complete application images are required; this draft branch is not
+production or pilot authorization. Existing `scripts/release/` acceptance tools are
+retained and are not an alternative way to bypass host release approval.
+
+---
+
 ## Technology Stack
 
 Backend

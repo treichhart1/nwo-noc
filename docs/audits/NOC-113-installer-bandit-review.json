@@ -1,0 +1,68 @@
+{
+  "scope": "scripts/host only; exact reviewed fingerprints, no blanket ignores; high/new/stale findings fail",
+  "reviewed_results": [
+    {
+      "fingerprint": "dc8a1845b21754163ab56e3390d628e851257e04e52aa59b60a82ab41e2b6a80",
+      "path": "scripts/host/manager.py",
+      "test_id": "B404",
+      "severity": "LOW",
+      "justification": "Subprocess module is required for fixed privileged packaging commands; no shell invocation."
+    },
+    {
+      "fingerprint": "7899a4763abf66252b5cd648217ec28d60fc3e4211908a2459e92a1d8fce9b81",
+      "path": "scripts/host/manager.py",
+      "test_id": "B603",
+      "severity": "LOW",
+      "justification": "Arguments are fixed packaging command structure or approved root-owned image/source/paths; no shell, credentials stay in private files/stdin; error text is sanitized; bounded timeout. The rehearsal-only ingress child uses a protected exact source path and no Docker privileges."
+    },
+    {
+      "fingerprint": "ddb8df2dc80a5d7a4a6aa9bc4eb6bbb47ad45c5a7ff4bb201d39e783eaa97f00",
+      "path": "scripts/host/manager.py",
+      "test_id": "B103",
+      "severity": "MEDIUM",
+      "justification": "Permissions are explicit: source-only release directories0755 allow the unprivileged ingress to read code; configuration/secrets remain private elsewhere. Socket directory0770 is root-owned with dedicated GID10001, no other permissions; only frontend supplementary group and the unprivileged ingress share it."
+    },
+    {
+      "fingerprint": "d2db314498e710f00b6e3e6989fd2ba188ccf61aabb9e11e1ddcac2040e653ea",
+      "path": "scripts/host/manager.py",
+      "test_id": "B603",
+      "severity": "LOW",
+      "justification": "Arguments are fixed packaging command structure or approved root-owned image/source/paths; no shell, credentials stay in private files/stdin; error text is sanitized; bounded timeout. The rehearsal-only ingress child uses a protected exact source path and no Docker privileges."
+    },
+    {
+      "fingerprint": "c7965a801acb555bf1be3d7a31cfff0833a8046956661243ef53426505f891a3",
+      "path": "scripts/host/manager.py",
+      "test_id": "B103",
+      "severity": "MEDIUM",
+      "justification": "Permissions are explicit: source-only release directories0755 allow the unprivileged ingress to read code; configuration/secrets remain private elsewhere. Socket directory0770 is root-owned with dedicated GID10001, no other permissions; only frontend supplementary group and the unprivileged ingress share it."
+    },
+    {
+      "fingerprint": "5b2b6ec987b43f19e5ac81f398b7d95ef84728fa8f8f91c6b2f8016a02218c61",
+      "path": "scripts/host/manager.py",
+      "test_id": "B103",
+      "severity": "MEDIUM",
+      "justification": "Permissions are explicit: source-only release directories0755 allow the unprivileged ingress to read code; configuration/secrets remain private elsewhere. Socket directory0770 is root-owned with dedicated GID10001, no other permissions; only frontend supplementary group and the unprivileged ingress share it."
+    },
+    {
+      "fingerprint": "fd25481ad56918a99863ba5bf351546675d9ffcb56b76ceda345ddc274a8e3c8",
+      "path": "scripts/host/manager.py",
+      "test_id": "B103",
+      "severity": "MEDIUM",
+      "justification": "Permissions are explicit: source-only release directories0755 allow the unprivileged ingress to read code; configuration/secrets remain private elsewhere. Socket directory0770 is root-owned with dedicated GID10001, no other permissions; only frontend supplementary group and the unprivileged ingress share it."
+    },
+    {
+      "fingerprint": "37289e30b7af87b5d30c2b407626fc8d22d50033651f39fc7a0b117325dda84f",
+      "path": "scripts/host/manager.py",
+      "test_id": "B104",
+      "severity": "MEDIUM",
+      "justification": "0.0.0.0 is the backend container listener only. No Docker port is published; one internal network blocks outbound ingress/egress. Host bridge is hardcoded127.0.0.1 and forwards only a private Unix socket; negative architecture/actual Ubuntu acceptance checks protect this distinction."
+    },
+    {
+      "fingerprint": "720cb83eb7afdf0791ce03d41f450834aa7d66fff0a062d617fc9cd435f7766d",
+      "path": "scripts/host/manager.py",
+      "test_id": "B603",
+      "severity": "LOW",
+      "justification": "Arguments are fixed packaging command structure or approved root-owned image/source/paths; no shell, credentials stay in private files/stdin; error text is sanitized; bounded timeout. The rehearsal-only ingress child uses a protected exact source path and no Docker privileges."
+    }
+  ]
+}
