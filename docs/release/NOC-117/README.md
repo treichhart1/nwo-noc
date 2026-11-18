@@ -1,5 +1,8 @@
 # NOC117 — rebuilt container security remediation
 
+See [the dependency-security follow-up](FOLLOW-UP.md) for the exact picomatch chain,
+fresh upstream investigation, verified run616 results and unchanged failing gate.
+
 **NO-GO for operational release or live pilot until security and operational gates
 have accepted evidence.** This is a new reconstruction from verified NOC116 commit
 `008f54e41cb874d2d6eecebf65bb278ddb2ae25a`, draft PR120. None of the missing original

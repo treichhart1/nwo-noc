@@ -16,7 +16,7 @@
     {
       "criterion": "PostgreSQL-helper-critical",
       "status": "PASS",
-      "evidence_or_next_action": "Sourcee986d72 derivative0CRITICAL/0HIGH/2other findings; both investigated official images1CRITICAL/25HIGH; not a deployed-image trust approval"
+      "evidence_or_next_action": "Final7117397 run616artifact14434924186:0findings after Go1.27.4/xsys0.44.0; both investigated officialimages1CRITICAL/25HIGH. Not published/deployed-image trust approval."
     },
     {
       "criterion": "Backend-frontend-patches",
@@ -30,13 +30,13 @@
     },
     {
       "criterion": "Ubuntu-install-upgrade-restore",
-      "status": "NOT TESTED",
-      "evidence_or_next_action": "Actual disposable Ubuntu CI required; no local VM claim"
+      "status": "PASS",
+      "evidence_or_next_action": "Exact7117397 CI616host105assertions/11historicalupgrade/restorechecks; hosted Ubuntu24.04/systemd actual scripts. MinimumISO independent VM/offhost disaster recovery remain BLOCKED; new follow-up source requires own CI ledger."
     },
     {
       "criterion": "Performance-1000",
-      "status": "NOT TESTED",
-      "evidence_or_next_action": "Fresh final-source synthetic benchmark; no earlier result reused"
+      "status": "FAIL",
+      "evidence_or_next_action": "Same7117397source:616median9.912s passes15s;615median16.366s fails15s. Both6000unique samples/receipts. Consistent target remains unmet; fasterrun not globalacceptance."
     },
     {
       "criterion": "Redis-license-identification",
