@@ -30,8 +30,16 @@ jobs:
           python scripts/release/check_audit_findings.py bandit.json
           bandit -r scripts/host -f json -o installer-bandit.json --exit-zero
           python scripts/release/check_audit_findings.py installer-bandit.json docs/audits/NOC-113-installer-bandit-review.json
-      - run: npm ci --no-audit --no-fund && npm audit --audit-level=low
+      - name: Audit npm dependencies and preserve complete findings
         working-directory: frontend
+        run: |
+          npm ci --no-audit --no-fund
+          set +e
+          npm audit --json --audit-level=low > "$GITHUB_WORKSPACE/npm-audit.json"
+          result=$?
+          set -e
+          node -e 'console.log(JSON.stringify(require(process.env.GITHUB_WORKSPACE+"/npm-audit.json").metadata))'
+          exit "$result"
       - name: Retain source dependency inventory
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: always()
@@ -40,6 +48,7 @@ jobs:
           path: |
             pip-audit.json
             source-locks.spdx.json
+            npm-audit.json
   frontend:
     runs-on: ubuntu-24.04
     defaults:

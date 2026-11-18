@@ -139,3 +139,42 @@ operational release. Do not mark GO because a build/scan job is green.
 No production deployment/access, equipment/Powercode connection, real notification,
 public incident, configuration write, PR merge or other application repository changes.
 RF self-healing stays simulation-only. The other applications remain separate.
+
+## Fresh security execution (not inherited results)
+
+Sourcee986d72c410728ed05c21e6f57e1e8e01984fd68, run611/job134860229366,
+artifact14434064057, archiveSHA256
+e972052d94ceec7922796ef8dac7eb7dbb88d5e78325b4e0620a4a45949efab2.
+The complete raw archive is retained in GitHub Actions; scan-evidence.json retains
+all HIGH/CRITICAL package findings, exact identities and runtime versions.
+
+| Image / scope | CRITICAL | HIGH | Total | Status |
+|---|---:|---:|---:|---|
+| Official pinned PostgreSQL16 baseline |1|25|62|FAIL |
+| Investigated official16/Alpine3.23 alternative |1|25|62|FAIL |
+| NOC117 PostgreSQL derivative |0|0|2|PASS only for absence of HIGH/CRITICAL in this scan |
+| Fresh NOC116 backend source rebuild |0|51|237|FAIL |
+| NOC117 backend |0|51|237|FAIL |
+| Fresh NOC116 frontend source rebuild |0|0|1|No HIGH/CRITICAL |
+| NOC117 frontend |0|0|0|No findings in this scan |
+| Unchanged Redis image |0|0|1|No HIGH/CRITICAL; license approval BLOCKED |
+
+The remaining51 backend HIGH rows have no FixedVersion in this scanner result.
+They are preserved for vendor remediation/review; this does not prove they are
+exploitable, permanently unfixable, or acceptable for production. No blanket image
+swap, incompatible framework downgrade or vulnerability suppression was used.
+
+Fresh npm CI failed on four HIGH dependency findings associated with
+GHSA-fc5q-39xc-vjpf (picomatch repeated-extglob ReDoS). Registry inspection found
+latest picomatch4.0.7, latest Vite7.3.8, tinyglobby0.2.17 still requiring4.x, and
+fdir6.5.0 with3/4 peer range. A compatible targeted update did not resolve it or
+change the lockfile. npm suggests Vite6.2.7, an incompatible major downgrade. That
+was not forced. Full JSON is retained; the security gate **remains failed**. The
+static production frontend does not run Vite, but build/dev dependency risk is not
+waived. Await an upstream patched compatible release or separately reviewed build
+toolchain change; do not use --force/ignore/omit-dev to make this check green.
+
+Local frontend npm ci/typecheck/build passed3.30s; that build success is not audit
+success. Final commit CI re-runs every applicable job; failed security/aggregate
+results must be reported alongside passing functional checks. Operational decision
+remains NO-GO, even though PostgreSQL's investigated critical finding was removed.

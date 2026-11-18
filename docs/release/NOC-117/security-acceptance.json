@@ -10,23 +10,23 @@
     },
     {
       "criterion": "Baseline-current-scans",
-      "status": "NOT TESTED",
-      "evidence_or_next_action": "Fresh exact-base/source rebuild scans required; final artifact ledger records execution"
+      "status": "PASS",
+      "evidence_or_next_action": "Fresh run611/134860229366 artifact14434064057, scan-evidence.json; exact bases and source rebuild identities retained"
     },
     {
       "criterion": "PostgreSQL-helper-critical",
-      "status": "NOT TESTED",
-      "evidence_or_next_action": "Source-pinned rebuilt gosu/Go1.27.3; actual rescan/init/upgrade/restore required"
+      "status": "PASS",
+      "evidence_or_next_action": "Sourcee986d72 derivative0CRITICAL/0HIGH/2other findings; both investigated official images1CRITICAL/25HIGH; not a deployed-image trust approval"
     },
     {
       "criterion": "Backend-frontend-patches",
-      "status": "NOT TESTED",
-      "evidence_or_next_action": "Supported same-distribution patches; final build/test/scan required"
+      "status": "FAIL",
+      "evidence_or_next_action": "Candidate backend51HIGH without FixedVersion; frontend0findings; no findings waived"
     },
     {
       "criterion": "Signed-release-validation",
-      "status": "NOT TESTED",
-      "evidence_or_next_action": "Existing signature checks plus explicit approved DB image; local/final regressions required"
+      "status": "PASS",
+      "evidence_or_next_action": "Local tests plus unchanged existing signature gate include required PostgreSQL approval; real production signing infrastructure BLOCKED"
     },
     {
       "criterion": "Ubuntu-install-upgrade-restore",
@@ -52,6 +52,11 @@
       "criterion": "Operational-acceptance",
       "status": "BLOCKED",
       "evidence_or_next_action": "Real vendor/provider/key-custody/AV/VPN/MFA/egress/off-host restore not authorized or established"
+    },
+    {
+      "criterion": "npm-build-dependency-advisory",
+      "status": "FAIL",
+      "evidence_or_next_action": "GHSA-fc5q-39xc-vjpf, picomatch<=4.0.7; no patched4.x release observed; npm suggests incompatible Vite6 downgrade; retained npm-audit-unresolved.json and strict failed CI gate"
     }
   ]
 }
