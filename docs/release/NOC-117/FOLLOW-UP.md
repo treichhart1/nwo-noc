@@ -34,7 +34,8 @@ reports four HIGH affected dependency entries (picomatch, fdir, tinyglobby, vite
 not four distinct primary vulnerabilities. [GHSA-fc5q-39xc-vjpf / CVE-2026-112366](https://github.com/advisories/GHSA-fc5q-39xc-vjpf)
 describes repeated-extglob ReDoS; affected <=4.0.7, patched versions: none when
 reviewed. The registry still publishes picomatch latest4.0.7, tinyglobby0.2.17
-(picomatch^4.0.4/fdir^6.5.0), fdir6.5.0 (picomatch peer^3||^4), Vite7.3.8.
+(picomatch^4.0.4/fdir^6.5.0), fdir6.5.0 (picomatch peer^3||^4). Vite latest is8.3.8, a major migration;
+the latest observed compatible7.x is7.3.8.
 Vite's supported Node range includes Node22>=22.12.0. Raw current metadata,
 integrity fields, lock SHA256, npm explain and complete fresh audit are retained in
 `picomatch-follow-up.json`. Local inspection used Node24.22.1/npm11.9.0; it is not

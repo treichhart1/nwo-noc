@@ -132,6 +132,33 @@
         },
         "unpackedSize": 2405422
       }
+    },
+    "vite7_supported": {
+      "url": "https://registry.npmjs.org/vite/7.3.8",
+      "dependencies": {
+        "fdir": "^6.5.0",
+        "rollup": "^4.43.0",
+        "esbuild": "^0.27.0 || ^0.28.0",
+        "postcss": "^8.5.6",
+        "picomatch": "^4.0.3",
+        "tinyglobby": "^0.2.15"
+      },
+      "peerDependencies": {
+        "tsx": "^4.8.1",
+        "jiti": ">=1.21.0",
+        "less": "^4.0.0",
+        "sass": "^1.70.0",
+        "yaml": "^2.4.2",
+        "stylus": ">=0.54.8",
+        "terser": "^5.16.0",
+        "sugarss": "^5.0.0",
+        "@types/node": "^20.19.0 || >=22.12.0",
+        "lightningcss": "^1.21.0",
+        "sass-embedded": "^1.70.0"
+      },
+      "engines": {
+        "node": "^20.19.0 || >=22.12.0"
+      }
     }
   },
   "package_lock_sha256": "6176030e45518fd02ca72178ce2f0a8e275508d2f113f3cb2334d7fd74cf1f82",
@@ -474,5 +501,6 @@
     }
   },
   "decision": "FAIL: no supported compatible published patch verified; security gate retained",
-  "local_runtime_note": "Registry/audit inspection used Node24.22.1/npm11.9.0; final CI/build runtime remains Node22. Local inspection is not claimed as Node22 acceptance."
+  "local_runtime_note": "Registry/audit inspection used Node24.22.1/npm11.9.0; final CI/build runtime remains Node22. Local inspection is not claimed as Node22 acceptance.",
+  "registry_note": "vite/latest is8.3.8 (incompatible major migration); latest observed compatible7.x remains7.3.8. No published patched picomatch exists."
 }
