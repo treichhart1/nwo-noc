@@ -118,8 +118,9 @@ def approval(path, *, controlled=False, source=None):
         not SHA.fullmatch(v) for v in data.get("upgrade_from", [])
     ):
         raise Reject("Explicit supported upgrade source commits required")
-    if set(data.get("images", {})) != {"backend", "frontend"}:
-        raise Reject("Complete backend and frontend release images required")
+    keys = set(data.get("images", {}))
+    if keys not in ({"backend", "frontend"}, {"backend", "frontend", "postgres"}) or (not controlled and "postgres" not in keys):
+        raise Reject("Approved backend, frontend and hardened PostgreSQL images required for releases")
     for ref in data["images"].values():
         if not isinstance(ref, str) or not (
             DIGEST.fullmatch(ref) or controlled and LOCAL.fullmatch(ref)

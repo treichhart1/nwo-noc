@@ -1,0 +1,57 @@
+{
+  "baseline": "008f54e41cb874d2d6eecebf65bb278ddb2ae25a",
+  "decision": "NO-GO",
+  "execution_note": "Final exact-source execution statuses are appended to the draft PR ledger; NOT TESTED is never implicitly PASS.",
+  "rows": [
+    {
+      "criterion": "N117-rebuild",
+      "status": "PASS",
+      "evidence_or_next_action": "Verified NOC116 baseline; missing original work reconstructed; no claimed previous NOC117 result"
+    },
+    {
+      "criterion": "Baseline-current-scans",
+      "status": "NOT TESTED",
+      "evidence_or_next_action": "Fresh exact-base/source rebuild scans required; final artifact ledger records execution"
+    },
+    {
+      "criterion": "PostgreSQL-helper-critical",
+      "status": "NOT TESTED",
+      "evidence_or_next_action": "Source-pinned rebuilt gosu/Go1.27.3; actual rescan/init/upgrade/restore required"
+    },
+    {
+      "criterion": "Backend-frontend-patches",
+      "status": "NOT TESTED",
+      "evidence_or_next_action": "Supported same-distribution patches; final build/test/scan required"
+    },
+    {
+      "criterion": "Signed-release-validation",
+      "status": "NOT TESTED",
+      "evidence_or_next_action": "Existing signature checks plus explicit approved DB image; local/final regressions required"
+    },
+    {
+      "criterion": "Ubuntu-install-upgrade-restore",
+      "status": "NOT TESTED",
+      "evidence_or_next_action": "Actual disposable Ubuntu CI required; no local VM claim"
+    },
+    {
+      "criterion": "Performance-1000",
+      "status": "NOT TESTED",
+      "evidence_or_next_action": "Fresh final-source synthetic benchmark; no earlier result reused"
+    },
+    {
+      "criterion": "Redis-license-identification",
+      "status": "PASS",
+      "evidence_or_next_action": "Exact7.4.12 upstream license retrieved/hash recorded; RSALv2 OR SSPLv1; not legal approval"
+    },
+    {
+      "criterion": "Redis-legal-acceptance",
+      "status": "BLOCKED",
+      "evidence_or_next_action": "Independent legal/operator selection and distribution/use obligations required"
+    },
+    {
+      "criterion": "Operational-acceptance",
+      "status": "BLOCKED",
+      "evidence_or_next_action": "Real vendor/provider/key-custody/AV/VPN/MFA/egress/off-host restore not authorized or established"
+    }
+  ]
+}

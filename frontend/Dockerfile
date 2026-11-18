@@ -10,7 +10,7 @@ RUN npm run build
 FROM nginx:stable-alpine@sha256:901e593c95dc85f5a729f5765516321366ef4ac401821431d408897e95287d0a
 # NOC116: apply supported same-Alpine libxslt security revisions; immutable
 # release digest and retained package scan record the exact resulting version.
-RUN apk upgrade --no-cache libxslt
+RUN apk upgrade --no-cache
 COPY nginx-main.conf /etc/nginx/nginx.conf
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /app/dist /usr/share/nginx/html

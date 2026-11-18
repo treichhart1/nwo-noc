@@ -31,6 +31,7 @@ def signed(tmp_path):
     import json
     from test_host_installer import manifest
     approved=manifest();approved['purpose']='release'
+    approved['images']['postgres']='sha256:'+'e'*64
     approved['images']={k:'registry.example.invalid/noc@sha256:'+v.split(':')[1] for k,v in approved['images'].items()}
     payload.write_bytes(json.dumps(approved).encode())
     subprocess.run(['openssl','pkeyutl','-sign','-inkey',str(key),'-rawin','-in',str(payload),'-out',str(sig)], check=True, capture_output=True)

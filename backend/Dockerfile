@@ -3,7 +3,7 @@ ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 WORKDIR /app
 # GDAL wheels require the system Expat runtime on the minimal Python image.
-RUN apt-get update && apt-get install -y --no-install-recommends libexpat1 zlib1g && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get upgrade -y --no-install-recommends && apt-get install -y --no-install-recommends libexpat1 zlib1g && rm -rf /var/lib/apt/lists/*
 COPY requirements.lock .
 RUN --mount=type=secret,id=proxy_ca \
     if [ -f /run/secrets/proxy_ca ]; then export PIP_CERT=/run/secrets/proxy_ca; fi; \

@@ -1,6 +1,7 @@
 services:
   db:
-    image: postgres:16-alpine@sha256:81e77a4833487b8132fe4b00bedd39dc3f74b8641e387f19312a48f7de218c2e
+    image: noc117-postgres:rc
+    build: {context: ., dockerfile: deploy/Dockerfile.postgres}
     restart: unless-stopped
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
