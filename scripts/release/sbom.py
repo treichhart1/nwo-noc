@@ -29,7 +29,7 @@ def build(root=ROOT):
     if gosu.exists():
         provenance=json.loads((gosu/'provenance.json').read_text())
         packages.append({'name':'github.com/tianon/gosu','version':provenance['commit'],'ecosystem':'golang','scope':'static runtime helper','license':'Apache-2.0'})
-        packages.append({'name':'stdlib','version':'1.27.3','ecosystem':'golang','scope':'static runtime helper','license':'BSD-3-Clause'})
+        packages.append({'name':'stdlib','version':'1.27.4','ecosystem':'golang','scope':'static runtime helper','license':'BSD-3-Clause'})
         for line in (gosu/'go.sum').read_text().splitlines():
             name,version,checksum=line.split()
             if version.endswith('/go.mod'):continue

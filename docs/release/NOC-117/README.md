@@ -27,9 +27,10 @@ binary with the upstream download does not demonstrate patched stdlib. Instead:
 - deploy/Dockerfile.postgres keeps the exact PostgreSQL16 vendor engine, entrypoint,
   data layout and UID70/GID70. It replaces only the privilege-drop helper with a
   statically compiled gosu1.20 from exact upstream commit
-  29b939aa5bd4dc588af765b8248f6e39150d2565, using digest-pinned Go1.27.3.
+  29b939aa5bd4dc588af765b8248f6e39150d2565, using digest-pinned Go1.27.4.
 - Vendored source, module checksums, Apache2 license and SHA256 provenance are in
-  deploy/vendor/gosu. No upstream source code was modified. GOTOOLCHAIN=local prevents
+  deploy/vendor/gosu. The upstream .go source is unchanged; reviewed module patches are explicitly
+  recorded with original/current hashes in provenance.json. GOTOOLCHAIN=local prevents
   silent compiler downloads; -mod=readonly and go mod verify protect dependency locks.
   Build output retains Go module/toolchain metadata; no stripping, VEX or ignore
   files are used to hide scanner findings. The Go compiler is not shipped at runtime.
@@ -178,3 +179,14 @@ Local frontend npm ci/typecheck/build passed3.30s; that build success is not aud
 success. Final commit CI re-runs every applicable job; failed security/aggregate
 results must be reported alongside passing functional checks. Operational decision
 remains NO-GO, even though PostgreSQL's investigated critical finding was removed.
+
+## Follow-up lower-severity remediation
+
+The first derivative scan also retained CVE-2026-39824 (x/sys0.1.0, UNKNOWN) and
+CVE-2026-97054 (Go1.27.3 stdlib, MEDIUM). Available fixed versions were investigated
+instead of suppressed. The helper now uses pinned Go1.27.4 and checksummed x/sys0.44.0;
+the latter requires Go1.25.0 minimum, reflected in go.mod. Source .go files are unchanged;
+module patches, original/upgraded hashes and checksum-database source are retained.
+COPY license paths and source SBOM follow the actual upgraded dependency. Final build/
+rescan/init/upgrade/restore are required to confirm these changes; the first0HIGH/
+CRITICAL result is not relabeled as execution of this later source.
