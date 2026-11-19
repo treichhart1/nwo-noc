@@ -362,7 +362,7 @@ jobs:
           SYNTHETIC_MONITORING_ENABLED: "true"
           RF_SCHEDULER_ENABLED: "true"
         run: |
-          docker build -t noc118-runtime-benchmark backend
+          docker build -t noc118-runtime-benchmark .
           docker run --rm --read-only --cap-drop ALL --security-opt no-new-privileges --network host --tmpfs /tmp:rw,noexec,nosuid,size=128m \
             -e SECRET_KEY -e ADMIN_PASSWORD -e DATABASE_URL -e APP_ENV -e OFFLINE_MODE \
             -e SYNTHETIC_MONITORING_ENABLED -e RF_SCHEDULER_ENABLED \
@@ -500,9 +500,11 @@ jobs:
           done
       - name: Reject unsupported OS before any installation changes
         run: |
+          unsupported_image=$(python3 -c 'import json; print(json.load(open("deploy/image-candidates.json"))["images"]["python:3.12-slim"])')
+          docker pull "$unsupported_image"
           set +e
           docker run --rm --network none --read-only --cap-drop ALL --user 0:0 \
-            -v "$PWD:/source:ro" --entrypoint python noc113-backend:base \
+            -v "$PWD:/source:ro" --entrypoint python "$unsupported_image" \
             /source/scripts/host/manager.py install > /tmp/noc114-unsupported.log 2>&1
           result=$?
           set -e

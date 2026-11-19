@@ -226,3 +226,17 @@ open blocker IDs; it is not eligible for production approval. New negative test
 rejects a validly bound provenance containing an unresolved vendor issue. No keys or
 risk acceptance are fabricated. Back up evidence envelopes with original signed
 approval, signature and independently verified trust fingerprint for offhost recovery.
+
+## Validation harness corrections
+
+Run629 exposed two harness defects after the OS rebase. The RF job defaults to
+backend/, so its new actual-image benchmark must build context `.`. Previously it
+failed before building with `path "backend" not found`; that run does not establish
+container performance. The unsupported-OS negative control previously reused the
+application image, which is now Ubuntu. It now explicitly pulls the immutable
+historical Debian Python investigation image and runs the unchanged installer OS
+rejection check with no network, read-only root and no capabilities. It remains
+an actual unsupported-distribution rejection, not a mocked OS or removed assertion.
+Run629 passed1103 PostgreSQL regressions and the additional43/64/54/36 selected
+regressions before the context error. Those are intermediate results, not claims
+that the final source passed. Final-source job results remain in the draft PR ledger.
