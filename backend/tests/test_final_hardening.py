@@ -16,7 +16,7 @@ def test_release_inputs_are_immutable_and_runtime_versions_match_tests():
     result = chain.validate(ROOT)
     assert result["runtime_locked"] >= 55
     assert result["test_locked"] > result["runtime_locked"]
-    assert result["immutable_images"] == 7
+    assert result["immutable_images"] == 6
 
 
 @pytest.mark.parametrize(

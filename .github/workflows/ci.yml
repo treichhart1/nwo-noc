@@ -355,6 +355,18 @@ jobs:
           SYNTHETIC_MONITORING_ENABLED: "true"
           RF_SCHEDULER_ENABLED: "true"
         run: PYTHONPATH=. python -m app.monitoring_benchmark
+      - name: Recheck six-round polling in the actual hardened backend runtime
+        env:
+          APP_ENV: staging
+          OFFLINE_MODE: "true"
+          SYNTHETIC_MONITORING_ENABLED: "true"
+          RF_SCHEDULER_ENABLED: "true"
+        run: |
+          docker build -t noc118-runtime-benchmark backend
+          docker run --rm --read-only --cap-drop ALL --security-opt no-new-privileges --network host --tmpfs /tmp:rw,noexec,nosuid,size=128m \
+            -e SECRET_KEY -e ADMIN_PASSWORD -e DATABASE_URL -e APP_ENV -e OFFLINE_MODE \
+            -e SYNTHETIC_MONITORING_ENABLED -e RF_SCHEDULER_ENABLED \
+            --entrypoint python noc118-runtime-benchmark -m app.monitoring_benchmark
       - name: Measure synthetic WISP operational readiness at 250/500/1000 devices
         env:
           APP_ENV: staging

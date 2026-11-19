@@ -37,23 +37,40 @@ across10binary packages. No historical HIGH row listed a stable FixedVersion.
 Debian tracker says Bookworm is not affected/fixed for76642/78408/78409, but
 still vulnerable for78410. Older versions are **not** generally assumed safe.
 
-Candidate is an explicit OS rebase Debian13→official Debian12 LTS, not described
-as a same-distribution patch. Python stays **3.12.16**, same upstream checksum.
-Base `python:3.12-slim-bookworm@sha256:935c3c5b12357a7e10caa9c1e6ca5692344d97cf229832ef584be2cec9fc03df`.
-Official registry/config/source history: base-review.json. Debian12 LTS supports
-amd64/arm64 through2028-06-30; installer targets Ubuntu24.04/amd64. Package/arch LTS
-coverage and a supported successor must be reviewed before that date.
-See https://www.debian.org/releases/bookworm/ .
+The first candidate (c938f09) rebased to official Python3.12.16/Bookworm LTS.
+ABI checks passed, but the **actual** scan was worse:2CRITICAL/103HIGH/379total,
+versus fresh baseline0CRITICAL/51HIGH/240total. It is **REJECTED**. Complete scan,
+runtime/OCI evidence: rejected-bookworm.json and run628/artifact14532703256,
+SHA2569f5bf6e3d782533dad6e9294f64731a49fdaa236c2bd0e0622b49b7da49d1c6e.
+No excluded CVE or successful ABI test makes that image acceptable.
 
-All Python locks/hashes unchanged. Multistage build installs only hashed binary
-wheels and copies their prefix into the identical final base. No compiler added;
-runtime pip uninstalled as unnecessary. Required GDAL Expat/zlib and Python SQLite/
-readline support retained. Final-base imports check GDAL/rasterio/PROJ/psycopg/
-crypto/SQLite/Expat; actual runtime evidence records versions/UID/GID and pip/compiler/
-homed/module presence. ABI/import/full-stack failures must fail acceptance, not be
-hidden by removing GIS features. Reject Alpine/musl wheel incompatibility, unstable
-Debian/libc mixing, essential-package stripping, or private ABI replacements just
-to reduce CVE counts. Vendor-unfixed stable findings remain blockers.
+The replacement candidate explicitly rebases onto official Ubuntu24.04 LTS,
+using existing immutable base73b999393d07f2bf65a40373778a44dc9a6d54ad7718d29247d8ff9413c4d6a8.
+APT installs Canonical-maintained Python3.12 with security backports; it is not
+claimed byte-identical to upstream3.12.16. Major Python3.12 is preserved, exact
+patch/distribution revision and native versions recorded by actual runtime/scan.
+This is a reviewed OS/runtime packaging change under evaluation, not an invisible
+downgrade or assumption that older version numbers are safe. Ubuntu24.04 standard
+maintenance runs to2029; package coverage/vendor backports still require review.
+https://ubuntu.com/about/release-cycle . Final security/ABI/functional evidence
+must support this choice; if not, reject rather than relax tests.
+
+All app locks/hashes stay unchanged. Multistage build installs only hashed binary
+wheels into /opt/venv, removes runtime pip and copies the environment to the same
+Ubuntu/Python packaging family. No compiler added. Required GDAL Expat/zlib and
+Python SQLite/readline support retained. Final-base imports exercise GDAL/rasterio/
+PROJ/psycopg/crypto/SQLite/Expat; runtime evidence records versions/UID and package/
+daemon presence. No GIS feature removal to make an ABI check pass.
+
+The actual rebuilt runtime also executes the six-round250/500/1000device benchmark
+against an explicitly disposable loopback PostgreSQL service, with offline synthetic
+mode, no capabilities, read-only rootfs and bounded tmpfs. Host Python benchmarks
+remain separate; they are not falsely called execution of the container interpreter.
+Historical Trixie/Bookworm bases move to investigation-only inputs, not install
+approvals. Active immutable base count drops7→6 because Ubuntu is already used by
+host harnesses; the strict count assertion changes to exact6, not a loose minimum.
+Reject unsupported unstable/libc mixing, Alpine/musl wheel migration, essential
+package stripping or privately compiled ABI replacements to lower scanner counts.
 
 ## Every HIGH finding: runtime exposure and vendor disposition
 
@@ -167,3 +184,12 @@ automatic RF remediation, other-repository changes or migration deletion.
 Redis approval must exactly match the source image lock; no caller-provided
 alternate image is silently substituted. This preserves Redis7 while including
 its native SBOM/report in the complete signed release evidence.
+
+## Rejected-candidate risk review
+
+Bookworm added source findings beyond the original15CVEs, including Kerberos,
+PAM, zlib and older utility paths. Full2CRITICAL/103HIGH records/package versions/
+FixedVersion fields/vendor references remain in rejected-bookworm.json; each has
+REJECTED-CANDIDATE disposition, not an approved mitigation or disappearance claim.
+No Bookworm operational deployment occurred. Final Ubuntu findings require their
+own per-CVE vendor/runtime analysis; historical Debian status is not transferred.

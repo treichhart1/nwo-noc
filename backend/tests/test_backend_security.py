@@ -98,9 +98,10 @@ def test_real_signed_approval_and_altered_manifest(tmp_path, monkeypatch):
 
 def test_backend_runtime_build_keeps_locked_binary_dependencies_and_nonroot():
     source = (ROOT / 'backend/Dockerfile').read_text()
-    assert source.count('python:3.12-slim-bookworm@sha256:') == 2
+    assert source.count('FROM ubuntu:24.04@sha256:') == 2
+    assert 'python3.12' in source
     assert '--only-binary=:all:' in source and '--require-hashes' in source
-    assert 'COPY --from=dependencies /install/ /usr/local/' in source
+    assert 'COPY --from=dependencies /opt/venv/ /opt/venv/' in source
     assert 'pip uninstall -y pip' in source
     assert 'USER 10001:10001' in source and 'ProxyHandler({})' in source
     assert '--allow-remove-essential' not in source and 'dpkg --force' not in source
