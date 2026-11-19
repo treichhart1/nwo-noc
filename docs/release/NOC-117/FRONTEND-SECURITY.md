@@ -127,5 +127,7 @@ No distro/major migration. Official OCI revisiona2a986d19aac4a79a330e6e0b5171aae
 ACME support package changes0.4.1→0.4.2 but is not enabled by NOC configs.
 Read-only unprivileged UID101, port8080, Nginx configs/headers, package security
 updates, healthcheck and all application output are preserved. Image lock and
-Dockerfile are updated together; build records actual nginx -v. Final scan/browser/
+Dockerfile and signup example are updated together; build records actual nginx -v.
+Initial strict validation caught the example still using the old digest; that
+inconsistent reference is corrected, with the validator unchanged. Final scan/browser/
 container/host tests must confirm the patch; old scan is never relabeled final.
