@@ -1,0 +1,823 @@
+{
+  "checked_date_utc": "2026-11-19",
+  "starting_source": "fa83bf80f18fbd8b5e456bf3e23d0f43831813ad",
+  "selected_solution": "Retain exact Vite7 lock; upstream advisory withdrawn, fresh full audit0; no package-level patch claimed",
+  "selected_audit": {
+    "auditReportVersion": 2,
+    "vulnerabilities": {},
+    "metadata": {
+      "vulnerabilities": {
+        "info": 0,
+        "low": 0,
+        "moderate": 0,
+        "high": 0,
+        "critical": 0,
+        "total": 0
+      },
+      "dependencies": {
+        "prod": 10,
+        "dev": 121,
+        "optional": 53,
+        "peer": 0,
+        "peerOptional": 0,
+        "total": 130
+      }
+    }
+  },
+  "selected_chain": {
+    "version": "3.2.1-rc.3",
+    "name": "nwo-noc-frontend",
+    "dependencies": {
+      "@vitejs/plugin-react": {
+        "version": "5.2.0",
+        "resolved": "https://registry.npmjs.org/@vitejs/plugin-react/-/plugin-react-5.2.0.tgz",
+        "overridden": false,
+        "dependencies": {
+          "vite": {
+            "version": "7.3.8"
+          }
+        }
+      },
+      "lucide-react": {
+        "version": "0.468.0",
+        "resolved": "https://registry.npmjs.org/lucide-react/-/lucide-react-0.468.0.tgz",
+        "overridden": false,
+        "dependencies": {
+          "react": {
+            "version": "18.3.1"
+          }
+        }
+      },
+      "react-dom": {
+        "version": "18.3.1",
+        "resolved": "https://registry.npmjs.org/react-dom/-/react-dom-18.3.1.tgz",
+        "overridden": false,
+        "dependencies": {
+          "react": {
+            "version": "18.3.1"
+          }
+        }
+      },
+      "react-leaflet": {
+        "version": "4.2.1",
+        "resolved": "https://registry.npmjs.org/react-leaflet/-/react-leaflet-4.2.1.tgz",
+        "overridden": false,
+        "dependencies": {
+          "@react-leaflet/core": {
+            "version": "2.1.0",
+            "resolved": "https://registry.npmjs.org/@react-leaflet/core/-/core-2.1.0.tgz",
+            "overridden": false,
+            "dependencies": {
+              "react": {
+                "version": "18.3.1"
+              }
+            }
+          },
+          "react": {
+            "version": "18.3.1"
+          }
+        }
+      },
+      "react": {
+        "version": "18.3.1",
+        "resolved": "https://registry.npmjs.org/react/-/react-18.3.1.tgz",
+        "overridden": false
+      },
+      "typescript": {
+        "version": "5.7.3",
+        "resolved": "https://registry.npmjs.org/typescript/-/typescript-5.7.3.tgz",
+        "overridden": false
+      },
+      "vite": {
+        "version": "7.3.8",
+        "resolved": "https://registry.npmjs.org/vite/-/vite-7.3.8.tgz",
+        "overridden": false,
+        "dependencies": {
+          "fdir": {
+            "version": "6.5.0",
+            "resolved": "https://registry.npmjs.org/fdir/-/fdir-6.5.0.tgz",
+            "overridden": false,
+            "dependencies": {
+              "picomatch": {
+                "version": "4.0.7"
+              }
+            }
+          },
+          "picomatch": {
+            "version": "4.0.7",
+            "resolved": "https://registry.npmjs.org/picomatch/-/picomatch-4.0.7.tgz",
+            "overridden": false
+          },
+          "tinyglobby": {
+            "version": "0.2.17",
+            "resolved": "https://registry.npmjs.org/tinyglobby/-/tinyglobby-0.2.17.tgz",
+            "overridden": false,
+            "dependencies": {
+              "fdir": {
+                "version": "6.5.0"
+              },
+              "picomatch": {
+                "version": "4.0.7"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "selected_explain": [
+    {
+      "name": "picomatch",
+      "version": "4.0.7",
+      "location": "node_modules/picomatch",
+      "isWorkspace": false,
+      "dependents": [
+        {
+          "type": "peerOptional",
+          "name": "picomatch",
+          "spec": "^3 || ^4",
+          "from": {
+            "name": "fdir",
+            "version": "6.5.0",
+            "location": "node_modules/fdir",
+            "isWorkspace": false,
+            "dependents": [
+              {
+                "type": "prod",
+                "name": "fdir",
+                "spec": "^6.5.0",
+                "from": {
+                  "name": "tinyglobby",
+                  "version": "0.2.17",
+                  "location": "node_modules/tinyglobby",
+                  "isWorkspace": false,
+                  "dependents": [
+                    {
+                      "type": "prod",
+                      "name": "tinyglobby",
+                      "spec": "^0.2.15",
+                      "from": {
+                        "name": "vite",
+                        "version": "7.3.8",
+                        "location": "node_modules/vite",
+                        "isWorkspace": false,
+                        "dependents": [
+                          {
+                            "type": "dev",
+                            "name": "vite",
+                            "spec": "7.3.8",
+                            "from": {
+                              "location": "/workspace/nwo-noc/frontend"
+                            }
+                          },
+                          {
+                            "type": "peer",
+                            "name": "vite",
+                            "spec": "^4.2.0 || ^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0",
+                            "from": {
+                              "name": "@vitejs/plugin-react",
+                              "version": "5.2.0",
+                              "location": "node_modules/@vitejs/plugin-react",
+                              "isWorkspace": false,
+                              "dependents": [
+                                {
+                                  "type": "dev",
+                                  "name": "@vitejs/plugin-react",
+                                  "spec": "5.2.0",
+                                  "from": {
+                                    "location": "/workspace/nwo-noc/frontend"
+                                  }
+                                }
+                              ]
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "type": "prod",
+                "name": "fdir",
+                "spec": "^6.5.0",
+                "from": {
+                  "name": "vite",
+                  "version": "7.3.8",
+                  "location": "node_modules/vite",
+                  "isWorkspace": false,
+                  "dependents": [
+                    {
+                      "type": "dev",
+                      "name": "vite",
+                      "spec": "7.3.8",
+                      "from": {
+                        "location": "/workspace/nwo-noc/frontend"
+                      }
+                    },
+                    {
+                      "type": "peer",
+                      "name": "vite",
+                      "spec": "^4.2.0 || ^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0",
+                      "from": {
+                        "name": "@vitejs/plugin-react",
+                        "version": "5.2.0",
+                        "location": "node_modules/@vitejs/plugin-react",
+                        "isWorkspace": false,
+                        "dependents": [
+                          {
+                            "type": "dev",
+                            "name": "@vitejs/plugin-react",
+                            "spec": "5.2.0",
+                            "from": {
+                              "location": "/workspace/nwo-noc/frontend"
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "prod",
+          "name": "picomatch",
+          "spec": "^4.0.4",
+          "from": {
+            "name": "tinyglobby",
+            "version": "0.2.17",
+            "location": "node_modules/tinyglobby",
+            "isWorkspace": false,
+            "dependents": [
+              {
+                "type": "prod",
+                "name": "tinyglobby",
+                "spec": "^0.2.15",
+                "from": {
+                  "name": "vite",
+                  "version": "7.3.8",
+                  "location": "node_modules/vite",
+                  "isWorkspace": false,
+                  "dependents": [
+                    {
+                      "type": "dev",
+                      "name": "vite",
+                      "spec": "7.3.8",
+                      "from": {
+                        "location": "/workspace/nwo-noc/frontend"
+                      }
+                    },
+                    {
+                      "type": "peer",
+                      "name": "vite",
+                      "spec": "^4.2.0 || ^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0",
+                      "from": {
+                        "name": "@vitejs/plugin-react",
+                        "version": "5.2.0",
+                        "location": "node_modules/@vitejs/plugin-react",
+                        "isWorkspace": false,
+                        "dependents": [
+                          {
+                            "type": "dev",
+                            "name": "@vitejs/plugin-react",
+                            "spec": "5.2.0",
+                            "from": {
+                              "location": "/workspace/nwo-noc/frontend"
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "prod",
+          "name": "picomatch",
+          "spec": "^4.0.3",
+          "from": {
+            "name": "vite",
+            "version": "7.3.8",
+            "location": "node_modules/vite",
+            "isWorkspace": false,
+            "dependents": [
+              {
+                "type": "dev",
+                "name": "vite",
+                "spec": "7.3.8",
+                "from": {
+                  "location": "/workspace/nwo-noc/frontend"
+                }
+              },
+              {
+                "type": "peer",
+                "name": "vite",
+                "spec": "^4.2.0 || ^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0",
+                "from": {
+                  "name": "@vitejs/plugin-react",
+                  "version": "5.2.0",
+                  "location": "node_modules/@vitejs/plugin-react",
+                  "isWorkspace": false,
+                  "dependents": [
+                    {
+                      "type": "dev",
+                      "name": "@vitejs/plugin-react",
+                      "spec": "5.2.0",
+                      "from": {
+                        "location": "/workspace/nwo-noc/frontend"
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "dev": true,
+      "optional": false,
+      "devOptional": false,
+      "peer": false,
+      "bundled": false,
+      "overridden": false
+    }
+  ],
+  "candidate_vite8_audit": {
+    "auditReportVersion": 2,
+    "vulnerabilities": {},
+    "metadata": {
+      "vulnerabilities": {
+        "info": 0,
+        "low": 0,
+        "moderate": 0,
+        "high": 0,
+        "critical": 0,
+        "total": 0
+      },
+      "dependencies": {
+        "prod": 10,
+        "dev": 105,
+        "optional": 35,
+        "peer": 0,
+        "peerOptional": 0,
+        "total": 114
+      }
+    }
+  },
+  "candidate_vite8_chain": {
+    "version": "3.2.1-rc.3",
+    "name": "nwo-noc-frontend",
+    "dependencies": {
+      "@vitejs/plugin-react": {
+        "version": "5.2.0",
+        "resolved": "https://registry.npmjs.org/@vitejs/plugin-react/-/plugin-react-5.2.0.tgz",
+        "overridden": false,
+        "dependencies": {
+          "vite": {
+            "version": "8.3.8"
+          }
+        }
+      },
+      "vite": {
+        "version": "8.3.8",
+        "resolved": "https://registry.npmjs.org/vite/-/vite-8.3.8.tgz",
+        "overridden": false,
+        "dependencies": {
+          "picomatch": {
+            "version": "4.0.7",
+            "resolved": "https://registry.npmjs.org/picomatch/-/picomatch-4.0.7.tgz",
+            "overridden": false
+          },
+          "tinyglobby": {
+            "version": "0.2.17",
+            "resolved": "https://registry.npmjs.org/tinyglobby/-/tinyglobby-0.2.17.tgz",
+            "overridden": false,
+            "dependencies": {
+              "fdir": {
+                "version": "6.5.0",
+                "resolved": "https://registry.npmjs.org/fdir/-/fdir-6.5.0.tgz",
+                "overridden": false,
+                "dependencies": {
+                  "picomatch": {
+                    "version": "4.0.7"
+                  }
+                }
+              },
+              "picomatch": {
+                "version": "4.0.7"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "candidate_vite8_explain": [
+    {
+      "name": "picomatch",
+      "version": "4.0.7",
+      "location": "node_modules/picomatch",
+      "isWorkspace": false,
+      "dependents": [
+        {
+          "type": "peerOptional",
+          "name": "picomatch",
+          "spec": "^3 || ^4",
+          "from": {
+            "name": "fdir",
+            "version": "6.5.0",
+            "location": "node_modules/fdir",
+            "isWorkspace": false,
+            "dependents": [
+              {
+                "type": "prod",
+                "name": "fdir",
+                "spec": "^6.5.0",
+                "from": {
+                  "name": "tinyglobby",
+                  "version": "0.2.17",
+                  "location": "node_modules/tinyglobby",
+                  "isWorkspace": false,
+                  "dependents": [
+                    {
+                      "type": "prod",
+                      "name": "tinyglobby",
+                      "spec": "^0.2.17",
+                      "from": {
+                        "name": "vite",
+                        "version": "8.3.8",
+                        "location": "node_modules/vite",
+                        "isWorkspace": false,
+                        "dependents": [
+                          {
+                            "type": "dev",
+                            "name": "vite",
+                            "spec": "8.3.8",
+                            "from": {
+                              "location": "/tmp/noc117b-vite8/frontend"
+                            }
+                          },
+                          {
+                            "type": "peer",
+                            "name": "vite",
+                            "spec": "^4.2.0 || ^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0",
+                            "from": {
+                              "name": "@vitejs/plugin-react",
+                              "version": "5.2.0",
+                              "location": "node_modules/@vitejs/plugin-react",
+                              "isWorkspace": false,
+                              "dependents": [
+                                {
+                                  "type": "dev",
+                                  "name": "@vitejs/plugin-react",
+                                  "spec": "5.2.0",
+                                  "from": {
+                                    "location": "/tmp/noc117b-vite8/frontend"
+                                  }
+                                }
+                              ]
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "prod",
+          "name": "picomatch",
+          "spec": "^4.0.4",
+          "from": {
+            "name": "tinyglobby",
+            "version": "0.2.17",
+            "location": "node_modules/tinyglobby",
+            "isWorkspace": false,
+            "dependents": [
+              {
+                "type": "prod",
+                "name": "tinyglobby",
+                "spec": "^0.2.17",
+                "from": {
+                  "name": "vite",
+                  "version": "8.3.8",
+                  "location": "node_modules/vite",
+                  "isWorkspace": false,
+                  "dependents": [
+                    {
+                      "type": "dev",
+                      "name": "vite",
+                      "spec": "8.3.8",
+                      "from": {
+                        "location": "/tmp/noc117b-vite8/frontend"
+                      }
+                    },
+                    {
+                      "type": "peer",
+                      "name": "vite",
+                      "spec": "^4.2.0 || ^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0",
+                      "from": {
+                        "name": "@vitejs/plugin-react",
+                        "version": "5.2.0",
+                        "location": "node_modules/@vitejs/plugin-react",
+                        "isWorkspace": false,
+                        "dependents": [
+                          {
+                            "type": "dev",
+                            "name": "@vitejs/plugin-react",
+                            "spec": "5.2.0",
+                            "from": {
+                              "location": "/tmp/noc117b-vite8/frontend"
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "prod",
+          "name": "picomatch",
+          "spec": "^4.0.7",
+          "from": {
+            "name": "vite",
+            "version": "8.3.8",
+            "location": "node_modules/vite",
+            "isWorkspace": false,
+            "dependents": [
+              {
+                "type": "dev",
+                "name": "vite",
+                "spec": "8.3.8",
+                "from": {
+                  "location": "/tmp/noc117b-vite8/frontend"
+                }
+              },
+              {
+                "type": "peer",
+                "name": "vite",
+                "spec": "^4.2.0 || ^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0",
+                "from": {
+                  "name": "@vitejs/plugin-react",
+                  "version": "5.2.0",
+                  "location": "node_modules/@vitejs/plugin-react",
+                  "isWorkspace": false,
+                  "dependents": [
+                    {
+                      "type": "dev",
+                      "name": "@vitejs/plugin-react",
+                      "spec": "5.2.0",
+                      "from": {
+                        "location": "/tmp/noc117b-vite8/frontend"
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "dev": true,
+      "optional": false,
+      "devOptional": false,
+      "peer": false,
+      "bundled": false,
+      "overridden": false
+    }
+  ],
+  "node": "22.23.4",
+  "npm": "11.9.0",
+  "lock_sha256": "6176030e45518fd02ca72178ce2f0a8e275508d2f113f3cb2334d7fd74cf1f82",
+  "registry": {
+    "vite/7.3.8": {
+      "url": "https://registry.npmjs.org/vite/7.3.8",
+      "version": "7.3.8",
+      "dependencies": {
+        "fdir": "^6.5.0",
+        "rollup": "^4.43.0",
+        "esbuild": "^0.27.0 || ^0.28.0",
+        "postcss": "^8.5.6",
+        "picomatch": "^4.0.3",
+        "tinyglobby": "^0.2.15"
+      },
+      "peerDependencies": {
+        "tsx": "^4.8.1",
+        "jiti": ">=1.21.0",
+        "less": "^4.0.0",
+        "sass": "^1.70.0",
+        "yaml": "^2.4.2",
+        "stylus": ">=0.54.8",
+        "terser": "^5.16.0",
+        "sugarss": "^5.0.0",
+        "@types/node": "^20.19.0 || >=22.12.0",
+        "lightningcss": "^1.21.0",
+        "sass-embedded": "^1.70.0"
+      },
+      "engines": {
+        "node": "^20.19.0 || >=22.12.0"
+      },
+      "dist": {
+        "shasum": "3ca056297e2bf004fe5a7e40b03c18a7aa133ada",
+        "tarball": "https://registry.npmjs.org/vite/-/vite-7.3.8.tgz",
+        "fileCount": 39,
+        "integrity": "sha512-3tTi78MAKhVk9h+YZVXMQ8POmneJuE97QUPAWtJghHzhH7BAyiqQOC2KZh1DWOsu/USB2cRXhznPByaabvYXfw==",
+        "signatures": [
+          {
+            "sig": "MEQCIBabtFQoGLIWv0lRmaXkGG3laiM7tQpJqYooje/x0St8AiBF0pT98dDcZTzbqL+kgkiQA/KST9nG8+fJj/0Oo0S+rw==",
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U"
+          },
+          {
+            "sig": "MEQCIHWYHKrMv7DS88bs00k54hvQCSLG/cErgndG1T8BgpxgAiB6kwafEht15IlAvgKawahkPvu1QliSpMCAdIzhh9aNjA==",
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U"
+          }
+        ],
+        "attestations": {
+          "url": "https://registry.npmjs.org/-/npm/v1/attestations/vite@7.3.8",
+          "provenance": {
+            "predicateType": "https://slsa.dev/provenance/v1"
+          }
+        },
+        "unpackedSize": 2244502
+      }
+    },
+    "vite/8.3.8": {
+      "url": "https://registry.npmjs.org/vite/8.3.8",
+      "version": "8.3.8",
+      "dependencies": {
+        "postcss": "^8.5.32",
+        "rolldown": "~1.2.18",
+        "picomatch": "^4.0.7",
+        "tinyglobby": "^0.2.17",
+        "lightningcss": "^1.33.0"
+      },
+      "peerDependencies": {
+        "tsx": "^4.8.1",
+        "jiti": ">=1.21.0",
+        "less": "^4.0.0",
+        "sass": "^1.70.0",
+        "yaml": "^2.4.2",
+        "stylus": ">=0.54.8",
+        "terser": "^5.16.0",
+        "esbuild": "^0.27.0 || ^0.28.0",
+        "sugarss": "^5.0.0",
+        "@types/node": "^20.19.0 || >=22.12.0",
+        "sass-embedded": "^1.70.0",
+        "@vitejs/devtools": "^0.7.1 || ^0.8.0"
+      },
+      "engines": {
+        "node": "^20.19.0 || >=22.12.0"
+      },
+      "dist": {
+        "shasum": "ad713bf2e46c241f344b5e50401297b77a08621d",
+        "tarball": "https://registry.npmjs.org/vite/-/vite-8.3.8.tgz",
+        "fileCount": 37,
+        "integrity": "sha512-LzOn3h9rG/0vhLdXrV4yJ4QFA9eEoqCl+Yx+kGJd7aB9w6nfNgVHKSYwLPZUHrz4ZGa+t+kXjV9itvcHDLQouA==",
+        "signatures": [
+          {
+            "sig": "MEUCIAb30s2ngsUhJH8f88SekTPwXwpHFaKciSR2/BqZ8I+kAiEA4CmowZn0Dn4zGxVQZtBLlQrprvINx5XZvp+KCaALqnU=",
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U"
+          },
+          {
+            "sig": "MEYCIQCY4ih3Q/Akd3iyT0BlfojGL694FtI44uFZr3IECNUtSgIhAKGpRaO34C4yFh9+gunvi2UmhKQvK+vHUzvqhnIltka0",
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U"
+          }
+        ],
+        "attestations": {
+          "url": "https://registry.npmjs.org/-/npm/v1/attestations/vite@8.3.8",
+          "provenance": {
+            "predicateType": "https://slsa.dev/provenance/v1"
+          }
+        },
+        "unpackedSize": 2405422
+      }
+    },
+    "picomatch/latest": {
+      "url": "https://registry.npmjs.org/picomatch/latest",
+      "version": "4.0.7",
+      "engines": {
+        "node": ">=12"
+      },
+      "dist": {
+        "shasum": "6313360034ccb36b3dc61ecbdff78121f90fe21f",
+        "tarball": "https://registry.npmjs.org/picomatch/-/picomatch-4.0.7.tgz",
+        "fileCount": 10,
+        "integrity": "sha512-qcJu88Q2IWqJsDD529JKMdwGm/dvInW4HvQnRwiH9JtihJvzGOscDtHE3x1pBKeUOTysQ8kVmLnJ2kJu7yhcGA==",
+        "signatures": [
+          {
+            "sig": "MEQCIDeMRsq78AZoXJyPEawvv8JPPk7eIeoZRHU3VVnx4FUFAiAtcTcxKUlp2um5SNhGRRFGN8v1oGVjwBoiQBVBFbkk3A==",
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U"
+          },
+          {
+            "sig": "MEUCIFTk5VYWLeXAIebu2UWpaOQ5z72vxnbIe1t8ICKz/cuAAiEAp9RKfBDmwsNgt/m6Rs5cwKMCDQPoDAQTy408DJpDhVs=",
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U"
+          }
+        ],
+        "unpackedSize": 93759
+      }
+    },
+    "tinyglobby/latest": {
+      "url": "https://registry.npmjs.org/tinyglobby/latest",
+      "version": "0.2.17",
+      "dependencies": {
+        "fdir": "^6.5.0",
+        "picomatch": "^4.0.4"
+      },
+      "engines": {
+        "node": ">=12.0.0"
+      },
+      "dist": {
+        "shasum": "562a9a6c9eb2b3b123d39719f9af5bb44fcd7631",
+        "tarball": "https://registry.npmjs.org/tinyglobby/-/tinyglobby-0.2.17.tgz",
+        "fileCount": 7,
+        "integrity": "sha512-wXR/dYpcqKmfWpEdZjiKJOwCNFndD0DMnrW/cYjVGttEkBfVgcLFHoNrlj47mjOVic9yyNu65alsgF4NQyTa2g==",
+        "signatures": [
+          {
+            "sig": "MEQCIBb1NW/DoA5iHpC4dnAW9CHCT0c0lMzS25CHkJqC1tWbAiB00yQG3ibgdu0HOIG+aspYfvxV64FhOyM5JgsbphDGhg==",
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U"
+          }
+        ],
+        "attestations": {
+          "url": "https://registry.npmjs.org/-/npm/v1/attestations/tinyglobby@0.2.17",
+          "provenance": {
+            "predicateType": "https://slsa.dev/provenance/v1"
+          }
+        },
+        "unpackedSize": 39288
+      }
+    },
+    "fdir/latest": {
+      "url": "https://registry.npmjs.org/fdir/latest",
+      "version": "6.5.0",
+      "peerDependencies": {
+        "picomatch": "^3 || ^4"
+      },
+      "engines": {
+        "node": ">=12.0.0"
+      },
+      "dist": {
+        "shasum": "ed2ab967a331ade62f18d077dae192684d50d350",
+        "tarball": "https://registry.npmjs.org/fdir/-/fdir-6.5.0.tgz",
+        "fileCount": 7,
+        "integrity": "sha512-tIbYtZbucOs0BRGqPJkshJUYdL+SDH7dVM8gjy+ERp3WAUjLEFJE+02kanyHtwjWOnwrKYBiwAmM0p4kLJAnXg==",
+        "signatures": [
+          {
+            "sig": "MEQCIH0wQCebp2QVphslaYbOXNLLIEWXJQeu+SBQ98iHU/E8AiBf9S/FKNmKpLju7S0BR0jg8EK3+F2u9xc/b3pjZqiCQA==",
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U"
+          }
+        ],
+        "unpackedSize": 53291
+      }
+    },
+    "@vitejs%2fplugin-react/5.2.0": {
+      "url": "https://registry.npmjs.org/@vitejs%2fplugin-react/5.2.0",
+      "version": "5.2.0",
+      "dependencies": {
+        "@babel/core": "^7.29.0",
+        "react-refresh": "^0.18.0",
+        "@types/babel__core": "^7.20.5",
+        "@rolldown/pluginutils": "1.0.0-rc.3",
+        "@babel/plugin-transform-react-jsx-self": "^7.27.1",
+        "@babel/plugin-transform-react-jsx-source": "^7.27.1"
+      },
+      "peerDependencies": {
+        "vite": "^4.2.0 || ^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0"
+      },
+      "engines": {
+        "node": "^20.19.0 || >=22.12.0"
+      },
+      "dist": {
+        "shasum": "108bd0f566f288ce3566982df4eff137ded7b15f",
+        "tarball": "https://registry.npmjs.org/@vitejs/plugin-react/-/plugin-react-5.2.0.tgz",
+        "fileCount": 7,
+        "integrity": "sha512-YmKkfhOAi3wsB1PhJq5Scj3GXMn3WvtQ/JC0xoopuHoXSdmtdStOpFrYaT1kie2YgFBcIe64ROzMYRjCrYOdYw==",
+        "signatures": [
+          {
+            "sig": "MEYCIQDLaBEjKLv/w66FWCMRHoEsVy8Cmebw+H1RUbFJbYbgKgIhAMyhtXLesAQrSSYIfPFOJLvdi57bTVu1/P+sP3ZXczQ+",
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U"
+          }
+        ],
+        "attestations": {
+          "url": "https://registry.npmjs.org/-/npm/v1/attestations/@vitejs%2fplugin-react@5.2.0",
+          "provenance": {
+            "predicateType": "https://slsa.dev/provenance/v1"
+          }
+        },
+        "unpackedSize": 46248
+      }
+    }
+  }
+}

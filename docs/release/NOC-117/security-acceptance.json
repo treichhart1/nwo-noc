@@ -55,8 +55,8 @@
     },
     {
       "criterion": "npm-build-dependency-advisory",
-      "status": "FAIL",
-      "evidence_or_next_action": "GHSA-fc5q-39xc-vjpf, picomatch<=4.0.7; no patched4.x release observed; npm suggests incompatible Vite6 downgrade; retained npm-audit-unresolved.json and strict failed CI gate"
+      "status": "PASS",
+      "evidence_or_next_action": "NOC117B: upstream advisory withdrawn2026-11-18T15:38:56Z; actual Node22.23.4 full npm audit0 on unchanged lock. No package patch/suppression claimed. See FRONTEND-SECURITY.md/current final CI ledger; historical4HIGH preserved."
     }
   ]
 }
