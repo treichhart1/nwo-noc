@@ -69,8 +69,8 @@ The npm version actually supplied by setup-node in final CI is recorded by its
 logs; local npm version is not falsely asserted as CI's version.
 Lockfile SHA256 remains
 `6176030e45518fd02ca72178ce2f0a8e275508d2f113f3cb2334d7fd74cf1f82`.
-No application source/config, API, migration, manifest, lockfile or image recipe
-changed. Git diff after clean npm ci verifies lock/manifest integrity.
+No application source/config, API, migration, manifest or lockfile changed.
+The frontend runtime base is patched as described below. Git diff after clean npm ci verifies lock/manifest integrity.
 
 ## Executed local validation and full results
 
@@ -106,3 +106,26 @@ change counts: use actual final ledger/artifacts. Do not authorize operational
 release/live pilot from a green CI run alone. NOC117B can close its dependency gate
 only after final full audit/CI confirms these results; overall NOC117 release still
 requires the remaining blocker procedures. All PRs remain unmerged.
+
+## Newly reproduced native Nginx findings and patch
+
+First NOC117B source37487f5/run622 reproduced a new native frontend scan result:
+0CRITICAL/5HIGH/4MEDIUM, all in nginx1.30.6-r1 with fixed version1.30.7-r0.
+Full raw nine findings, old/new OCI metadata and image history are preserved in
+`frontend-container-remediation.json`; complete raw archive artifact14494036488,
+SHA25685dde6cb4c13504d3e01224f67e286d0e0e6ae31c98fa0868dc094b22258b2bb.
+HIGH CVEs:2026-113425,2026-121810,2026-123007,2026-123633,2026-123634.
+MEDIUM:2026-118899,2026-120967,2026-123640,2026-125283. Nothing suppressed.
+Official fixed-version evidence: https://nginx.org/en/security_advisories.html .
+
+The immutable official stable-alpine index is updated from
+901e593c95dc85f5a729f5765516321366ef4ac401821431d408897e95287d0a to
+3bc3836dc0be3b811f238210360bf8e7ca8a2d0effdae46160bf1f3578710051.
+Both old/new amd64 base histories use **Alpine3.24.4**; Nginx changes only
+1.30.6→1.30.7, the supported stable patch, with unchanged NJS1.0.2.
+No distro/major migration. Official OCI revisiona2a986d19aac4a79a330e6e0b5171aae4e521926;
+ACME support package changes0.4.1→0.4.2 but is not enabled by NOC configs.
+Read-only unprivileged UID101, port8080, Nginx configs/headers, package security
+updates, healthcheck and all application output are preserved. Image lock and
+Dockerfile are updated together; build records actual nginx -v. Final scan/browser/
+container/host tests must confirm the patch; old scan is never relabeled final.
