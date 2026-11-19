@@ -305,7 +305,11 @@ class Host:
         return json.loads(run([*DOCKER, "image", "inspect", ref]).stdout)[0]
 
     def images(self, a):
-        for kind, user in (("backend", "10001:10001"), ("frontend", "101:101")):
+        expected = [("backend", "10001:10001"), ("frontend", "101:101")]
+        approved_postgres = a["images"].get("postgres")
+        if approved_postgres:
+            expected.append(("postgres", ""))  # Vendor entrypoint drops root through patched gosu.
+        for kind, user in expected:
             info = self.image(a["images"][kind])
             if (
                 info["Config"]
@@ -324,6 +328,8 @@ class Host:
             ("postgres", "postgres:16-alpine"),
             ("redis", "redis:7-alpine"),
         ):
+            if key == "postgres" and approved_postgres:
+                continue
             a["images"][key] = locks[tag]
             self.image(locks[tag])
 

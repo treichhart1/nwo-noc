@@ -48,3 +48,12 @@ root-owned0600 public key at /etc/nwo-noc-release.pub. No private signing key be
 on the NOC host. /usr/bin/openssl must be available before release verification. See
 [trusted-artifact procedure](docs/release/NOC-116/trusted-artifacts.md). Explicit
 controlled-test approval remains isolated and does not authorize a release/live pilot.
+
+## NOC117 PostgreSQL image prerequisite
+
+New production-purpose approvals must also include the hardened PostgreSQL registry
+digest and matching NOC source-revision label. Do not reuse a two-image NOC116 approval
+or silently substitute the upstream base. Sign a reviewed three-image target manifest,
+retain supported upgrade_from ancestry and test encrypted backup/restore first. See
+[container security report](docs/release/NOC-117/README.md). This is not production
+authorization; all unresolved native/npm findings and operator gates remain.

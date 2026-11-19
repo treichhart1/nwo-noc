@@ -26,7 +26,7 @@ services:
       retries: 5
   signup-web:
     profiles: [signup]
-    image: nginx:stable-alpine@sha256:901e593c95dc85f5a729f5765516321366ef4ac401821431d408897e95287d0a
+    image: nginx:stable-alpine@sha256:3bc3836dc0be3b811f238210360bf8e7ca8a2d0effdae46160bf1f3578710051
     user: "101:101"
     cap_drop: [ALL]
     security_opt: [no-new-privileges:true]

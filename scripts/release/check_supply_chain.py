@@ -31,6 +31,8 @@ def validate_image_source(source, approved):
     local_builds = {
         "${NOC_BACKEND_IMAGE:-noc84-backend:rc}",
         "${NOC_FRONTEND_IMAGE:-noc84-frontend:rc}",
+        "${NOC_POSTGRES_IMAGE:-noc117-postgres:rc}",
+        "noc117-postgres:rc",
     }
     for reference in re.findall(r"(?m)^\s*(?:FROM|image:)\s+(\S+)", source):
         if reference in local_builds:
@@ -73,7 +75,9 @@ def validate(root=ROOT):
     ):
         raise ValueError("Actions must use reviewed immutable commits")
     images = json.loads((root / "deploy/image-lock.json").read_text())["images"]
-    for tag, reference in images.items():
+    candidates = json.loads((root / "deploy/image-candidates.json").read_text())["images"]
+    approved_images = set(images.values()) | set(candidates.values())
+    for tag, reference in (images | candidates).items():
         if not re.fullmatch(re.escape(tag) + r"@sha256:[a-f0-9]{64}", reference):
             raise ValueError("Invalid immutable image reference")
     for filename in (
@@ -81,6 +85,7 @@ def validate(root=ROOT):
         "deploy/Dockerfile.installer-failures",
         "examples/signup/compose.yml",
         "backend/Dockerfile",
+        "deploy/Dockerfile.postgres",
         "frontend/Dockerfile",
         "docker-compose.yml",
         "deploy/compose.isolated.yml",
@@ -88,9 +93,9 @@ def validate(root=ROOT):
         ".github/workflows/ci.yml",
     ):
         source = (root / filename).read_text()
-        validate_image_source(source, set(images.values()))
-        for tag, reference in images.items():
-            if source.count(tag) != source.count(reference):
+        validate_image_source(source, approved_images if filename == ".github/workflows/ci.yml" else set(images.values()))
+        for tag, reference in (images | candidates).items():
+            if len(re.findall(re.escape(tag) + r"(?![A-Za-z0-9_.:-])", source)) != source.count(reference):
                 raise ValueError(f"Mutable or inconsistent image default in {filename}")
     return {
         "runtime_locked": len(runtime),

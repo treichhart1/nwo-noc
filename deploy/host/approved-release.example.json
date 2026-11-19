@@ -9,6 +9,7 @@
   "upgrade_from": [],
   "images": {
     "backend": "registry.example.invalid/nwo-noc-backend@sha256:REPLACE",
-    "frontend": "registry.example.invalid/nwo-noc-frontend@sha256:REPLACE"
+    "frontend": "registry.example.invalid/nwo-noc-frontend@sha256:REPLACE",
+    "postgres": "registry.example.invalid/nwo-noc-postgres16@sha256:REPLACE"
   }
 }

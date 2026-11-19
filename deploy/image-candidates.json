@@ -1,0 +1,7 @@
+{
+  "format": 1,
+  "scope": "investigation only; not installation defaults or approvals",
+  "images": {
+    "postgres:16-alpine3.23": "postgres:16-alpine3.23@sha256:9afe26709faad4c173fea5380b215bd6eb9691b05aa1be5b86cec8e0285da914"
+  }
+}

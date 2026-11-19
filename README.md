@@ -178,3 +178,5 @@ operator runbook. High operational gates remain **NO-GO for live pilot/productio
 isolated installation acceptance uses independently approved test inputs.
 
 NOC-116 release blocker remediation: [report, compatibility, evidence and operator acceptance](docs/release/NOC-116/README.md). This candidate remains NO-GO for operational release/live pilot.
+
+NOC-117 container security reconstruction: [report and acceptance matrix](docs/release/NOC-117/README.md). Operational release remains NO-GO pending verified security and operator acceptance.

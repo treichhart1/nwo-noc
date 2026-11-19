@@ -30,8 +30,20 @@ jobs:
           python scripts/release/check_audit_findings.py bandit.json
           bandit -r scripts/host -f json -o installer-bandit.json --exit-zero
           python scripts/release/check_audit_findings.py installer-bandit.json docs/audits/NOC-113-installer-bandit-review.json
-      - run: npm ci --no-audit --no-fund && npm audit --audit-level=low
+      - name: Audit npm dependencies and preserve complete findings
         working-directory: frontend
+        run: |
+          npm ci --no-audit --no-fund
+          npm ls picomatch tinyglobby fdir vite --all --json > "$GITHUB_WORKSPACE/npm-dependency-chain.json"
+          npm explain picomatch --json > "$GITHUB_WORKSPACE/npm-picomatch-explain.json"
+          node -e 'const fs=require("node:fs"),crypto=require("node:crypto"); console.log(JSON.stringify({node:process.version,lock_sha256:crypto.createHash("sha256").update(fs.readFileSync("package-lock.json")).digest("hex")}))' > "$GITHUB_WORKSPACE/npm-lock-runtime.json"
+          git diff --exit-code -- package.json package-lock.json
+          set +e
+          npm audit --json --audit-level=low > "$GITHUB_WORKSPACE/npm-audit.json"
+          result=$?
+          set -e
+          node -e 'console.log(JSON.stringify(require(process.env.GITHUB_WORKSPACE+"/npm-audit.json").metadata))'
+          exit "$result"
       - name: Retain source dependency inventory
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: always()
@@ -40,6 +52,10 @@ jobs:
           path: |
             pip-audit.json
             source-locks.spdx.json
+            npm-audit.json
+            npm-dependency-chain.json
+            npm-picomatch-explain.json
+            npm-lock-runtime.json
   frontend:
     runs-on: ubuntu-24.04
     defaults:
@@ -374,18 +390,34 @@ jobs:
           docker compose config --quiet
           docker compose config --format json > /tmp/noc-compose.json
           python3 scripts/validate_compose_network.py /tmp/noc-compose.json
+      - name: Reproduce exact NOC116 source and immutable database baseline
+        run: |
+          mkdir "$RUNNER_TEMP/noc117-baseline"
+          git archive 008f54e41cb874d2d6eecebf65bb278ddb2ae25a backend frontend | tar -x -C "$RUNNER_TEMP/noc117-baseline"
+          docker build -t noc117-baseline-backend "$RUNNER_TEMP/noc117-baseline/backend"
+          docker build -t noc117-baseline-frontend "$RUNNER_TEMP/noc117-baseline/frontend"
+          docker pull postgres:16-alpine@sha256:81e77a4833487b8132fe4b00bedd39dc3f74b8641e387f19312a48f7de218c2e
+          docker pull postgres:16-alpine3.23@sha256:9afe26709faad4c173fea5380b215bd6eb9691b05aa1be5b86cec8e0285da914
+          docker pull redis:7-alpine@sha256:7f7d30b7fdd09467bac58198a1f166dd69789d348d4fe859cccb20e0cf287fbe
+          python3 scripts/release/image_security.py --output baseline-image-security-evidence postgres:16-alpine3.23@sha256:9afe26709faad4c173fea5380b215bd6eb9691b05aa1be5b86cec8e0285da914 noc117-baseline-backend noc117-baseline-frontend postgres:16-alpine@sha256:81e77a4833487b8132fe4b00bedd39dc3f74b8641e387f19312a48f7de218c2e redis:7-alpine@sha256:7f7d30b7fdd09467bac58198a1f166dd69789d348d4fe859cccb20e0cf287fbe
       - name: Build release images without starting services
         run: docker compose build
       - name: Record native and application image vulnerability and license evidence
         run: |
-          docker compose pull db redis
+          docker compose pull redis
           python3 scripts/release/image_security.py --output image-security-evidence $(docker compose config --images | sort -u)
+      - name: Record database helper and Redis runtime compatibility metadata
+        run: |
+          docker run --rm --read-only --network none --entrypoint sh noc117-postgres:rc -c 'postgres --version; gosu --version; gosu postgres id' > image-security-evidence/postgres-runtime.txt
+          docker run --rm --read-only --network none --entrypoint sh redis:7-alpine@sha256:7f7d30b7fdd09467bac58198a1f166dd69789d348d4fe859cccb20e0cf287fbe -c 'redis-server --version; redis-cli --version' > image-security-evidence/redis-runtime.txt
       - name: Retain image security findings (not release approval)
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: native-image-security-evidence
-          path: image-security-evidence
+          path: |
+            image-security-evidence
+            baseline-image-security-evidence
           if-no-files-found: error
       - name: Validate offline staging egress policy and synthetic staging config
         run: |
@@ -428,6 +460,7 @@ jobs:
         run: |
           docker build -t noc113-backend:base backend
           docker build -t noc113-frontend:base frontend
+          docker build -t noc117-postgres:rc -f deploy/Dockerfile.postgres .
       - name: Execute disposable Ubuntu systemd install, verification, encrypted restore and upgrade failure acceptance
         run: sudo python3 tests/installer/test_ubuntu_host.py --workspace /var/tmp/noc113-acceptance --extended
       - name: Build disposable Ubuntu failure-test control image
@@ -513,6 +546,7 @@ jobs:
         run: |
           docker build -t noc84-backend:rc backend
           docker build -t noc84-frontend:rc frontend
+          docker build -t noc117-postgres:rc -f deploy/Dockerfile.postgres .
       - name: Verify backend native geospatial runtime without network access
         run: docker run --rm --network none -e SECRET_KEY=ci-native-runtime-secret-key-ci-native-runtime -e ADMIN_PASSWORD=CI-password-only -e DATABASE_URL=postgresql+psycopg://synthetic:synthetic@127.0.0.1/nwo_noc --entrypoint python noc84-backend:rc -c "import app.main; import rasterio; import pyproj; import laspy; print('Native geospatial backend imports passed')"
       - name: Rehearse Ubuntu installation in a fresh userspace container

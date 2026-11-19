@@ -145,6 +145,7 @@ def main():
     )
     p.add_argument("--backend", default="noc113-backend:base")
     p.add_argument("--frontend", default="noc113-frontend:base")
+    p.add_argument("--postgres", default="noc117-postgres:rc")
     args = p.parse_args()
     if (
         os.geteuid() != 0
@@ -294,7 +295,7 @@ def main():
 
     def image(kind, revision, bad=False):
         tag = "noc113-test-" + kind + "-" + revision[:10]
-        base = args.backend if kind == "backend" else args.frontend
+        base = {"backend": args.backend, "frontend": args.frontend, "postgres": args.postgres}[kind]
         failure = args.failure_stage if kind == "backend" else None
         if failure in ("migration", "interrupted"):
             shell = (
@@ -343,6 +344,7 @@ def main():
             "images": {
                 "backend": image("backend", revision, bad),
                 "frontend": image("frontend", revision),
+                "postgres": image("postgres", revision),
             },
         }
         file = approvals / (revision + ".json")

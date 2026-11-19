@@ -1,0 +1,62 @@
+{
+  "baseline": "008f54e41cb874d2d6eecebf65bb278ddb2ae25a",
+  "decision": "NO-GO",
+  "execution_note": "Final exact-source execution statuses are appended to the draft PR ledger; NOT TESTED is never implicitly PASS.",
+  "rows": [
+    {
+      "criterion": "N117-rebuild",
+      "status": "PASS",
+      "evidence_or_next_action": "Verified NOC116 baseline; missing original work reconstructed; no claimed previous NOC117 result"
+    },
+    {
+      "criterion": "Baseline-current-scans",
+      "status": "PASS",
+      "evidence_or_next_action": "Fresh run611/134860229366 artifact14434064057, scan-evidence.json; exact bases and source rebuild identities retained"
+    },
+    {
+      "criterion": "PostgreSQL-helper-critical",
+      "status": "PASS",
+      "evidence_or_next_action": "Final7117397 run616artifact14434924186:0findings after Go1.27.4/xsys0.44.0; both investigated officialimages1CRITICAL/25HIGH. Not published/deployed-image trust approval."
+    },
+    {
+      "criterion": "Backend-frontend-patches",
+      "status": "FAIL",
+      "evidence_or_next_action": "Candidate backend51HIGH without FixedVersion; frontend0findings; no findings waived"
+    },
+    {
+      "criterion": "Signed-release-validation",
+      "status": "PASS",
+      "evidence_or_next_action": "Local tests plus unchanged existing signature gate include required PostgreSQL approval; real production signing infrastructure BLOCKED"
+    },
+    {
+      "criterion": "Ubuntu-install-upgrade-restore",
+      "status": "PASS",
+      "evidence_or_next_action": "Exact7117397 CI616host105assertions/11historicalupgrade/restorechecks; hosted Ubuntu24.04/systemd actual scripts. MinimumISO independent VM/offhost disaster recovery remain BLOCKED; new follow-up source requires own CI ledger."
+    },
+    {
+      "criterion": "Performance-1000",
+      "status": "FAIL",
+      "evidence_or_next_action": "Same7117397source:616median9.912s passes15s;615median16.366s fails15s. Both6000unique samples/receipts. Consistent target remains unmet; fasterrun not globalacceptance."
+    },
+    {
+      "criterion": "Redis-license-identification",
+      "status": "PASS",
+      "evidence_or_next_action": "Exact7.4.12 upstream license retrieved/hash recorded; RSALv2 OR SSPLv1; not legal approval"
+    },
+    {
+      "criterion": "Redis-legal-acceptance",
+      "status": "BLOCKED",
+      "evidence_or_next_action": "Independent legal/operator selection and distribution/use obligations required"
+    },
+    {
+      "criterion": "Operational-acceptance",
+      "status": "BLOCKED",
+      "evidence_or_next_action": "Real vendor/provider/key-custody/AV/VPN/MFA/egress/off-host restore not authorized or established"
+    },
+    {
+      "criterion": "npm-build-dependency-advisory",
+      "status": "PASS",
+      "evidence_or_next_action": "NOC117B: upstream advisory withdrawn2026-11-18T15:38:56Z; actual Node22.23.4 full npm audit0 on unchanged lock. No package patch/suppression claimed. See FRONTEND-SECURITY.md/current final CI ledger; historical4HIGH preserved."
+    }
+  ]
+}

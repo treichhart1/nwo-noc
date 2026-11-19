@@ -25,6 +25,16 @@ def build(root=ROOT):
         if not item.get('version') or not str(item.get('integrity','')).startswith('sha512-'):
             raise ValueError('Immutable npm package version/integrity required')
         packages.append({'name':name,'version':item['version'],'ecosystem':'npm','scope':path,'license':item.get('license') or 'NOASSERTION'})
+    gosu = root/'deploy/vendor/gosu'
+    if gosu.exists():
+        provenance=json.loads((gosu/'provenance.json').read_text())
+        packages.append({'name':'github.com/tianon/gosu','version':provenance['commit'],'ecosystem':'golang','scope':'static runtime helper','license':'Apache-2.0'})
+        packages.append({'name':'stdlib','version':'1.27.4','ecosystem':'golang','scope':'static runtime helper','license':'BSD-3-Clause'})
+        for line in (gosu/'go.sum').read_text().splitlines():
+            name,version,checksum=line.split()
+            if version.endswith('/go.mod'):continue
+            if not checksum.startswith('h1:'):raise ValueError('Checksummed Go module required')
+            packages.append({'name':name,'version':version,'ecosystem':'golang','scope':'static runtime helper','license':'Apache-2.0' if name=='github.com/moby/sys/user' else 'BSD-3-Clause' if name=='golang.org/x/sys' else 'NOASSERTION'})
     images=json.loads((root/'deploy/image-lock.json').read_text())['images']
     fingerprint=hashlib.sha256(json.dumps([packages,images],sort_keys=True).encode()).hexdigest()
     spdx=[]
