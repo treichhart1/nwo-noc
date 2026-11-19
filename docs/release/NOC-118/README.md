@@ -240,3 +240,13 @@ an actual unsupported-distribution rejection, not a mocked OS or removed asserti
 Run629 passed1103 PostgreSQL regressions and the additional43/64/54/36 selected
 regressions before the context error. Those are intermediate results, not claims
 that the final source passed. Final-source job results remain in the draft PR ledger.
+
+The final harness additionally records immutable IDs for successful synthetic
+release revisions and actual remaining containers, then scans those exact images
+with the strict HIGH/CRITICAL gate. Full JSON/SPDX/provenance is uploaded separately
+as ubuntu-tested-runtime-security-evidence. Revision-only labels and intentional
+failed-startup fixtures are identified separately; worker aliases are deduplicated
+by config ID. Separate same-source builds are not falsely described as identical
+image bytes. Every original installer assertion remains. Final native reports may
+change as the scanner database updates: run636 saw33total (still0HIGH/0CRITICAL),
+where run632 saw30; retain each execution rather than freezing favorable counts.

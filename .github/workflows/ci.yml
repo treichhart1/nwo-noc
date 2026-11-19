@@ -484,6 +484,23 @@ jobs:
           docker build -t noc117-postgres:rc -f deploy/Dockerfile.postgres .
       - name: Execute disposable Ubuntu systemd install, verification, encrypted restore and upgrade failure acceptance
         run: sudo python3 tests/installer/test_ubuntu_host.py --workspace /var/tmp/noc113-acceptance --extended
+      - name: Scan the exact immutable runtime images exercised by Ubuntu acceptance
+        run: |
+          sudo python3 - <<'PY'
+          import json, subprocess
+          images = json.load(open('/var/tmp/noc113-acceptance/runtime-images.json'))
+          assert images, 'No tested immutable image identities'
+          subprocess.run(['python3', 'scripts/release/image_security.py', '--require-no-high', '--output', 'host-runtime-image-security-evidence', *images], check=True)
+          subprocess.run(['python3', 'scripts/release/image_sbom.py', 'host-runtime-image-security-evidence'], check=True)
+          subprocess.run(['python3', 'scripts/release/build_provenance.py', 'host-runtime-image-security-evidence'], check=True)
+          PY
+      - name: Preserve exact installation-image scan evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: ubuntu-tested-runtime-security-evidence
+          path: host-runtime-image-security-evidence
+          if-no-files-found: error
       - name: Build disposable Ubuntu failure-test control image
         run: docker build -f deploy/Dockerfile.installer-failures -t noc114-installer-failures .
       - name: Exercise real fresh-install failures without deleting retained state

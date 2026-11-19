@@ -8,6 +8,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 from pathlib import Path
 import secrets
 import shutil
@@ -286,6 +287,7 @@ def main():
     certificate.chmod(0o600)
     tls_key.chmod(0o600)
     results = []
+    successful_release_images = set()
 
     def passed(name, condition=True):
         if not condition:
@@ -324,11 +326,14 @@ def main():
             + entry
         )
         command(["docker", "build", "-t", tag, "-"], data=dockerfile.encode())
-        return (
+        identity = (
             command(["docker", "image", "inspect", "--format", "{{.Id}}", tag])
             .stdout.decode()
             .strip()
         )
+        if not bad and not failure:
+            successful_release_images.add(identity)
+        return identity
 
     def approve(previous=(), bad=False):
         revision = git("rev-parse", "HEAD")
@@ -826,6 +831,17 @@ def main():
         "failed_upgrade_backup_retained",
         len(list((root / "var/backups/nwo-noc").glob("*.tar.age"))) == 2,
     )
+    # Bind post-install scanning to the exact containers exercised here, including
+    # their synthetic revision labels. A separate rebuild is not the tested image.
+    container_ids = command([*compose, "ps", "--all", "--quiet"]).stdout.decode().split()
+    if not container_ids:
+        raise AssertionError("Installed runtime container identities unavailable")
+    tested_images = sorted(successful_release_images | set(command(
+        ["docker", "inspect", "--format", "{{.Image}}", *container_ids]
+    ).stdout.decode().split()))
+    if not all(re.fullmatch(r"sha256:[a-f0-9]{64}", value) for value in tested_images):
+        raise AssertionError("Installed runtime image identity invalid")
+    (work / "runtime-images.json").write_text(json.dumps(tested_images))
     if args.rehearsal:
         invoke("service-stop")
     # Stop only this disposable installation. Preserve volumes, keys, encrypted backups and evidence.
@@ -837,6 +853,7 @@ def main():
         json.dumps(
             {
                 "checks_passed": len(results),
+                "tested_runtime_images": tested_images,
                 "checks": results,
                 "os": "Ubuntu24.04",
                 "environment": (
