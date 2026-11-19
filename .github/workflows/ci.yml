@@ -390,10 +390,10 @@ jobs:
           docker compose config --quiet
           docker compose config --format json > /tmp/noc-compose.json
           python3 scripts/validate_compose_network.py /tmp/noc-compose.json
-      - name: Reproduce exact NOC116 source and immutable database baseline
+      - name: Reproduce exact NOC117 source and immutable database baseline
         run: |
           mkdir "$RUNNER_TEMP/noc117-baseline"
-          git archive 008f54e41cb874d2d6eecebf65bb278ddb2ae25a backend frontend | tar -x -C "$RUNNER_TEMP/noc117-baseline"
+          git archive 752939ade1ae3ffd167bf484d7b84c6b90b244b4 backend frontend | tar -x -C "$RUNNER_TEMP/noc117-baseline"
           docker build -t noc117-baseline-backend "$RUNNER_TEMP/noc117-baseline/backend"
           docker build -t noc117-baseline-frontend "$RUNNER_TEMP/noc117-baseline/frontend"
           docker pull postgres:16-alpine@sha256:81e77a4833487b8132fe4b00bedd39dc3f74b8641e387f19312a48f7de218c2e
@@ -406,10 +406,19 @@ jobs:
         run: |
           docker compose pull redis
           python3 scripts/release/image_security.py --output image-security-evidence $(docker compose config --images | sort -u)
+      - name: Export full baseline and candidate image SPDX inventories
+        run: |
+          python3 scripts/release/image_sbom.py baseline-image-security-evidence
+          python3 scripts/release/image_sbom.py image-security-evidence
+      - name: Record backend attack surface and ABI acceptance
+        run: |
+          docker run --rm --read-only --cap-drop ALL --network none --tmpfs /tmp:rw,noexec,nosuid,size=32m --entrypoint python nwo-noc-backend scripts/backend_runtime_evidence.py > image-security-evidence/backend-runtime.json
       - name: Record database helper and Redis runtime compatibility metadata
         run: |
           docker run --rm --read-only --network none --entrypoint sh noc117-postgres:rc -c 'postgres --version; gosu --version; gosu postgres id' > image-security-evidence/postgres-runtime.txt
           docker run --rm --read-only --network none --entrypoint sh redis:7-alpine@sha256:7f7d30b7fdd09467bac58198a1f166dd69789d348d4fe859cccb20e0cf287fbe -c 'redis-server --version; redis-cli --version' > image-security-evidence/redis-runtime.txt
+      - name: Bind unsigned build provenance to source inputs and retained reports
+        run: python3 scripts/release/build_provenance.py image-security-evidence
       - name: Retain image security findings (not release approval)
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2

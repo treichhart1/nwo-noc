@@ -1,0 +1,46 @@
+{
+  "decision": "NO-GO",
+  "rows": [
+    {
+      "id": "Exact-historical-image-rescan",
+      "status": "BLOCKED",
+      "evidence_or_action": "Unpublished former CI configID absent locally; source rebuild cannot be called byte-identical"
+    },
+    {
+      "id": "Fresh-source-and-final-image-scan",
+      "status": "NOT TESTED",
+      "evidence_or_action": "Pinned Trivy on resolved runtimeIDs, fullJSON/SPDX/provenance artifacts required"
+    },
+    {
+      "id": "Python312-Bookworm-ABI-and-stack",
+      "status": "NOT TESTED",
+      "evidence_or_action": "Explicit LTS OS change; lockedwheel imports/full stack/Ubuntu harness must pass"
+    },
+    {
+      "id": "Native-residual-HIGH",
+      "status": "BLOCKED",
+      "evidence_or_action": "Every residual/new finding retained; vendor fix/runtime review required"
+    },
+    {
+      "id": "Signed-evidence-controls",
+      "status": "PASS",
+      "evidence_or_action": "Local real-Ed25519/hash/source/image/provenance/complete-SPDX negative tests; no production authorization"
+    },
+    {
+      "id": "Ubuntu-upgrade-restore",
+      "status": "NOT TESTED",
+      "evidence_or_action": "Actual rebuilt backend via disposable systemd harness"
+    },
+    {
+      "id": "Sustained1000device-performance",
+      "status": "BLOCKED",
+      "evidence_or_action": "Preserve all repeated rounds/resources; earlier15s inconsistency remains"
+    },
+    {
+      "id": "Operational-acceptance",
+      "status": "BLOCKED",
+      "evidence_or_action": "Independent trusted publication/legal/offhostDR/VPN/MFA/egress/AV/device/provider acceptance"
+    }
+  ],
+  "final_execution": "Exact final-source executed statuses appended in draft PR ledger; pending never implicitlyPASS"
+}

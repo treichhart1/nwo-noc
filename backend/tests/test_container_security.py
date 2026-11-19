@@ -27,7 +27,8 @@ def test_missing_database_image_rejected_for_production_release(tmp_path,monkeyp
     monkeypatch.setattr(artifacts,'verify_signature',lambda *a:None)
     with pytest.raises(ValueError,match='PostgreSQL'):policy.approval(tmp_path/'approved')
     value['images']['postgres']='registry.example.invalid/pg@sha256:'+'e'*64
-    assert policy.approval(tmp_path/'approved')['images']['postgres'].endswith('e'*64)
+    with pytest.raises(ValueError,match='Complete signed'):
+        policy.approval(tmp_path/'approved')
 
 
 def test_postgres_image_only_changes_helper_not_entrypoint_or_engine():

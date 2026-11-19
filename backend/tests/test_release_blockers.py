@@ -30,9 +30,8 @@ def signed(tmp_path):
     subprocess.run(['openssl','pkey','-in',str(key),'-pubout','-out',str(pub)], check=True, capture_output=True)
     import json
     from test_host_installer import manifest
-    approved=manifest();approved['purpose']='release'
-    approved['images']['postgres']='sha256:'+'e'*64
-    approved['images']={k:'registry.example.invalid/noc@sha256:'+v.split(':')[1] for k,v in approved['images'].items()}
+    from test_backend_security import bundle
+    approved, _, _ = bundle(tmp_path)
     payload.write_bytes(json.dumps(approved).encode())
     subprocess.run(['openssl','pkeyutl','-sign','-inkey',str(key),'-rawin','-in',str(payload),'-out',str(sig)], check=True, capture_output=True)
     return payload.read_bytes(), sig.read_bytes(), pub.read_bytes()
@@ -161,8 +160,8 @@ def test_powercode_compatibility_fixture_preserves_ownership_and_status():
 
 def test_signed_release_policy_binds_exact_approved_manifest(signed,tmp_path,monkeypatch):
     payload,signature,key=signed
-    def private(path):
-        return key if str(path).endswith('.pub') else signature if str(path).endswith('.sig') else payload
+    def private(path, **kwargs):
+        return key if str(path).endswith('.pub') else signature if str(path).endswith('.sig') else payload if Path(path).name == 'approval' else Path(path).read_bytes()
     monkeypatch.setattr(policy,'private_file',private)
     accepted=policy.approval(tmp_path/'approval')
     assert accepted['purpose']=='release' and accepted['commit']=='a'*40
