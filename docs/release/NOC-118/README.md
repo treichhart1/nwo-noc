@@ -32,8 +32,8 @@ existing work/images/data retained, not pruned. Builds/tests use disposable CI.
 
 ## Supported correction and review
 
-51historical HIGH rows represent15distinct CVEs;40rows repeat4util-linux CVEs
-across10binary packages. No historical HIGH row listed a stable FixedVersion.
+51historical HIGH rows represent15distinct CVEs;36rows repeat4util-linux CVEs
+across9binary packages. No historical HIGH row listed a stable FixedVersion.
 Debian tracker says Bookworm is not affected/fixed for76642/78408/78409, but
 still vulnerable for78410. Older versions are **not** generally assumed safe.
 
@@ -130,7 +130,7 @@ Payload schemas:
 - sbom: `{source:<SPDX2.3>,images:{backend:<SPDX2.3>,frontend:<SPDX2.3>,postgres:<SPDX2.3>,redis:<SPDX2.3>}}`; each nonempty inventory.
 - dependencies: `{pip:<fullpip-auditJSON>,npm:<fullauditReportVersion2JSON>}`; versions/vuln lists, explicit development dependency count, every severity counter0. No dev omission.
 - containers:4role→TrivyJSON, SchemaVersion2/ImageID, matching approved registryRepoDigest/nonempty results/package inventory. Any HIGH/CRITICAL blocks production approval. Unpublished local IDs are insufficient.
-- provenance:source_commit/source_tree/subjects(sameimages)/builder/invocation_id/materials(immutable registrydigests), all checked.
+- provenance:source_commit/source_tree/subjects(sameimages)/builder/invocation_id/materials(immutable registrydigests), risk_review(reference and explicitly empty open_blockers), all checked.
 
 Detached Ed25519 verification still requires independently provisioned protected
 `/etc/nwo-noc-release.pub`, with no network-key fallback. Sign exact reviewed
@@ -193,3 +193,36 @@ FixedVersion fields/vendor references remain in rejected-bookworm.json; each has
 REJECTED-CANDIDATE disposition, not an approved mitigation or disappearance claim.
 No Bookworm operational deployment occurred. Final Ubuntu findings require their
 own per-CVE vendor/runtime analysis; historical Debian status is not transferred.
+
+## Executed Ubuntu scan and vendor/scanner reconciliation
+
+Source65db283/run629/artifact14534280155 freshly rebuilt baseline0CRITICAL/51HIGH/
+240total and Ubuntu candidate0CRITICAL/0HIGH/25MEDIUM/5LOW. ArchiveSHA256
+bfd9dfe0c0b462ebd56117c07dcb6f536d7b8f62559217af4406b63982c35e54;
+complete raw report and runtime in ubuntu-scan-review.json. Actual distro runtime
+Python3.12.3-1ubuntu0.17, OpenSSL3.0.13, Expat2.6.1, SQLite3.45.1, GDAL3.10.3,
+PROJ9.5.1/psycopg3.2.9; vendor security backports matter, not only version numbers.
+UID/GID10001, pip/compiler/homed absent, shell retained, no PerlArchive::Tar file.
+Final source must rerun scans/acceptance; this is execution of65db283, not futurecode.
+
+**This does not establish51patched findings.** Canonical lists sqlite3
+CVE-2026-119373 as Vulnerable and119374/119379 as Needs evaluation; these do not
+appear in this Trivy output. ACL54369 is Ignored/backport too intrusive by vendor,
+which NOC does not treat as permission to waive it. Expat115506/117610/118370 need
+evaluation; unavailable113351 lookup is not a safe classification. Util76642 remains
+7MEDIUM scan rows; original HIGH is retained in the cross-vendor comparison.
+Util78408/78409 are vendor-confirmed not affected on Noble. Ncurses2025-69720,
+systemd16742 and Perl9538 have actual Canonical fixes; exact installed revisions
+are checked using dpkg version comparison and retained in per-row dispositions.
+See each https://ubuntu.com/security/CVE-<year>-<number> primary reference.
+
+No CVE is hidden/downgraded by NOC. Vendor-source scanner severity differs between
+OSes; all original HIGH identifiers remain mapped, and unresolved/unknown underlying
+issues remain BLOCKED even with a0HIGH scan. All30current findings retained too.
+Production provenance now additionally requires a signed risk_review with reference
+and explicitly empty open_blockers. An ordinary clean scanner report cannot override
+an acknowledged vendor blocker. CI unsigned provenance truthfully carries current
+open blocker IDs; it is not eligible for production approval. New negative test
+rejects a validly bound provenance containing an unresolved vendor issue. No keys or
+risk acceptance are fabricated. Back up evidence envelopes with original signed
+approval, signature and independently verified trust fingerprint for offhost recovery.

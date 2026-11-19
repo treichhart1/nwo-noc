@@ -23,7 +23,7 @@ def bundle(tmp_path):
         'sbom': {'source': spdx, 'images': {r: spdx for r in a['images']}},
         'dependencies': {'pip': {'dependencies': [{'name': 'synthetic', 'version': '1.0', 'vulns': []}]}, 'npm': {'auditReportVersion': 2, 'vulnerabilities': {}, 'metadata': {'dependencies': {'dev': 1}, 'vulnerabilities': {k: 0 for k in ['info', 'low', 'moderate', 'high', 'critical', 'total']}}}},
         'containers': {r: {'SchemaVersion': 2, 'Metadata': {'ImageID': 'sha256:' + '1' * 64, 'RepoDigests': [ref]}, 'Results': [{'Packages': [{'Name': 'synthetic'}], 'Vulnerabilities': []}]} for r, ref in a['images'].items()},
-        'provenance': {'source_commit': a['commit'], 'source_tree': a['tree'], 'subjects': a['images'], 'builder': 'synthetic-disposable-builder', 'invocation_id': 'synthetic-run', 'materials': ['python@sha256:' + 'f' * 64]},
+        'provenance': {'source_commit': a['commit'], 'source_tree': a['tree'], 'subjects': a['images'], 'builder': 'synthetic-disposable-builder', 'invocation_id': 'synthetic-run', 'risk_review': {'reference': 'synthetic-independent-review', 'open_blockers': []}, 'materials': ['python@sha256:' + 'f' * 64]},
     }
     docs = {k: {'format': 1, 'kind': k, **{x: a[x] for x in ['commit', 'tree', 'images']}, 'payload': v} for k, v in payloads.items()}
     def save():
@@ -75,6 +75,7 @@ def test_hash_or_path_manipulation_rejected(tmp_path):
     ('containers', lambda d: d['frontend']['Metadata'].update(RepoDigests=['wrong'])),
     ('provenance', lambda d: d.update(materials=['python:latest'])),
     ('provenance', lambda d: d.update(source_commit='f' * 40)),
+    ('provenance', lambda d: d['risk_review'].update(open_blockers=['vendor-unfixed-sqlite'])),
 ])
 def test_incomplete_unsafe_or_unbound_evidence_rejected(tmp_path, kind, mutate):
     a, docs, save = bundle(tmp_path); mutate(docs[kind]['payload']); save()

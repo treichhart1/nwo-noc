@@ -49,6 +49,9 @@ def _verify_release_evidence(approved, manifest_path, read_private):
         if any(v.get('Severity') in ('HIGH', 'CRITICAL') for r in report['Results'] for v in r.get('Vulnerabilities', []) or []):
             raise ValueError('HIGH/CRITICAL container findings block release approval')
     provenance = reports['provenance']
+    review = provenance.get('risk_review') if isinstance(provenance, dict) else None
+    if not isinstance(review, dict) or review.get('open_blockers') != [] or not isinstance(review.get('reference'), str) or len(review['reference']) < 3:
+        raise ValueError('Independent risk review with no open release blockers required')
     if not isinstance(provenance, dict) or provenance.get('source_commit') != approved['commit'] or provenance.get('source_tree') != approved['tree'] or provenance.get('subjects') != approved['images'] or not isinstance(provenance.get('builder'), str) or not provenance['builder'] or not isinstance(provenance.get('invocation_id'), str) or not provenance['invocation_id'] or not isinstance(provenance.get('materials'), list) or not provenance['materials'] or any(not isinstance(v, str) or not re.fullmatch(r'[a-z0-9][a-z0-9./:_-]*@sha256:[a-f0-9]{64}', v) for v in provenance['materials']):
         raise ValueError('Bound build provenance and immutable input materials required')
 
