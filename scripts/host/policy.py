@@ -58,7 +58,7 @@ DISABLED = (
 )
 
 
-def private_file(path, *, owner=0):
+def private_file(path, *, owner=0, max_bytes=1048576):
     path = Path(path)
     parent = path.parent.lstat()
     if (
@@ -76,7 +76,7 @@ def private_file(path, *, owner=0):
             not stat.S_ISREG(st.st_mode)
             or st.st_uid != owner
             or st.st_mode & 0o077
-            or st.st_size > 1048576
+            or st.st_size > max_bytes
         ):
             raise Reject("Private regular operator-owned file (0600) required")
         return handle.read()
@@ -119,8 +119,10 @@ def approval(path, *, controlled=False, source=None):
     ):
         raise Reject("Explicit supported upgrade source commits required")
     keys = set(data.get("images", {}))
-    if keys not in ({"backend", "frontend"}, {"backend", "frontend", "postgres"}) or (not controlled and "postgres" not in keys):
+    if keys not in ({"backend", "frontend"}, {"backend", "frontend", "postgres"}, {"backend", "frontend", "postgres", "redis"}) or (not controlled and "postgres" not in keys):
         raise Reject("Approved backend, frontend and hardened PostgreSQL images required for releases")
+    if not controlled and keys != {"backend", "frontend", "postgres", "redis"}:
+        raise Reject("Complete signed runtime image set including Redis required")
     for ref in data["images"].values():
         if not isinstance(ref, str) or not (
             DIGEST.fullmatch(ref) or controlled and LOCAL.fullmatch(ref)
@@ -128,6 +130,9 @@ def approval(path, *, controlled=False, source=None):
             raise Reject(
                 "Immutable release image digest required; local IDs only in explicit controlled tests"
             )
+    if not controlled:
+        from evidence import verify_release_evidence
+        verify_release_evidence(data, p, private_file)
     return data
 
 

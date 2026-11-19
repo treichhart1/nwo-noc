@@ -1,0 +1,112 @@
+{
+  "retrieved_utc": "2026-11-19",
+  "method": "Canonical security CVE pages, source packages must be distinguished (sqlite3 vs sqlite)",
+  "rows": [
+    {
+      "cve": "CVE-2026-119373",
+      "source_package": "sqlite3",
+      "noble_status": "Vulnerable",
+      "url": "https://ubuntu.com/security/CVE-2026-119373",
+      "disposition": "BLOCKED"
+    },
+    {
+      "cve": "CVE-2026-119374",
+      "source_package": "sqlite3",
+      "noble_status": "Needs evaluation",
+      "url": "https://ubuntu.com/security/CVE-2026-119374",
+      "disposition": "BLOCKED"
+    },
+    {
+      "cve": "CVE-2026-119379",
+      "source_package": "sqlite3",
+      "noble_status": "Needs evaluation",
+      "url": "https://ubuntu.com/security/CVE-2026-119379",
+      "disposition": "BLOCKED"
+    },
+    {
+      "cve": "CVE-2026-115506",
+      "source_package": "expat",
+      "noble_status": "Needs evaluation",
+      "url": "https://ubuntu.com/security/CVE-2026-115506",
+      "disposition": "BLOCKED"
+    },
+    {
+      "cve": "CVE-2026-117610",
+      "source_package": "expat",
+      "noble_status": "Needs evaluation",
+      "url": "https://ubuntu.com/security/CVE-2026-117610",
+      "disposition": "BLOCKED"
+    },
+    {
+      "cve": "CVE-2026-118370",
+      "source_package": "expat",
+      "noble_status": "Needs evaluation",
+      "url": "https://ubuntu.com/security/CVE-2026-118370",
+      "disposition": "BLOCKED"
+    },
+    {
+      "cve": "CVE-2026-113351",
+      "source_package": "expat",
+      "noble_status": "Lookup unavailable",
+      "url": "https://ubuntu.com/security/CVE-2026-113351",
+      "disposition": "BLOCKED"
+    },
+    {
+      "cve": "CVE-2026-76642",
+      "source_package": "util-linux",
+      "noble_status": "Lookup unavailable",
+      "url": "https://ubuntu.com/security/CVE-2026-76642",
+      "disposition": "BLOCKED"
+    },
+    {
+      "cve": "CVE-2026-78408",
+      "source_package": "util-linux",
+      "noble_status": "Not affected",
+      "url": "https://ubuntu.com/security/CVE-2026-78408",
+      "disposition": "PASS subject to installed-version/source-code comparison"
+    },
+    {
+      "cve": "CVE-2026-78409",
+      "source_package": "util-linux",
+      "noble_status": "Not affected",
+      "url": "https://ubuntu.com/security/CVE-2026-78409",
+      "disposition": "PASS subject to installed-version/source-code comparison"
+    },
+    {
+      "cve": "CVE-2026-78410",
+      "source_package": "util-linux",
+      "noble_status": "Needs evaluation",
+      "url": "https://ubuntu.com/security/CVE-2026-78410",
+      "disposition": "BLOCKED"
+    },
+    {
+      "cve": "CVE-2026-54369",
+      "source_package": "acl",
+      "noble_status": "Ignored: backport too intrusive",
+      "url": "https://ubuntu.com/security/CVE-2026-54369",
+      "disposition": "BLOCKED"
+    },
+    {
+      "cve": "CVE-2025-69720",
+      "source_package": "ncurses",
+      "noble_status": "Fixed6.4+20240113-1ubuntu2.1",
+      "url": "https://ubuntu.com/security/CVE-2025-69720",
+      "disposition": "PASS subject to installed-version/source-code comparison"
+    },
+    {
+      "cve": "CVE-2026-16742",
+      "source_package": "systemd",
+      "noble_status": "Fixed255.4-1ubuntu8.17",
+      "url": "https://ubuntu.com/security/CVE-2026-16742",
+      "disposition": "PASS subject to installed-version/source-code comparison"
+    },
+    {
+      "cve": "CVE-2026-9538",
+      "source_package": "perl",
+      "noble_status": "Fixed5.38.2-3.2ubuntu0.4",
+      "url": "https://ubuntu.com/security/CVE-2026-9538",
+      "disposition": "PASS subject to installed-version/source-code comparison"
+    }
+  ],
+  "warning": "Vendor priority and scanner detection differ. Preserve original severity and unresolved blockers; not all51findingsarepatched."
+}

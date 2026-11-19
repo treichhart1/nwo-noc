@@ -355,6 +355,18 @@ jobs:
           SYNTHETIC_MONITORING_ENABLED: "true"
           RF_SCHEDULER_ENABLED: "true"
         run: PYTHONPATH=. python -m app.monitoring_benchmark
+      - name: Recheck six-round polling in the actual hardened backend runtime
+        env:
+          APP_ENV: staging
+          OFFLINE_MODE: "true"
+          SYNTHETIC_MONITORING_ENABLED: "true"
+          RF_SCHEDULER_ENABLED: "true"
+        run: |
+          docker build -t noc118-runtime-benchmark .
+          docker run --rm --read-only --cap-drop ALL --security-opt no-new-privileges --network host --tmpfs /tmp:rw,noexec,nosuid,size=128m \
+            -e SECRET_KEY -e ADMIN_PASSWORD -e DATABASE_URL -e APP_ENV -e OFFLINE_MODE \
+            -e SYNTHETIC_MONITORING_ENABLED -e RF_SCHEDULER_ENABLED \
+            --entrypoint python noc118-runtime-benchmark -m app.monitoring_benchmark
       - name: Measure synthetic WISP operational readiness at 250/500/1000 devices
         env:
           APP_ENV: staging
@@ -390,10 +402,10 @@ jobs:
           docker compose config --quiet
           docker compose config --format json > /tmp/noc-compose.json
           python3 scripts/validate_compose_network.py /tmp/noc-compose.json
-      - name: Reproduce exact NOC116 source and immutable database baseline
+      - name: Reproduce exact NOC117 source and immutable database baseline
         run: |
           mkdir "$RUNNER_TEMP/noc117-baseline"
-          git archive 008f54e41cb874d2d6eecebf65bb278ddb2ae25a backend frontend | tar -x -C "$RUNNER_TEMP/noc117-baseline"
+          git archive 752939ade1ae3ffd167bf484d7b84c6b90b244b4 backend frontend | tar -x -C "$RUNNER_TEMP/noc117-baseline"
           docker build -t noc117-baseline-backend "$RUNNER_TEMP/noc117-baseline/backend"
           docker build -t noc117-baseline-frontend "$RUNNER_TEMP/noc117-baseline/frontend"
           docker pull postgres:16-alpine@sha256:81e77a4833487b8132fe4b00bedd39dc3f74b8641e387f19312a48f7de218c2e
@@ -406,10 +418,19 @@ jobs:
         run: |
           docker compose pull redis
           python3 scripts/release/image_security.py --output image-security-evidence $(docker compose config --images | sort -u)
+      - name: Export full baseline and candidate image SPDX inventories
+        run: |
+          python3 scripts/release/image_sbom.py baseline-image-security-evidence
+          python3 scripts/release/image_sbom.py image-security-evidence
+      - name: Record backend attack surface and ABI acceptance
+        run: |
+          docker run --rm --read-only --cap-drop ALL --network none --tmpfs /tmp:rw,noexec,nosuid,size=32m --entrypoint python nwo-noc-backend scripts/backend_runtime_evidence.py > image-security-evidence/backend-runtime.json
       - name: Record database helper and Redis runtime compatibility metadata
         run: |
           docker run --rm --read-only --network none --entrypoint sh noc117-postgres:rc -c 'postgres --version; gosu --version; gosu postgres id' > image-security-evidence/postgres-runtime.txt
           docker run --rm --read-only --network none --entrypoint sh redis:7-alpine@sha256:7f7d30b7fdd09467bac58198a1f166dd69789d348d4fe859cccb20e0cf287fbe -c 'redis-server --version; redis-cli --version' > image-security-evidence/redis-runtime.txt
+      - name: Bind unsigned build provenance to source inputs and retained reports
+        run: python3 scripts/release/build_provenance.py image-security-evidence
       - name: Retain image security findings (not release approval)
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -463,6 +484,23 @@ jobs:
           docker build -t noc117-postgres:rc -f deploy/Dockerfile.postgres .
       - name: Execute disposable Ubuntu systemd install, verification, encrypted restore and upgrade failure acceptance
         run: sudo python3 tests/installer/test_ubuntu_host.py --workspace /var/tmp/noc113-acceptance --extended
+      - name: Scan the exact immutable runtime images exercised by Ubuntu acceptance
+        run: |
+          sudo python3 - <<'PY'
+          import json, subprocess
+          images = json.load(open('/var/tmp/noc113-acceptance/runtime-images.json'))
+          assert images, 'No tested immutable image identities'
+          subprocess.run(['python3', 'scripts/release/image_security.py', '--require-no-high', '--output', 'host-runtime-image-security-evidence', *images], check=True)
+          subprocess.run(['python3', 'scripts/release/image_sbom.py', 'host-runtime-image-security-evidence'], check=True)
+          subprocess.run(['python3', 'scripts/release/build_provenance.py', 'host-runtime-image-security-evidence'], check=True)
+          PY
+      - name: Preserve exact installation-image scan evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: ubuntu-tested-runtime-security-evidence
+          path: host-runtime-image-security-evidence
+          if-no-files-found: error
       - name: Build disposable Ubuntu failure-test control image
         run: docker build -f deploy/Dockerfile.installer-failures -t noc114-installer-failures .
       - name: Exercise real fresh-install failures without deleting retained state
@@ -479,9 +517,11 @@ jobs:
           done
       - name: Reject unsupported OS before any installation changes
         run: |
+          unsupported_image=python:3.12-slim@sha256:5e2bdb1b0d542d5039cffb8181c65930093949194a65c365dfb1b0fe13a4fa5b
+          docker pull "$unsupported_image"
           set +e
           docker run --rm --network none --read-only --cap-drop ALL --user 0:0 \
-            -v "$PWD:/source:ro" --entrypoint python noc113-backend:base \
+            -v "$PWD:/source:ro" --entrypoint python "$unsupported_image" \
             /source/scripts/host/manager.py install > /tmp/noc114-unsupported.log 2>&1
           result=$?
           set -e

@@ -1,0 +1,57 @@
+{
+  "decision": "NO-GO",
+  "rows": [
+    {
+      "id": "Vendor-scanner-discrepancy",
+      "status": "BLOCKED",
+      "evidence_or_action": "Canonical SQLiteCVE2026-119373 vulnerable despite absent scan row; ACLignored/ExpatandSQLiteevaluation stillunresolved; keep original severity and independent review"
+    },
+    {
+      "id": "Bookworm-security-regression",
+      "status": "PASS",
+      "evidence_or_action": "Candidate failed2CRITICAL/103HIGH and was rejected; historical failed scan retained. No operational selection/deployment."
+    },
+    {
+      "id": "Exact-historical-image-rescan",
+      "status": "BLOCKED",
+      "evidence_or_action": "Unpublished former CI configID absent locally; source rebuild cannot be called byte-identical"
+    },
+    {
+      "id": "Fresh-source-and-final-image-scan",
+      "status": "NOT TESTED",
+      "evidence_or_action": "Pinned Trivy on resolved runtimeIDs, fullJSON/SPDX/provenance artifacts required"
+    },
+    {
+      "id": "Python312-Bookworm-ABI-and-stack",
+      "status": "NOT TESTED",
+      "evidence_or_action": "Explicit LTS OS change; lockedwheel imports/full stack/Ubuntu harness must pass"
+    },
+    {
+      "id": "Original-vendor-unresolved-findings",
+      "status": "BLOCKED",
+      "evidence_or_action": "Ubuntu scan0HIGH does notfixall51historicalrows: Canonicalvulnerable/evaluation/ignoredstatusesfororiginalCVEsremainblocked; no safety inferredfromabsence"
+    },
+    {
+      "id": "Signed-evidence-controls",
+      "status": "PASS",
+      "evidence_or_action": "Local real-Ed25519/hash/source/image/provenance/complete-SPDX negative tests; no production authorization"
+    },
+    {
+      "id": "Ubuntu-upgrade-restore",
+      "status": "NOT TESTED",
+      "evidence_or_action": "Actual rebuilt backend via disposable systemd harness"
+    },
+    {
+      "id": "Sustained1000device-performance",
+      "status": "BLOCKED",
+      "evidence_or_action": "Preserve all repeated rounds/resources; earlier15s inconsistency remains"
+    },
+    {
+      "id": "Operational-acceptance",
+      "status": "BLOCKED",
+      "evidence_or_action": "Independent trusted publication/legal/offhostDR/VPN/MFA/egress/AV/device/provider acceptance"
+    }
+  ],
+  "final_execution": "Exact final-source executed statuses appended in draft PR ledger; pending never implicitlyPASS",
+  "current_scan_reference": "65db283/run629 scanner0CRITICAL/0HIGH/25MEDIUM/5LOW; final-source scans and exact statuses in PR ledger"
+}

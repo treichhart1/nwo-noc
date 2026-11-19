@@ -330,6 +330,8 @@ class Host:
         ):
             if key == "postgres" and approved_postgres:
                 continue
+            if key == "redis" and a["images"].get(key) and a["images"][key] != locks[tag]:
+                raise Reject("Approved Redis image must match the exact source lock")
             a["images"][key] = locks[tag]
             self.image(locks[tag])
 
