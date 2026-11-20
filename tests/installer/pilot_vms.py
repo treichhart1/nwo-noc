@@ -53,10 +53,12 @@ class VM:
               '-serial',f'file:{self.root}/serial.log','-monitor','none','-drive',f'file={self.root}/disk.qcow2,format=qcow2,if=virtio',
               '-drive',f'file={self.root}/seed.img,format=raw,if=virtio',
               '-netdev',f'user,id=noc,hostfwd=tcp:127.0.0.1:{port}-:22','-device','virtio-net-pci,netdev=noc']
+        started=time.monotonic()
         self.process=subprocess.Popen(args,stdout=subprocess.DEVNULL,stderr=self.serial)
         try:
             self.wait()
             self.ssh('cloud-init status --wait', timeout=900)
+            self.boot_seconds=round(time.monotonic()-started,3)
         except Exception:
             self.stop()
             raise
@@ -74,28 +76,32 @@ class VM:
 
     def wait(self):
         deadline=time.monotonic()+600
+        last_error='No SSH connection yet'
         while time.monotonic()<deadline:
             if self.process.poll() is not None: raise RuntimeError('VM exited before SSH readiness')
             try:
-                if run([*self.argv(),'true'],timeout=8,check=False).returncode==0:return
+                result=run([*self.argv(),'true'],timeout=8,check=False)
+                if result.returncode==0:return
+                last_error=result.stderr.decode(errors='replace').strip()[-240:]
             except subprocess.TimeoutExpired:
                 # SLIRP can accept TCP before the guest kernel/sshd is ready.
                 # Retry only within the fixed boot deadline; never weaken host-key checks.
-                pass
+                last_error='Individual SSH transport timeout before guest readiness'
             time.sleep(3)
-        raise RuntimeError('Independent VM boot/SSH readiness blocked')
+        raise RuntimeError('Independent VM boot/SSH readiness blocked: '+last_error)
 
     def copy(self, path, destination):
         run(['scp','-i',self.key,'-P',str(self.port),'-o','StrictHostKeyChecking=yes','-o',f'UserKnownHostsFile={self.known}',path,f'nocpilot@127.0.0.1:{destination}'],timeout=1200)
 
     def reboot(self):
+        started=time.monotonic()
         before=self.ssh('cat /proc/sys/kernel/random/boot_id').stdout.strip()
         self.ssh('sudo systemctl reboot',check=False)
         time.sleep(8); self.wait()
         after=self.ssh('cat /proc/sys/kernel/random/boot_id').stdout.strip()
         if before==after: raise RuntimeError('Guest kernel did not reboot')
         self.ssh('sudo /opt/nwo-noc/current/verify.sh --controlled-test',timeout=300)
-        return {'kernel_boot_changed':True,'post_reboot_verification':'PASS'}
+        return {'kernel_boot_changed':True,'post_reboot_verification':'PASS','reboot_and_verification_seconds':round(time.monotonic()-started,3)}
 
     def stop(self):
         if self.process and self.process.poll() is None:
@@ -107,7 +113,7 @@ class VM:
 
 def provision(vm, source, images, redis):
     vm.copy(source,'/home/nocpilot/source.bundle'); vm.copy(images,'/home/nocpilot/images.tar')
-    vm.ssh('''sudo apt-get -o APT::Update::Error-Mode=any update
+    return vm.ssh('''sudo apt-get -o APT::Update::Error-Mode=any update
 sudo DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=l apt-get upgrade -y --no-install-recommends
 sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends docker.io docker-compose-v2 docker-buildx python3 python3-yaml git age openssl ca-certificates logrotate ufw
 sudo systemctl start docker
@@ -151,6 +157,7 @@ def main():
         run(['curl','--fail','--location','--proto','=https','--tlsv1.2','--retry','3','--max-time','900','-o',work/'ubuntu.img',image['url']],timeout=1000)
         if sha(work/'ubuntu.img')!=image['sha256']:raise ValueError('Canonical Ubuntu image digest mismatch; no fallback')
         report['ubuntu_image']=image;report['guest_resources']={'vcpus':2,'memory_mib':5120,'disk_gib':32}
+        report['hypervisor']={'qemu':run(['qemu-system-x86_64','--version']).stdout.decode().splitlines()[0], 'host_cpus':os.cpu_count(), 'host_memory':next(line for line in Path('/proc/meminfo').read_text().splitlines() if line.startswith('MemTotal:'))}
         key=work/'controller-key';run(['ssh-keygen','-q','-t','ed25519','-N','','-f',key])
         source=work/'source.bundle';run(['git','bundle','create',source,'HEAD'])
         redis=json.loads((ROOT/'deploy/image-lock.json').read_text())['images']['redis:7-alpine']
@@ -162,7 +169,9 @@ def main():
         report['acceleration']='kvm' if os.access('/dev/kvm',os.R_OK|os.W_OK) else 'tcg'
         sender=VM(work,'noc119-source',22221,work/'ubuntu.img',key);guests.append(sender)
         report['acceleration']=sender.acceleration
-        phase('source-supported-packages-and-private-firewall');provision(sender,source,images,redis)
+        report['source_boot_and_cloudinit_seconds']=sender.boot_seconds
+        phase('source-supported-packages-and-private-firewall')
+        (evidence/'source-provision.log').write_bytes(provision(sender,source,images,redis).stdout)
         phase('source-installer-upgrade-and-isolated-restore')
         result=sender.ssh('cd /home/nocpilot/source\nsudo python3 tests/installer/test_ubuntu_host.py --workspace /var/tmp/noc119-acceptance --extended --pilot-checkpoint',timeout=2400)
         (evidence/'source-install.log').write_bytes(result.stdout)
@@ -177,7 +186,9 @@ def main():
         report['source_powered_off_during_restore']=True
         phase('independent-receiver-kernel-boot')
         receiver=VM(work,'noc119-recovery',22222,work/'ubuntu.img',key);guests.append(receiver)
-        phase('receiver-supported-packages-and-private-firewall');provision(receiver,source,images,redis)
+        report['receiver_boot_and_cloudinit_seconds']=receiver.boot_seconds
+        phase('receiver-supported-packages-and-private-firewall')
+        (evidence/'receiver-provision.log').write_bytes(provision(receiver,source,images,redis).stdout)
         receiver.copy(transfer,'/home/nocpilot/recovery-private.tar')
         receiver.ssh('cd /home/nocpilot/source\nsudo python3 tests/installer/pilot_recovery.py --folder /var/tmp/noc119-recovery --unpack /home/nocpilot/recovery-private.tar\nsudo docker load -i /var/tmp/noc119-recovery/images.tar >/dev/null')
         phase('independent-signed-backup-recovery')
@@ -190,6 +201,11 @@ def main():
         report['firewall_scope']='Guest default deny in/out; SSH only through loopback-forwarded CI control channel; Docker application network internal; not a real VPN/MFA acceptance'
     except Exception as exc:
         report['failure_type']=type(exc).__name__;report['failure']=str(exc)[:500] if isinstance(exc,(ValueError,RuntimeError)) else 'VM validation incomplete; inspect private CI logs, no test converted to PASS'
+        diagnostics=[]
+        for path in (work/'noc119-source/serial.log',work/'noc119-recovery/serial.log'):
+            if path.exists():
+                diagnostics += [line[-240:] for line in path.read_text(errors='replace').splitlines() if any(token in line for token in ('Linux version','Kernel panic','No bootable device','Failed to start')) or line.startswith('qemu-system-x86_64:')]
+        report['sanitized_boot_diagnostics']=diagnostics[-12:]
         raise
     finally:
         for guest in guests:guest.stop()

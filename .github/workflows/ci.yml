@@ -493,15 +493,6 @@ jobs:
           docker build -t noc117-postgres:rc -f deploy/Dockerfile.postgres .
       - name: Execute disposable Ubuntu systemd install, verification, encrypted restore and upgrade failure acceptance
         run: sudo python3 tests/installer/test_ubuntu_host.py --workspace /var/tmp/noc113-acceptance --extended
-      - name: Repeat polling with explicit CPU and memory limits on an internal-only network
-        run: python3 scripts/release/pilot_benchmark.py --backend noc113-backend:base --postgres noc117-postgres:rc --output pilot-performance-evidence/benchmark.json
-      - name: Retain bounded benchmark records including target failures
-        if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        with:
-          name: pilot-performance-evidence
-          path: pilot-performance-evidence
-          if-no-files-found: error
       - name: Scan the exact immutable runtime images exercised by Ubuntu acceptance
         run: |
           sudo python3 - <<'PY'
@@ -546,6 +537,16 @@ jobs:
           set -e
           test "$result" -ne 0
           grep -F 'Ubuntu Server24.04LTS required; no host changes made' /tmp/noc114-unsupported.log
+
+      - name: Repeat polling with explicit CPU and memory limits on an internal-only network
+        run: python3 scripts/release/pilot_benchmark.py --backend noc113-backend:base --postgres noc117-postgres:rc --output pilot-performance-evidence/benchmark.json
+      - name: Retain bounded benchmark records including target failures
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: pilot-performance-evidence
+          path: pilot-performance-evidence
+          if-no-files-found: error
 
   independent-pilot:
     name: Independent Ubuntu VM reboot and second-host recovery

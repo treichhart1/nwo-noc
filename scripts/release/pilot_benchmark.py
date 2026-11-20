@@ -43,7 +43,7 @@ def measure(backend, postgres, output):
         owned_database=True
         import time
         for attempt in range(60):
-            if command(['docker','exec',database,'pg_isready','-U','synthetic','-d','nwo_noc'],check=False).returncode==0:break
+            if command(['docker','exec',database,'pg_isready','-h','127.0.0.1','-U','synthetic','-d','nwo_noc'],check=False).returncode==0:break
             time.sleep(1)
         else: raise RuntimeError('Disposable PostgreSQL unavailable')
         report['postgres_settings']=command(['docker','exec',database,'psql','-U','synthetic','-d','nwo_noc','-A','-t','-c',"SELECT name||'='||setting FROM pg_settings WHERE name IN('fsync','synchronous_commit','shared_buffers','max_connections','full_page_writes') ORDER BY name"]).stdout.splitlines()
