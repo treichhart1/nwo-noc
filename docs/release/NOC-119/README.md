@@ -248,3 +248,12 @@ source guest, the controller scans those exact IDs, exports complete SPDX and
 provenance, and retains the raw reports under the VM evidence artifact. Private
 backup/key/transport files remain outside uploaded evidence. Any HIGH/CRITICAL,
 missing identity, scanner failure or incomplete inventory fails this required job.
+
+Run650/source835197a passed the corrected offline ancestry audit in the real
+Ubuntu guest, then actual installation failed closed at image revision/runtime-UID
+validation. Installation, reboot and independent recovery are therefore not PASS
+for that attempt. The original generic error concealed which role/field differed.
+Rejection now reports only the role, whitelisted public SHA and numeric UID values;
+it never dumps full image configuration or arbitrary labels. Two negative tests
+retain rejection for root backend execution and incorrect revisions and ensure
+credential labels are not logged. The identity requirements remain unchanged.

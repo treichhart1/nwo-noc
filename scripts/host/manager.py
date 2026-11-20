@@ -318,8 +318,16 @@ class Host:
                 != a["commit"]
                 or info["Config"].get("User") != user
             ):
+                revision = info["Config"].get("Labels", {}).get("org.opencontainers.image.revision")
+                actual_user = info["Config"].get("User")
+                # Whitelist only public commit hashes/numeric identities; never
+                # serialize arbitrary image configuration or credential metadata.
+                safe_revision = revision if isinstance(revision, str) and re.fullmatch(r"[a-f0-9]{40}", revision) else "<missing/invalid>"
+                safe_user = actual_user if isinstance(actual_user, str) and re.fullmatch(r"(?:[0-9]+(?::[0-9]+)?)?", actual_user) else "<missing/invalid>"
                 raise Reject(
-                    "Approved complete image must match source revision and unprivileged runtime UID"
+                    f"Approved {kind} image must match source revision and unprivileged runtime UID; "
+                    f"expected_revision={a['commit']} observed_revision={safe_revision} "
+                    f"expected_uid={user!r} observed_uid={safe_user!r}"
                 )
         locks = json.loads(git("show", a["commit"] + ":deploy/image-lock.json"))[
             "images"

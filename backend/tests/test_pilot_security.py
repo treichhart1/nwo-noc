@@ -152,6 +152,19 @@ def test_recovery_redis_payload_is_executable_and_preserves_volume_ownership(tmp
     assert 'm.uid not in(0,999)' in value and 'm.gid not in(0,999)' in value
 
 
+@pytest.mark.parametrize('field,value',[('User','0'),('revision','e'*40)])
+def test_installer_image_identity_rejection_identifies_role_without_weakening_gate(field,value):
+    import manager
+    config={'User':'10001:10001','Labels':{'org.opencontainers.image.revision':'a'*40,'private_token':'never-log-this'}}
+    if field=='revision':config['Labels']['org.opencontainers.image.revision']=value
+    else:config[field]=value
+    host=SimpleNamespace(image=lambda ref:{'Config':config})
+    with pytest.raises(policy.Reject,match='Approved backend image') as error:
+        manager.Host.images(host,{'commit':'a'*40,'images':{'backend':'synthetic','frontend':'synthetic'}})
+    assert 'never-log-this' not in str(error.value)
+    assert 'expected_revision=' in str(error.value) and 'observed_uid=' in str(error.value)
+
+
 def real_redis_evidence(tmp_path):
     approved,docs,save=bundle(tmp_path)
     approved['images']['redis']=json.loads((ROOT/'deploy/image-lock.json').read_text())['images']['redis:7-alpine']
