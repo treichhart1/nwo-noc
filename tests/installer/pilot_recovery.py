@@ -41,7 +41,8 @@ def export_checkpoint(work, clone, approved, identity, backup, password, compose
         run(['docker', 'save', *sorted(ids)], output=stream)
     # Shared clones have access to alternate objects but do not retain the
     # non-ancestor audit refs unless explicitly fetched before offline export.
-    run(['git','-c',f'safe.directory={clone}','-C',clone,'fetch','--quiet',ROOT,'+refs/*:refs/noc119-audit/*'])
+    run(['git','-c',f'safe.directory={clone}','-c',f'safe.directory={ROOT}','-c',f'safe.directory={ROOT / ".git"}',
+         '-C',clone,'fetch','--quiet',ROOT,'+refs/*:refs/noc119-audit/*'])
     run(['git', '-c', f'safe.directory={clone}', '-C', clone, 'bundle', 'create', folder / 'source.bundle', '--all'])
     key = work / 'identities/recovery-signing.key'
     run(['openssl', 'genpkey', '-algorithm', 'ED25519', '-out', key])
