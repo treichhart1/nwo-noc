@@ -3,6 +3,31 @@ import hashlib
 import hmac
 import json
 import re
+
+
+def registry_identity(reference):
+    """Docker RepoDigests omit tags; retain exact repository and digest identity."""
+    match = re.fullmatch(r'([a-z0-9][a-z0-9./:_-]*)@sha256:([a-f0-9]{64})', reference)
+    if not match:
+        raise ValueError('Immutable registry digest required')
+    name, digest = match.groups()
+    parts = name.split('/')
+    if any(part in ('', '.', '..') for part in parts):
+        raise ValueError('Invalid registry repository')
+    if ':' in parts[-1]:
+        repo, tag = parts[-1].rsplit(':', 1)
+        if not repo or ':' in repo or not re.fullmatch(r'[a-z0-9_][a-z0-9_.-]{0,127}', tag):
+            raise ValueError('Invalid image tag')
+        parts[-1] = repo
+    if len(parts) == 1:
+        parts = ['docker.io', 'library', *parts]
+    elif parts[0] in ('docker.io', 'index.docker.io'):
+        parts[0] = 'docker.io'
+        if len(parts) == 2:
+            parts.insert(1, 'library')
+    elif '.' not in parts[0] and ':' not in parts[0] and parts[0] != 'localhost':
+        parts.insert(0, 'docker.io')
+    return '/'.join(parts) + '@sha256:' + digest
 from pathlib import Path
 
 KINDS = {'sbom', 'dependencies', 'containers', 'provenance'}
@@ -42,7 +67,7 @@ def _verify_release_evidence(approved, manifest_path, read_private):
     if not isinstance(containers, dict) or set(containers) != set(approved['images']):
         raise ValueError('Every approved runtime image needs a vulnerability report')
     for role, report in containers.items():
-        if not isinstance(report, dict) or report.get('SchemaVersion') != 2 or not re.fullmatch(r'sha256:[a-f0-9]{64}', report.get('Metadata', {}).get('ImageID', '')) or approved['images'][role] not in report.get('Metadata', {}).get('RepoDigests', []) or not isinstance(report.get('Results'), list) or not report['Results'] or not any(r.get('Packages') for r in report['Results']):
+        if not isinstance(report, dict) or report.get('SchemaVersion') != 2 or not re.fullmatch(r'sha256:[a-f0-9]{64}', report.get('Metadata', {}).get('ImageID', '')) or not isinstance(report.get('Metadata', {}).get('RepoDigests'), list) or registry_identity(approved['images'][role]) not in [registry_identity(ref) for ref in report['Metadata']['RepoDigests']] or not isinstance(report.get('Results'), list) or not report['Results'] or not any(r.get('Packages') for r in report['Results']):
             raise ValueError('Container report identity or package inventory missing')
         if any(not isinstance(v, dict) or v.get('Severity') not in {'UNKNOWN', 'LOW', 'MEDIUM', 'HIGH', 'CRITICAL'} for r in report['Results'] for v in r.get('Vulnerabilities', []) or []):
             raise ValueError('Malformed container vulnerability severity')

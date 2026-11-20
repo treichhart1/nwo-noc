@@ -240,7 +240,7 @@ class Host:
         if not shutil.which("docker"):
             missing += ["docker.io", "docker-compose-v2"]
         if missing:
-            run(["apt-get", "update"], label="Ubuntu repository refresh")
+            run(["apt-get", "-o", "APT::Update::Error-Mode=any", "update"], label="Ubuntu repository refresh")
             for package in missing:
                 candidate = run(["apt-cache", "policy", package]).stdout.decode()
                 ubuntu_candidate(candidate)
@@ -316,10 +316,21 @@ class Host:
                 .get("Labels", {})
                 .get("org.opencontainers.image.revision")
                 != a["commit"]
-                or info["Config"].get("User") != user
+                # Docker29 omits an empty image User; absence has the same OCI
+                # default as "". Nonempty application UIDs remain mandatory,
+                # and malformed explicit null/other identities still fail.
+                or info["Config"].get("User", "") != user
             ):
+                revision = info["Config"].get("Labels", {}).get("org.opencontainers.image.revision")
+                actual_user = info["Config"].get("User")
+                # Whitelist only public commit hashes/numeric identities; never
+                # serialize arbitrary image configuration or credential metadata.
+                safe_revision = revision if isinstance(revision, str) and re.fullmatch(r"[a-f0-9]{40}", revision) else "<missing/invalid>"
+                safe_user = actual_user if isinstance(actual_user, str) and re.fullmatch(r"(?:[0-9]+(?::[0-9]+)?)?", actual_user) else "<missing/invalid>"
                 raise Reject(
-                    "Approved complete image must match source revision and unprivileged runtime UID"
+                    f"Approved {kind} image must match source revision and unprivileged runtime UID; "
+                    f"expected_revision={a['commit']} observed_revision={safe_revision} "
+                    f"expected_uid={user!r} observed_uid={safe_user!r}"
                 )
         locks = json.loads(git("show", a["commit"] + ":deploy/image-lock.json"))[
             "images"
@@ -579,6 +590,9 @@ class Host:
         ).stdout
         with tarfile.open(fileobj=io.BytesIO(archive)) as tar:
             tar.extractall(target, members=safe_members(tar), filter="data")
+        if a.get("purpose") == "release":
+            from release_trust import capture
+            capture(a, self.args.approval, target / "release-trust")
         inventory = {
             p.relative_to(target).as_posix(): file_hash(p)
             for p in target.rglob("*")
@@ -667,7 +681,7 @@ class Host:
                 )
                 svc["healthcheck"]["test"] = [
                     "CMD-SHELL",
-                    "pg_isready -U postgres -d nwo_noc",
+                    "pg_isready -h 127.0.0.1 -U postgres -d nwo_noc",
                 ]
                 svc["mem_limit"] = "2g"
             if name == "redis":
@@ -933,7 +947,9 @@ class Host:
             "-d",
             "--wait",
             "--wait-timeout",
-            str(60 if self.args.controlled_test else 180),
+            # Artifact test purpose must not shorten the actual production
+            # startup contract on independently booted, resource-limited hosts.
+            "180",
             "db",
             "redis",
             "backend",
@@ -1136,6 +1152,9 @@ class Host:
     def backup(self, release=None, state=None):
         state = state or self.state()
         release = release or self.opt / "releases" / state["commit"]
+        if state.get("purpose") == "release":
+            from release_trust import fingerprint, verify
+            verify(release / "release-trust", fingerprint(private_file(Path("/etc/nwo-noc-release.pub"))))
         recipient = self.recipient()
         self.capacity(extra=self.backup_budget(release, state))
         # Caller has stopped all application writers. Stop Redis before copying its durable volume.
