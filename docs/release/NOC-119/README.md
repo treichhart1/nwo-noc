@@ -215,3 +215,27 @@ services on failure, retaining recovered state for investigation. Historical aud
 and telemetry preservation checks use exact unaligned SQL counts; a psql `(1 row)`
 footer cannot falsely satisfy a zero-count result. Success and interrupted-restore
 guard tests cover preservation and service stopping without destructive cleanup.
+
+### Persistent-volume benchmark actually executed
+
+Run646/source318c5eb53afc2815567445aac78c460173cfb210 completed three independent
+250/500/1000-device invocations, six rounds each, with40 synthetic POPs. For the
+18 measured1000-device rounds: min13.350s, median14.513s, max15.327s;5/18 exceeded
+15s. **Performance acceptance FAIL**, despite the host job completing successfully.
+All6000 samples and6000 unique receipts per1000-device invocation survived; the
+benchmark asserts no collection errors and validates three-sample RF recovery.
+Health queries measured42.53–43.78ms. Backend RSS was127768–130284KiB and CPU
+120.36–121.93% of one core, excluding PostgreSQL. These are synthetic measurements,
+not live-radio guarantees or complete host CPU/memory profiling.
+
+Backend2CPU/768MiB, PostgreSQL2CPU/1GiB,8 polling threads/pool10,4 host CPUs and
+16078424KiB host RAM. PostgreSQL used a named Docker volume (physical medium not
+verified), fsync=on, full_page_writes=on, synchronous_commit=on, shared_buffers=16384
+8KiB blocks, max_connections=100. This replaces RAM-backed performance as the
+relevant storage test; the faster RAM diagnostic cannot clear the durable target.
+
+Tested backend configIDsha256:b17d640c3d39df134200cc4b50df970139f5e379047b1c422418d246db0fec17;
+PostgreSQL configIDsha256:aa82c3540f9858809509fabbb74c2549569dd2d13148a2b967564f2bb2fd4625.
+Full records: [run646 artifact14597320450](https://github.com/treichhart1/nwo-noc/actions/runs/44661695043/artifacts/14597320450),
+archiveSHA256bdcd66d2064f61e29a266c7ee901819a950fe71853f79a93c759ebce6ca9a558.
+Final-source reruns remain required and are reported separately in the PR ledger.
