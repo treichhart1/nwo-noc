@@ -270,3 +270,8 @@ Four contract tests cover these cases. This does not relax actual runtime UIDs,
 vendor gosu behavior, signatures, digests or provenance. Independent VM retesting
 is required before claiming the observed installation failure is resolved.
 Original VM artifact14599220221 archiveSHA256d068bb9abe26c183fc588e02f4faae36eca8ebd1fd7d0c230477b186e29d3613.
+
+Reboot acceptance separately observes SSH availability and automatic NOC unit
+readiness: SSH may respond while Docker/services are still starting. It waits at
+most300s for both enabled NOC units, then runs the complete verifier. It never
+manually starts services to manufacture reboot success; a readiness timeout fails.

@@ -100,6 +100,10 @@ class VM:
         time.sleep(8); self.wait()
         after=self.ssh('cat /proc/sys/kernel/random/boot_id').stdout.strip()
         if before==after: raise RuntimeError('Guest kernel did not reboot')
+        # SSH can become ready before Docker and the automatically enabled NOC
+        # units. Observe their bounded readiness; never start them manually to
+        # manufacture a successful unattended reboot test.
+        self.ssh("sudo timeout 300 sh -c 'until systemctl is-active --quiet nwo-noc.service && systemctl is-active --quiet nwo-noc-ingress.service; do sleep 2; done'",timeout=330)
         self.ssh('sudo /opt/nwo-noc/current/verify.sh --controlled-test',timeout=300)
         return {'kernel_boot_changed':True,'post_reboot_verification':'PASS','reboot_and_verification_seconds':round(time.monotonic()-started,3)}
 
