@@ -9,6 +9,7 @@ import subprocess
 import sys
 import tarfile
 import tempfile
+from contextlib import contextmanager
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts/host'))
@@ -96,6 +97,23 @@ def unpack_transport(archive, destination):
                 (destination/name).chmod(0o600);shutil.copyfileobj(src,out)
 
 
+@contextmanager
+def restoration_guard(host):
+    """Retain recovery state and block future starts if a new-host restore fails."""
+    from manager import write_json
+    write_json(host.guard,{'phase':'independent-restoration-in-progress'})
+    try:
+        yield
+    except BaseException:
+        write_json(host.guard,{'phase':'independent-restoration-failed','recovery':'preserve all state and investigate; no automatic overwrite'})
+        try:
+            state=host.state()
+            host.compose(host.opt/'releases'/state['commit'],state,'stop','frontend','planning-worker','worker','backend',check=False)
+        except Exception:
+            pass  # Original restore error still propagates; guard remains and data is retained.
+        raise
+
+
 def restore(folder, expected):
     """Only on an empty independent VM, using explicitly synthetic signed artifacts."""
     if os.geteuid() != 0 or Path('/.dockerenv').exists() or not Path('/run/systemd/system').is_dir():
@@ -157,70 +175,72 @@ def restore(folder, expected):
         args = manager.parser().parse_args(['verify', '--controlled-test'])
         h = manager.Host(args)
         h.environment(); h.dependencies(); h.account(); h.directories()
-        shutil.copytree(extracted / 'configuration', h.etc, dirs_exist_ok=True)
-        state = json.loads((extracted / 'installation.json').read_text())
-        release = h.opt / 'releases' / state['commit']
-        shutil.copytree(extracted / 'release', release)
-        for name in manager.DATA_DIRS:
-            shutil.copytree(extracted / 'data' / name, h.lib / name, dirs_exist_ok=True)
-        # Restore only reviewed identities, never arbitrary archive owners or setuid modes.
-        for m in members:
-            if m.name.startswith('configuration/'):
-                dest = h.etc / m.name.removeprefix('configuration/')
-            elif m.name.startswith('data/'):
-                dest = h.lib / m.name.removeprefix('data/')
-            else: continue
-            if m.uid not in (0, 101, 10001) or m.gid not in (0, 101, 10001):
-                raise ValueError('Unexpected recovered owner')
-            os.chown(dest, m.uid, m.gid); dest.chmod(m.mode & 0o777)
-        manager.write_json(h.state_path, state)
-        h.prepare_ingress()
-        h.compose(release, state, 'up', '-d', '--wait', 'db', 'redis')
-        h.initialize_database(release, state)
-        with (extracted / 'database.dump').open('rb') as dump:
-            h.compose(release, state, 'exec', '-T', 'db', 'pg_restore', '-U', 'postgres', '-d', 'nwo_noc', '--role=noc_owner', '--no-owner', '--no-privileges', '--exit-on-error', input_file=dump)
-        h.psql(release, state, h.role_sql(release))
-        h.compose(release, state, 'run', '--rm', '--no-deps', 'migrate')
-        passed('restored_migrations_compatible')
-        with tarfile.open(extracted / 'redis.tar') as redis:
-            passed('redis_archive_safe', bool(safe_members(redis)))
-        h.compose(release, state, 'stop', 'redis')
-        redis_script = """import tarfile,shutil,os
-from pathlib import Path
-with tarfile.open('/backup.tar') as t:
- for m in t.getmembers():
-  p=Path(m.name)
-  if p.is_absolute() or '..' in p.parts or not(m.isfile() or m.isdir()) or not(m.name=='redis' or m.name.startswith('redis/')) or m.uid not in(0,999) or m.gid not in(0,999): raise ValueError('Unsafe Redis archive')
-  dest=Path('/volume')/('/'.join(p.parts[1:]))
-  if m.isdir(): dest.mkdir(parents=True,exist_ok=True)
-  else:
-   dest.parent.mkdir(parents=True,exist_ok=True)
-   with t.extractfile(m) as src,dest.open('wb') as out: shutil.copyfileobj(src,out)
-  os.chown(dest,m.uid,m.gid);dest.chmod(m.mode&0o777)
-"""
-        run(['docker','run','--rm','--network','none','--read-only','--user','0:0','--cap-drop','ALL','--cap-add','CHOWN','--cap-add','DAC_OVERRIDE',
-             '--mount',f"type=volume,src={state['project']}-redis,dst=/volume",'-v',f'{extracted}/redis.tar:/backup.tar:ro','--entrypoint','python',manifest['images']['backend'],'-c',redis_script])
-        h.switch(release); h.register(release)
-        run(['systemctl', 'start', 'nwo-noc.service'])
-        h.start_ingress(release, state)
-        result = run([release / 'verify.sh', '--controlled-test'])
-        verification = json.loads(result.stdout)
-        passed('restored_application_verification', all(c['status'] != 'FAILED' for c in verification['checks']))
-        from urllib.request import build_opener, ProxyHandler, HTTPSHandler, Request
-        import ssl
-        auth = json.loads((folder / 'synthetic-auth.json').read_text())
-        browser = build_opener(ProxyHandler({}), HTTPSHandler(context=ssl.create_default_context(cafile=str(h.etc / 'tls-cert.pem'))))
-        with browser.open(Request('https://localhost:18090/api/auth/login', data=json.dumps(auth).encode(), headers={'Content-Type':'application/json'}), timeout=15) as response:
-            passed('restored_original_user_authentication', bool(json.load(response)['access_token']))
-        history = h.psql(release, state, "SELECT count(*) FROM audit_logs WHERE action='installer.synthetic_sentinel';").stdout.decode()
-        passed('preserved_monitoring_and_audit_history', '1' in history)
-        sample = h.psql(release, state, "SELECT count(*) FROM telemetry_samples t JOIN devices d ON d.id=t.device_id WHERE d.external_id='noc119-recovery';").stdout.decode()
-        passed('preserved_actual_telemetry_sample', '1' in sample)
-        passed('preserved_redis_queue_state', h.compose(release,state,'exec','-T','redis','redis-cli','GET','noc119:preservation').stdout.strip()==b'synthetic')
-        passed('preserved_document_bytes', (h.lib / 'documents/synthetic-preservation.txt').read_text() == 'synthetic document preservation')
-        try: restore(folder, expected)
-        except RuntimeError: passed('existing_restored_installation_cannot_be_overwritten')
-        else: raise AssertionError('Existing restore accepted')
+        with restoration_guard(h):
+            shutil.copytree(extracted / 'configuration', h.etc, dirs_exist_ok=True)
+            state = json.loads((extracted / 'installation.json').read_text())
+            release = h.opt / 'releases' / state['commit']
+            shutil.copytree(extracted / 'release', release)
+            for name in manager.DATA_DIRS:
+                shutil.copytree(extracted / 'data' / name, h.lib / name, dirs_exist_ok=True)
+            # Restore only reviewed identities, never arbitrary archive owners or setuid modes.
+            for m in members:
+                if m.name.startswith('configuration/'):
+                    dest = h.etc / m.name.removeprefix('configuration/')
+                elif m.name.startswith('data/'):
+                    dest = h.lib / m.name.removeprefix('data/')
+                else: continue
+                if m.uid not in (0, 101, 10001) or m.gid not in (0, 101, 10001):
+                    raise ValueError('Unexpected recovered owner')
+                os.chown(dest, m.uid, m.gid); dest.chmod(m.mode & 0o777)
+            manager.write_json(h.state_path, state)
+            h.prepare_ingress()
+            h.compose(release, state, 'up', '-d', '--wait', 'db', 'redis')
+            h.initialize_database(release, state)
+            with (extracted / 'database.dump').open('rb') as dump:
+                h.compose(release, state, 'exec', '-T', 'db', 'pg_restore', '-U', 'postgres', '-d', 'nwo_noc', '--role=noc_owner', '--no-owner', '--no-privileges', '--exit-on-error', input_file=dump)
+            h.psql(release, state, h.role_sql(release))
+            h.compose(release, state, 'run', '--rm', '--no-deps', 'migrate')
+            passed('restored_migrations_compatible')
+            with tarfile.open(extracted / 'redis.tar') as redis:
+                passed('redis_archive_safe', bool(safe_members(redis)))
+            h.compose(release, state, 'stop', 'redis')
+            redis_script = """import tarfile,shutil,os
+    from pathlib import Path
+    with tarfile.open('/backup.tar') as t:
+     for m in t.getmembers():
+      p=Path(m.name)
+      if p.is_absolute() or '..' in p.parts or not(m.isfile() or m.isdir()) or not(m.name=='redis' or m.name.startswith('redis/')) or m.uid not in(0,999) or m.gid not in(0,999): raise ValueError('Unsafe Redis archive')
+      dest=Path('/volume')/('/'.join(p.parts[1:]))
+      if m.isdir(): dest.mkdir(parents=True,exist_ok=True)
+      else:
+       dest.parent.mkdir(parents=True,exist_ok=True)
+       with t.extractfile(m) as src,dest.open('wb') as out: shutil.copyfileobj(src,out)
+      os.chown(dest,m.uid,m.gid);dest.chmod(m.mode&0o777)
+    """
+            run(['docker','run','--rm','--network','none','--read-only','--user','0:0','--cap-drop','ALL','--cap-add','CHOWN','--cap-add','DAC_OVERRIDE',
+                 '--mount',f"type=volume,src={state['project']}-redis,dst=/volume",'-v',f'{extracted}/redis.tar:/backup.tar:ro','--entrypoint','python',manifest['images']['backend'],'-c',redis_script])
+            h.switch(release); h.register(release)
+            h.guard.unlink()  # All signed data, keys and migrations restored before managed startup.
+            run(['systemctl', 'start', 'nwo-noc.service'])
+            h.start_ingress(release, state)
+            result = run([release / 'verify.sh', '--controlled-test'])
+            verification = json.loads(result.stdout)
+            passed('restored_application_verification', all(c['status'] != 'FAILED' for c in verification['checks']))
+            from urllib.request import build_opener, ProxyHandler, HTTPSHandler, Request
+            import ssl
+            auth = json.loads((folder / 'synthetic-auth.json').read_text())
+            browser = build_opener(ProxyHandler({}), HTTPSHandler(context=ssl.create_default_context(cafile=str(h.etc / 'tls-cert.pem'))))
+            with browser.open(Request('https://localhost:18090/api/auth/login', data=json.dumps(auth).encode(), headers={'Content-Type':'application/json'}), timeout=15) as response:
+                passed('restored_original_user_authentication', bool(json.load(response)['access_token']))
+            history = h.compose(release,state,'exec','-T','db','psql','-U','postgres','-d','nwo_noc','-t','-A','-c',"SELECT count(*) FROM audit_logs WHERE action='installer.synthetic_sentinel';").stdout.strip()
+            passed('preserved_monitoring_and_audit_history', history == b'1')
+            sample = h.compose(release,state,'exec','-T','db','psql','-U','postgres','-d','nwo_noc','-t','-A','-c',"SELECT count(*) FROM telemetry_samples t JOIN devices d ON d.id=t.device_id WHERE d.external_id='noc119-recovery';").stdout.strip()
+            passed('preserved_actual_telemetry_sample', sample == b'1')
+            passed('preserved_redis_queue_state', h.compose(release,state,'exec','-T','redis','redis-cli','GET','noc119:preservation').stdout.strip()==b'synthetic')
+            passed('preserved_document_bytes', (h.lib / 'documents/synthetic-preservation.txt').read_text() == 'synthetic document preservation')
+            try: restore(folder, expected)
+            except RuntimeError: passed('existing_restored_installation_cannot_be_overwritten')
+            else: raise AssertionError('Existing restore accepted')
     print(json.dumps({'checks_passed':len(tests),'checks':tests,'independent_vm':True,'same_hypervisor_failure_domain':True,'real_vpn_mfa':False,'production_release_authorized':False}), flush=True)
 
 

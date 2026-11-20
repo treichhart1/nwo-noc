@@ -202,3 +202,16 @@ pinned host keys; no boot/install/recovery acceptance is claimed for the failed 
 The next source also adds strict flat/bounded recovery transport extraction with
 traversal/link/duplicate/missing/overwrite regression tests, and records loaded
 native libraries, capabilities and executable presence. Final source must rerun.
+
+The next independent guest booted and installed its supported host packages, then
+the actual installer failed closed at its complete dependency audit. HEAD-only
+offline Git transport omitted PR86's non-ancestor original, which the unchanged
+audit compares against its reviewed replay. The VM transport now includes all
+existing refs and explicitly fetches their objects into an isolated audit namespace.
+No missing-history check is bypassed. This failed attempt is not installation PASS.
+
+Independent restoration now leaves a recovery-required marker and stops application
+services on failure, retaining recovered state for investigation. Historical audit
+and telemetry preservation checks use exact unaligned SQL counts; a psql `(1 row)`
+footer cannot falsely satisfy a zero-count result. Success and interrupted-restore
+guard tests cover preservation and service stopping without destructive cleanup.

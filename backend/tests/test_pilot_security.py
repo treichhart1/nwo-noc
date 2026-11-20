@@ -104,6 +104,44 @@ def test_benchmark_refuses_existing_storage_without_removing_it(tmp_path,monkeyp
     assert json.loads((tmp_path/'report.json').read_text())['target_status']=='NOT TESTED'
 
 
+@pytest.mark.parametrize('failure',[False,True])
+def test_independent_restore_guard_preserves_failed_state(tmp_path,failure):
+    sys.path.insert(0,str(ROOT/'tests/installer'))
+    from pilot_recovery import restoration_guard
+    calls=[]
+    host=SimpleNamespace(guard=tmp_path/'recovery-required.json',opt=tmp_path,
+                         state=lambda:{'commit':'synthetic'},compose=lambda *a,**kw:calls.append((a,kw)))
+    retained=tmp_path/'historical-data';retained.write_text('retain')
+    def restore():
+        with restoration_guard(host):
+            assert json.loads(host.guard.read_text())['phase']=='independent-restoration-in-progress'
+            if failure:raise ValueError('synthetic interrupted restore')
+            host.guard.unlink()
+    if failure:
+        with pytest.raises(ValueError,match='interrupted restore'):restore()
+        assert json.loads(host.guard.read_text())['phase']=='independent-restoration-failed'
+        assert calls[0][0][2:]==('stop','frontend','planning-worker','worker','backend')
+    else:
+        restore();assert not host.guard.exists() and not calls
+    assert retained.read_text()=='retain'
+
+
+def test_offline_bundle_preserves_nonancestor_reviewed_audit_history(tmp_path):
+    source=tmp_path/'source';source.mkdir()
+    def git(*args,cwd=source):
+        return subprocess.run(['git',*args],cwd=cwd,check=True,capture_output=True,text=True).stdout.strip()
+    git('init','-b','main');git('config','user.name','Synthetic');git('config','user.email','test@example.invalid')
+    (source/'record').write_text('base');git('add','.');git('commit','-m','base')
+    git('checkout','-b','side');(source/'record').write_text('reviewed side history');git('commit','-am','side')
+    side=git('rev-parse','HEAD');git('update-ref','refs/remotes/origin/reviewed-side',side)
+    git('checkout','main');git('branch','-D','side')
+    bundle_path=tmp_path/'source.bundle';git('bundle','create',str(bundle_path),'--all')
+    target=tmp_path/'offline';git('clone','--quiet',str(bundle_path),str(target))
+    git('fetch','--quiet',str(bundle_path),'+refs/*:refs/noc119-audit/*',cwd=target)
+    assert git('show',side+':record',cwd=target)=='reviewed side history'
+    assert subprocess.run(['git','merge-base','--is-ancestor',side,'HEAD'],cwd=target).returncode==1
+
+
 def real_redis_evidence(tmp_path):
     approved,docs,save=bundle(tmp_path)
     approved['images']['redis']=json.loads((ROOT/'deploy/image-lock.json').read_text())['images']['redis:7-alpine']

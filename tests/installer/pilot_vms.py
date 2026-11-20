@@ -119,6 +119,7 @@ sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends d
 sudo systemctl start docker
 sudo docker load -i /home/nocpilot/images.tar >/dev/null
 git clone --quiet /home/nocpilot/source.bundle /home/nocpilot/source
+git -C /home/nocpilot/source fetch --quiet /home/nocpilot/source.bundle '+refs/*:refs/noc119-audit/*'
 '''+f'sudo docker pull {shlex.quote(redis)} >/dev/null\n'+'''
 python3 -c 'import socket; socket.create_connection(("10.0.2.2",22229),3).close(); print("controlled-egress-positive: PASS")'
 sudo ufw default deny incoming
@@ -159,7 +160,9 @@ def main():
         report['ubuntu_image']=image;report['guest_resources']={'vcpus':2,'memory_mib':5120,'disk_gib':32}
         report['hypervisor']={'qemu':run(['qemu-system-x86_64','--version']).stdout.decode().splitlines()[0], 'host_cpus':os.cpu_count(), 'host_memory':next(line for line in Path('/proc/meminfo').read_text().splitlines() if line.startswith('MemTotal:'))}
         key=work/'controller-key';run(['ssh-keygen','-q','-t','ed25519','-N','','-f',key])
-        source=work/'source.bundle';run(['git','bundle','create',source,'HEAD'])
+        # The pinned integration audit verifies PR86's non-ancestor original against
+        # its reviewed replay. HEAD-only bundles omit that required side history.
+        source=work/'source.bundle';run(['git','bundle','create',source,'--all'])
         redis=json.loads((ROOT/'deploy/image-lock.json').read_text())['images']['redis:7-alpine']
         run(['docker','pull',redis])
         images=work/'images.tar'
