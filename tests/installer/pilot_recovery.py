@@ -26,7 +26,7 @@ def run(argv, *, data=None, output=None, check=True):
     return p
 
 
-def export_checkpoint(work, clone, approved, identity, backup, password, compose, state):
+def export_checkpoint(work, clone, approved, identity, backup, password, compose, state, tested_images):
     folder = work / 'recovery-export'
     folder.mkdir(mode=0o700)
     shutil.copy2(backup, folder / 'backup.age')
@@ -37,7 +37,7 @@ def export_checkpoint(work, clone, approved, identity, backup, password, compose
     (folder / 'synthetic-auth.json').write_text(json.dumps({'username': 'admin', 'password': password}))
     images = json.loads((Path('/opt/nwo-noc/releases') / json.loads(approved.read_text())['commit'] / 'release.json').read_text())['approval']['images']
     with (folder / 'images.tar').open('xb') as stream:
-        ids={run(['docker','image','inspect','--format','{{.Id}}',ref]).stdout.decode().strip() for ref in images.values()}
+        ids=set(tested_images)|{run(['docker','image','inspect','--format','{{.Id}}',ref]).stdout.decode().strip() for ref in images.values()}
         run(['docker', 'save', *sorted(ids)], output=stream)
     # Shared clones have access to alternate objects but do not retain the
     # non-ancestor audit refs unless explicitly fetched before offline export.
@@ -50,7 +50,7 @@ def export_checkpoint(work, clone, approved, identity, backup, password, compose
     run(['openssl','pkeyutl','-sign','-inkey',key,'-rawin','-in',folder/'approval.json','-out',folder/'approval.json.sig'])
     manifest = {'format': 1, 'purpose': 'isolated-recovery-test', 'source_machine_id': Path('/etc/machine-id').read_text().strip(),
                 'source_boot_id': Path('/proc/sys/kernel/random/boot_id').read_text().strip(),
-                'release_commit': json.loads(approved.read_text())['commit'], 'images': images,
+                'release_commit': json.loads(approved.read_text())['commit'], 'images': images, 'tested_runtime_image_ids':sorted(ids),
                 'files': {name: file_hash(folder / name) for name in ('backup.age', 'backup-metadata.json', 'backup.key', 'approval.json', 'approval.json.sig', 'source.bundle', 'images.tar', 'synthetic-auth.json')}}
     (folder / 'recovery.json').write_text(json.dumps(manifest))
     run(['openssl', 'pkeyutl', '-sign', '-inkey', key, '-rawin', '-in', folder / 'recovery.json', '-out', folder / 'recovery.json.sig'])

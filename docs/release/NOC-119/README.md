@@ -239,3 +239,12 @@ PostgreSQL configIDsha256:aa82c3540f9858809509fabbb74c2549569dd2d13148a2b967564f
 Full records: [run646 artifact14597320450](https://github.com/treichhart1/nwo-noc/actions/runs/44661695043/artifacts/14597320450),
 archiveSHA256bdcd66d2064f61e29a266c7ee901819a950fe71853f79a93c759ebce6ca9a558.
 Final-source reruns remain required and are reported separately in the PR ledger.
+
+Independent VM security evidence is bound to the actual installed image IDs, not
+another runner's rebuild. The signed synthetic recovery transport includes all
+successful installation/upgrade image identities and their saved Docker bytes.
+After independently verifying the transport and fingerprint and powering off the
+source guest, the controller scans those exact IDs, exports complete SPDX and
+provenance, and retains the raw reports under the VM evidence artifact. Private
+backup/key/transport files remain outside uploaded evidence. Any HIGH/CRITICAL,
+missing identity, scanner failure or incomplete inventory fails this required job.

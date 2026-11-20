@@ -802,7 +802,11 @@ def main():
         if args.rehearsal or args.failure_stage:
             raise RuntimeError("Pilot checkpoint requires a real disposable systemd host")
         from pilot_recovery import export_checkpoint
-        export_checkpoint(work, clone, first_approval, identity, backups[0], admin_secret, compose, state)
+        container_ids=command([*compose,'ps','--all','--quiet']).stdout.decode().split()
+        if not container_ids:raise AssertionError('Independent installed image identities missing')
+        tested_images=sorted(successful_release_images|set(command(['docker','inspect','--format','{{.Image}}',*container_ids]).stdout.decode().split()))
+        if not all(re.fullmatch(r'sha256:[a-f0-9]{64}',v) for v in tested_images):raise AssertionError('Invalid installed image identity')
+        export_checkpoint(work, clone, first_approval, identity, backups[0], admin_secret, compose, state, tested_images)
         print(json.dumps({"checks_passed": len(results), "environment": "independent-vm-checkpoint", "upgrade_and_restore": "passed", "production_authorization": False}), flush=True)
         return
     git("commit", "--allow-empty", "--quiet", "-m", "Synthetic approved release with startup failure")

@@ -187,6 +187,20 @@ def main():
             sender.ssh('sudo tar -C /var/tmp/noc119-acceptance/recovery-export -cf - .',output=out)
         sender.stop()
         report['source_powered_off_during_restore']=True
+        phase('scan-exact-independent-installed-images')
+        # A separate runner's rebuild is not evidence for these actual guest bytes.
+        from pilot_recovery import unpack_transport,validate
+        transported=work/'security-transport'
+        unpack_transport(transfer,transported)
+        attestation=validate(transported,fingerprint)
+        identities=attestation['tested_runtime_image_ids']
+        if not identities:raise AssertionError('Independent runtime scan identities missing')
+        run(['docker','load','-i',transported/'images.tar'])
+        scans=evidence/'runtime-security'
+        run(['python3',ROOT/'scripts/release/image_security.py','--require-no-high','--output',scans,*identities],timeout=1800)
+        run(['python3',ROOT/'scripts/release/image_sbom.py',scans],timeout=600)
+        run(['python3',ROOT/'scripts/release/build_provenance.py',scans])
+        report['exact_installed_image_security']=json.loads((scans/'summary.json').read_text())
         phase('independent-receiver-kernel-boot')
         receiver=VM(work,'noc119-recovery',22222,work/'ubuntu.img',key);guests.append(receiver)
         report['receiver_boot_and_cloudinit_seconds']=receiver.boot_seconds
