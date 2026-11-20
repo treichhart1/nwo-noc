@@ -1,0 +1,174 @@
+"""Two independent disposable Ubuntu kernels/disks; never run against an existing host."""
+import argparse
+import hashlib
+import json
+import os
+from pathlib import Path
+import shlex
+import subprocess
+import tarfile
+import time
+
+ROOT = Path(__file__).resolve().parents[2]
+
+
+def run(argv, *, data=None, output=None, timeout=1800, check=True):
+    p = subprocess.run([str(v) for v in argv], input=data, stdout=output or subprocess.PIPE,
+                       stderr=subprocess.PIPE, timeout=timeout)
+    if check and p.returncode:
+        raise RuntimeError('Disposable VM command failed: ' + str(argv[0]))
+    return p
+
+
+def sha(path):
+    h = hashlib.sha256()
+    with Path(path).open('rb') as f:
+        for b in iter(lambda:f.read(1024**2),b''): h.update(b)
+    return h.hexdigest()
+
+
+class VM:
+    def __init__(self, work, name, port, image, key):
+        self.root = work / name; self.root.mkdir(mode=0o700)
+        self.port, self.key, self.process = port, key, None
+        host_key = self.root / 'host-key'
+        run(['ssh-keygen','-q','-t','ed25519','-N','','-f',host_key])
+        pub = (Path(str(host_key)+'.pub')).read_text().strip()
+        self.known = self.root / 'known-hosts'; self.known.write_text(f'[127.0.0.1]:{port} {pub}\n')
+        user = '#cloud-config\n' + json.dumps({
+            'hostname':name,'disable_root':True,'ssh_pwauth':False,
+            'ssh_keys':{'ed25519_private':host_key.read_text(),'ed25519_public':pub},
+            'users':[{'name':'nocpilot','groups':['sudo'],'shell':'/bin/bash','sudo':'ALL=(ALL) NOPASSWD:ALL','lock_passwd':True,'ssh_authorized_keys':[Path(str(key)+'.pub').read_text().strip()]}],
+            'write_files':[{'path':'/etc/ssh/sshd_config.d/00-noc119.conf','permissions':'0600','content':'PasswordAuthentication no\nKbdInteractiveAuthentication no\nPermitRootLogin no\nAllowUsers nocpilot\n'}],
+            'runcmd':[['systemctl','restart','ssh']]})
+        (self.root/'user-data').write_text(user)
+        (self.root/'meta-data').write_text(json.dumps({'instance-id':name,'local-hostname':name}))
+        run(['cloud-localds',self.root/'seed.img',self.root/'user-data',self.root/'meta-data'])
+        run(['qemu-img','create','-f','qcow2','-F','qcow2','-b',image,self.root/'disk.qcow2','32G'])
+        kvm = os.access('/dev/kvm',os.R_OK|os.W_OK)
+        self.acceleration = 'kvm' if kvm else 'tcg'
+        self.serial = (self.root/'serial.log').open('wb')
+        args=['qemu-system-x86_64','-accel',self.acceleration,'-m','5120','-smp','2','-nographic',
+              '-serial',f'file:{self.root}/serial.log','-monitor','none','-drive',f'file={self.root}/disk.qcow2,format=qcow2,if=virtio',
+              '-drive',f'file={self.root}/seed.img,format=raw,if=virtio',
+              '-netdev',f'user,id=noc,hostfwd=tcp:127.0.0.1:{port}-:22','-device','virtio-net-pci,netdev=noc']
+        self.process=subprocess.Popen(args,stdout=subprocess.DEVNULL,stderr=self.serial)
+        try:
+            self.wait()
+            self.ssh('cloud-init status --wait', timeout=900)
+        except Exception:
+            self.stop()
+            raise
+
+    def argv(self):
+        return ['ssh','-i',str(self.key),'-p',str(self.port),'-o','BatchMode=yes','-o','ConnectTimeout=3',
+                '-o','StrictHostKeyChecking=yes','-o',f'UserKnownHostsFile={self.known}','-o','ServerAliveInterval=10','-o','ServerAliveCountMax=6','nocpilot@127.0.0.1']
+
+    def ssh(self, script, *, timeout=2400, output=None, check=True):
+        result=run([*self.argv(),'bash -se'],data=script.encode(),output=output,timeout=timeout,check=False)
+        if check and result.returncode:
+            safe=[line for line in (result.stderr or b'').decode(errors='replace').splitlines() if line.startswith(('NOC packaging','RuntimeError:','AssertionError:','ssh:'))]
+            raise RuntimeError('Independent guest command failed: '+ '; '.join(safe[-3:]))
+        return result
+
+    def wait(self):
+        deadline=time.monotonic()+600
+        while time.monotonic()<deadline:
+            if self.process.poll() is not None: raise RuntimeError('VM exited before SSH readiness')
+            if run([*self.argv(),'true'],timeout=8,check=False).returncode==0:return
+            time.sleep(3)
+        raise RuntimeError('Independent VM boot/SSH readiness blocked')
+
+    def copy(self, path, destination):
+        run(['scp','-i',self.key,'-P',str(self.port),'-o','StrictHostKeyChecking=yes','-o',f'UserKnownHostsFile={self.known}',path,f'nocpilot@127.0.0.1:{destination}'],timeout=1200)
+
+    def reboot(self):
+        before=self.ssh('cat /proc/sys/kernel/random/boot_id').stdout.strip()
+        self.ssh('sudo systemctl reboot',check=False)
+        time.sleep(8); self.wait()
+        after=self.ssh('cat /proc/sys/kernel/random/boot_id').stdout.strip()
+        if before==after: raise RuntimeError('Guest kernel did not reboot')
+        self.ssh('sudo /opt/nwo-noc/current/verify.sh --controlled-test',timeout=300)
+        return {'kernel_boot_changed':True,'post_reboot_verification':'PASS'}
+
+    def stop(self):
+        if self.process and self.process.poll() is None:
+            self.process.terminate()
+            try:self.process.wait(timeout=20)
+            except subprocess.TimeoutExpired:self.process.kill();self.process.wait()
+        self.serial.close()
+
+
+def provision(vm, source, images, redis):
+    vm.copy(source,'/home/nocpilot/source.bundle'); vm.copy(images,'/home/nocpilot/images.tar')
+    vm.ssh('''sudo apt-get -o APT::Update::Error-Mode=any update
+sudo DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=l apt-get upgrade -y --no-install-recommends
+sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends docker.io docker-compose-v2 docker-buildx python3 python3-yaml git age openssl ca-certificates logrotate ufw
+sudo systemctl start docker
+sudo docker load -i /home/nocpilot/images.tar >/dev/null
+git clone --quiet /home/nocpilot/source.bundle /home/nocpilot/source
+'''+f'sudo docker pull {shlex.quote(redis)} >/dev/null\n'+'''
+sudo ufw default deny incoming
+sudo ufw default deny outgoing
+sudo ufw allow in from 10.0.2.2 to any port 22 proto tcp
+sudo ufw allow out proto udp to any port 67
+sudo ufw allow in proto udp from 10.0.2.2 port 67 to any port 68
+sudo ufw --force enable
+sudo ufw status verbose
+sudo sshd -T | grep -E '^(passwordauthentication|kbdinteractiveauthentication|permitrootlogin) '
+''',timeout=1800)
+
+
+def main():
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--work',type=Path,required=True);p.add_argument('--execute-disposable-vms',action='store_true');a=p.parse_args()
+    if not a.execute_disposable_vms or os.environ.get('GITHUB_ACTIONS')!='true':
+        raise RuntimeError('Explicit disposable GitHub CI execution required; never target an existing server')
+    work=a.work.resolve();work.mkdir(mode=0o700,parents=True,exist_ok=False)
+    evidence=ROOT/'pilot-vm-evidence';evidence.mkdir(exist_ok=False)
+    report={'decision':'NO-GO','installation':'NOT TESTED','recovery':'NOT TESTED','real_vpn_mfa':'BLOCKED','offsite_independent_failure_domain':'BLOCKED'}
+    guests=[]
+    try:
+        image=json.loads((ROOT/'deploy/pilot-vm-image.json').read_text())
+        run(['curl','--fail','--location','--proto','=https','--tlsv1.2','--retry','3','--max-time','900','-o',work/'ubuntu.img',image['url']],timeout=1000)
+        if sha(work/'ubuntu.img')!=image['sha256']:raise ValueError('Canonical Ubuntu image digest mismatch; no fallback')
+        report['ubuntu_image']=image;report['guest_resources']={'vcpus':2,'memory_mib':5120,'disk_gib':32}
+        key=work/'controller-key';run(['ssh-keygen','-q','-t','ed25519','-N','','-f',key])
+        source=work/'source.bundle';run(['git','bundle','create',source,'HEAD'])
+        redis=json.loads((ROOT/'deploy/image-lock.json').read_text())['images']['redis:7-alpine']
+        run(['docker','pull',redis])
+        images=work/'images.tar'
+        redis_id=run(['docker','image','inspect','--format','{{.Id}}',redis]).stdout.decode().strip()
+        with images.open('xb') as out:run(['docker','save','noc113-backend:base','noc113-frontend:base','noc117-postgres:rc',redis_id],output=out)
+        sender=VM(work,'noc119-source',22221,work/'ubuntu.img',key);guests.append(sender)
+        report['acceleration']=sender.acceleration
+        provision(sender,source,images,redis)
+        result=sender.ssh('cd /home/nocpilot/source\nsudo python3 tests/installer/test_ubuntu_host.py --workspace /var/tmp/noc119-acceptance --extended --pilot-checkpoint',timeout=2400)
+        (evidence/'source-install.log').write_bytes(result.stdout)
+        report['installation']='PASS';report['source_reboot']=sender.reboot()
+        fingerprint=sender.ssh('sudo cat /var/tmp/noc119-acceptance/independent-trust-fingerprint').stdout.decode().strip()
+        report['test_public_key_spki_sha256']=fingerprint
+        transfer=work/'recovery-private.tar'
+        with transfer.open('xb') as out:
+            transfer.chmod(0o600)
+            sender.ssh('sudo tar -C /var/tmp/noc119-acceptance/recovery-export -cf - .',output=out)
+        sender.stop()
+        report['source_powered_off_during_restore']=True
+        receiver=VM(work,'noc119-recovery',22222,work/'ubuntu.img',key);guests.append(receiver)
+        provision(receiver,source,images,redis)
+        receiver.copy(transfer,'/home/nocpilot/recovery-private.tar')
+        receiver.ssh('sudo mkdir -m 700 /var/tmp/noc119-recovery\nsudo tar --no-same-owner --no-same-permissions -xf /home/nocpilot/recovery-private.tar -C /var/tmp/noc119-recovery\nsudo chmod 600 /var/tmp/noc119-recovery/*\nsudo docker load -i /var/tmp/noc119-recovery/images.tar >/dev/null')
+        result=receiver.ssh('cd /home/nocpilot/source\nsudo python3 tests/installer/pilot_recovery.py --folder /var/tmp/noc119-recovery --expected-fingerprint '+shlex.quote(fingerprint),timeout=1800)
+        (evidence/'independent-recovery.log').write_bytes(result.stdout)
+        report['recovery']='PASS';report['receiver_reboot']=receiver.reboot()
+        report['host_security_evidence']=receiver.ssh("sudo ufw status verbose; sudo sshd -T | grep -E '^(passwordauthentication|kbdinteractiveauthentication|permitrootlogin) ';timedatectl show -p NTPSynchronized;uname -a;systemd --version | head -n 1").stdout.decode()
+        report['firewall_scope']='Guest default deny in/out; SSH only through loopback-forwarded CI control channel; Docker application network internal; not a real VPN/MFA acceptance'
+    except Exception as exc:
+        report['failure_type']=type(exc).__name__;report['failure']='VM validation incomplete; inspect private CI logs, no test converted to PASS'
+        raise
+    finally:
+        for guest in guests:guest.stop()
+        (evidence/'summary.json').write_text(json.dumps(report,indent=2)+'\n')
+        print(json.dumps(report),flush=True)
+
+
+if __name__=='__main__':main()

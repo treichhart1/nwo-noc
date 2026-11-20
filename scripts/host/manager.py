@@ -240,7 +240,7 @@ class Host:
         if not shutil.which("docker"):
             missing += ["docker.io", "docker-compose-v2"]
         if missing:
-            run(["apt-get", "update"], label="Ubuntu repository refresh")
+            run(["apt-get", "-o", "APT::Update::Error-Mode=any", "update"], label="Ubuntu repository refresh")
             for package in missing:
                 candidate = run(["apt-cache", "policy", package]).stdout.decode()
                 ubuntu_candidate(candidate)
@@ -579,6 +579,9 @@ class Host:
         ).stdout
         with tarfile.open(fileobj=io.BytesIO(archive)) as tar:
             tar.extractall(target, members=safe_members(tar), filter="data")
+        if a.get("purpose") == "release":
+            from release_trust import capture
+            capture(a, self.args.approval, target / "release-trust")
         inventory = {
             p.relative_to(target).as_posix(): file_hash(p)
             for p in target.rglob("*")
@@ -1136,6 +1139,9 @@ class Host:
     def backup(self, release=None, state=None):
         state = state or self.state()
         release = release or self.opt / "releases" / state["commit"]
+        if state.get("purpose") == "release":
+            from release_trust import fingerprint, verify
+            verify(release / "release-trust", fingerprint(private_file(Path("/etc/nwo-noc-release.pub"))))
         recipient = self.recipient()
         self.capacity(extra=self.backup_budget(release, state))
         # Caller has stopped all application writers. Stop Redis before copying its durable volume.

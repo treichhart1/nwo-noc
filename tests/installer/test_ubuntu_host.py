@@ -133,6 +133,7 @@ def main():
     p.add_argument("--rehearsal", action="store_true")
     p.add_argument("--worktree-snapshot", action="store_true")
     p.add_argument("--extended", action="store_true")
+    p.add_argument("--pilot-checkpoint", action="store_true", help="Retain healthy disposable VM for reboot and second-host recovery acceptance")
     p.add_argument(
         "--failure-stage",
         choices=[
@@ -642,6 +643,10 @@ def main():
     db(
         "INSERT INTO audit_logs(action,entity_type,entity_id,details,created_at) VALUES ('installer.synthetic_sentinel','installation','synthetic','{}',now());"
     )
+    if args.pilot_checkpoint:
+        command([*compose, 'exec', '-T', 'redis', 'redis-cli', 'SET', 'noc119:preservation', 'synthetic'])
+        script = "from app.core.database import SessionLocal; from app.models.entities import Device,TelemetrySample; from datetime import datetime,timezone; db=SessionLocal(); d=Device(source='synthetic',external_id='noc119-recovery',name='Synthetic recovery device'); db.add(d); db.flush(); db.add(TelemetrySample(device_id=d.id,sampled_at=datetime.now(timezone.utc),raw_data={'synthetic_recovery':True})); db.commit(); db.close()"
+        command([*compose, 'exec', '-T', 'backend', 'python', '-c', script])
     git(
         "commit",
         "--allow-empty",
@@ -793,13 +798,14 @@ def main():
         )
         == "1",
     )
-    git(
-        "commit",
-        "--allow-empty",
-        "--quiet",
-        "-m",
-        "Synthetic approved release with startup failure",
-    )
+    if args.pilot_checkpoint:
+        if args.rehearsal or args.failure_stage:
+            raise RuntimeError("Pilot checkpoint requires a real disposable systemd host")
+        from pilot_recovery import export_checkpoint
+        export_checkpoint(work, clone, first_approval, identity, backups[0], admin_secret, compose, state)
+        print(json.dumps({"checks_passed": len(results), "environment": "independent-vm-checkpoint", "upgrade_and_restore": "passed", "production_authorization": False}), flush=True)
+        return
+    git("commit", "--allow-empty", "--quiet", "-m", "Synthetic approved release with startup failure")
     bad, bad_approval = approve([second], bad=True)
     failed = invoke("upgrade", bad_approval, success=False)
     passed("failed_upgrade_rejected", failed.returncode != 0)

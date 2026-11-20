@@ -1,0 +1,8 @@
+{
+  "format": 1,
+  "url": "https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-amd64.img",
+  "sha256": "04e8f2461a16a44e78a370284471f29616cdd9baf1893df25807b71f985b6c94",
+  "source": "https://cloud-images.ubuntu.com/noble/current/SHA256SUMS",
+  "observed_image_build": "20261017",
+  "policy": "Fail closed if current changes; operator must review and pin the next Canonical image. No mutable-image fallback. Test image only, not production release authorization."
+}
