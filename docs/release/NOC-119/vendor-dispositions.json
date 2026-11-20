@@ -13,7 +13,7 @@
       "cve": "CVE-2026-119374",
       "source_package": "sqlite3",
       "url": "https://ubuntu.com/security/CVE-2026-119374",
-      "noble_status": "Lookup unavailable; prior NOC118 needs evaluation",
+      "noble_status": "Needs evaluation (fresh lookup succeeded on retry)",
       "status": "BLOCKED",
       "action": "No supported Noble fixed revision established; preserve blocker and verify operator risk/source applicability"
     },

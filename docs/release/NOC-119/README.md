@@ -63,7 +63,12 @@ packages (notably sqlite3 versus obsolete sqlite). Current primary Canonical
 lookups still show sqlite3CVE2026-119373, Expat113351 and util-linux76642 vulnerable;
 ACL54369 ignored/backport too intrusive; Expat115506/117610/118370, SQLite119379 and
 util-linux78410 need evaluation. Failed lookups remain unknown, not safe. Full
-review rows and primary sources are in vendor-dispositions.json. No unsupported
+review rows and primary sources are in vendor-dispositions.json.
+current-native-dispositions.json additionally retains every one of33current rows
+and21distinct CVEs, including dash/GnuPG/GnuTLS/Python/systemd/shadow/tar, actual
+source packages, historical severity, runtime exposure and lookup failures. Source
+package exclusions for a different Python/GnuTLS package cannot clear a finding.
+No unsupported
 SQLite/Expat replacement, unstable repository, blanket ignore or VEX waiver is used.
 
 Canonical ncurses2025-69720, systemd16742 and Perl9538 have previously verified
@@ -163,3 +168,22 @@ after execution, never inferred from this pre-execution source snapshot.
 
 Until supported vendor risk, real host/DR/scanner evidence, independent trust/legal
 and operational approvals are complete: **NO-GO for operational release/live pilot**.
+
+## Intermediate execution evidence (not final-source acceptance)
+
+Source9545ecf/run639 freshly rebuilt backend image
+sha256:1f4c6cc321e144e91392c6949e5341676443119fb457b9d1718fb1a28b1993b2:
+0CRITICAL/0HIGH/33total. PostgreSQL derivative/frontend0findings; Redis1lower-severity.
+Artifact14594172967, archiveSHA256463b66504d0422317a3ae69faedfa724f1819a469ea4f6487d346831017a70e9.
+libsystemd0 is now255.4-1ubuntu8.19 (previously8.18); supported apt updates were
+applied, but this does not resolve deferred121876 or all historical CVEs. Actual
+SQLite compile options include ENABLE_FTS5 and ENABLE_SESSION, reinforcing rather
+than waiving the native risk. Real ClamAV deploy/test steps completed SUCCESS.
+
+The first independent VM attempt downloaded and checked the pinned image but
+aborted on an individual8second SSH-readiness timeout before the600second boot
+deadline. A bounded retry now handles that expected transport state while retaining
+pinned host keys; no boot/install/recovery acceptance is claimed for the failed run.
+The next source also adds strict flat/bounded recovery transport extraction with
+traversal/link/duplicate/missing/overwrite regression tests, and records loaded
+native libraries, capabilities and executable presence. Final source must rerun.

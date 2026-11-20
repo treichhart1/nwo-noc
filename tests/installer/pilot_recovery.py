@@ -41,10 +41,11 @@ def export_checkpoint(work, clone, approved, identity, backup, password, compose
     key = work / 'identities/recovery-signing.key'
     run(['openssl', 'genpkey', '-algorithm', 'ED25519', '-out', key])
     run(['openssl', 'pkey', '-in', key, '-pubout', '-out', folder / 'trusted-public.pem'])
+    run(['openssl','pkeyutl','-sign','-inkey',key,'-rawin','-in',folder/'approval.json','-out',folder/'approval.json.sig'])
     manifest = {'format': 1, 'purpose': 'isolated-recovery-test', 'source_machine_id': Path('/etc/machine-id').read_text().strip(),
                 'source_boot_id': Path('/proc/sys/kernel/random/boot_id').read_text().strip(),
                 'release_commit': json.loads(approved.read_text())['commit'], 'images': images,
-                'files': {name: file_hash(folder / name) for name in ('backup.age', 'backup-metadata.json', 'approval.json', 'source.bundle', 'images.tar', 'synthetic-auth.json')}}
+                'files': {name: file_hash(folder / name) for name in ('backup.age', 'backup-metadata.json', 'backup.key', 'approval.json', 'approval.json.sig', 'source.bundle', 'images.tar', 'synthetic-auth.json')}}
     (folder / 'recovery.json').write_text(json.dumps(manifest))
     run(['openssl', 'pkeyutl', '-sign', '-inkey', key, '-rawin', '-in', folder / 'recovery.json', '-out', folder / 'recovery.json.sig'])
     from release_trust import fingerprint
@@ -66,13 +67,33 @@ def validate(folder, expected):
     manifest = json.loads(raw)
     if manifest.get('format') != 1 or manifest.get('purpose') != 'isolated-recovery-test':
         raise ValueError('Explicit isolated recovery test contract required')
-    required = {'backup.age', 'backup-metadata.json', 'approval.json', 'source.bundle', 'images.tar', 'synthetic-auth.json'}
+    required = {'backup.age', 'backup-metadata.json', 'backup.key', 'approval.json', 'approval.json.sig', 'source.bundle', 'images.tar', 'synthetic-auth.json'}
     if set(manifest.get('files', {})) != required:
         raise ValueError('Incomplete recovery artifacts')
     for name, digest in manifest['files'].items():
         if (folder / name).is_symlink() or file_hash(folder / name) != digest:
             raise ValueError('Recovery artifact integrity mismatch')
+    verify_signature((folder/'approval.json').read_bytes(),(folder/'approval.json.sig').read_bytes(),public)
     return manifest
+
+
+def unpack_transport(archive, destination):
+    """Extract only a bounded, exact flat test transport; never trust tar paths."""
+    allowed={'backup.age','backup-metadata.json','backup.key','approval.json','approval.json.sig','source.bundle','images.tar','synthetic-auth.json','trusted-public.pem','recovery.json','recovery.json.sig'}
+    with tarfile.open(archive) as tar:
+        members=[];names=[];size=0
+        for m in tar:
+            if m.name=='.' and m.isdir():continue
+            name=m.name.removeprefix('./');size+=m.size
+            if name not in allowed or name in names or not m.isfile() or m.size<0 or size>6*1024**3 or m.name not in(name,'./'+name):
+                raise ValueError('Unsafe or incomplete test recovery transport')
+            members.append(m);names.append(name)
+        if set(names)!=allowed:
+            raise ValueError('Unsafe or incomplete test recovery transport')
+        destination=Path(destination);destination.mkdir(mode=0o700,exist_ok=False)
+        for m,name in zip(members,names):
+            with tar.extractfile(m) as src,(destination/name).open('xb') as out:
+                (destination/name).chmod(0o600);shutil.copyfileobj(src,out)
 
 
 def restore(folder, expected):
@@ -206,5 +227,9 @@ with tarfile.open('/backup.tar') as t:
 if __name__ == '__main__':
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('--folder', type=Path, required=True)
-    p.add_argument('--expected-fingerprint', required=True)
-    a = p.parse_args(); restore(a.folder, a.expected_fingerprint)
+    p.add_argument('--expected-fingerprint')
+    p.add_argument('--unpack',type=Path)
+    a = p.parse_args()
+    if a.unpack:unpack_transport(a.unpack,a.folder)
+    elif a.expected_fingerprint:restore(a.folder,a.expected_fingerprint)
+    else:p.error('Independent expected fingerprint required for restore')

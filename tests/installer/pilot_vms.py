@@ -5,6 +5,7 @@ import json
 import os
 from pathlib import Path
 import shlex
+import socket
 import subprocess
 import tarfile
 import time
@@ -75,7 +76,12 @@ class VM:
         deadline=time.monotonic()+600
         while time.monotonic()<deadline:
             if self.process.poll() is not None: raise RuntimeError('VM exited before SSH readiness')
-            if run([*self.argv(),'true'],timeout=8,check=False).returncode==0:return
+            try:
+                if run([*self.argv(),'true'],timeout=8,check=False).returncode==0:return
+            except subprocess.TimeoutExpired:
+                # SLIRP can accept TCP before the guest kernel/sshd is ready.
+                # Retry only within the fixed boot deadline; never weaken host-key checks.
+                pass
             time.sleep(3)
         raise RuntimeError('Independent VM boot/SSH readiness blocked')
 
@@ -108,12 +114,20 @@ sudo systemctl start docker
 sudo docker load -i /home/nocpilot/images.tar >/dev/null
 git clone --quiet /home/nocpilot/source.bundle /home/nocpilot/source
 '''+f'sudo docker pull {shlex.quote(redis)} >/dev/null\n'+'''
+python3 -c 'import socket; socket.create_connection(("10.0.2.2",22229),3).close(); print("controlled-egress-positive: PASS")'
 sudo ufw default deny incoming
 sudo ufw default deny outgoing
 sudo ufw allow in from 10.0.2.2 to any port 22 proto tcp
 sudo ufw allow out proto udp to any port 67
 sudo ufw allow in proto udp from 10.0.2.2 port 67 to any port 68
 sudo ufw --force enable
+python3 - <<'PY'
+import socket
+try:
+ socket.create_connection(("10.0.2.2",22229),2).close()
+except OSError: print("controlled-egress-denied: PASS")
+else: raise AssertionError("Default-deny outbound rule did not block controlled probe")
+PY
 sudo ufw status verbose
 sudo sshd -T | grep -E '^(passwordauthentication|kbdinteractiveauthentication|permitrootlogin) '
 ''',timeout=1800)
@@ -126,8 +140,13 @@ def main():
     work=a.work.resolve();work.mkdir(mode=0o700,parents=True,exist_ok=False)
     evidence=ROOT/'pilot-vm-evidence';evidence.mkdir(exist_ok=False)
     report={'decision':'NO-GO','installation':'NOT TESTED','recovery':'NOT TESTED','real_vpn_mfa':'BLOCKED','offsite_independent_failure_domain':'BLOCKED'}
-    guests=[]
+    def phase(name):
+        report['phase']=name
+        print(json.dumps({'phase':name,'scope':'disposable independent VM acceptance'}),flush=True)
+    guests=[];egress=None
     try:
+        phase('verify-pinned-ubuntu-image')
+        egress=socket.socket();egress.bind(('127.0.0.1',22229));egress.listen(8)
         image=json.loads((ROOT/'deploy/pilot-vm-image.json').read_text())
         run(['curl','--fail','--location','--proto','=https','--tlsv1.2','--retry','3','--max-time','900','-o',work/'ubuntu.img',image['url']],timeout=1000)
         if sha(work/'ubuntu.img')!=image['sha256']:raise ValueError('Canonical Ubuntu image digest mismatch; no fallback')
@@ -139,12 +158,15 @@ def main():
         images=work/'images.tar'
         redis_id=run(['docker','image','inspect','--format','{{.Id}}',redis]).stdout.decode().strip()
         with images.open('xb') as out:run(['docker','save','noc113-backend:base','noc113-frontend:base','noc117-postgres:rc',redis_id],output=out)
+        phase('source-kernel-boot-and-pinned-ssh')
+        report['acceleration']='kvm' if os.access('/dev/kvm',os.R_OK|os.W_OK) else 'tcg'
         sender=VM(work,'noc119-source',22221,work/'ubuntu.img',key);guests.append(sender)
         report['acceleration']=sender.acceleration
-        provision(sender,source,images,redis)
+        phase('source-supported-packages-and-private-firewall');provision(sender,source,images,redis)
+        phase('source-installer-upgrade-and-isolated-restore')
         result=sender.ssh('cd /home/nocpilot/source\nsudo python3 tests/installer/test_ubuntu_host.py --workspace /var/tmp/noc119-acceptance --extended --pilot-checkpoint',timeout=2400)
         (evidence/'source-install.log').write_bytes(result.stdout)
-        report['installation']='PASS';report['source_reboot']=sender.reboot()
+        report['installation']='PASS';phase('source-actual-kernel-reboot');report['source_reboot']=sender.reboot()
         fingerprint=sender.ssh('sudo cat /var/tmp/noc119-acceptance/independent-trust-fingerprint').stdout.decode().strip()
         report['test_public_key_spki_sha256']=fingerprint
         transfer=work/'recovery-private.tar'
@@ -153,20 +175,25 @@ def main():
             sender.ssh('sudo tar -C /var/tmp/noc119-acceptance/recovery-export -cf - .',output=out)
         sender.stop()
         report['source_powered_off_during_restore']=True
+        phase('independent-receiver-kernel-boot')
         receiver=VM(work,'noc119-recovery',22222,work/'ubuntu.img',key);guests.append(receiver)
-        provision(receiver,source,images,redis)
+        phase('receiver-supported-packages-and-private-firewall');provision(receiver,source,images,redis)
         receiver.copy(transfer,'/home/nocpilot/recovery-private.tar')
-        receiver.ssh('sudo mkdir -m 700 /var/tmp/noc119-recovery\nsudo tar --no-same-owner --no-same-permissions -xf /home/nocpilot/recovery-private.tar -C /var/tmp/noc119-recovery\nsudo chmod 600 /var/tmp/noc119-recovery/*\nsudo docker load -i /var/tmp/noc119-recovery/images.tar >/dev/null')
+        receiver.ssh('cd /home/nocpilot/source\nsudo python3 tests/installer/pilot_recovery.py --folder /var/tmp/noc119-recovery --unpack /home/nocpilot/recovery-private.tar\nsudo docker load -i /var/tmp/noc119-recovery/images.tar >/dev/null')
+        phase('independent-signed-backup-recovery')
         result=receiver.ssh('cd /home/nocpilot/source\nsudo python3 tests/installer/pilot_recovery.py --folder /var/tmp/noc119-recovery --expected-fingerprint '+shlex.quote(fingerprint),timeout=1800)
         (evidence/'independent-recovery.log').write_bytes(result.stdout)
-        report['recovery']='PASS';report['receiver_reboot']=receiver.reboot()
+        report['recovery']='PASS';phase('receiver-actual-kernel-reboot');report['receiver_reboot']=receiver.reboot()
         report['host_security_evidence']=receiver.ssh("sudo ufw status verbose; sudo sshd -T | grep -E '^(passwordauthentication|kbdinteractiveauthentication|permitrootlogin) ';timedatectl show -p NTPSynchronized;uname -a;systemd --version | head -n 1").stdout.decode()
+        required=('Default: deny (incoming), deny (outgoing)','passwordauthentication no','kbdinteractiveauthentication no','permitrootlogin no')
+        if not all(value in report['host_security_evidence'] for value in required):raise AssertionError('Guest firewall or key-only administration evidence missing')
         report['firewall_scope']='Guest default deny in/out; SSH only through loopback-forwarded CI control channel; Docker application network internal; not a real VPN/MFA acceptance'
     except Exception as exc:
-        report['failure_type']=type(exc).__name__;report['failure']='VM validation incomplete; inspect private CI logs, no test converted to PASS'
+        report['failure_type']=type(exc).__name__;report['failure']=str(exc)[:500] if isinstance(exc,(ValueError,RuntimeError)) else 'VM validation incomplete; inspect private CI logs, no test converted to PASS'
         raise
     finally:
         for guest in guests:guest.stop()
+        if egress:egress.close()
         (evidence/'summary.json').write_text(json.dumps(report,indent=2)+'\n')
         print(json.dumps(report),flush=True)
 

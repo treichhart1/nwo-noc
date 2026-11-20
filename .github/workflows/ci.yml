@@ -507,6 +507,7 @@ jobs:
           sudo python3 - <<'PY'
           import json, subprocess
           images = json.load(open('/var/tmp/noc113-acceptance/runtime-images.json'))
+          images = sorted(set(images + subprocess.check_output(['docker','image','inspect','--format','{{.Id}}','noc113-backend:base','noc117-postgres:rc'],text=True).split()))
           assert images, 'No tested immutable image identities'
           subprocess.run(['python3', 'scripts/release/image_security.py', '--require-no-high', '--output', 'host-runtime-image-security-evidence', *images], check=True)
           subprocess.run(['python3', 'scripts/release/image_sbom.py', 'host-runtime-image-security-evidence'], check=True)

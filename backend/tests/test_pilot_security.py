@@ -2,6 +2,7 @@
 import base64
 import copy
 import json
+import io
 import os
 from pathlib import Path
 import shutil
@@ -9,6 +10,7 @@ import socket
 import subprocess
 import sys
 import tempfile
+import tarfile
 import threading
 import time
 from uuid import uuid4
@@ -57,6 +59,34 @@ def test_recovered_release_requires_independent_intact_trust(tmp_path,change):
     else:(output/'approval.json').write_text('{}')
     with pytest.raises((ValueError,OSError)):
         release_trust.verify(output,expected,reader=reader)
+
+
+@pytest.mark.parametrize('attack',['none','traversal','absolute','link','duplicate','missing','existing'])
+def test_recovery_transport_cannot_write_arbitrary_paths(tmp_path,attack):
+    sys.path.insert(0,str(ROOT/'tests/installer'))
+    from pilot_recovery import unpack_transport
+    names=['backup.age','backup-metadata.json','backup.key','approval.json','approval.json.sig','source.bundle','images.tar','synthetic-auth.json','trusted-public.pem','recovery.json','recovery.json.sig']
+    if attack=='missing':names.pop()
+    if attack=='duplicate':names.append(names[0])
+    archive=tmp_path/'transport.tar'
+    with tarfile.open(archive,'w') as t:
+        for i,name in enumerate(names):
+            if i==0 and attack=='traversal':name='../escaped'
+            if i==0 and attack=='absolute':name='/escaped'
+            item=tarfile.TarInfo(name);item.size=4
+            if i==0 and attack=='link':item.type=tarfile.SYMTYPE;item.linkname='/etc/passwd';item.size=0
+            t.addfile(item,io.BytesIO(b'test') if item.isfile() else None)
+    dest=tmp_path/'received'
+    if attack=='existing':dest.mkdir();(dest/'sentinel').write_text('preserve')
+    if attack=='none':
+        unpack_transport(archive,dest)
+        assert len(list(dest.iterdir()))==11
+        assert all(p.read_bytes()==b'test' and p.stat().st_mode&0o077==0 for p in dest.iterdir())
+    else:
+        with pytest.raises((ValueError,FileExistsError)):unpack_transport(archive,dest)
+        if attack=='existing':assert (dest/'sentinel').read_text()=='preserve'
+        else:assert not dest.exists()
+    assert not (tmp_path/'escaped').exists()
 
 
 EICAR = b'X5O!P%@AP[4\\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*'
