@@ -1,5 +1,6 @@
 """NOC119 real signing recovery and optionally deployed ClamAV engine acceptance."""
 import base64
+import ast
 import copy
 import json
 import io
@@ -13,6 +14,7 @@ import tempfile
 import tarfile
 import threading
 import time
+import textwrap
 from uuid import uuid4
 from types import SimpleNamespace
 import pytest
@@ -140,6 +142,14 @@ def test_offline_bundle_preserves_nonancestor_reviewed_audit_history(tmp_path):
     git('fetch','--quiet',str(bundle_path),'+refs/*:refs/noc119-audit/*',cwd=target)
     assert git('show',side+':record',cwd=target)=='reviewed side history'
     assert subprocess.run(['git','merge-base','--is-ancestor',side,'HEAD'],cwd=target).returncode==1
+
+
+def test_recovery_redis_payload_is_executable_and_preserves_volume_ownership(tmp_path):
+    tree=ast.parse((ROOT/'tests/installer/pilot_recovery.py').read_text())
+    value=next(n.value.value for n in ast.walk(tree) if isinstance(n,ast.Assign) and any(isinstance(t,ast.Name) and t.id=='redis_script' for t in n.targets))
+    compile(textwrap.dedent(value),'redis-volume-recovery','exec')
+    # Never use arbitrary archive owners; runtime Redis data uses only its pinned identities.
+    assert 'm.uid not in(0,999)' in value and 'm.gid not in(0,999)' in value
 
 
 def real_redis_evidence(tmp_path):

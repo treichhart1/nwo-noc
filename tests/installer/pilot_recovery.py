@@ -9,6 +9,7 @@ import subprocess
 import sys
 import tarfile
 import tempfile
+import textwrap
 from contextlib import contextmanager
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -207,7 +208,8 @@ def restore(folder, expected):
             with tarfile.open(extracted / 'redis.tar') as redis:
                 passed('redis_archive_safe', bool(safe_members(redis)))
             h.compose(release, state, 'stop', 'redis')
-            redis_script = """import tarfile,shutil,os
+            redis_script = """
+    import tarfile,shutil,os
     from pathlib import Path
     with tarfile.open('/backup.tar') as t:
      for m in t.getmembers():
@@ -221,7 +223,7 @@ def restore(folder, expected):
       os.chown(dest,m.uid,m.gid);dest.chmod(m.mode&0o777)
     """
             run(['docker','run','--rm','--network','none','--read-only','--user','0:0','--cap-drop','ALL','--cap-add','CHOWN','--cap-add','DAC_OVERRIDE',
-                 '--mount',f"type=volume,src={state['project']}-redis,dst=/volume",'-v',f'{extracted}/redis.tar:/backup.tar:ro','--entrypoint','python',manifest['images']['backend'],'-c',redis_script])
+                 '--mount',f"type=volume,src={state['project']}-redis,dst=/volume",'-v',f'{extracted}/redis.tar:/backup.tar:ro','--entrypoint','python',manifest['images']['backend'],'-c',textwrap.dedent(redis_script)])
             h.switch(release); h.register(release)
             h.guard.unlink()  # All signed data, keys and migrations restored before managed startup.
             run(['systemctl', 'start', 'nwo-noc.service'])
