@@ -681,7 +681,7 @@ class Host:
                 )
                 svc["healthcheck"]["test"] = [
                     "CMD-SHELL",
-                    "pg_isready -U postgres -d nwo_noc",
+                    "pg_isready -h 127.0.0.1 -U postgres -d nwo_noc",
                 ]
                 svc["mem_limit"] = "2g"
             if name == "redis":
@@ -947,7 +947,9 @@ class Host:
             "-d",
             "--wait",
             "--wait-timeout",
-            str(60 if self.args.controlled_test else 180),
+            # Artifact test purpose must not shorten the actual production
+            # startup contract on independently booted, resource-limited hosts.
+            "180",
             "db",
             "redis",
             "backend",

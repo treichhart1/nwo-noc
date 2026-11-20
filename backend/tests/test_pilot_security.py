@@ -186,6 +186,26 @@ def test_docker29_omitted_default_user_preserves_application_identity_guards(mon
         with pytest.raises(policy.Reject,match='Approved '+role+' image'):manager.Host.images(host,approved)
 
 
+def test_disposable_diagnostics_never_export_raw_credentials():
+    sys.path.insert(0,str(ROOT/'tests/installer'))
+    from pilot_diagnostics import signals
+    secret='synthetic-do-not-export-credential'
+    result=signals('OperationalError: postgresql://owner:'+secret+'@private.invalid/database\nPermission denied\nApplication startup complete')
+    assert secret not in json.dumps(result) and 'private.invalid' not in json.dumps(result)
+    assert result['flags']['permission_denied'] and result['flags']['startup_complete']
+    assert result['exception_types']==['OperationalError']
+
+
+def test_readiness_regression_uses_both_actual_deployment_contracts():
+    sys.path.insert(0,str(ROOT/'tests/installer'))
+    from postgres_readiness import profiles
+    commands=profiles()
+    assert set(commands)=={'host','isolated'}
+    # The CI regression executes these exact extracted commands against real
+    # temporary/final PostgreSQL servers rather than a separately copied probe.
+    assert all(command.startswith('pg_isready ') for command in commands.values())
+
+
 def real_redis_evidence(tmp_path):
     approved,docs,save=bundle(tmp_path)
     approved['images']['redis']=json.loads((ROOT/'deploy/image-lock.json').read_text())['images']['redis:7-alpine']

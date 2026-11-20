@@ -275,3 +275,34 @@ Reboot acceptance separately observes SSH availability and automatic NOC unit
 readiness: SSH may respond while Docker/services are still starting. It waits at
 most300s for both enabled NOC units, then runs the complete verifier. It never
 manually starts services to manufacture reboot success; a readiness timeout fails.
+
+### Full VM startup acceptance remains a required gate
+
+Final-source run668/commit3eebe3a completed the original eight jobs, including
+907backend tests,1103PostgreSQL/RF tests,33actual scanner/security tests,69browser
+tests and11matching-release upgrade/restore checks. Its independent guest passed
+image validation and database setup, then failed full Compose service startup;
+the aggregate gate failed as required. This is not clean-install/recovery PASS.
+No real VM reboot or second-host restore is claimed from that failed attempt.
+
+The controlled-test branch had shortened the production180second startup budget
+to60seconds. Real resource-limited hosts now use the same180second production
+deadline; all services still must become healthy and pass the complete verifier.
+The startup cause remains subject to actual rerun evidence. Failure collection
+now records only service state, exit/OOM/health codes, static error flags and
+whitelisted exception classes. Raw logs, environment variables, credentials and
+application records are never exported by that diagnostic helper.
+
+The benchmark's reproduced initialization race also applied to deployment probes:
+official PostgreSQL briefly accepts Unix-socket connections before the final TCP
+server. Both isolated Compose and host-package health contracts now check TCP
+loopback. A new disposable CI regression pauses the actual initialization server,
+proves the old Unix probe is positive, executes both actual deployment probes and
+requires rejection, then releases initialization and requires both to pass on the
+final server. No external network, host database or persisted volume is used.
+
+Final commit3eebe3a's two bounded benchmark runs nevertheless measured36/36rounds
+under15seconds: min10.098s/median11.529s/max14.459s. Each1000-device invocation
+preserved6000samples and unique receipts. These are superseded-source measurements,
+not proof of the next correction's acceptance. Prior run646's5/18overruns and
+unverified pilot hardware remain part of the performance limitation.

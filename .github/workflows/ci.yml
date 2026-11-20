@@ -491,6 +491,10 @@ jobs:
           docker build -t noc113-backend:base backend
           docker build -t noc113-frontend:base frontend
           docker build -t noc117-postgres:rc -f deploy/Dockerfile.postgres .
+      - name: Reject temporary PostgreSQL initialization servers using actual deployment health checks
+        run: |
+          sudo apt-get install -y --no-install-recommends python3-yaml
+          python3 tests/installer/postgres_readiness.py --postgres noc117-postgres:rc --execute-disposable-test
       - name: Execute disposable Ubuntu systemd install, verification, encrypted restore and upgrade failure acceptance
         run: sudo python3 tests/installer/test_ubuntu_host.py --workspace /var/tmp/noc113-acceptance --extended
       - name: Scan the exact immutable runtime images exercised by Ubuntu acceptance

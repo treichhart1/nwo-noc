@@ -222,6 +222,14 @@ def main():
         report['firewall_scope']='Guest default deny in/out; SSH only through loopback-forwarded CI control channel; Docker application network internal; not a real VPN/MFA acceptance'
     except Exception as exc:
         report['failure_type']=type(exc).__name__;report['failure']=str(exc)[:500] if isinstance(exc,(ValueError,RuntimeError)) else 'VM validation incomplete; inspect private CI logs, no test converted to PASS'
+        report['sanitized_service_diagnostics']=[]
+        for guest in guests:
+            if guest.process.poll() is None:
+                try:
+                    result=guest.ssh('sudo python3 /home/nocpilot/source/tests/installer/pilot_diagnostics.py --synthetic-disposable-host',timeout=90,check=False)
+                    if result.returncode==0:report['sanitized_service_diagnostics'].append(json.loads(result.stdout))
+                except Exception:
+                    report['diagnostics_unavailable']=True
         diagnostics=[]
         for path in (work/'noc119-source/serial.log',work/'noc119-recovery/serial.log'):
             if path.exists():
