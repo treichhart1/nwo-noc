@@ -148,8 +148,16 @@ def restore(folder, expected):
             shutil.copyfileobj(src, out)
         with damaged.open('r+b') as stream:
             first = stream.read(1); stream.seek(0); stream.write(bytes([first[0] ^ 1]))
-        passed('damaged_backup_hash_rejected', file_hash(damaged) != manifest['files']['backup.age'])
-        damaged.unlink()
+        held = folder / 'backup.age.held'
+        good.rename(held)
+        try:
+            damaged.rename(good)
+            try: validate(folder, expected)
+            except ValueError: passed('damaged_backup_hash_rejected')
+            else: raise AssertionError('Damaged backup accepted')
+        finally:
+            good.unlink(missing_ok=True)
+            held.rename(good)
         sentinel = temp / 'sentinel'; sentinel.write_text('preserve')
         original = folder / 'source.bundle'
         original.rename(folder / 'source.bundle.held')
