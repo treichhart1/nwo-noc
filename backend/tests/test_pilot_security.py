@@ -104,6 +104,44 @@ def test_benchmark_refuses_existing_storage_without_removing_it(tmp_path,monkeyp
     assert json.loads((tmp_path/'report.json').read_text())['target_status']=='NOT TESTED'
 
 
+def real_redis_evidence(tmp_path):
+    approved,docs,save=bundle(tmp_path)
+    approved['images']['redis']=json.loads((ROOT/'deploy/image-lock.json').read_text())['images']['redis:7-alpine']
+    # Exact RepoDigest shape observed in NOC119 run639's retained Trivy metadata.
+    docs['containers']['payload']['redis']['Metadata']['RepoDigests']=['redis@sha256:7f7d30b7fdd09467bac58198a1f166dd69789d348d4fe859cccb20e0cf287fbe']
+    save()
+    return approved,docs,save
+
+
+def test_real_docker_redis_digest_shape_matches_signed_tagged_reference(tmp_path):
+    from evidence import verify_release_evidence
+    approved,_,_=real_redis_evidence(tmp_path)
+    reader=lambda path,**kw:policy.private_file(path,owner=os.getuid(),**kw)
+    verify_release_evidence(approved,tmp_path/'approval',reader)
+
+
+@pytest.mark.parametrize('reference',[
+    'other/redis@sha256:7f7d30b7fdd09467bac58198a1f166dd69789d348d4fe859cccb20e0cf287fbe',
+    'redis@sha256:'+'0'*64,
+    'redis:7-alpine',
+])
+def test_digest_normalization_never_accepts_wrong_repository_hash_or_mutable_tag(tmp_path,reference):
+    from evidence import verify_release_evidence
+    approved,docs,save=real_redis_evidence(tmp_path)
+    docs['containers']['payload']['redis']['Metadata']['RepoDigests']=[reference];save()
+    reader=lambda path,**kw:policy.private_file(path,owner=os.getuid(),**kw)
+    with pytest.raises(ValueError):verify_release_evidence(approved,tmp_path/'approval',reader)
+
+
+@pytest.mark.parametrize('left,right',[
+    ('registry.example.invalid:5000/team/radio:rc','registry.example.invalid:5000/team/radio'),
+    ('index.docker.io/redis:7-alpine','docker.io/library/redis'),
+])
+def test_registry_port_and_docker_hub_namespace_are_preserved(left,right):
+    from evidence import registry_identity
+    assert registry_identity(left+'@sha256:'+'a'*64)==right+'@sha256:'+'a'*64
+
+
 EICAR = b'X5O!P%@AP[4\\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*'
 
 

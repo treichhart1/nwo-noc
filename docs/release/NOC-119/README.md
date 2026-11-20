@@ -48,6 +48,16 @@ private permissions/no private key, independent-key mismatch, missing signature,
 changed evidence/index/manifest. Existing missing artifacts, image digests,
 source mismatch, invalid signatures and unresolved-risk gates remain unchanged.
 
+A second verified defect appeared in actual Redis Trivy metadata: Docker records
+RepoDigests as redis@sha256:7f7d… while the unchanged source lock pins
+redis:7-alpine@sha256:7f7d…. Literal comparison incorrectly rejected the same
+repository and digest. The verifier now uses Docker-style canonical repository
+identity, preserving registry ports and exact SHA256 while removing an optional
+tag and normalizing Docker Hub's explicit library namespace. It still rejects
+different repositories, different hashes and tag-only inputs. Six regression
+cases include the actual observed Redis metadata shape. All signed source/image
+bindings, four-role completeness, risk review and HIGH/CRITICAL gates remain.
+
 APT refreshes in backend builds and installer dependency acquisition now use
 APT::Update::Error-Mode=any. Partial repository failure cannot quietly rely on
 incomplete/stale indexes. Python3.12, PostgreSQL16, Redis7 and app locks remain.
