@@ -257,3 +257,16 @@ Rejection now reports only the role, whitelisted public SHA and numeric UID valu
 it never dumps full image configuration or arbitrary labels. Two negative tests
 retain rejection for root backend execution and incorrect revisions and ensure
 credential labels are not logged. The identity requirements remain unchanged.
+
+The retained run650 provision log confirms Docker29.1.3-0ubuntu3~24.04.2,
+Buildx0.30.1 and Compose2.40.3 on the fresh Ubuntu host. Docker's
+[documented29 API change](https://docs.docker.com/engine/deprecated/#emptynil-fields-in-image-config-from-inspect-api)
+omits empty image Config fields including User; consumers must treat absence as
+the default/empty value. The installer incorrectly distinguished omitted User
+from the already permitted empty PostgreSQL vendor-entrypoint identity. It now
+normalizes only an absent field to that same default. Explicit null remains
+invalid; omitted backend/frontend identities and wrong revisions still reject.
+Four contract tests cover these cases. This does not relax actual runtime UIDs,
+vendor gosu behavior, signatures, digests or provenance. Independent VM retesting
+is required before claiming the observed installation failure is resolved.
+Original VM artifact14599220221 archiveSHA256d068bb9abe26c183fc588e02f4faae36eca8ebd1fd7d0c230477b186e29d3613.

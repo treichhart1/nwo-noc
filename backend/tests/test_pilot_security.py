@@ -165,6 +165,27 @@ def test_installer_image_identity_rejection_identifies_role_without_weakening_ga
     assert 'expected_revision=' in str(error.value) and 'observed_uid=' in str(error.value)
 
 
+@pytest.mark.parametrize('role,value,accepted',[
+    ('postgres','omitted',True),('postgres',None,False),
+    ('backend','omitted',False),('frontend','omitted',False),
+])
+def test_docker29_omitted_default_user_preserves_application_identity_guards(monkeypatch,role,value,accepted):
+    import manager
+    revision='a'*40
+    configs={k:{'Config':{'User':u,'Labels':{'org.opencontainers.image.revision':revision}}} for k,u in [('backend','10001:10001'),('frontend','101:101'),('postgres','')]}
+    if value=='omitted':configs[role]['Config'].pop('User')
+    else:configs[role]['Config']['User']=value
+    locks=json.loads((ROOT/'deploy/image-lock.json').read_text())
+    monkeypatch.setattr(manager,'git',lambda *args:json.dumps(locks))
+    host=SimpleNamespace(image=lambda ref:configs.get(ref,{}))
+    approved={'commit':revision,'images':{k:k for k in configs}}
+    if accepted:
+        manager.Host.images(host,approved)
+        assert approved['images']['redis']==locks['images']['redis:7-alpine']
+    else:
+        with pytest.raises(policy.Reject,match='Approved '+role+' image'):manager.Host.images(host,approved)
+
+
 def real_redis_evidence(tmp_path):
     approved,docs,save=bundle(tmp_path)
     approved['images']['redis']=json.loads((ROOT/'deploy/image-lock.json').read_text())['images']['redis:7-alpine']

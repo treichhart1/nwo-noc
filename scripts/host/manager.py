@@ -316,7 +316,10 @@ class Host:
                 .get("Labels", {})
                 .get("org.opencontainers.image.revision")
                 != a["commit"]
-                or info["Config"].get("User") != user
+                # Docker29 omits an empty image User; absence has the same OCI
+                # default as "". Nonempty application UIDs remain mandatory,
+                # and malformed explicit null/other identities still fail.
+                or info["Config"].get("User", "") != user
             ):
                 revision = info["Config"].get("Labels", {}).get("org.opencontainers.image.revision")
                 actual_user = info["Config"].get("User")
