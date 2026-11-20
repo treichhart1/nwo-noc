@@ -14,6 +14,7 @@ import tarfile
 import threading
 import time
 from uuid import uuid4
+from types import SimpleNamespace
 import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -87,6 +88,20 @@ def test_recovery_transport_cannot_write_arbitrary_paths(tmp_path,attack):
         if attack=='existing':assert (dest/'sentinel').read_text()=='preserve'
         else:assert not dest.exists()
     assert not (tmp_path/'escaped').exists()
+
+
+def test_benchmark_refuses_existing_storage_without_removing_it(tmp_path,monkeypatch):
+    sys.path.insert(0,str(ROOT/'scripts/release'))
+    import pilot_benchmark
+    calls=[]
+    def command(args,**kw):
+        calls.append(args)
+        return SimpleNamespace(returncode=0,stdout=('sha256:'+'a'*64+'\n') if args[:3]==['docker','image','inspect'] else '')
+    monkeypatch.setattr(pilot_benchmark,'command',command)
+    with pytest.raises(RuntimeError,match='Existing volume retained'):
+        pilot_benchmark.measure('synthetic-backend','synthetic-postgres',tmp_path/'report.json')
+    assert not any(args[:3] in (['docker','volume','rm'],['docker','rm','-f']) for args in calls)
+    assert json.loads((tmp_path/'report.json').read_text())['target_status']=='NOT TESTED'
 
 
 EICAR = b'X5O!P%@AP[4\\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*'

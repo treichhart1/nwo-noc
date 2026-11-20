@@ -20,24 +20,33 @@ def measure(backend, postgres, output):
     postgres = command(['docker','image','inspect','--format','{{.Id}}',postgres]).stdout.strip()
     prefix = 'noc119-bench-' + uuid.uuid4().hex[:10]
     network, database = prefix + '-net', prefix + '-db'
+    volume=prefix+'-data'
+    owned_network=owned_database=owned_volume=False
     records = []
     report = {'scope':'Synthetic2ms transport; no live equipment; process CPU/RSS exclude PostgreSQL',
               'backend':backend,'postgres':postgres,'host_cpus':os.cpu_count(),
               'host_memtotal':next(l.strip() for l in Path('/proc/meminfo').read_text().splitlines() if l.startswith('MemTotal:')),
               'limits':{'backend_cpus':2,'backend_memory_mib':768,'database_cpus':2,'database_memory_mib':1024,'polling_threads':8,'pool_size':10},
+              'database_storage':'Disposable named Docker volume on CI host filesystem; physical medium unverified; not tmpfs',
               'records':records,'target_seconds':15,'target_status':'NOT TESTED'}
     try:
         command(['docker','network','create','--internal',network])
+        owned_network=True
+        if command(['docker','volume','inspect',volume],check=False).returncode==0:raise RuntimeError('Existing volume retained; refusing benchmark')
+        command(['docker','volume','create',volume]);owned_volume=True
         uid=command(['docker','run','--rm','--network','none','--entrypoint','id',postgres,'-u','postgres']).stdout.strip()
+        command(['docker','run','--rm','--network','none','--read-only','--user','0:0','--cap-drop','ALL','--cap-add','CHOWN','--mount',f'type=volume,src={volume},dst=/var/lib/postgresql/data','--entrypoint','chown',postgres,uid+':'+uid,'/var/lib/postgresql/data'])
         command(['docker','run','-d','--name',database,'--network',network,'--network-alias','db','--user',uid+':'+uid,'--cap-drop','ALL','--security-opt','no-new-privileges',
-                 '--cpus','2','--memory','1g','--tmpfs',f'/var/lib/postgresql/data:rw,uid={uid},gid={uid},mode=700,size=512m',
+                 '--cpus','2','--memory','1g','--mount',f'type=volume,src={volume},dst=/var/lib/postgresql/data',
                  '--tmpfs',f'/var/run/postgresql:rw,uid={uid},gid={uid},mode=700,size=16m',
                  '-e','POSTGRES_USER=synthetic','-e','POSTGRES_PASSWORD=synthetic-ci-only','-e','POSTGRES_DB=nwo_noc',postgres])
+        owned_database=True
         import time
         for attempt in range(60):
             if command(['docker','exec',database,'pg_isready','-U','synthetic','-d','nwo_noc'],check=False).returncode==0:break
             time.sleep(1)
         else: raise RuntimeError('Disposable PostgreSQL unavailable')
+        report['postgres_settings']=command(['docker','exec',database,'psql','-U','synthetic','-d','nwo_noc','-A','-t','-c',"SELECT name||'='||setting FROM pg_settings WHERE name IN('fsync','synchronous_commit','shared_buffers','max_connections','full_page_writes') ORDER BY name"]).stdout.splitlines()
         for repeat in range(1,4):
             result=command(['docker','run','--rm','--network',network,'--read-only','--cap-drop','ALL','--security-opt','no-new-privileges',
                 '--cpus','2','--memory','768m','--tmpfs','/tmp:rw,noexec,nosuid,size=128m',
@@ -54,8 +63,9 @@ def measure(backend, postgres, output):
         report.update(min_seconds=min(samples),median_seconds=statistics.median(samples),max_seconds=max(samples),
                       target_status='PASS' if max(samples)<=15 else 'FAIL', measured_rounds=len(samples))
     finally:
-        command(['docker','rm','-f',database],check=False)
-        command(['docker','network','rm',network],check=False)
+        if owned_database:command(['docker','rm','-f',database],check=False)
+        if owned_volume:command(['docker','volume','rm',volume],check=False)
+        if owned_network:command(['docker','network','rm',network],check=False)
         output.parent.mkdir(parents=True,exist_ok=True)
         output.write_text(json.dumps(report,indent=2)+'\n')
         print(json.dumps(report),flush=True)

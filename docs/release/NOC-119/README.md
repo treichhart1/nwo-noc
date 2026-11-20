@@ -157,6 +157,11 @@ uses an internal Docker network with no published ports, and records all rounds,
 CPU/RSS/query latency, image IDs, samples and unique receipts. Actual core count
 and host memory are reported; this is not live radio capacity or an SLA. Functional
 success never converts a failed15second target to PASS.
+The final profile uses a disposable named Docker volume for PostgreSQL data and
+records fsync/synchronous_commit/full_page_writes. Initial source9545ecf used512MiB
+RAM-backed data and measured18rounds10.018–11.883s (median10.9245s) on4cores/
+16078424KiB host memory. This is retained as a diagnostic, not durable-storage
+acceptance. Final named-volume measurements are required before evaluating target.
 
 Initial full local suite:883passed/958skipped/2warnings; actual ClamAV/DB/VM checks
 were not executed locally. Focused security/installer tests82passed/3scanner skips.
