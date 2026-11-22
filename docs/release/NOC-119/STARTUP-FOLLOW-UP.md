@@ -61,6 +61,29 @@ their fixed2026-11-13 samples fell outside the real seven-day history window on
 fixture timestamp. Real queries, retention limits, auth/role checks, bounds and
 all sample assertions remain unchanged; application retention is not extended.
 
+## Native initialization and virtual CPU investigation
+
+Instrumented run672/commit0103b06 reproduced failed startup. Its last completed
+native import record is uvloop.includes; no application-startup-complete flag was
+observed. Uvicorn import itself was4.711s; app.api.routes completed27.253s in the
+retained profile. These records do not establish that bytecode work alone caused
+the180s failure. Existing OOMKilled=false is not a substitute for restart/exit
+history. The failure collector now retains numeric restart/die codes, OOM event
+counts, whitelisted process resources, CPU features and kernel failure flags.
+
+The locked NumPy2.5.5 wheel reports a required X86_V2 baseline. The original
+harness passed no -cpu option. [QEMU's CPU model documentation](https://www.qemu.org/docs/master/system/qemu-cpu-models.html)
+states the default is qemu64 and lists it below x86-64-v2; [NumPy's build contract](https://numpy.org/doc/stable/reference/simd/build-options.html)
+requires baseline CPU features and identifies X86_V2 as its x86-64 minimum.
+That virtual CPU is therefore not an adequate dependency compatibility target.
+The harness now explicitly selects the Nehalem x86-64-v2 model with the same
+2vCPU/5120MiB limits. It queries actual QEMU model expansion for both qemu64 and
+Nehalem, requires all selected-model v2 flags, verifies the source guest's actual
+flags, and imports NumPy/uvloop/rasterio/pyproj in the exact read-only candidate
+image before installation. A failed native import fails the job; no timeout,
+healthcheck, seccomp or capability bypass is introduced. Runtime acceptance and
+the exact causal disposition remain pending actual corrected-guest execution.
+
 ## Acceptance requirements
 
 The instrumented baseline and corrected-image VM runs must establish the actual

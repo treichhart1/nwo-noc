@@ -565,6 +565,8 @@ jobs:
         run: |
           sudo apt-get -o APT::Update::Error-Mode=any update
           sudo apt-get install -y --no-install-recommends qemu-system-x86 qemu-utils cloud-image-utils
+      - name: Validate explicit guest CPU ABI against actual QEMU models
+        run: python3 tests/installer/cpu_contract.py --execute-qemu
       - name: Build actual candidate artifacts for independent guests
         run: |
           docker build -t noc113-backend:base backend

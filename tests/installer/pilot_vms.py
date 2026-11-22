@@ -9,6 +9,7 @@ import socket
 import subprocess
 import tarfile
 import time
+from cpu_contract import CPU_MODEL, V2, model_contract
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -49,7 +50,7 @@ class VM:
         kvm = os.access('/dev/kvm',os.R_OK|os.W_OK)
         self.acceleration = 'kvm' if kvm else 'tcg'
         self.serial = (self.root/'serial.log').open('wb')
-        args=['qemu-system-x86_64','-accel',self.acceleration,'-m','5120','-smp','2','-nographic',
+        args=['qemu-system-x86_64','-accel',self.acceleration,'-cpu',CPU_MODEL,'-m','5120','-smp','2','-nographic',
               '-serial',f'file:{self.root}/serial.log','-monitor','none','-drive',f'file={self.root}/disk.qcow2,format=qcow2,if=virtio',
               '-drive',f'file={self.root}/seed.img,format=raw,if=virtio',
               '-netdev',f'user,id=noc,hostfwd=tcp:127.0.0.1:{port}-:22','-device','virtio-net-pci,netdev=noc']
@@ -157,6 +158,7 @@ def main():
     guests=[];egress=None
     try:
         phase('verify-pinned-ubuntu-image')
+        report['cpu_model_contract']=model_contract()
         egress=socket.socket();egress.bind(('127.0.0.1',22229));egress.listen(8)
         image=json.loads((ROOT/'deploy/pilot-vm-image.json').read_text())
         run(['curl','--fail','--location','--proto','=https','--tlsv1.2','--retry','3','--max-time','900','-o',work/'ubuntu.img',image['url']],timeout=1000)
@@ -177,8 +179,14 @@ def main():
         sender=VM(work,'noc119-source',22221,work/'ubuntu.img',key);guests.append(sender)
         report['acceleration']=sender.acceleration
         report['source_boot_and_cloudinit_seconds']=sender.boot_seconds
+        cpu_script="import json; f=next(line.split(':',1)[1].split() for line in open('/proc/cpuinfo') if line.startswith('flags')); print(json.dumps({k:k in f for k in "+repr(list(V2))+"}))"
+        report['source_cpu_features']=json.loads(sender.ssh('python3 -c '+shlex.quote(cpu_script)).stdout)
+        if not all(report['source_cpu_features'].values()):raise AssertionError('Guest x86-64-v2 ABI unavailable')
         phase('source-supported-packages-and-private-firewall')
         (evidence/'source-provision.log').write_bytes(provision(sender,source,images,redis).stdout)
+        phase('source-exact-image-native-imports')
+        native="import json,time; t=time.monotonic(); import numpy,uvloop,rasterio,pyproj; print(json.dumps({'imports':['numpy','uvloop','rasterio','pyproj'],'seconds':round(time.monotonic()-t,3),'numpy_baseline':numpy._core._multiarray_umath.__cpu_baseline__}))"
+        report['source_native_imports']=json.loads(sender.ssh('sudo docker run --rm --network none --read-only --cap-drop ALL --memory 1g --pids-limit 512 --tmpfs /tmp:rw,noexec,nosuid,size=32m --entrypoint python noc113-backend:base -c '+shlex.quote(native),timeout=90).stdout)
         phase('source-installer-upgrade-and-isolated-restore')
         result=sender.ssh('cd /home/nocpilot/source\nsudo python3 tests/installer/test_ubuntu_host.py --workspace /var/tmp/noc119-acceptance --extended --pilot-checkpoint',timeout=2400)
         (evidence/'source-install.log').write_bytes(result.stdout)

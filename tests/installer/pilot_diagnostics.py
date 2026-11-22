@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 import re
 import subprocess
+import time
 
 
 def import_profile(text):
@@ -57,12 +58,30 @@ def collect():
                         'log_signals':signals(logs.stdout+'\n'+logs.stderr),
                         'health_signals':signals('\n'.join(p.get('Output','') for p in probes))})
         if role=='backend':
+            records[-1]['restart_count']=info.get('RestartCount')
             records[-1]['import_profile']=import_profile(logs.stdout+'\n'+logs.stderr)
             records[-1]['health_seconds']=[round(__import__('datetime').datetime.fromisoformat(p['End'].replace('Z','+00:00')).timestamp()-__import__('datetime').datetime.fromisoformat(p['Start'].replace('Z','+00:00')).timestamp(),3) for p in probes]
             top=command(['docker','top',info['Id'],'-eo','pcpu,pmem,nlwp,time,comm'])
-            records[-1]['process_resources']=[line.split() for line in top.stdout.splitlines()[1:] if re.fullmatch(r'\s*[\d.]+\s+[\d.]+\s+\d+\s+[\d:]+\s+(python|uvicorn)\s*',line)]
+            records[-1]['process_resources']=[line.split() for line in top.stdout.splitlines()[1:] if re.fullmatch(r'\s*[\d.]+\s+[\d.]+\s+\d+\s+[\d:]+\s+(python(?:3(?:\.12)?)?|uvicorn)\s*',line)]
             records[-1]['memory_limit_bytes']=info.get('HostConfig',{}).get('Memory')
+            events=command(['docker','events','--since',info['Created'],'--until',str(int(time.time())),
+                            '--filter','container='+info['Id'],'--format','{{json .}}'])
+            exited=[];oom=0
+            for line in events.stdout.splitlines():
+                try:event=json.loads(line)
+                except ValueError:continue
+                code=event.get('Actor',{}).get('Attributes',{}).get('exitCode','')
+                if event.get('Action')=='die' and str(code).isdigit():exited.append(int(code))
+                if event.get('Action')=='oom':oom+=1
+            records[-1]['retained_die_exit_codes']=exited[-6:]
+            records[-1]['retained_oom_events']=oom
+    flags=next((line.split(':',1)[1].split() for line in Path('/proc/cpuinfo').read_text().splitlines() if line.startswith('flags')),[])
+    kernel=command(['dmesg'])
     return {'installation_state':state.get('status'),'containers':records,
+            'cpu_features':{name:name in flags for name in ('ssse3','sse4_1','sse4_2','popcnt','cx16','lahf_lm','avx','avx2')},
+            'kernel_signals_available':kernel.returncode==0,
+            'kernel_failure_flags':{name:token in kernel.stdout.lower() for name,token in
+                                    {'invalid_opcode':'invalid opcode','segfault':'segfault at','oom':'out of memory','killed_process':'killed process'}.items()},
             'scope':'No raw logs, environment variables, credentials or application records exported'}
 
 
