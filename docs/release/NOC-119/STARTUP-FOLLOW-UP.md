@@ -38,6 +38,21 @@ cache headers and non-writability for app.main/FastAPI/SQLAlchemy/Uvicorn.
 Python3.12, dependencies/locks, healthchecks,180s startup contract, resource
 limits, private bindings, read-only filesystem and database readiness are unchanged.
 
+Two related probe costs were reproduced locally: importing worker_health also
+imported the complete ORM/monitoring runtime merely to get ID_FILE (916ms native
+import); the planning --health path loaded ORM/GIS before checking a file's age.
+The unchanged worker identity is now a shared dependency-free constant; Redis
+lookup, worker-specific key and0<=age<60s remain enforced. The planning CLI now
+dispatches its same150s heartbeat check before heavy worker imports and uses the
+same extracted private storage-path function. Missing/stale/symlink heartbeats
+fail. Settings validation is retained. Worker probe import fell to256ms native;
+this is diagnostic evidence, not a claim that the VM probe deadline passed.
+Nine regression cases verify fresh/stale/future/missing worker heartbeat behavior,
+planning freshness/symlink rejection, and absence of ORM/GIS initialization in
+fresh probe processes. Exact-source static reviews were updated for the unchanged
+private container listener and moved UUID marker; no new rule/CVE ignore or
+severity exception was added.
+
 ## Acceptance requirements
 
 The instrumented baseline and corrected-image VM runs must establish the actual

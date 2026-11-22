@@ -1,5 +1,14 @@
 """Opt-in local CPU worker. Durable PostgreSQL queue, leased/fenced jobs and bounded children."""
 
+import sys
+
+# The health command must observe the running worker, not import/initialize its
+# SQLAlchemy models, RF schemas and native GIS stack on every bounded probe.
+if __name__ == "__main__" and "--health" in sys.argv:
+    from .health import main as health_main
+    health_main()
+    raise SystemExit(0)
+
 import json, os, subprocess, sys, time
 from datetime import timedelta
 from uuid import uuid4
@@ -244,12 +253,6 @@ if __name__ == "__main__":
                 "processing_failed_review_format_crs_bounds_and_limits",
             )
             raise SystemExit(1)
-    elif "--health" in sys.argv:
-        from .terrain import root
-
-        p = root() / "worker.heartbeat"
-        if not p.exists() or time.time() - p.stat().st_mtime > 150:
-            raise SystemExit("Planning heartbeat stale/missing")
     elif "--once" in sys.argv:
         once()
     else:

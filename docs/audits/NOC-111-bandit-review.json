@@ -642,13 +642,13 @@
       "justification": "Assertion is synthetic benchmark/rehearsal acceptance, not runtime authorization. Explicit configuration guards and disabled live transports remain separate; never run acceptance with python -O."
     },
     {
-      "fingerprint": "49185ed97e04d05013f97bcf4ef819fedecaf042f1d143a69cb45ce64885555f",
-      "file": "backend/app/services/worker_runtime.py",
-      "line": 13,
+      "fingerprint": "6718e6b0dc3be6418cf7bcab4de11f64e8ccb4039a4334bc3d7619126ea748ee",
+      "file": "backend/app/services/worker_identity.py",
+      "line": 3,
       "rule": "B108",
       "severity": "MEDIUM",
-      "source_context": "12 \n13 ID_FILE = \"/tmp/nwo-noc-worker-id\"\n14 \n",
-      "justification": "Worker ID marker contains a random UUID, not a secret; random temporary suffix then atomic replace prevents following the destination symlink. Private container tmpfs remains required."
+      "source_context": "2 \n3 ID_FILE = \"/tmp/nwo-noc-worker-id\"\n",
+      "justification": "Worker ID marker contains a random UUID, not a secret; random temporary suffix then atomic replace prevents following the destination symlink. Private container tmpfs remains required. NOC119A re-review: unchanged marker moved to a dependency-free shared constant so a read-only health probe does not initialize ORM/monitoring; producer atomic-write behavior and per-worker Redis freshness are unchanged."
     },
     {
       "fingerprint": "abef9759dfce8c2fff2c089b1b84237e24446876689593bb8f7c7a7a3a7437e4",

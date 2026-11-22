@@ -2,7 +2,7 @@
 
 import time
 from pathlib import Path
-from app.services.worker_runtime import ID_FILE
+from app.services.worker_identity import ID_FILE
 from redis import Redis
 from app.core.config import settings
 

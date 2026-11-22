@@ -21,14 +21,7 @@ ENV = {
 os.environ.setdefault("PROJ_NETWORK", "OFF")
 
 
-def root():
-    from app.core.config import settings
-
-    p = Path(settings.planning_storage_root)
-    if p.is_symlink():
-        raise ValueError("Unsafe terrain storage")
-    p.mkdir(mode=0o700, parents=True, exist_ok=True)
-    return p.resolve()
+from .storage_path import root
 
 
 def local(key):

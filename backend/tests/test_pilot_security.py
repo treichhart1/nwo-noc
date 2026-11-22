@@ -37,6 +37,50 @@ def test_startup_import_diagnostics_export_only_numeric_timings_and_modules():
     assert 'password' not in json.dumps(report) and 'internal.invalid' not in json.dumps(report)
 
 
+def test_health_probe_import_does_not_initialize_monitoring_database():
+    result=subprocess.run([sys.executable,'-c',
+        'import sys; import app.worker_health; '
+        'assert "sqlalchemy" not in sys.modules; '
+        'assert "app.services.worker_runtime" not in sys.modules'],capture_output=True,timeout=30)
+    assert result.returncode==0
+
+
+@pytest.mark.parametrize('value,healthy',[(b'90',True),(b'39',False),(b'101',False),(None,False)])
+def test_lightweight_worker_probe_preserves_worker_specific_freshness(tmp_path,monkeypatch,value,healthy):
+    from app import worker_health
+    identity=tmp_path/'worker-id';identity.write_text('synthetic-worker')
+    monkeypatch.setattr(worker_health,'ID_FILE',str(identity))
+    monkeypatch.setattr(worker_health.time,'time',lambda:100)
+    keys=[]
+    class Client:
+        def get(self,key):keys.append(key);return value
+    monkeypatch.setattr(worker_health.Redis,'from_url',lambda *a,**kw:Client())
+    if healthy:worker_health.main()
+    else:
+        with pytest.raises(SystemExit):worker_health.main()
+    assert keys==['noc:worker:synthetic-worker:heartbeat']
+
+
+@pytest.mark.parametrize('condition',['fresh','missing','stale','symlink'])
+def test_planning_health_cli_retains_freshness_without_gis_or_orm(tmp_path,condition):
+    heartbeat=tmp_path/'worker.heartbeat'
+    if condition=='symlink':heartbeat.symlink_to(tmp_path/'target')
+    elif condition!='missing':
+        heartbeat.write_text('')
+        if condition=='stale':os.utime(heartbeat,(1,1))
+    script='''import runpy,sys
+sys.argv=['app.planning.worker','--health']
+try:
+    runpy.run_module('app.planning.worker',run_name='__main__')
+except SystemExit as e:
+    status=0 if e.code is None else e.code
+assert not any(n in sys.modules for n in ('sqlalchemy','rasterio','numpy','app.planning.service'))
+raise SystemExit(status)
+'''
+    result=subprocess.run([sys.executable,'-c',script],env={**os.environ,'PLANNING_STORAGE_ROOT':str(tmp_path)},capture_output=True,timeout=30)
+    assert (result.returncode==0)==(condition=='fresh')
+
+
 def capsule(tmp_path):
     approved, _, _ = bundle(tmp_path)
     source = tmp_path / 'approval'; source.write_text(json.dumps(approved)); source.chmod(0o600)

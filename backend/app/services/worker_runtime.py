@@ -9,9 +9,7 @@ from app.core.config import settings
 from app.core.database import SessionLocal
 from app.models.entities import MonitoringWorker, AuditLog
 from app.services.monitoring_spool import count
-
-ID_FILE = "/tmp/nwo-noc-worker-id"
-
+from app.services.worker_identity import ID_FILE
 
 class Runtime:
     def __init__(
