@@ -30,7 +30,7 @@ def sha(path):
 
 
 class VM:
-    def __init__(self, work, name, port, image, key):
+    def __init__(self, work, name, port, image, key, cpu_model=CPU_MODEL):
         self.root = work / name; self.root.mkdir(mode=0o700)
         self.port, self.key, self.process = port, key, None
         host_key = self.root / 'host-key'
@@ -50,11 +50,12 @@ class VM:
         kvm = os.access('/dev/kvm',os.R_OK|os.W_OK)
         self.acceleration = 'kvm' if kvm else 'tcg'
         self.serial = (self.root/'serial.log').open('wb')
-        args=['qemu-system-x86_64','-accel',self.acceleration,'-cpu',CPU_MODEL,'-m','5120','-smp','2','-nographic',
+        args=['qemu-system-x86_64','-accel',self.acceleration,'-cpu',cpu_model,'-m','5120','-smp','2','-nographic',
               '-serial',f'file:{self.root}/serial.log','-monitor','none','-drive',f'file={self.root}/disk.qcow2,format=qcow2,if=virtio',
               '-drive',f'file={self.root}/seed.img,format=raw,if=virtio',
               '-netdev',f'user,id=noc,hostfwd=tcp:127.0.0.1:{port}-:22','-device','virtio-net-pci,netdev=noc']
         started=time.monotonic()
+        self.qemu_args=args
         self.process=subprocess.Popen(args,stdout=subprocess.DEVNULL,stderr=self.serial)
         try:
             self.wait()
@@ -93,6 +94,24 @@ class VM:
 
     def copy(self, path, destination):
         run(['scp','-i',self.key,'-P',str(self.port),'-o','StrictHostKeyChecking=yes','-o',f'UserKnownHostsFile={self.known}',path,f'nocpilot@127.0.0.1:{destination}'],timeout=1200)
+
+    def change_cpu_before_install(self, model):
+        # A/B the native ABI on identical source-VM disk/image bytes. No NOC
+        # installation exists yet; receiver recovery still uses a separate disk.
+        before=self.ssh('cat /proc/sys/kernel/random/boot_id').stdout.strip()
+        self.stop()
+        args=list(self.qemu_args)
+        args[args.index('-cpu')+1]=model
+        serial=self.root/'serial-compatible-cpu.log'
+        args[args.index('-serial')+1]='file:'+str(serial)
+        self.serial=serial.open('ab')
+        self.process=subprocess.Popen(args,stdout=subprocess.DEVNULL,stderr=self.serial)
+        self.qemu_args=args
+        self.wait()
+        self.ssh('cloud-init status --wait',timeout=300)
+        if self.ssh('cat /proc/sys/kernel/random/boot_id').stdout.strip()==before:
+            raise RuntimeError('CPU compatibility reboot not observed')
+        return {'kernel_boot_changed':True,'cpu_model':model,'noc_installed_before_change':False}
 
     def reboot(self):
         started=time.monotonic()
@@ -176,17 +195,26 @@ def main():
         with images.open('xb') as out:run(['docker','save','noc113-backend:base','noc113-frontend:base','noc117-postgres:rc',redis_id],output=out)
         phase('source-kernel-boot-and-pinned-ssh')
         report['acceleration']='kvm' if os.access('/dev/kvm',os.R_OK|os.W_OK) else 'tcg'
-        sender=VM(work,'noc119-source',22221,work/'ubuntu.img',key);guests.append(sender)
+        sender=VM(work,'noc119-source',22221,work/'ubuntu.img',key,cpu_model='qemu64');guests.append(sender)
         report['acceleration']=sender.acceleration
         report['source_boot_and_cloudinit_seconds']=sender.boot_seconds
         cpu_script="import json; f=next(line.split(':',1)[1].split() for line in open('/proc/cpuinfo') if line.startswith('flags')); print(json.dumps({k:k in f for k in "+repr(list(V2))+"}))"
         report['source_cpu_features']=json.loads(sender.ssh('python3 -c '+shlex.quote(cpu_script)).stdout)
-        if not all(report['source_cpu_features'].values()):raise AssertionError('Guest x86-64-v2 ABI unavailable')
         phase('source-supported-packages-and-private-firewall')
         (evidence/'source-provision.log').write_bytes(provision(sender,source,images,redis).stdout)
+        probe_command='sudo python3 /home/nocpilot/source/tests/installer/native_probe.py --execute-disposable-host'
+        phase('source-baseline-native-imports')
+        report['baseline_native_imports']=json.loads(sender.ssh(probe_command,timeout=140).stdout)
+        phase('source-compatible-cpu-kernel-boot')
+        report['cpu_compatibility_reboot']=sender.change_cpu_before_install(CPU_MODEL)
+        report['corrected_cpu_features']=json.loads(sender.ssh('python3 -c '+shlex.quote(cpu_script)).stdout)
+        if not all(report['corrected_cpu_features'].values()):raise AssertionError('Guest x86-64-v2 ABI unavailable')
         phase('source-exact-image-native-imports')
-        native="import json,time; t=time.monotonic(); import numpy,uvloop,rasterio,pyproj; print(json.dumps({'imports':['numpy','uvloop','rasterio','pyproj'],'seconds':round(time.monotonic()-t,3),'numpy_baseline':numpy._core._multiarray_umath.__cpu_baseline__}))"
-        report['source_native_imports']=json.loads(sender.ssh('sudo docker run --rm --network none --read-only --cap-drop ALL --memory 1g --pids-limit 512 --tmpfs /tmp:rw,noexec,nosuid,size=32m --entrypoint python noc113-backend:base -c '+shlex.quote(native),timeout=90).stdout)
+        report['source_native_imports']=json.loads(sender.ssh(probe_command,timeout=140).stdout)
+        if report['baseline_native_imports']['image_id']!=report['source_native_imports']['image_id']:
+            raise AssertionError('Native A/B images differ')
+        if not report['source_native_imports']['all_passed']:
+            raise AssertionError('Supported-CPU native imports failed; no installation acceptance')
         phase('source-installer-upgrade-and-isolated-restore')
         result=sender.ssh('cd /home/nocpilot/source\nsudo python3 tests/installer/test_ubuntu_host.py --workspace /var/tmp/noc119-acceptance --extended --pilot-checkpoint',timeout=2400)
         (evidence/'source-install.log').write_bytes(result.stdout)
@@ -205,7 +233,7 @@ def main():
         transported=work/'security-transport'
         unpack_transport(transfer,transported)
         attestation=validate(transported,fingerprint)
-        identities=attestation['tested_runtime_image_ids']
+        identities=sorted(set(attestation['tested_runtime_image_ids']+[report['source_native_imports']['image_id']]))
         if not identities:raise AssertionError('Independent runtime scan identities missing')
         run(['docker','load','-i',transported/'images.tar'])
         scans=evidence/'runtime-security'
@@ -239,7 +267,7 @@ def main():
                 except Exception:
                     report['diagnostics_unavailable']=True
         diagnostics=[]
-        for path in (work/'noc119-source/serial.log',work/'noc119-recovery/serial.log'):
+        for path in sorted(work.glob('noc119-*/serial*.log')):
             if path.exists():
                 diagnostics += [line[-240:] for line in path.read_text(errors='replace').splitlines() if any(token in line for token in ('Linux version','Kernel panic','No bootable device','Failed to start')) or line.startswith('qemu-system-x86_64:')]
         report['sanitized_boot_diagnostics']=diagnostics[-12:]

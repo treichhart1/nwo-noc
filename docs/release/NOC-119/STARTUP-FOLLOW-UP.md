@@ -102,3 +102,27 @@ Do not substitute another image's scan or claim production artifact authorizatio
 Existing vendor security, legal, off-site failure-domain, real VPN/MFA, operational
 scanner-definition, firmware/provider and consistent15s performance blockers remain.
 This investigation grants no live-pilot or production authorization.
+
+
+For causal verification, the source VM now starts with the original qemu64 CPU,
+provisions the same pinned image and runs bounded per-module NumPy/uvloop/GIS
+imports. It then powers off, reboots the same disk with Nehalem, verifies actual
+CPU features and repeats the probes against the identical immutable image ID.
+Only successful corrected-CPU imports may proceed to the actual installer.
+Reports retain numeric exit/signal/timeout/duration and static error flags, not raw
+errors. This distinguishes a CPU ABI rejection, native import stall and general
+startup cost. A/B results remain pending until actually executed; a documented
+CPU mismatch alone is not claimed to prove the complete failure cause.
+
+The source and receiver recovery guests still use separate roots/kernels/daemons;
+the compatibility reboot occurs before any NOC installation. Probe image IDs are
+included in exact-image scanning. Production startup and health limits are unchanged.
+
+The local workspace reached zero writable space during a new disposable DB
+attempt. The failed container/network and this follow-up's completed synthetic
+pytest fixtures were removed; existing images, volumes, repository work and
+historical artifacts were not pruned. All earlier code was already pushed.
+Follow-up forensic edits use an atomic, expected-parent GitHub tree/commit/ref
+update on the same branch; the local checkout remains at715a749 until writable
+space is restored. In-memory Python parsing passed; execution evidence must come
+from the final-commit CI. No local PostgreSQL initialization or VM success is claimed.
