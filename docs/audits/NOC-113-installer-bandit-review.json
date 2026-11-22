@@ -65,11 +65,11 @@
       "justification": "Permissions are explicit: source-only release directories0755 allow the unprivileged ingress to read code; configuration/secrets remain private elsewhere. Socket directory0770 is root-owned with dedicated GID10001, no other permissions; only frontend supplementary group and the unprivileged ingress share it."
     },
     {
-      "fingerprint": "37289e30b7af87b5d30c2b407626fc8d22d50033651f39fc7a0b117325dda84f",
+      "fingerprint": "10ce3c94702e67f03573d969e905fbccaf813088b6d2d3679071760975a1626b",
       "path": "scripts/host/manager.py",
       "test_id": "B104",
       "severity": "MEDIUM",
-      "justification": "0.0.0.0 is the backend container listener only. No Docker port is published; one internal network blocks outbound ingress/egress. Host bridge is hardcoded127.0.0.1 and forwards only a private Unix socket; negative architecture/actual Ubuntu acceptance checks protect this distinction."
+      "justification": "0.0.0.0 is the backend container listener only. No Docker port is published; one internal network blocks outbound ingress/egress. Host bridge is hardcoded127.0.0.1 and forwards only a private Unix socket; negative architecture/actual Ubuntu acceptance checks protect this distinction. NOC119A re-review: the same listener and port remain unchanged; adjacent controlled-test argv now enables numeric import profiling only. Production argv is unchanged, no shell or environment exposure is added, and existing no-public-port assertions remain intact."
     },
     {
       "fingerprint": "720cb83eb7afdf0791ce03d41f450834aa7d66fff0a062d617fc9cd435f7766d",
