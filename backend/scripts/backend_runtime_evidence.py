@@ -26,7 +26,8 @@ capabilities = next(line.split()[1] for line in Path('/proc/self/status').read_t
 assert int(capabilities,16)==0
 bytecode_caches = {}
 for module in ('app.main', 'fastapi', 'sqlalchemy', 'uvicorn'):
-    source = Path(importlib.util.find_spec(module).origin)
+    source = (Path(__file__).resolve().parents[1] / 'app/main.py'
+              if module == 'app.main' else Path(importlib.util.find_spec(module).origin))
     cache = Path(importlib.util.cache_from_source(str(source)))
     raw = cache.read_bytes()
     assert raw[:4] == importlib.util.MAGIC_NUMBER
