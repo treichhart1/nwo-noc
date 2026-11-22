@@ -23,7 +23,10 @@ def signals(text):
              'timed_out':'timed out','authentication_failed':'password authentication failed',
              'startup_complete':'application startup complete','cpu_baseline':'baseline optimizations',
              'unsupported_cpu':"doesn't support",'import_failed':'could not import module',
-             'fatal_python':'fatal python error'}
+             'fatal_python':'fatal python error',
+             'health_timeout':'health check exceeded timeout','healthcheck_timeout':'healthcheck exceeded timeout',
+             'exec_deadline':'context deadline exceeded','proc_not_ready':'procready not received',
+             'resource_unavailable':'resource temporarily unavailable'}
     allowed={'PermissionError','OperationalError','ImportError','ModuleNotFoundError','ValueError',
              'ValidationError','RuntimeError','OSError','KeyError','FileNotFoundError',
              'AttributeError','TypeError','AssertionError','ProgrammingError','IntegrityError'}
@@ -57,6 +60,7 @@ def collect():
                         'health':health.get('Status'),'health_exit_codes':[p.get('ExitCode') for p in probes],
                         'log_signals':signals(logs.stdout+'\n'+logs.stderr),
                         'health_signals':signals('\n'.join(p.get('Output','') for p in probes))})
+        records[-1]['health_seconds']=[round(__import__('datetime').datetime.fromisoformat(p['End'].replace('Z','+00:00')).timestamp()-__import__('datetime').datetime.fromisoformat(p['Start'].replace('Z','+00:00')).timestamp(),3) for p in probes]
         if role=='backend':
             records[-1]['restart_count']=info.get('RestartCount')
             records[-1]['import_profile']=import_profile(logs.stdout+'\n'+logs.stderr)

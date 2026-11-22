@@ -41,7 +41,8 @@ def test_health_probe_import_does_not_initialize_monitoring_database():
     result=subprocess.run([sys.executable,'-c',
         'import sys; import app.worker_health; '
         'assert "sqlalchemy" not in sys.modules; '
-        'assert "app.services.worker_runtime" not in sys.modules'],capture_output=True,timeout=30)
+        'assert "app.services.worker_runtime" not in sys.modules; '
+        'assert "app.core.config" not in sys.modules'],capture_output=True,timeout=30)
     assert result.returncode==0
 
 
@@ -74,7 +75,7 @@ try:
     runpy.run_module('app.planning.worker',run_name='__main__')
 except SystemExit as e:
     status=0 if e.code is None else e.code
-assert not any(n in sys.modules for n in ('sqlalchemy','rasterio','numpy','app.planning.service'))
+assert not any(n in sys.modules for n in ('sqlalchemy','rasterio','numpy','app.planning.service','app.core.config'))
 raise SystemExit(status)
 '''
     result=subprocess.run([sys.executable,'-c',script],env={**os.environ,'PLANNING_STORAGE_ROOT':str(tmp_path)},capture_output=True,timeout=30)
@@ -386,3 +387,31 @@ def test_real_upload_quarantine_approval_audit_and_recovery(real_scanner,postgre
     assert unavailable.scan_state=='clean' and d.approved_revision==unavailable.number
     events=list(db.scalars(select(DocumentEvent.action).where(DocumentEvent.document_id==d.id)))
     assert events.count('version_uploaded')==2 and 'rescan' in events and 'approve' in events
+
+
+@pytest.mark.parametrize('field,value',[('REDIS_URL','redis://synthetic.invalid:6379/4'),('redis_url','redis://synthetic.invalid:6379/5'),(None,None)])
+def test_probe_values_preserve_case_insensitive_environment_precedence(tmp_path,monkeypatch,field,value):
+    from app.core.probe_config import probe_value,DEFAULT_REDIS_URL
+    monkeypatch.chdir(tmp_path)
+    for key in list(os.environ):
+        if key.lower()=='redis_url':monkeypatch.delenv(key)
+    if field:monkeypatch.setenv(field,value)
+    assert probe_value('REDIS_URL',DEFAULT_REDIS_URL)==(value if field else DEFAULT_REDIS_URL)
+
+
+def test_probe_dotenv_fallback_uses_existing_validated_settings(tmp_path,monkeypatch):
+    from app.core.probe_config import probe_value,DEFAULT_REDIS_URL
+    from app.core.config import settings
+    monkeypatch.chdir(tmp_path)
+    (tmp_path/'.env').write_text('# synthetic standalone configuration')
+    for key in list(os.environ):
+        if key.lower()=='redis_url':monkeypatch.delenv(key)
+    monkeypatch.setattr(settings,'redis_url','redis://synthetic.invalid:6379/6')
+    assert probe_value('REDIS_URL',DEFAULT_REDIS_URL)==settings.redis_url
+
+
+def test_probe_defaults_share_the_application_settings_authority():
+    from app.core.probe_config import DEFAULT_REDIS_URL,DEFAULT_PLANNING_STORAGE_ROOT
+    from app.core.config import Settings
+    assert Settings.model_fields['redis_url'].default==DEFAULT_REDIS_URL
+    assert Settings.model_fields['planning_storage_root'].default==DEFAULT_PLANNING_STORAGE_ROOT

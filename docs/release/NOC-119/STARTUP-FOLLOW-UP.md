@@ -126,3 +126,32 @@ Follow-up forensic edits use an atomic, expected-parent GitHub tree/commit/ref
 update on the same branch; the local checkout remains at715a749 until writable
 space is restored. In-memory Python parsing passed; execution evidence must come
 from the final-commit CI. No local PostgreSQL initialization or VM success is claimed.
+
+
+## Executed supported-CPU result and worker probe correction
+
+Run684/source715a749 actually verified both QEMU models: qemu64 lacks SSSE3,
+SSE4.1,SSE4.2 and POPCNT; Nehalem and its booted guest provide them. The exact
+candidate's NumPy/uvloop/rasterio/pyproj imports completed in3.775s on Nehalem.
+The backend then reached startup-complete/healthy with zero restarts, no retained
+die/OOM events and no kernel invalid-opcode/segfault/OOM flags. Frontend,
+PostgreSQL and Redis were healthy. The original backend startup failure was
+therefore passed in that actual guest; complete installation still FAILED.
+
+The remaining failure was worker health: planning-worker unhealthy and monitoring
+worker health-starting, each with three exit-1 timeout/error probes. Their probes
+still rebuilt the entire Pydantic application Settings model to read a single
+connection URL/path. The correction removes that work from installed-container
+probes: the existing environment values or shared application defaults supply
+the same Redis URL and planning root. Standalone .env users retain the original
+validated Settings fallback. Whole-application Settings validation remains in the
+installer preflight, backend and actual worker; it is not disabled.
+
+Redis GET, exact worker identity, 0<=age<60s, connect/read limits2/3s, planning
+heartbeat150s, path/symlink/permission checks and Docker health deadlines are
+unchanged. Fresh-process tests require probes not to initialize app.core.config,
+ORM or GIS. Additional tests cover case-insensitive environment precedence,
+validated .env fallback and shared default authority. Diagnostics retain all
+roles' probe durations and static timeout/exec-error flags. Final complete VM,
+reboot and independent recovery acceptance remains pending; run684 did not reach
+those stages and is not marked PASS.
