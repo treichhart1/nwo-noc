@@ -24,6 +24,16 @@ native_packages = subprocess.check_output(['dpkg-query', '-W', '-f=${binary:Pack
 loaded = sorted({Path(line.split()[-1]).name for line in Path('/proc/self/maps').read_text().splitlines() if '.so' in line and '/' in line})
 capabilities = next(line.split()[1] for line in Path('/proc/self/status').read_text().splitlines() if line.startswith('CapEff:'))
 assert int(capabilities,16)==0
+bytecode_caches = {}
+for module in ('app.main', 'fastapi', 'sqlalchemy', 'uvicorn'):
+    source = Path(importlib.util.find_spec(module).origin)
+    cache = Path(importlib.util.cache_from_source(str(source)))
+    raw = cache.read_bytes()
+    assert raw[:4] == importlib.util.MAGIC_NUMBER
+    assert int.from_bytes(raw[4:8], 'little') == 3  # checked-hash, not unchecked
+    assert raw[8:16] == importlib.util.source_hash(source.read_bytes())
+    assert not os.access(cache, os.W_OK)
+    bytecode_caches[module] = 'source-validated checked-hash; runtime not writable'
 print(json.dumps({
     'python': sys.version, 'uid': os.getuid(), 'gid': os.getgid(),
     'openssl': ssl.OPENSSL_VERSION, 'sqlite': sqlite3.sqlite_version,
@@ -34,6 +44,7 @@ print(json.dumps({
     'native_package_versions': dict(line.split('\t', 1) for line in native_packages.splitlines()),
     'loaded_native_library_names': loaded,
     'effective_capabilities_hex': capabilities,
+    'bytecode_caches': bytecode_caches,
     'runtime_tools': {name:shutil.which(name) for name in ('dash','mount','nsenter','gpgv','gpgtar','tar','newuidmap','systemd-journald')},
     'systemd_gpt_generator_present': Path('/usr/lib/systemd/system-generators/systemd-gpt-auto-generator').exists(),
     'shell': shutil.which('sh'),

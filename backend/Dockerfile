@@ -18,6 +18,9 @@ COPY --from=dependencies /opt/venv/ /opt/venv/
 RUN python -c "import ssl, sqlite3, pyexpat, rasterio, pyproj, psycopg, cryptography, fastapi, redis, alembic; print(ssl.OPENSSL_VERSION, sqlite3.sqlite_version, pyexpat.EXPAT_VERSION, rasterio.__gdal_version__, pyproj.proj_version_str)"
 COPY . .
 RUN chmod -R a=rX /app && groupadd --gid 10001 noc && useradd --uid 10001 --gid 10001 --home-dir /tmp --no-create-home --shell /usr/sbin/nologin noc && mkdir -p /var/lib/nwo-noc/documents /var/lib/nwo-noc/monitoring /var/lib/nwo-noc/signup /var/lib/nwo-noc/planning && chown 10001:10001 /var/lib/nwo-noc/documents /var/lib/nwo-noc/monitoring /var/lib/nwo-noc/signup /var/lib/nwo-noc/planning && chmod 700 /var/lib/nwo-noc/documents /var/lib/nwo-noc/monitoring /var/lib/nwo-noc/signup /var/lib/nwo-noc/planning
+# Compile on the build host, not on each read-only, unprivileged cold start.
+# Checked-hash caches remain bound to source; changed source is never trusted.
+RUN python -m compileall -q --invalidation-mode checked-hash /opt/venv/lib/python3.12/site-packages /app/app && chmod -R a=rX /opt/venv /app
 USER 10001:10001
 EXPOSE 8000
 HEALTHCHECK --interval=20s --timeout=5s --start-period=30s --retries=5 CMD ["python", "-c", "import urllib.request; urllib.request.build_opener(urllib.request.ProxyHandler({})).open('http://127.0.0.1:8000/health', timeout=3)"]

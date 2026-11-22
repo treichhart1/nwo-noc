@@ -656,10 +656,6 @@ class Host:
                 svc["env_file"].append(str(self.etc / "migration.env"))
                 svc["profiles"] = ["migration"]
             if name == "backend":
-                if a.get("purpose") == "controlled-test":
-                    # Synthetic acceptance diagnostics only; never enabled by a
-                    # production release or used to relax startup readiness.
-                    svc["environment"]["PYTHONPROFILEIMPORTTIME"] = "1"
                 svc["command"] = [
                     "uvicorn",
                     "app.main:app",
@@ -669,6 +665,10 @@ class Host:
                     "8000",
                     "--no-access-log",
                 ]
+                if a.get("purpose") == "controlled-test":
+                    # Same ASGI server/settings; numeric import diagnostics only
+                    # for synthetic acceptance, without extra environment values.
+                    svc["command"] = ["python", "-X", "importtime", "-m", *svc["command"]]
                 svc["depends_on"] = {
                     "db": {"condition": "service_healthy"},
                     "redis": {"condition": "service_healthy"},
