@@ -656,6 +656,10 @@ class Host:
                 svc["env_file"].append(str(self.etc / "migration.env"))
                 svc["profiles"] = ["migration"]
             if name == "backend":
+                if a.get("purpose") == "controlled-test":
+                    # Synthetic acceptance diagnostics only; never enabled by a
+                    # production release or used to relax startup readiness.
+                    svc["environment"]["PYTHONPROFILEIMPORTTIME"] = "1"
                 svc["command"] = [
                     "uvicorn",
                     "app.main:app",

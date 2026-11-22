@@ -27,6 +27,16 @@ from test_backend_security import bundle
 from test_rf_postgres_integration import postgres_db
 
 
+def test_startup_import_diagnostics_export_only_numeric_timings_and_modules():
+    sys.path.insert(0,str(ROOT/'tests/installer'))
+    from pilot_diagnostics import import_profile
+    report=import_profile('import time: 123 | 456 | app.main\n'
+                          'import time: 7 | 8 | secret=password\n'
+                          'postgresql://private:secret@internal.invalid/db\n')
+    assert report['last']==[{'self_us':123,'cumulative_us':456,'module':'app.main'}]
+    assert 'password' not in json.dumps(report) and 'internal.invalid' not in json.dumps(report)
+
+
 def capsule(tmp_path):
     approved, _, _ = bundle(tmp_path)
     source = tmp_path / 'approval'; source.write_text(json.dumps(approved)); source.chmod(0o600)

@@ -6,6 +6,15 @@ import re
 import subprocess
 
 
+def import_profile(text):
+    """Numeric CPython import timings and module identifiers, never log values."""
+    rows=[]
+    for line in text.splitlines():
+        m=re.fullmatch(r'import time:\s+(\d+)\s+\|\s+(\d+)\s+\|\s+([a-zA-Z_][a-zA-Z0-9_.]*)',line)
+        if m:rows.append({'self_us':int(m[1]),'cumulative_us':int(m[2]),'module':m[3]})
+    return {'last':rows[-12:], 'largest_self':sorted(rows,key=lambda r:r['self_us'],reverse=True)[:15]}
+
+
 def signals(text):
     lower=text.lower()
     phrases={'permission_denied':'permission denied','illegal_instruction':'illegal instruction',
@@ -40,13 +49,19 @@ def collect():
         role=info.get('Config',{}).get('Labels',{}).get('com.docker.compose.service')
         if role not in {'db','redis','backend','worker','planning-worker','frontend','migrate'}:continue
         data=info['State'];health=data.get('Health',{})
-        logs=command(['docker','logs','--tail','100',info['Id']])
+        logs=command(['docker','logs','--tail','5000',info['Id']])
         probes=health.get('Log',[])[-3:]
         records.append({'service':role,'status':data.get('Status'),'running':data.get('Running'),
                         'exit_code':data.get('ExitCode'),'oom_killed':data.get('OOMKilled'),
                         'health':health.get('Status'),'health_exit_codes':[p.get('ExitCode') for p in probes],
                         'log_signals':signals(logs.stdout+'\n'+logs.stderr),
                         'health_signals':signals('\n'.join(p.get('Output','') for p in probes))})
+        if role=='backend':
+            records[-1]['import_profile']=import_profile(logs.stdout+'\n'+logs.stderr)
+            records[-1]['health_seconds']=[round(__import__('datetime').datetime.fromisoformat(p['End'].replace('Z','+00:00')).timestamp()-__import__('datetime').datetime.fromisoformat(p['Start'].replace('Z','+00:00')).timestamp(),3) for p in probes]
+            top=command(['docker','top',info['Id'],'-eo','pcpu,pmem,nlwp,time,comm'])
+            records[-1]['process_resources']=[line.split() for line in top.stdout.splitlines()[1:] if re.fullmatch(r'\s*[\d.]+\s+[\d.]+\s+\d+\s+[\d:]+\s+(python|uvicorn)\s*',line)]
+            records[-1]['memory_limit_bytes']=info.get('HostConfig',{}).get('Memory')
     return {'installation_state':state.get('status'),'containers':records,
             'scope':'No raw logs, environment variables, credentials or application records exported'}
 
