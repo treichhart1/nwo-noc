@@ -18,9 +18,11 @@ thread counts, probe durations and configured memory limit to the existing
 credential-safe failure collector. Only identifiers/numbers/static flags are
 exported; raw logs and environment values remain private. Its temporary profiling
 environment setting correctly failed the existing empty-environment assertion;
-the assertion is retained unchanged. The candidate uses the same uvicorn module
-with `python -X importtime -m` only for controlled-test approvals instead. Production
-launch and environment remain unchanged.
+the assertion is retained unchanged. An intermediate candidate used uvicorn via
+`python -X importtime -m`; that also changed the test-only startup fault injector's
+argv matching. All launch instrumentation is removed from the final candidate;
+production and controlled-test command/environment match the starting commit.
+The original instrumented baseline retains the failure profile separately.
 
 The image deliberately installed dependencies with `--no-compile`, excluded local
 pyc files and disabled runtime bytecode writes. Thus a read-only cold start must
@@ -50,8 +52,14 @@ this is diagnostic evidence, not a claim that the VM probe deadline passed.
 Nine regression cases verify fresh/stale/future/missing worker heartbeat behavior,
 planning freshness/symlink rejection, and absence of ORM/GIS initialization in
 fresh probe processes. Exact-source static reviews were updated for the unchanged
-private container listener and moved UUID marker; no new rule/CVE ignore or
-severity exception was added.
+moved UUID marker; the original private-listener fingerprint is restored with
+the original launch command. No new rule/CVE ignore or severity exception was added.
+
+Two existing PostgreSQL API tests also expired on the actual CI wall clock:
+their fixed2026-11-13 samples fell outside the real seven-day history window on
+2026-11-22. Those API tests now freeze the history service clock to their existing
+fixture timestamp. Real queries, retention limits, auth/role checks, bounds and
+all sample assertions remain unchanged; application retention is not extended.
 
 ## Acceptance requirements
 

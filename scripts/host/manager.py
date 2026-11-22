@@ -665,10 +665,6 @@ class Host:
                     "8000",
                     "--no-access-log",
                 ]
-                if a.get("purpose") == "controlled-test":
-                    # Same ASGI server/settings; numeric import diagnostics only
-                    # for synthetic acceptance, without extra environment values.
-                    svc["command"] = ["python", "-X", "importtime", "-m", *svc["command"]]
                 svc["depends_on"] = {
                     "db": {"condition": "service_healthy"},
                     "redis": {"condition": "service_healthy"},
