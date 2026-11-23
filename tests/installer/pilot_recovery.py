@@ -58,7 +58,7 @@ def image_transport_contract(archive, expected, available):
     for row in body:
         value=row.get('Config') if isinstance(row,dict) else None
         if not isinstance(value,str):raise ValueError('Missing image config identity')
-        match=re.fullmatch(r'(?:blobs/sha256/)?([a-f0-9]{64})(?:\\.json)?',value)
+        match=re.fullmatch(r'(?:blobs/sha256/)?([a-f0-9]{64})(?:[.]json)?',value)
         if not match:raise ValueError('Invalid image config identity')
         recorded.add('sha256:'+match.group(1))
     return {'expected_image_ids':sorted(expected),'archive_image_ids':sorted(recorded),

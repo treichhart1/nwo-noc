@@ -724,7 +724,7 @@ def test_recovery_transport_save_uses_explicit_aliases_without_changing_config_i
     def operation(argv,**kw):
         calls.append((argv,kw))
         if argv[:3]==['docker','image','inspect']:
-            return SimpleNamespace(stdout=('sha256:'+argv[-1].split('sha256-')[1]+'\\n').encode())
+            return SimpleNamespace(stdout=('sha256:'+argv[-1].split('sha256-')[1]).encode())
         return SimpleNamespace(stdout=b'')
     monkeypatch.setattr(pilot_recovery,'run',operation)
     pilot_recovery.save_recovery_images(identities,stream)
