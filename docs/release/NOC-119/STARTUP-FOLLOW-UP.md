@@ -310,9 +310,34 @@ or production-host configuration is changed. If unavailable/incompatible, the
 existing TCG fallback remains and no KVM success is invented.
 
 Eight regression cases reject unsafe/nonexistent device ownership/type/mode and
-verify no global permission command or root UID is used. Actual selected
+verify no global permission command or root controller UID is used. Actual selected
 acceleration is still measured by the real QEMU harness and must complete every
 existing acceptance check. This launcher is test infrastructure, never an
 application service or deployment prerequisite bypass.
 
 The independent VM job also requires the backend regression job before booting; a broken embedded-program regression blocks expensive VM execution and still fails the unchanged aggregate release gate. No failed or skipped dependency becomes PASS.
+
+
+## Executed KVM access finding and verified privilege drop
+
+Run708 actually found/dev/kvm present, root-owned, group993(kvm),mode0660, but
+the original user lacked access. The direct sudo run-as-nonroot-group command
+required a password and did not launch a guest; no successful VM acceptance or
+permission change is claimed for it. The existing runner already authorizes
+passwordless ROOT setup (used by package provisioning).
+
+The CI launcher now uses that authorized root setup only to execute the system
+setpriv utility, immediately dropping to the ORIGINAL nonroot UID and existing
+kvm primary GID, preserving only original supplementary groups. It drops effective/
+inheritable/ambient/bounding capabilities, enforces no-new-privileges, resets the
+environment to the target user, and forwards only public CI provenance fields.
+The controller independently checks its real/effective UID,GID,zero effective
+and bounding capabilities,NoNewPrivs=1,and actual KVM access BEFORE image/guest
+operations. Root controllers or mismatches fail closed. No sudoers/device/account/
+ACL/firewall/SSH/service setting changes and no password/credential is used.
+
+The launch metadata is retained even if setup refuses, separately from the VM
+harness's unchanged fresh evidence-directory guard. Added tests reject root,
+wrong identities, retained capabilities,new privileges,inaccessible KVM and partial
+metadata; public-environment filtering/original groups are also checked. Actual
+KVM boot/install/reboot/recovery results remain pending the corrected final run.

@@ -186,6 +186,11 @@ def main():
         print(json.dumps({'phase':name,'scope':'disposable independent VM acceptance'}),flush=True)
     guests=[];egress=None
     try:
+        phase('verify-unprivileged-controller')
+        from hypervisor_launch import verify_controller_identity
+        report['controller_identity']=verify_controller_identity(
+            os.environ,Path('/proc/self/status').read_text(),os.getuid(),os.geteuid(),os.getgid(),
+            os.access('/dev/kvm',os.R_OK|os.W_OK))
         phase('verify-pinned-ubuntu-image')
         report['cpu_model_contract']=model_contract()
         egress=socket.socket();egress.bind(('127.0.0.1',22229));egress.listen(8)

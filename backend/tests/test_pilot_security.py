@@ -590,9 +590,45 @@ def test_hypervisor_group_is_temporary_and_only_for_existing_safe_kvm_device(var
     base=['/usr/bin/python3','fixed-disposable-harness','--execute-disposable-vms']
     command,facts=launch_plan(base,1001,device,variant=='accessible',108)
     if temporary_group:
-        assert command[:7]==['/usr/bin/sudo','-n','-P','-u','#1001','-g','kvm']
+        assert command[:4]==['/usr/bin/sudo','-n','--','/usr/bin/setpriv']
+        assert '--reuid=1001' in command and '--regid=108' in command
+        assert all(x in command for x in ('--bounding-set=-all','--inh-caps=-all','--ambient-caps=-all','--no-new-privs','--reset-env'))
         assert command[-len(base):]==base
-        assert facts['method']=='temporary-existing-kvm-process-group'
+        assert facts['method']=='root-setup-drop-to-original-uid-kvm-group'
     else:assert command==base
     assert base==['/usr/bin/python3','fixed-disposable-harness','--execute-disposable-vms']
     assert not any(x in command for x in ('chmod','chown','usermod','root'))
+
+
+@pytest.mark.parametrize('variant',['valid','wrong_uid','root','wrong_gid','effective_capability',
+                                   'bounding_capability','new_privileges','no_device_access','incomplete_metadata'])
+def test_scoped_kvm_controller_requires_original_uid_no_caps_and_no_new_privileges(variant):
+    sys.path.insert(0,str(ROOT/'tests/installer'))
+    from hypervisor_launch import verify_controller_identity
+    env={'NOC_CI_EXPECTED_UID':'1001','NOC_CI_EXPECTED_GID':'108'}
+    uid=euid=1001;gid=108;eff=bnd='0';nnp='1';access=True
+    if variant=='wrong_uid':uid=euid=1002
+    elif variant=='root':uid=euid=0
+    elif variant=='wrong_gid':gid=0
+    elif variant=='effective_capability':eff='1'
+    elif variant=='bounding_capability':bnd='1'
+    elif variant=='new_privileges':nnp='0'
+    elif variant=='no_device_access':access=False
+    elif variant=='incomplete_metadata':env.pop('NOC_CI_EXPECTED_GID')
+    status=f'CapEff: {eff}\nCapBnd: {bnd}\nNoNewPrivs: {nnp}\n'
+    if variant=='valid':
+        value=verify_controller_identity(env,status,uid,euid,gid,access)
+        assert value['capabilities_dropped'] and value['no_new_privileges'] and value['uid']==1001
+    else:
+        with pytest.raises(RuntimeError):verify_controller_identity(env,status,uid,euid,gid,access)
+
+
+def test_scoped_kvm_setup_forwards_only_public_ci_metadata_and_original_groups():
+    sys.path.insert(0,str(ROOT/'tests/installer'))
+    from hypervisor_launch import launch_plan
+    import stat
+    device=SimpleNamespace(st_mode=stat.S_IFCHR|0o660,st_uid=0,st_gid=108,st_rdev=os.makedev(10,232))
+    command,_=launch_plan(['fixed-harness'],1001,device,False,108,[1001,120],{'GITHUB_ACTIONS':'true','PRIVATE_TOKEN':'hidden-secret'})
+    assert '--groups=120,1001' in command and 'GITHUB_ACTIONS=true' in command
+    assert 'NOC_CI_EXPECTED_UID=1001' in command and '--reuid=0' not in command
+    assert 'hidden-secret' not in json.dumps(command) and 'PRIVATE_TOKEN' not in json.dumps(command)
