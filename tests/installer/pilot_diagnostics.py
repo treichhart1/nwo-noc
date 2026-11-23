@@ -122,3 +122,29 @@ if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--synthetic-disposable-host',action='store_true');a=p.parse_args()
     if not a.synthetic_disposable_host:p.error('Explicit synthetic diagnostics required')
     print(json.dumps(collect()))
+
+
+def command_failure(stdout, stderr, exit_code):
+    """Retain failure identity without raw command output, paths or credentials."""
+    import hashlib
+    checks=[];last_elapsed=None
+    for line in stdout.splitlines():
+        try:row=json.loads(line)
+        except (ValueError,TypeError):continue
+        if isinstance(row,dict) and row.get('status') in ('PASS','PASSED') and isinstance(row.get('check'),str):
+            checks.append(row['check'][:256])
+            value=row.get('elapsed_seconds')
+            if isinstance(value,(int,float)) and not isinstance(value,bool) and 0<=value<=86400:last_elapsed=value
+    allowed={'AssertionError','RuntimeError','ValueError','TimeoutError','HTTPError',
+             'URLError','RemoteDisconnected','SSLError','ConnectionResetError',
+             'FileNotFoundError','PermissionError','OSError'}
+    exceptions=sorted({m.group(1) for m in re.finditer(r'(?m)^(?:[a-zA-Z_][a-zA-Z0-9_]*\.)*([A-Za-z_][A-Za-z0-9_]*):',stderr)
+                       if m.group(1) in allowed})
+    statuses=sorted({int(m.group(1)) for m in re.finditer(r'HTTP Error ([1-5][0-9]{2})(?:\D|$)',stderr)})
+    lower=stderr.lower()
+    return {'exit_code':int(exit_code),'completed_check_count':len(checks),'last_completed_elapsed_seconds':last_elapsed,
+            'last_check_sha256':hashlib.sha256(checks[-1].encode()).hexdigest() if checks else None,
+            'exception_types':exceptions,'http_statuses':statuses,
+            'transport_flags':{name:phrase in lower for name,phrase in {
+                'broken_pipe':'broken pipe','connection_closed':'connection closed',
+                'connection_reset':'connection reset','killed':'killed','timed_out':'timed out'}.items()}}

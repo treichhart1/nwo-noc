@@ -70,10 +70,20 @@ class VM:
                 '-o','StrictHostKeyChecking=yes','-o',f'UserKnownHostsFile={self.known}','-o','ServerAliveInterval=10','-o','ServerAliveCountMax=6','nocpilot@127.0.0.1']
 
     def ssh(self, script, *, timeout=2400, output=None, check=True):
-        result=run([*self.argv(),'bash -se'],data=script.encode(),output=output,timeout=timeout,check=False)
+        try:
+            result=run([*self.argv(),'bash -se'],data=script.encode(),output=output,timeout=timeout,check=False)
+        except subprocess.TimeoutExpired as error:
+            from pilot_diagnostics import command_failure
+            identity=command_failure((error.output or b'').decode(errors='replace'),
+                                     (error.stderr or b'').decode(errors='replace'),124)
+            identity['whole_command_deadline_seconds']=timeout
+            raise RuntimeError('Independent guest whole-command deadline: '+json.dumps(identity)) from None
         if check and result.returncode:
             safe=[line for line in (result.stderr or b'').decode(errors='replace').splitlines() if line.startswith(('NOC packaging','RuntimeError:','AssertionError:','ssh:'))]
-            raise RuntimeError('Independent guest command failed: '+ '; '.join(safe[-3:]))
+            from pilot_diagnostics import command_failure
+            identity=command_failure((result.stdout or b'').decode(errors='replace'),
+                                     (result.stderr or b'').decode(errors='replace'),result.returncode)
+            raise RuntimeError('Independent guest command failed: '+json.dumps(identity)+ '; '+ '; '.join(safe[-3:]))
         return result
 
     def wait(self):
@@ -216,7 +226,7 @@ def main():
         if not report['source_native_imports']['all_passed']:
             raise AssertionError('Supported-CPU native imports failed; no installation acceptance')
         phase('source-installer-upgrade-and-isolated-restore')
-        result=sender.ssh('cd /home/nocpilot/source\nsudo python3 tests/installer/test_ubuntu_host.py --workspace /var/tmp/noc119-acceptance --extended --pilot-checkpoint',timeout=2400)
+        result=sender.ssh('cd /home/nocpilot/source\nsudo python3 tests/installer/test_ubuntu_host.py --workspace /var/tmp/noc119-acceptance --extended --pilot-checkpoint',timeout=4800 if report['acceleration']=='tcg' else 2400)
         (evidence/'source-install.log').write_bytes(result.stdout)
         report['installation']='PASS';phase('source-actual-kernel-reboot');report['source_reboot']=sender.reboot()
         fingerprint=sender.ssh('sudo cat /var/tmp/noc119-acceptance/independent-trust-fingerprint').stdout.decode().strip()

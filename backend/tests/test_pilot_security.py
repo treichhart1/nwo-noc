@@ -490,3 +490,15 @@ def test_recovered_release_preserves_code_traversal_and_private_metadata(tmp_pat
     with pytest.raises(ValueError,match='Unsafe recovered'):restore_release_modes([unsafe],release)
     unsafe.mode=0o755;unsafe.uid=10001
     with pytest.raises(ValueError,match='Unsafe recovered'):restore_release_modes([unsafe],release)
+
+
+def test_guest_command_failure_exports_only_safe_identity():
+    sys.path.insert(0,str(ROOT/'tests/installer'))
+    from pilot_diagnostics import command_failure
+    import hashlib
+    out=json.dumps({'check':'synthetic-check','status':'PASSED'})+'\n'
+    result=command_failure(out,'urllib.error.HTTPError: HTTP Error 401: private-secret\n/private/key/path',1)
+    assert result['exception_types']==['HTTPError'] and result['http_statuses']==[401]
+    assert result['exit_code']==1 and result['completed_check_count']==1
+    assert result['last_check_sha256']==hashlib.sha256(b'synthetic-check').hexdigest()
+    assert 'private-secret' not in json.dumps(result) and '/private/' not in json.dumps(result)

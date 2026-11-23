@@ -555,7 +555,7 @@ jobs:
   independent-pilot:
     name: Independent Ubuntu VM reboot and second-host recovery
     runs-on: ubuntu-24.04
-    timeout-minutes: 75
+    timeout-minutes: 180
     needs: [dependency-security]
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4

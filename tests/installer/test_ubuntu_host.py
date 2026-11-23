@@ -290,11 +290,13 @@ def main():
     results = []
     successful_release_images = set()
 
+    acceptance_started=time.monotonic()
+
     def passed(name, condition=True):
         if not condition:
             raise AssertionError(name)
         results.append(name)
-        print(json.dumps({"check": name, "status": "PASSED"}), flush=True)
+        print(json.dumps({"check": name, "status": "PASSED", "elapsed_seconds": round(time.monotonic()-acceptance_started,3)}), flush=True)
 
     def image(kind, revision, bad=False):
         tag = "noc113-test-" + kind + "-" + revision[:10]

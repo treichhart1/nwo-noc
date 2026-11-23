@@ -209,3 +209,29 @@ write bits. Private0600 release metadata and0700 trust directories retain their
 original restrictions. A regression checks source traversal, unchanged bytes,
 private metadata and unsafe owner/mode rejection. This is recovery-code correction,
 not a claim that the independent restore has already executed.
+
+
+## Whole-scenario deadline is separate from startup readiness
+
+Run695/source03c1fc0 actually booted and provisioned Ubuntu, passed the same-image
+CPU comparison and reached installation state ready. All six containers and the
+unprivileged ingress were healthy/active; backend restart/die/OOM counts0 and
+kernel fault flagsfalse. The full source acceptance SSH command then exceeded
+its2400-second aggregate deadline. This was not an installer180-second readiness
+failure. Reboot, signed export, exact VM runtime scanning and receiver recovery
+were not accepted; no timed-out work is marked PASS.
+
+The harness now retains numeric command exit/deadline, completed-check count,
+last-check SHA256 and allowlisted exception/HTTP/transport indicators without raw
+output or credentials. Successful check events include elapsed seconds. A separate
+preceding run693 ended with an opaque later guest-command failure; its exact
+exception was not retained, so no invented root cause is assigned to it.
+
+Only the complete multi-scenario TCG test allowance increases2400→4800s; the
+KVM allowance stays2400s. The encompassing two-guest CI job is bounded at180min.
+This follows an observed40-minute aggregate expiry with healthy services, not an
+assumption that backend startup needs more time. Application startup180s,
+Compose/worker/backend health deadlines, all per-operation guards, resource
+limits, security assertions and private firewall remain unchanged. More time
+alone is not a pass: the entire sequence must still actually execute, and every
+incomplete phase remains FAIL/NOT TESTED until demonstrated.
