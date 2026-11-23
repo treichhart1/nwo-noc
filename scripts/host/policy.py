@@ -233,3 +233,18 @@ def migration_environment(values, owner_password):
         raise Reject(
             "Migration credentials must target only the dedicated internal NOC owner/database"
         )
+
+
+CPU_FEATURES_V2 = frozenset({"pni", "ssse3", "sse4_1", "sse4_2", "popcnt", "cx16", "lahf_lm"})
+
+
+def require_cpu_features(cpuinfo):
+    processors = [set(line.split(":", 1)[1].split())
+                  for line in cpuinfo.splitlines()
+                  if line.split(":", 1)[0].strip() == "flags" and ":" in line]
+    if not processors or any(not CPU_FEATURES_V2 <= flags for flags in processors):
+        raise Reject(
+            "x86-64-v2 CPU required by the locked NumPy/GIS wheels; verify SSE3/SSSE3, "
+            "SSE4.1/SSE4.2, POPCNT, CX16 and LAHF support on every vCPU. "
+            "Select an approved compatible virtual CPU model before installation; no data changed"
+        )

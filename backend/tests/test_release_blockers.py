@@ -207,7 +207,7 @@ def test_image_scan_unknown_or_mismatched_results_never_clean(tmp_path,monkeypat
     sys.path.insert(0,str(Path(__file__).resolve().parents[2]/'scripts/release'))
     import image_security
     monkeypatch.setattr(image_security.subprocess,'check_output',lambda argv:json.dumps([{'Id':'sha256:'+'e'*64}]).encode())
-    monkeypatch.setattr(image_security.subprocess,'run',lambda *a,**k:SimpleNamespace(returncode=0,stdout=json.dumps(body).encode()))
+    monkeypatch.setattr(image_security.subprocess,'run',lambda *a,**k:SimpleNamespace(returncode=0,stdout=json.dumps(body).encode(),stderr=b''))
     monkeypatch.setattr(sys,'argv',['scan','--output',str(tmp_path/'output'),'synthetic-image'])
     with pytest.raises(RuntimeError,match='unavailable'):image_security.main()
 

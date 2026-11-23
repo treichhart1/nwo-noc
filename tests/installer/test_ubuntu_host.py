@@ -133,6 +133,7 @@ def main():
     p.add_argument("--rehearsal", action="store_true")
     p.add_argument("--worktree-snapshot", action="store_true")
     p.add_argument("--extended", action="store_true")
+    p.add_argument("--pilot-checkpoint", action="store_true", help="Retain healthy disposable VM for reboot and second-host recovery acceptance")
     p.add_argument(
         "--failure-stage",
         choices=[
@@ -289,11 +290,13 @@ def main():
     results = []
     successful_release_images = set()
 
+    acceptance_started=time.monotonic()
+
     def passed(name, condition=True):
         if not condition:
             raise AssertionError(name)
         results.append(name)
-        print(json.dumps({"check": name, "status": "PASSED"}), flush=True)
+        print(json.dumps({"check": name, "status": "PASSED", "elapsed_seconds": round(time.monotonic()-acceptance_started,3)}), flush=True)
 
     def image(kind, revision, bad=False):
         tag = "noc113-test-" + kind + "-" + revision[:10]
@@ -485,6 +488,35 @@ def main():
             for v in verification["checks"]
         ),
     )
+    compose = [
+        "docker",
+        "compose",
+        "-p",
+        state["project"],
+        "-f",
+        root / "opt/nwo-noc/releases" / first / "compose.json",
+    ]
+
+    if args.pilot_checkpoint:
+        # Measure the unchanged real policy in the installed, resource-limited
+        # backend. No administrator credential/hash enters output or argv.
+        cost_script = """
+import json,time
+from app.core.security import hash_password,verify_password,pwd_context
+plain='synthetic-cryptographic-cost-only'
+start=time.monotonic();hashed=hash_password(plain);hash_seconds=time.monotonic()-start
+start=time.monotonic();matched=verify_password(plain,hashed);verify_seconds=time.monotonic()-start
+start=time.monotonic();mismatched=verify_password(plain+'-wrong',hashed);wrong_seconds=time.monotonic()-start
+print(json.dumps({'scheme':pwd_context.identify(hashed),'policy_rounds':pwd_context.handler('bcrypt').default_rounds,
+ 'hash_rounds':int(hashed.split('$')[2]),'hash_seconds':hash_seconds,'verify_seconds':verify_seconds,
+ 'wrong_seconds':wrong_seconds,'correct_password_accepted':matched,'incorrect_password_rejected':not mismatched}))
+"""
+        cost=json.loads(command([*compose,'exec','-T','backend','python','-c',cost_script]).stdout)
+        passed('unchanged_bcrypt_policy_measured_in_installed_backend',
+               cost['scheme']=='bcrypt' and cost['hash_rounds']==cost['policy_rounds']
+               and cost['correct_password_accepted'] and cost['incorrect_password_rejected'])
+        print(json.dumps({'authentication_cost':cost}),flush=True)
+
     context = ssl.create_default_context(cafile=str(certificate))
     browser = urllib.request.build_opener(
         urllib.request.ProxyHandler({}), urllib.request.HTTPSHandler(context=context)
@@ -546,14 +578,6 @@ def main():
         )
         command(["systemctl", "restart", "nwo-noc.service"])
         passed("systemd_restart_and_verification", invoke("verify").returncode == 0)
-    compose = [
-        "docker",
-        "compose",
-        "-p",
-        state["project"],
-        "-f",
-        root / "opt/nwo-noc/releases" / first / "compose.json",
-    ]
 
     def db(sql):
         return (
@@ -642,6 +666,10 @@ def main():
     db(
         "INSERT INTO audit_logs(action,entity_type,entity_id,details,created_at) VALUES ('installer.synthetic_sentinel','installation','synthetic','{}',now());"
     )
+    if args.pilot_checkpoint:
+        command([*compose, 'exec', '-T', 'redis', 'redis-cli', 'SET', 'noc119:preservation', 'synthetic'])
+        script = "from app.core.database import SessionLocal; from app.models.entities import Device,TelemetrySample; from datetime import datetime,timezone; db=SessionLocal(); d=Device(source='synthetic',external_id='noc119-recovery',name='Synthetic recovery device'); db.add(d); db.flush(); db.add(TelemetrySample(device_id=d.id,sampled_at=datetime.now(timezone.utc),raw_data={'synthetic_recovery':True})); db.commit(); db.close()"
+        command([*compose, 'exec', '-T', 'backend', 'python', '-c', script])
     git(
         "commit",
         "--allow-empty",
@@ -793,13 +821,18 @@ def main():
         )
         == "1",
     )
-    git(
-        "commit",
-        "--allow-empty",
-        "--quiet",
-        "-m",
-        "Synthetic approved release with startup failure",
-    )
+    if args.pilot_checkpoint:
+        if args.rehearsal or args.failure_stage:
+            raise RuntimeError("Pilot checkpoint requires a real disposable systemd host")
+        from pilot_recovery import export_checkpoint
+        container_ids=command([*compose,'ps','--all','--quiet']).stdout.decode().split()
+        if not container_ids:raise AssertionError('Independent installed image identities missing')
+        tested_images=sorted(successful_release_images|set(command(['docker','inspect','--format','{{.Image}}',*container_ids]).stdout.decode().split()))
+        if not all(re.fullmatch(r'sha256:[a-f0-9]{64}',v) for v in tested_images):raise AssertionError('Invalid installed image identity')
+        export_checkpoint(work, clone, first_approval, identity, backups[0], admin_secret, compose, state, tested_images, extra_images=[args.backend])
+        print(json.dumps({"checks_passed": len(results), "environment": "independent-vm-checkpoint", "upgrade_and_restore": "passed", "production_authorization": False}), flush=True)
+        return
+    git("commit", "--allow-empty", "--quiet", "-m", "Synthetic approved release with startup failure")
     bad, bad_approval = approve([second], bad=True)
     failed = invoke("upgrade", bad_approval, success=False)
     passed("failed_upgrade_rejected", failed.returncode != 0)

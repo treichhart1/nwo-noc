@@ -103,7 +103,10 @@ def test_explicit_poll_failure_recovery_pacing_audit_and_defaults(postgres_db,mo
     assert 'synthetic-auth-key' not in str(radio_history(db,d.id))
 
 
-def test_authenticated_read_only_history_api(postgres_db):
+def test_authenticated_read_only_history_api(postgres_db,monkeypatch):
+    # Exercise the real seven-day query at the fixture's clock, not the CI date.
+    import app.services.radio_history as history_module
+    monkeypatch.setattr(history_module,'datetime',SimpleNamespace(now=lambda tz:NOW))
     db=postgres_db;d=device(db);stage_radio(db,d,observation())
     assert TestClient(app).get(f'/api/devices/{d.id}/rf-radio-history').status_code==401
     app.dependency_overrides[get_db]=lambda:db

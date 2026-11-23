@@ -147,7 +147,10 @@ def test_poll_disabled_failure_recovery_and_safe_audit(postgres_db,monkeypatch):
     assert 'synthetic-auth-key' not in str(microwave_history(db,d.id))
 
 
-def test_authenticated_bounded_read_only_api(postgres_db):
+def test_authenticated_bounded_read_only_api(postgres_db,monkeypatch):
+    # Keep the real retention/auth/query assertions independent of wall-clock age.
+    import app.services.microwave_history as history_module
+    monkeypatch.setattr(history_module,'datetime',SimpleNamespace(now=lambda tz:NOW))
     db=postgres_db;d,z,child,link=network(db);stage_series(db,d,link)
     assert TestClient(app).get(f'/api/devices/{d.id}/microwave-history').status_code==401
     app.dependency_overrides[get_db]=lambda:db;app.dependency_overrides[current_user]=lambda:SimpleNamespace(role='viewer')

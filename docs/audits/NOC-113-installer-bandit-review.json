@@ -77,6 +77,13 @@
       "test_id": "B603",
       "severity": "LOW",
       "justification": "Arguments are fixed packaging command structure or approved root-owned image/source/paths; no shell, credentials stay in private files/stdin; error text is sanitized; bounded timeout. The rehearsal-only ingress child uses a protected exact source path and no Docker privileges."
+    },
+    {
+      "fingerprint": "9fa56c483cdd4efb176367111e4af2c5194f4baafd92477604ec7d8c1f56fb20",
+      "path": "scripts/host/manager.py",
+      "test_id": "B103",
+      "severity": "MEDIUM",
+      "justification": "Reviewed NOC119A exact source-only0755 directories: safe_members first rejects links/absolute/parent paths and bounds the approved archive. Fresh extracted code parents become root-owned, traversable, never group/other-writable so UID10001 ingress can read its source under umask077. Generated config/release metadata and secrets are created afterward privately; persistent directories are elsewhere and unchanged. Regression cases022/077 require non-writable source parents, original bytes, preserved process umask and0600 release metadata. No high finding, broad ignore, severity exception or scanner suppression."
     }
   ]
 }

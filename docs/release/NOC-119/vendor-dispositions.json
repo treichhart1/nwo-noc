@@ -1,0 +1,140 @@
+{
+  "scope": "Current primary Canonical pages and upstream references; final installed revisions/scanner evidence in final PR ledger. No severity suppression or unsupported package replacements.",
+  "rows": [
+    {
+      "cve": "CVE-2026-119373",
+      "source_package": "sqlite3",
+      "url": "https://ubuntu.com/security/CVE-2026-119373",
+      "noble_status": "Vulnerable",
+      "status": "BLOCKED",
+      "action": "No supported Noble fixed revision established; preserve blocker and verify operator risk/source applicability"
+    },
+    {
+      "cve": "CVE-2026-119374",
+      "source_package": "sqlite3",
+      "url": "https://ubuntu.com/security/CVE-2026-119374",
+      "noble_status": "Needs evaluation (fresh lookup succeeded on retry)",
+      "status": "BLOCKED",
+      "action": "No supported Noble fixed revision established; preserve blocker and verify operator risk/source applicability"
+    },
+    {
+      "cve": "CVE-2026-119379",
+      "source_package": "sqlite3",
+      "url": "https://ubuntu.com/security/CVE-2026-119379",
+      "noble_status": "Needs evaluation",
+      "status": "BLOCKED",
+      "action": "No supported Noble fixed revision established; preserve blocker and verify operator risk/source applicability"
+    },
+    {
+      "cve": "CVE-2026-115506",
+      "source_package": "expat",
+      "url": "https://ubuntu.com/security/CVE-2026-115506",
+      "noble_status": "Needs evaluation",
+      "status": "BLOCKED",
+      "action": "No supported Noble fixed revision established; preserve blocker and verify operator risk/source applicability"
+    },
+    {
+      "cve": "CVE-2026-117610",
+      "source_package": "expat",
+      "url": "https://ubuntu.com/security/CVE-2026-117610",
+      "noble_status": "Needs evaluation",
+      "status": "BLOCKED",
+      "action": "No supported Noble fixed revision established; preserve blocker and verify operator risk/source applicability"
+    },
+    {
+      "cve": "CVE-2026-118370",
+      "source_package": "expat",
+      "url": "https://ubuntu.com/security/CVE-2026-118370",
+      "noble_status": "Needs evaluation",
+      "status": "BLOCKED",
+      "action": "No supported Noble fixed revision established; preserve blocker and verify operator risk/source applicability"
+    },
+    {
+      "cve": "CVE-2026-113351",
+      "source_package": "expat",
+      "url": "https://ubuntu.com/security/CVE-2026-113351",
+      "noble_status": "Vulnerable",
+      "status": "BLOCKED",
+      "action": "No supported Noble fixed revision established; preserve blocker and verify operator risk/source applicability"
+    },
+    {
+      "cve": "CVE-2026-76642",
+      "source_package": "util-linux",
+      "url": "https://ubuntu.com/security/CVE-2026-76642",
+      "noble_status": "Vulnerable",
+      "status": "BLOCKED",
+      "action": "No supported Noble fixed revision established; preserve blocker and verify operator risk/source applicability"
+    },
+    {
+      "cve": "CVE-2026-78408",
+      "source_package": "util-linux",
+      "url": "https://ubuntu.com/security/CVE-2026-78408",
+      "noble_status": "Not affected",
+      "status": "PASS",
+      "action": "Vendor source exclusion, not a patch; keep historical evidence"
+    },
+    {
+      "cve": "CVE-2026-78409",
+      "source_package": "util-linux",
+      "url": "https://ubuntu.com/security/CVE-2026-78409",
+      "noble_status": "Lookup unavailable; prior NOC118 not affected",
+      "status": "BLOCKED",
+      "action": "No supported Noble fixed revision established; preserve blocker and verify operator risk/source applicability"
+    },
+    {
+      "cve": "CVE-2026-78410",
+      "source_package": "util-linux",
+      "url": "https://ubuntu.com/security/CVE-2026-78410",
+      "noble_status": "Needs evaluation",
+      "status": "BLOCKED",
+      "action": "No supported Noble fixed revision established; preserve blocker and verify operator risk/source applicability"
+    },
+    {
+      "cve": "CVE-2026-54369",
+      "source_package": "acl",
+      "url": "https://ubuntu.com/security/CVE-2026-54369",
+      "noble_status": "Ignored: backport too intrusive",
+      "status": "BLOCKED",
+      "action": "No supported Noble fixed revision established; preserve blocker and verify operator risk/source applicability"
+    },
+    {
+      "cve": "CVE-2025-69720",
+      "source_package": "ncurses",
+      "url": "https://ubuntu.com/security/CVE-2025-69720",
+      "noble_status": "Fixed in 6.4+20240113-1ubuntu2.1",
+      "status": "NOT TESTED",
+      "action": "Compare final installed revision using dpkg version rules, not nominal upstream version"
+    },
+    {
+      "cve": "CVE-2026-16742",
+      "source_package": "systemd",
+      "url": "https://ubuntu.com/security/CVE-2026-16742",
+      "noble_status": "Fixed in 255.4-1ubuntu8.17",
+      "status": "NOT TESTED",
+      "action": "Compare final installed revision using dpkg version rules, not nominal upstream version"
+    },
+    {
+      "cve": "CVE-2026-9538",
+      "source_package": "perl",
+      "url": "https://ubuntu.com/security/CVE-2026-9538",
+      "noble_status": "Fixed in 5.38.2-3.2ubuntu0.4",
+      "status": "NOT TESTED",
+      "action": "Compare final installed revision using dpkg version rules, not nominal upstream version"
+    }
+  ],
+  "upstream": [
+    {
+      "url": "https://libexpat.github.io/",
+      "observation": "Expat2.10.0 release includes security fixes; not an approved Noble ABI replacement"
+    },
+    {
+      "url": "https://sqlite.org/changes.html",
+      "observation": "Upstream release history does not establish a supported Noble sqlite3 backport"
+    },
+    {
+      "url": "https://github.com/util-linux/util-linux/security/advisories/GHSA-m25x-3hj9-m26f",
+      "observation": "Upstream local privilege escalation advisory; Canonical Noble remains vulnerable"
+    }
+  ],
+  "runtime_evidence": "Final backend-runtime.json records dpkg revisions and SQLite compile options. libacl pathname helpers/privileged mount tools limited by nonroot/capability-free read-only application containers, not assumed unreachable. Authenticated GIS/XML processing retains parser exposure; PostgreSQL primary storage does not prove SQLite native reachability absent."
+}

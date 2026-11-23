@@ -1,0 +1,418 @@
+# NOC-119A — independent Ubuntu startup investigation
+
+Continue PR123 on `feature/noc-119-pilot-security`, starting from
+`2d4d5c1ebca934d2c8157ac0ddbf035cc1081486`. No new milestone or PR.
+No applicable AGENTS.md was found; the initial working tree was clean.
+
+## Baseline evidence and controlled experiment
+
+Run670 booted a real Ubuntu24.04 guest under QEMU TCG, provisioned packages,
+and ran the actual installer. PostgreSQL and Redis were healthy. Backend stayed
+running/health-starting with connection-refused health probes. One probe exited137,
+but container State.OOMKilled was false. Workers/frontend correctly waited for
+backend readiness. No application exception was observed. These facts establish
+failed readiness, not its root cause or a successful installation/recovery.
+
+Diagnostic commit0103b06 adds numeric CPython import timings, process CPU/memory/
+thread counts, probe durations and configured memory limit to the existing
+credential-safe failure collector. Only identifiers/numbers/static flags are
+exported; raw logs and environment values remain private. Its temporary profiling
+environment setting correctly failed the existing empty-environment assertion;
+the assertion is retained unchanged. An intermediate candidate used uvicorn via
+`python -X importtime -m`; that also changed the test-only startup fault injector's
+argv matching. All launch instrumentation is removed from the final candidate;
+production and controlled-test command/environment match the starting commit.
+The original instrumented baseline retains the failure profile separately.
+
+The image deliberately installed dependencies with `--no-compile`, excluded local
+pyc files and disabled runtime bytecode writes. Thus a read-only cold start must
+compile dependency and application Python sources on every process start.
+Native local diagnostic imports (three per case, synthetic configuration, no DB
+connections) took2.424/2.070/1.871s with existing bytecode and3.977/5.184/5.329s
+with an empty bytecode prefix and writes disabled. This is a candidate cause,
+not proof of TCG root cause or independent VM acceptance.
+
+The candidate compiles application and dependency bytecode on the build host,
+using CPython checked-hash invalidation. Source changes invalidate the cache;
+unchecked bytecode is not trusted. Caches and code are root-owned/non-writable
+by the runtime UID. Native image evidence must verify real source hashes,
+cache headers and non-writability for app.main/FastAPI/SQLAlchemy/Uvicorn.
+Python3.12, dependencies/locks, healthchecks,180s startup contract, resource
+limits, private bindings, read-only filesystem and database readiness are unchanged.
+
+Two related probe costs were reproduced locally: importing worker_health also
+imported the complete ORM/monitoring runtime merely to get ID_FILE (916ms native
+import); the planning --health path loaded ORM/GIS before checking a file's age.
+The unchanged worker identity is now a shared dependency-free constant; Redis
+lookup, worker-specific key and0<=age<60s remain enforced. The planning CLI now
+dispatches its same150s heartbeat check before heavy worker imports and uses the
+same extracted private storage-path function. Missing/stale/symlink heartbeats
+fail. Settings validation is retained. Worker probe import fell to256ms native;
+this is diagnostic evidence, not a claim that the VM probe deadline passed.
+Nine regression cases verify fresh/stale/future/missing worker heartbeat behavior,
+planning freshness/symlink rejection, and absence of ORM/GIS initialization in
+fresh probe processes. Exact-source static reviews were updated for the unchanged
+moved UUID marker; the original private-listener fingerprint is restored with
+the original launch command. No new rule/CVE ignore or severity exception was added.
+
+Two existing PostgreSQL API tests also expired on the actual CI wall clock:
+their fixed2026-11-13 samples fell outside the real seven-day history window on
+2026-11-22. Those API tests now freeze the history service clock to their existing
+fixture timestamp. Real queries, retention limits, auth/role checks, bounds and
+all sample assertions remain unchanged; application retention is not extended.
+
+## Native initialization and virtual CPU investigation
+
+Instrumented run672/commit0103b06 reproduced failed startup. Its last completed
+native import record is uvloop.includes; no application-startup-complete flag was
+observed. Uvicorn import itself was4.711s; app.api.routes completed27.253s in the
+retained profile. These records do not establish that bytecode work alone caused
+the180s failure. Existing OOMKilled=false is not a substitute for restart/exit
+history. The failure collector now retains numeric restart/die codes, OOM event
+counts, whitelisted process resources, CPU features and kernel failure flags.
+
+The locked NumPy2.5.5 wheel reports a required X86_V2 baseline. The original
+harness passed no -cpu option. [QEMU's CPU model documentation](https://www.qemu.org/docs/master/system/qemu-cpu-models.html)
+states the default is qemu64 and lists it below x86-64-v2; [NumPy's build contract](https://numpy.org/doc/stable/reference/simd/build-options.html)
+requires baseline CPU features and identifies X86_V2 as its x86-64 minimum.
+That virtual CPU is therefore not an adequate dependency compatibility target.
+The harness now explicitly selects the Nehalem x86-64-v2 model with the same
+2vCPU/5120MiB limits. It queries actual QEMU model expansion for both qemu64 and
+Nehalem, requires all selected-model v2 flags, verifies the source guest's actual
+flags, and imports NumPy/uvloop/rasterio/pyproj in the exact read-only candidate
+image before installation. A failed native import fails the job; no timeout,
+healthcheck, seccomp or capability bypass is introduced. Runtime acceptance and
+the exact causal disposition remain pending actual corrected-guest execution.
+
+## Acceptance requirements
+
+The instrumented baseline and corrected-image VM runs must establish the actual
+startup cause and whether the candidate resolves it. A native import comparison
+alone cannot mark that finding fixed. Final exact commit, timings, raw security
+artifacts, all job conclusions and terminal status are recorded in PR123's ledger.
+Until those tests complete, installation/reboot/second-host recovery are not PASS.
+
+Require actual source install, verification, guarded upgrade, encrypted backup,
+kernel reboot and automatic startup. Then power off the source, independently
+verify the signed synthetic transport/fingerprint, restore to the second fresh
+guest, verify auth/history/documents/keys/Redis and reboot that guest. Corrupted,
+missing and wrong-key material must fail safely. Scan the exact tested image IDs.
+Do not substitute another image's scan or claim production artifact authorization.
+
+Existing vendor security, legal, off-site failure-domain, real VPN/MFA, operational
+scanner-definition, firmware/provider and consistent15s performance blockers remain.
+This investigation grants no live-pilot or production authorization.
+
+
+For causal verification, the source VM now starts with the original qemu64 CPU,
+provisions the same pinned image and runs bounded per-module NumPy/uvloop/GIS
+imports. It then powers off, reboots the same disk with Nehalem, verifies actual
+CPU features and repeats the probes against the identical immutable image ID.
+Only successful corrected-CPU imports may proceed to the actual installer.
+Reports retain numeric exit/signal/timeout/duration and static error flags, not raw
+errors. This distinguishes a CPU ABI rejection, native import stall and general
+startup cost. A/B results remain pending until actually executed; a documented
+CPU mismatch alone is not claimed to prove the complete failure cause.
+
+The source and receiver recovery guests still use separate roots/kernels/daemons;
+the compatibility reboot occurs before any NOC installation. Probe image IDs are
+included in exact-image scanning. Production startup and health limits are unchanged.
+
+The local workspace reached zero writable space during a new disposable DB
+attempt. The failed container/network and this follow-up's completed synthetic
+pytest fixtures were removed; existing images, volumes, repository work and
+historical artifacts were not pruned. All earlier code was already pushed.
+Follow-up forensic edits use an atomic, expected-parent GitHub tree/commit/ref
+update on the same branch; the local checkout remains at715a749 until writable
+space is restored. In-memory Python parsing passed; execution evidence must come
+from the final-commit CI. No local PostgreSQL initialization or VM success is claimed.
+
+
+## Executed supported-CPU result and worker probe correction
+
+Run684/source715a749 actually verified both QEMU models: qemu64 lacks SSSE3,
+SSE4.1,SSE4.2 and POPCNT; Nehalem and its booted guest provide them. The exact
+candidate's NumPy/uvloop/rasterio/pyproj imports completed in3.775s on Nehalem.
+The backend then reached startup-complete/healthy with zero restarts, no retained
+die/OOM events and no kernel invalid-opcode/segfault/OOM flags. Frontend,
+PostgreSQL and Redis were healthy. The original backend startup failure was
+therefore passed in that actual guest; complete installation still FAILED.
+
+The remaining failure was worker health: planning-worker unhealthy and monitoring
+worker health-starting, each with three exit-1 timeout/error probes. Their probes
+still rebuilt the entire Pydantic application Settings model to read a single
+connection URL/path. The correction removes that work from installed-container
+probes: the existing environment values or shared application defaults supply
+the same Redis URL and planning root. Standalone .env users retain the original
+validated Settings fallback. Whole-application Settings validation remains in the
+installer preflight, backend and actual worker; it is not disabled.
+
+Redis GET, exact worker identity, 0<=age<60s, connect/read limits2/3s, planning
+heartbeat150s, path/symlink/permission checks and Docker health deadlines are
+unchanged. Fresh-process tests require probes not to initialize app.core.config,
+ORM or GIS. Additional tests cover case-insensitive environment precedence,
+validated .env fallback and shared default authority. Diagnostics retain all
+roles' probe durations and static timeout/exec-error flags. Final complete VM,
+reboot and independent recovery acceptance remains pending; run684 did not reach
+those stages and is not marked PASS.
+
+
+The same-image A/B in run685/sourcead8efb1 provided direct causal evidence:
+image4690a912... produced SIGILL (child exit-4) importing NumPy and rasterio on
+qemu64, while uvloop and pyproj passed. After the same disk rebooted with Nehalem,
+all four imports passed on that identical image. Thus the last uvloop import
+record in earlier restart logs was not proof that uvloop was the culprit.
+The backend reached healthy with zero restarts. No OOM was recorded; the original
+probe exit137 alone is not treated as proof of OOM or of a specific timeout cause.
+
+The installer now checks every vCPU's x86-64-v2 flags before creating application
+state, and INSTALL.md documents the actual locked-wheel prerequisite. Missing or
+mixed CPU feature sets fail with actionable guidance; no package downgrade or
+runtime CPU-feature bypass is used. Four tests cover supported, unsupported,
+missing and mixed-vCPU inputs. Read-only failure diagnostics additionally collect
+allowlisted private-ingress unit state/exit/memory fields and static journal flags,
+never raw journals, command lines, environment values or credential text.
+
+
+## Verified private-ingress permissions defect
+
+Final-source run690/3ee532b booted the real Ubuntu24.04 guest and brought all six
+containers to healthy. Backend restart count was0, retained OOM/die events0,
+and all current backend/worker/planning probes exited0. Installation still FAILED
+before application reboot or receiver recovery. The real ingress unit reported
+Result=exit-code, ExecMainCode=1, ExecMainStatus=2, failed/failed, permission-denied
+and start-limit flags. This is not an ingress timeout acceptance.
+
+Python's safe tar data filter deliberately sets directory mode=None. Thus git
+archive source parents inherit the operator umask; a private077 umask leaves
+scripts/host0700 and Python cannot open ingress.py as the unprivileged UID.
+The native host's022 umask masked the defect. The installer now makes only the
+validated, newly extracted source directories0755 before generating configuration
+or release metadata. Source remains root-owned and non-writable by the service.
+No config/key/data directory permissions, service UID, sandbox, health/startup
+deadline or firewall rule is relaxed. The existing safe archive path/link checks
+and signed inventory remain enforced.
+
+Two actual staging regression cases exercise022 and077, requiring traversable
+non-writable source parents, unchanged source bytes, unchanged process umask and
+private0600 generated release metadata. Python's actual data_filter behavior was
+also inspected in memory in the cloud workspace. Complete installation, app
+reboot and independent receiver recovery remain pending the corrected final-source
+CI; runs689/690 must not be represented as successful acceptance.
+
+
+The second-host restore review found the same tar data-filter behavior in its
+private temporary extraction: copytree would preserve0700 code parents, even
+when the signed backup recorded0755. The disposable recovery harness now restores
+only recorded release modes after rejecting non-root ownership and any group/other
+write bits. Private0600 release metadata and0700 trust directories retain their
+original restrictions. A regression checks source traversal, unchanged bytes,
+private metadata and unsafe owner/mode rejection. This is recovery-code correction,
+not a claim that the independent restore has already executed.
+
+
+## Whole-scenario deadline is separate from startup readiness
+
+Run695/source03c1fc0 actually booted and provisioned Ubuntu, passed the same-image
+CPU comparison and reached installation state ready. All six containers and the
+unprivileged ingress were healthy/active; backend restart/die/OOM counts0 and
+kernel fault flagsfalse. The full source acceptance SSH command then exceeded
+its2400-second aggregate deadline. This was not an installer180-second readiness
+failure. Reboot, signed export, exact VM runtime scanning and receiver recovery
+were not accepted; no timed-out work is marked PASS.
+
+The harness now retains numeric command exit/deadline, completed-check count,
+last-check SHA256 and allowlisted exception/HTTP/transport indicators without raw
+output or credentials. Successful check events include elapsed seconds. A separate
+preceding run693 ended with an opaque later guest-command failure; its exact
+exception was not retained, so no invented root cause is assigned to it.
+
+Only the complete multi-scenario TCG test allowance increases2400→4800s; the
+KVM allowance stays2400s. The encompassing two-guest CI job is bounded at180min.
+This follows an observed40-minute aggregate expiry with healthy services, not an
+assumption that backend startup needs more time. Application startup180s,
+Compose/worker/backend health deadlines, all per-operation guards, resource
+limits, security assertions and private firewall remain unchanged. More time
+alone is not a pass: the entire sequence must still actually execute, and every
+incomplete phase remains FAIL/NOT TESTED until demonstrated.
+
+
+## Actual first-login timeout and four-vCPU test environment
+
+Run698/source696eab9's new diagnostics identified13 completed checks, with the
+last hash resolving exactly to optional_integrations_not_configured at1314.853s.
+The next real administrator login raised TimeoutError under its unchanged15s
+client bound. This supersedes speculation about a generic late upgrade failure.
+Ingress stayed active; no OOM/backend restart was recorded. Worker5s probes
+took9.422/8.345/13.300s and became unhealthy; backend probes also timed out.
+Complete authentication/reboot/recovery acceptance therefore FAILED, not PASS.
+
+The disposable guest now uses4vCPUs (same CI host has4), still5120MiB/32GiB.
+Application container resource limits, probe deadlines/intervals, bcrypt policy,
+authorization and15s login check are unchanged. This provides the emulated host
+more CPU rather than weakening readiness/security. The source guest measures
+the actual installed backend's unchanged bcrypt policy and correct/incorrect
+password verification, exporting only rounds/booleans/durations. Diagnostics retain
+those allowlisted values if the15s login still fails. No lower bcrypt cost or
+auth bypass exists. A four-vCPU TCG result does not establish two-vCPU native-host
+acceptance; that remains a separately scoped operator requirement.
+
+Review also found a definite, previously unexecuted receiver-test contract bug:
+its login used JSON although the existing OAuth2 endpoint requires form encoding.
+The receiver now uses that same existing form contract; a regression covers
+spaces and reserved characters. No production endpoint/auth policy changes.
+Receiver restore remains NOT TESTED until the real sequence executes.
+
+
+## Exact Redis image ownership compatibility
+
+Read-only history inspection of the already cached pinned Redis image
+sha256:bb8953020f6597e47d5d699a9910a25d77a69608dbd58e0f722940598ed85fc0
+confirmed its actual build creates redis with UID999/GID1000
+(addgroup -S -g1000; adduser -S -Gredis -u999). The unexecuted receiver script
+incorrectly allowed GID999. Its strict restore guard now accepts only root or the
+correct pinned999:1000 identity, verifies that identity in the signed restored
+image before writing the Redis volume, and rejects alternate owners, links and
+paths. Five regression cases cover the actual vendor identity and unsafe values.
+No image/version/license or production Redis configuration is changed. This is
+verified code/image-contract evidence; independent Redis recovery is still not
+claimed until actually executed.
+
+
+## Diagnostic embedded-program correction
+
+The first four-vCPU run699 reached13 checks but failed the added diagnostic's
+docker exec before a bcrypt measurement. In-memory execution reproduced a
+SyntaxError in the embedded snippet. JavaScript replacement-string handling of
+the dollar/quote sequence in hashed.split('$') had inserted source suffix text
+into that diagnostic literal. The canonical harness is reconstructed from its
+verified pre-diagnostic source with a literal callback replacement; production
+auth behavior and all assertions remain unchanged.
+
+A regression now compiles AND executes the exact embedded program against the real
+bcrypt policy, checks correct/wrong-password results, unchanged rounds>=12 and an
+exact credential-free output schema. This catches embedded-program errors before
+the expensive VM sequence. Run699 is not treated as evidence of an application
+auth defect or successful VM acceptance. Final-source actual tests remain required.
+
+
+## Least-privilege access to an existing CI KVM device
+
+The harness already chooses KVM only when its process can open/dev/kvm; TCG
+selection alone did not establish whether the device was absent or merely group
+restricted. A CI-only launcher now records those exact read-only facts. If an
+existing character device10:232 is root-owned by the existing kvm group with
+group read/write and no other write access, it can launch the SAME job UID with
+only a temporary primary kvm process group. Existing supplementary groups remain
+for Docker access; only public CI provenance environment fields are preserved.
+No chmod/chown, account/group membership, kernel/module, firewall, SSH, service
+or production-host configuration is changed. If unavailable/incompatible, the
+existing TCG fallback remains and no KVM success is invented.
+
+Eight regression cases reject unsafe/nonexistent device ownership/type/mode and
+verify no global permission command or root controller UID is used. Actual selected
+acceleration is still measured by the real QEMU harness and must complete every
+existing acceptance check. This launcher is test infrastructure, never an
+application service or deployment prerequisite bypass.
+
+The independent VM job also requires the backend regression job before booting; a broken embedded-program regression blocks expensive VM execution and still fails the unchanged aggregate release gate. No failed or skipped dependency becomes PASS.
+
+
+## Executed KVM access finding and verified privilege drop
+
+Run708 actually found/dev/kvm present, root-owned, group993(kvm),mode0660, but
+the original user lacked access. The direct sudo run-as-nonroot-group command
+required a password and did not launch a guest; no successful VM acceptance or
+permission change is claimed for it. The existing runner already authorizes
+passwordless ROOT setup (used by package provisioning).
+
+The CI launcher now uses that authorized root setup only to execute the system
+setpriv utility, immediately dropping to the ORIGINAL nonroot UID and existing
+kvm primary GID, preserving only original supplementary groups. It drops effective/
+inheritable/ambient/bounding capabilities, enforces no-new-privileges, resets the
+environment to the target user, and forwards only public CI provenance fields.
+The controller independently checks its real/effective UID,GID,zero effective
+and bounding capabilities,NoNewPrivs=1,and actual KVM access BEFORE image/guest
+operations. Root controllers or mismatches fail closed. No sudoers/device/account/
+ACL/firewall/SSH/service setting changes and no password/credential is used.
+
+The launch metadata is retained even if setup refuses, separately from the VM
+harness's unchanged fresh evidence-directory guard. Added tests reject root,
+wrong identities, retained capabilities,new privileges,inaccessible KVM and partial
+metadata; public-environment filtering/original groups are also checked. Actual
+KVM boot/install/reboot/recovery results remain pending the corrected final run.
+
+
+## Actual KVM source acceptance and exact-image scan failure
+
+Run709/source5a384 actually validated controller UID1001/GID993,zero capability
+sets andNoNewPrivs=1, selected KVM, booted Ubuntu in13.154s and passed the complete
+source installation/guarded upgrade/isolated restore command. It then passed
+automatic application recovery after a real kernel reboot (55.428s), verified the
+synthetic transport and powered off the source. These are executed PASS results
+for that source, not full receiver acceptance.
+
+The next required exact-installed-image security command failed before the
+receiver boot. Its controller wrapper omitted the scanner reason; only four
+small evidence files were retained, with no completed VM-image scan claim.
+Recovery remains NOT TESTED and release gate FAIL. Artifact readback from this
+cloud workspace is blocked by zero writable capacity and a download network403.
+
+Scanner errors now retain typed nonsecret process/transport/identity flags and
+hashes in machine-readable evidence. Valid JSON reports are retained BEFORE
+identity verification, so even mismatched reports are reviewable but never clean.
+The exact identity/results assertion and HIGH/CRITICAL gate remain unchanged.
+No retry, severity waiver, scan omission or bypass is added. Controller errors
+carry only the allowlisted failure identity; raw tokens/stderr are never emitted.
+Actual scanner cause and required receiver recovery remain pending final CI.
+
+
+### Final-source evidence at 2104d2c (run713)
+
+Actual pinned Ubuntu24.04 KVM guest: installation/guarded upgrade/encrypted backup/isolated restore PASS; source application kernel reboot PASS,56.467seconds; source powered off. Before second-host boot, controller docker load exited1. This is not a Trivy clean result or a completed receiver recovery. Added credential-free process-error categories and controller disk/archive/version measurements to identify image transport failure without publishing raw stderr. All gates remain fail-closed. Backend968passed/958skipped; pip no known vulnerabilities/npm0includingdev; native candidate image scans0HIGH/CRITICAL (backend34lower,Redis1lower,PG/frontend0). Superseded-source evidence is not substituted for the subsequent final commit. Terminal evidence remains in the PR ledger and exact-source Actions artifacts.
+
+
+### Recovery image transport correction under validation
+
+Run715 on5599c0f: source install/guarded upgrade/encrypted backup/isolated restore and application reboot PASS (56.470s), source powered off. Controller Docker28.0.4 had81,638,965,248bytes free and1,178,582,528-byte signed image archive; scanner wrapper failed with typed missing_image=true, not disk pressure. No complete VM-image scan or second-host recovery PASS. Transport now saves each exact config under a deterministic synthetic alias, checks aliases resolve to unchanged config IDs, and verifies bounded archive config inventory plus every actually loaded immutable ID before scanning. Aliases are transport-only; approval, installation, signatures and scanner still use exact IDs. This candidate correction must pass actual final VM execution; do not infer success from unit mocks. Added legacy/OCI-manifest and missing-ID regressions. Existing data and gates remain intact.
+
+The pre-install native-ABI probe image is also explicitly included in signed transport inventory, separately labeled from installed runtime IDs. Previously the controller requested that additional ID for scanning without explicitly exporting it in the recovery archive. No forensic image is mislabeled as an installed runtime service.
+
+
+Run719/a27ab83: source install and application reboot PASS (56.399seconds), source off. Explicit aliases alone did NOT resolve the import failure: Docker28.0.4 load reported missing_file=true with81.7GB free. Receiver recovery remainsNOT TESTED. Added pre-load signed archive config/layer completeness validation, safe error path categories and source/controller Docker version comparison. Do not mark the transport or installed-image scan successful until executed final-source evidence demonstrates it.
+
+
+### Confirmed Docker image-store incompatibility (run721)
+
+At ee0e62f, actual Ubuntu source Docker29.1.3 used OCI index identities; controller Docker28.0.4 used the classic store. All91layer references and config files were present; expected source image IDs differed from config digests (including Redis index7f7d30... versus configbb8953...). Source install/reboot PASS (55.928s), source powered off, receiverNOT TESTED. This was not missing layer content or disk exhaustion. The previous pre-load config-only comparison correctly failed closed but did not understand index identities.
+
+Supported correction under validation: only the EMPTY dedicated disposable CI controller enables Docker's documented containerd-snapshotter feature before any candidate builds. Existing daemon configuration is merged and privately retained; no running containers may exist; no images/volumes deleted; no production installer/daemon changes. The controller validates configuration before restart and verifies actual snapshotter mode afterward. Native host/production tests retain their existing settings.
+
+Archive validation now hashes OCI index/manifest/config metadata, follows bounded linux/amd64 descriptor relationships, checks config/layer presence, and binds source identities to actual configs instead of equating index and config digests. Corrupt hashes, missing members, foreign platforms and unavailable identities still fail. Installer, signatures, immutable IDs and vulnerability gates are not bypassed. Actual final VM scans and recovery remain required.
+
+Primary reference: https://docs.docker.com/engine/storage/containerd/ and maintainer explanation https://github.com/kubernetes-sigs/kind/issues/3795. This correction is not claimed successful until final-source VM evidence completes.
+
+
+### OCI correction verified; receiver Redis restore under investigation (run723)
+
+At c3db247, actual source install/guarded upgrade/encrypted backup/isolated restore and kernel reboot PASS (49.592seconds). Source powered off. OCI archive identity graph and all eight exact image identities imported and scanned successfully:0HIGH/CRITICAL; backend variants34other findings,Redis1,PG/frontend0. Full scan JSON,SBOM/provenance retained. Second independent Ubuntu VM booted (13.046seconds). Receiver passed10checks including signed transport,wrong/missing key,corrupt/missing artifacts,complete backup contents,PostgreSQL restore/migrations and Redis archive validation; then a restricted Docker restoration command failed. No complete receiver recovery/reboot PASS.
+
+Candidate smallest correction: transient root restorer had only CHOWN/DAC_OVERRIDE and changed ownership toRedis before chmod; chmod of a foreign-owned file requires ownership or FOWNER. Restore metadata by first taking temporary root ownership, applying mode, then restoring the validated saved owner. No additional capability is granted. Actual Linux A/B runs on separate bounded tmpfs mounts of the same image/archive with exactly effective capabilities3: old ordering must specifically fail chmod-after-foreign-chown, corrected ordering must verify saved owners,modes and bytes. Only then restore the real disposable volume. Any unrelated error or unexpected baseline success fails the test. Added sanitized per-command diagnostics and regression models; actual final VM A/B and completed recovery are still required before asserting root cause or success.
+
+
+### Redis Linux A/B confirmed; private-root metadata correction (run725)
+
+At e879226, actual VM source install/reboot PASS (55.268seconds), source powered off, eight exact-image scans0HIGH/CRITICAL. Receiver reached12completedchecks: both real restricted-capability Redis A/B probes passed, confirming the legacychmod permission denial and corrected owners/modes/bytes with exactly CHOWN/DAC_OVERRIDE, no addedFOWNER. Actual Redis restore completed and services started, then strict verify.sh returned1; guard stopped application services. Worker137 here follows intentional guard shutdown; kernel reported noOOM. No full recovery/reboot PASS.
+
+Verified code defect: tar data-filter extraction loses directory mode; shutil.copytree(...dirs_exist_ok=True) copies the extracted0755 configuration-root mode over the destination0700. The old metadata loop restored children but omitted exact top-level configuration/data entries. New helper validates the whole signed metadata plan, requires root-owned0700 private roots, then restores roots and children. Security verification is unchanged. Regression reproduces real copytree chmod behavior and rejects unsafe owner/group/public/setuid/file roots before changes. Added credential-safe verification failure names/counts (known static identifiers only, no values), so any remaining failure is actionable rather than hidden. Final actual verify and recovered-system reboot remain required.
+
+Executed all10new regression cases locally in newly created private RAM-backed temporary directories: real copytree/chmod behavior, mocked chown only, no existing files/services modified. Full workspace and /tmp remain full. These unit/security checks are not substituted for the next actual VM restoration/reboot.
+
+
+### Independent VM installation and recovery PASS; QR browser ordering (run727/728)
+
+At fc7410e, actual run727 completed installation, guarded upgrade, encrypted backup, source application kernel reboot (56.498s), source powered off, signed transport, eight exact-image scans (0HIGH/CRITICAL), second independent VM boot, full restore/authentication/telemetry/audit/document/Redis verification, real negative recovery controls and recovered-system kernel reboot (57.322s). Private-root metadata correction passed the unchanged verifier. Kernel boot IDs changed for both application reboots. Both guests: Ubuntu24.04 Canonical pinned image,4vCPU,5120MiB,32GiB; KVM controller originalUID1001/GID993,capabilities0,NoNewPrivs1. Full JSON scans,SBOM/provenance and sanitized command outputs are retained as Actions artifacts. Operational decision remains NO-GO.
+
+Receiver host evidence: default deny incoming/outgoing/routed, password and root SSH disabled. NTPSynchronized=no under isolated egress: approved private time source and synchronization/soak are explicitly BLOCKED operator acceptance, not PASS; no public NTP firewall exception added. Real VPN/MFA/offsite physical failure-domain/vendor/provider/signing/license acceptance remains open.
+
+PR728's separate browser job failed QR label visibility. Verified synchronization defect: administrator username is set before asynchronous scanned-tower resolution; clicking provision early uses tower=null and fetches global label pagination, hiding old label#1. Browser now deliberately holds the actual tower response, verifies context is absent, releases it and waits for the exact tower heading before mutation. It also requires the selected-site label response. All original printable SVG/pagination/revocation/history assertions, timeouts and retry settings remain unchanged; no frontend production behavior or security gate changed. Final-source CI must rerun.

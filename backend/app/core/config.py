@@ -1,4 +1,5 @@
 from typing import Literal
+from app.core.probe_config import DEFAULT_REDIS_URL, DEFAULT_PLANNING_STORAGE_ROOT
 from pydantic import Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -63,7 +64,7 @@ class Settings(BaseSettings):
     fiber_designer_key_file: str = Field(default="",repr=False,exclude=True)
 
     planning_worker_enabled: bool = False
-    planning_storage_root: str = "/var/lib/nwo-noc/planning"
+    planning_storage_root: str = DEFAULT_PLANNING_STORAGE_ROOT
     planning_max_upload_bytes: int = Field(67108864,ge=1024,le=134217728)
 
     field_public_base_url: str = ""
@@ -98,7 +99,7 @@ class Settings(BaseSettings):
     secret_key: str = Field(repr=False,exclude=True)
     access_token_expire_minutes: int = Field(15,ge=1,le=30)
     database_url: str = Field(repr=False,exclude=True)
-    redis_url: str = "redis://redis:6379/0"
+    redis_url: str = DEFAULT_REDIS_URL
     admin_username: str = "admin"
     admin_password: str = Field(repr=False,exclude=True)
     admin_email: str = "admin@nwohiobb.local"

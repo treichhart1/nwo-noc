@@ -203,6 +203,15 @@ jobs:
       - run: 'pip install --require-hashes --only-binary=:all: -r requirements-test.lock'
       - name: Migrate disposable PostgreSQL database
         run: alembic upgrade head
+      - name: Deploy actual ClamAV engine with safe test definitions
+        run: |
+          sudo apt-get -o APT::Update::Error-Mode=any update
+          sudo apt-get install -y --no-install-recommends clamav-daemon
+          clamd --version
+      - name: Validate real scanner uploads, safe signature, faults and recovery
+        env:
+          NOC119_REAL_CLAMAV: "1"
+        run: python -m pytest -q tests/test_pilot_security.py
       - name: Validate RF staging preflight in safe and unsafe modes
         env:
           APP_ENV: staging
@@ -482,6 +491,10 @@ jobs:
           docker build -t noc113-backend:base backend
           docker build -t noc113-frontend:base frontend
           docker build -t noc117-postgres:rc -f deploy/Dockerfile.postgres .
+      - name: Reject temporary PostgreSQL initialization servers using actual deployment health checks
+        run: |
+          sudo apt-get install -y --no-install-recommends python3-yaml
+          python3 tests/installer/postgres_readiness.py --postgres noc117-postgres:rc --execute-disposable-test
       - name: Execute disposable Ubuntu systemd install, verification, encrypted restore and upgrade failure acceptance
         run: sudo python3 tests/installer/test_ubuntu_host.py --workspace /var/tmp/noc113-acceptance --extended
       - name: Scan the exact immutable runtime images exercised by Ubuntu acceptance
@@ -489,6 +502,7 @@ jobs:
           sudo python3 - <<'PY'
           import json, subprocess
           images = json.load(open('/var/tmp/noc113-acceptance/runtime-images.json'))
+          images = sorted(set(images + subprocess.check_output(['docker','image','inspect','--format','{{.Id}}','noc113-backend:base','noc117-postgres:rc'],text=True).split()))
           assert images, 'No tested immutable image identities'
           subprocess.run(['python3', 'scripts/release/image_security.py', '--require-no-high', '--output', 'host-runtime-image-security-evidence', *images], check=True)
           subprocess.run(['python3', 'scripts/release/image_sbom.py', 'host-runtime-image-security-evidence'], check=True)
@@ -528,12 +542,57 @@ jobs:
           test "$result" -ne 0
           grep -F 'Ubuntu Server24.04LTS required; no host changes made' /tmp/noc114-unsupported.log
 
+      - name: Repeat polling with explicit CPU and memory limits on an internal-only network
+        run: python3 scripts/release/pilot_benchmark.py --backend noc113-backend:base --postgres noc117-postgres:rc --output pilot-performance-evidence/benchmark.json
+      - name: Retain bounded benchmark records including target failures
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: pilot-performance-evidence
+          path: pilot-performance-evidence
+          if-no-files-found: error
+
+  independent-pilot:
+    name: Independent Ubuntu VM reboot and second-host recovery
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    needs: [dependency-security, backend]
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+      - name: Provision disposable hypervisor tooling only
+        run: |
+          sudo apt-get -o APT::Update::Error-Mode=any update
+          sudo apt-get install -y --no-install-recommends qemu-system-x86 qemu-utils cloud-image-utils
+      - name: Align empty disposable controller with OCI image identity storage
+        run: sudo env GITHUB_ACTIONS=true GITHUB_RUN_ID="$GITHUB_RUN_ID" SUDO_UID="$(id -u)" python3 tests/installer/controller_image_store.py --execute-disposable-ci
+      - name: Validate explicit guest CPU ABI against actual QEMU models
+        run: python3 tests/installer/cpu_contract.py --execute-qemu
+      - name: Build actual candidate artifacts for independent guests
+        run: |
+          docker build -t noc113-backend:base backend
+          docker build -t noc113-frontend:base frontend
+          docker build -t noc117-postgres:rc -f deploy/Dockerfile.postgres .
+      - name: Execute separate Ubuntu kernels, reboot and authenticated recovery
+        run: python3 tests/installer/hypervisor_launch.py --execute-disposable-vms --work "$RUNNER_TEMP/noc119-vms"
+      - name: Preserve sanitized VM evidence only
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: independent-pilot-vm-evidence
+          path: |
+            pilot-vm-evidence
+            pilot-hypervisor-access.json
+          if-no-files-found: error
+
   rf-release-acceptance:
     name: RF offline release acceptance
     runs-on: ubuntu-24.04
     needs:
       - clean-install-acceptance
       - host-package-acceptance
+      - independent-pilot
       - frontend
       - backend
       - database-migrations
@@ -545,6 +604,7 @@ jobs:
       - name: Require all RF release dependencies to pass
         env:
           HOST_PACKAGE_RESULT: ${{ needs.host-package-acceptance.result }}
+          PILOT_VM_RESULT: ${{ needs.independent-pilot.result }}
           INSTALL_RESULT: ${{ needs.clean-install-acceptance.result }}
           FRONTEND_RESULT: ${{ needs.frontend.result }}
           BACKEND_RESULT: ${{ needs.backend.result }}
@@ -553,7 +613,7 @@ jobs:
           RF_RESULT: ${{ needs.rf-postgres-integration.result }}
           COMPOSE_RESULT: ${{ needs.compose-validation.result }}
         run: |
-          for name in HOST_PACKAGE_RESULT INSTALL_RESULT FRONTEND_RESULT BACKEND_RESULT MIGRATIONS_RESULT RF_RESULT COMPOSE_RESULT SECURITY_RESULT; do
+          for name in HOST_PACKAGE_RESULT PILOT_VM_RESULT INSTALL_RESULT FRONTEND_RESULT BACKEND_RESULT MIGRATIONS_RESULT RF_RESULT COMPOSE_RESULT SECURITY_RESULT; do
             result="${!name}"
             if [ "$result" != "success" ]; then
               echo "::error::$name is $result, expected success"
