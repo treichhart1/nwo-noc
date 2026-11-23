@@ -54,17 +54,31 @@ def image_transport_contract(archive, expected, available):
         if not member.isfile() or member.size>1024**2:raise ValueError('Invalid image archive manifest')
         body=json.load(tar.extractfile(member))
     if not isinstance(body,list) or not body or len(body)>64:raise ValueError('Invalid image archive inventory')
-    recorded=set()
+    recorded=set();missing_files=set();layer_count=0
+    with tarfile.open(archive) as tar:
+        members=tar.getmembers()
+        if len(members)>100000:raise ValueError('Image archive member limit exceeded')
+        names={m.name:m for m in members}
+        if len(names)!=len(members):raise ValueError('Duplicate image archive members')
     for row in body:
         value=row.get('Config') if isinstance(row,dict) else None
         if not isinstance(value,str):raise ValueError('Missing image config identity')
         match=re.fullmatch(r'(?:blobs/sha256/)?([a-f0-9]{64})(?:[.]json)?',value)
         if not match:raise ValueError('Invalid image config identity')
         recorded.add('sha256:'+match.group(1))
+        paths=[value]+row.get('Layers',[])
+        if not all(isinstance(path,str) for path in paths):raise ValueError('Invalid image layer inventory')
+        layer_count+=len(paths)-1
+        for path in paths:
+            item=names.get(path)
+            if item is None or not item.isfile():missing_files.add(path)
+
     return {'expected_image_ids':sorted(expected),'archive_image_ids':sorted(recorded),
             'missing_archive_image_ids':sorted(expected-recorded),
             'missing_loaded_image_ids':sorted(expected-available),
-            'all_present':expected<=recorded and expected<=available}
+            'missing_archive_file_count':len(missing_files),'archive_layer_references':layer_count,
+            'all_archive_files_present':not missing_files,
+            'all_present':expected<=recorded and expected<=available and not missing_files}
 
 
 def export_checkpoint(work, clone, approved, identity, backup, password, compose, state, tested_images, extra_images=()):

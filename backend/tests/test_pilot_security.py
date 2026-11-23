@@ -744,7 +744,26 @@ def test_signed_image_transport_requires_archive_and_loaded_exact_ids(tmp_path,f
     archive=tmp_path/'images.tar'
     with tarfile.open(archive,'w') as tar:
         member=tarfile.TarInfo('manifest.json');member.size=len(body);tar.addfile(member,io.BytesIO(body))
+        config_member=tarfile.TarInfo(config);config_member.size=2;tar.addfile(config_member,io.BytesIO(b'{}'))
     value=image_transport_contract(archive,[identity],[other] if missing else [identity])
     assert value['all_present'] is (not missing)
     assert value['missing_archive_image_ids']==[]
     assert value['missing_loaded_image_ids']==([identity] if missing else [])
+
+
+@pytest.mark.parametrize('missing',['config','layer','none'])
+def test_image_archive_checks_every_config_and_layer_before_loading(tmp_path,missing):
+    sys.path.insert(0,str(ROOT/'tests/installer'))
+    from pilot_recovery import image_transport_contract
+    identity='sha256:'+'a'*64;config='blobs/sha256/'+'a'*64;layer='blobs/sha256/'+'b'*64
+    body=json.dumps([{'Config':config,'Layers':[layer]}]).encode();archive=tmp_path/'images.tar'
+    with tarfile.open(archive,'w') as tar:
+        m=tarfile.TarInfo('manifest.json');m.size=len(body);tar.addfile(m,io.BytesIO(body))
+        for name,kind in [(config,'config'),(layer,'layer')]:
+            if kind==missing:continue
+            m=tarfile.TarInfo(name);m.size=2;tar.addfile(m,io.BytesIO(b'{}'))
+    value=image_transport_contract(archive,[identity],[identity])
+    assert value['all_present'] is (missing=='none')
+    assert value['all_archive_files_present'] is (missing=='none')
+    assert value['missing_archive_file_count']==(0 if missing=='none' else 1)
+    assert value['archive_layer_references']==1

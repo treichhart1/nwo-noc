@@ -159,7 +159,9 @@ def command_failure(stdout, stderr, exit_code):
                 'invalid_archive':'invalid archive','unsupported_media':'unsupported media type',
                 'unknown_media':'unknown media type','docker_api':'api version','daemon_unavailable':'cannot connect to the docker daemon',
                 'digest_mismatch':'digest mismatch','checksum_mismatch':'checksum mismatch','unpack_failure':'failed to unpack',
-                'unshare':'unshare','snapshot_failure':'snapshot','input_output':'input/output error'}.items()}}
+                'unshare':'unshare','snapshot_failure':'snapshot','input_output':'input/output error',
+                'blob_path':'blobs/sha256/','layer_path':'layer.tar','docker_import_path':'docker-import-',
+                'containerd_path':'containerd','manifest_path':'manifest.json','config_json_path':'.json'}.items()}}
 
 
 def safe_authentication_cost(value):

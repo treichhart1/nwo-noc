@@ -238,6 +238,7 @@ def main():
         result=sender.ssh('cd /home/nocpilot/source\nsudo python3 tests/installer/test_ubuntu_host.py --workspace /var/tmp/noc119-acceptance --extended --pilot-checkpoint',timeout=4800 if report['acceleration']=='tcg' else 2400)
         (evidence/'source-install.log').write_bytes(result.stdout)
         report['installation']='PASS';phase('source-actual-kernel-reboot');report['source_reboot']=sender.reboot()
+        report['source_docker_server_version']=sender.ssh("sudo docker version --format '{{.Server.Version}}'").stdout.decode().strip()
         fingerprint=sender.ssh('sudo cat /var/tmp/noc119-acceptance/independent-trust-fingerprint').stdout.decode().strip()
         report['test_public_key_spki_sha256']=fingerprint
         transfer=work/'recovery-private.tar'
@@ -257,8 +258,11 @@ def main():
         report['image_transport_bytes']=(transported/'images.tar').stat().st_size
         report['controller_storage_before_image_load']={name:{'total':shutil.disk_usage(path).total,'used':shutil.disk_usage(path).used,'free':shutil.disk_usage(path).free} for name,path in [('work',work),('docker',Path('/var/lib/docker'))]}
         report['controller_docker_server_version']=run(['docker','version','--format','{{.Server.Version}}']).stdout.decode().strip()
-        run(['docker','load','-i',transported/'images.tar'])
         from pilot_recovery import image_transport_contract
+        report['image_archive_before_load']=image_transport_contract(transported/'images.tar',identities,[])
+        if report['image_archive_before_load']['missing_archive_image_ids'] or not report['image_archive_before_load']['all_archive_files_present']:
+            raise RuntimeError('Signed image archive config/layer inventory incomplete; no image load or scan acceptance')
+        run(['docker','load','-i',transported/'images.tar'])
         loaded=run(['docker','image','ls','--all','--no-trunc','--format','{{.ID}}']).stdout.decode().splitlines()
         report['image_transport_identity']=image_transport_contract(transported/'images.tar',identities,loaded)
         if not report['image_transport_identity']['all_present']:
