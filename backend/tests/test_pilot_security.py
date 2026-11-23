@@ -907,3 +907,60 @@ def test_redis_metadata_order_restores_foreign_owner_without_fowner(monkeypatch)
     target=scope['dest']
     assert (target.owner,target.group,target.mode)==(999,1000,0o600)
     assert scope['effective']==3
+
+
+def test_recovery_restores_private_root_modes_after_data_filter_copy(tmp_path,monkeypatch):
+    sys.path.insert(0,str(ROOT/'tests/installer'))
+    import pilot_recovery
+    source=tmp_path/'extracted/configuration';source.mkdir(parents=True);source.chmod(0o755)
+    (source/'runtime.env').write_text('synthetic configuration');(source/'runtime.env').chmod(0o600)
+    configuration=tmp_path/'etc';configuration.mkdir(mode=0o700)
+    data=tmp_path/'data';data.mkdir(mode=0o700)
+    shutil.copytree(source,configuration,dirs_exist_ok=True)
+    assert configuration.stat().st_mode&0o777==0o755  # Reproduces actual copytree root copystat.
+    members=[]
+    for name,mode,directory in [('configuration',0o700,True),('configuration/runtime.env',0o600,False),('data',0o700,True)]:
+        member=tarfile.TarInfo(name);member.mode=mode;member.uid=member.gid=0
+        if directory:member.type=tarfile.DIRTYPE
+        members.append(member)
+    ownership=[];monkeypatch.setattr(pilot_recovery.os,'chown',lambda *args:ownership.append(args))
+    pilot_recovery.restore_state_metadata(members,configuration,data)
+    assert configuration.stat().st_mode&0o777==0o700 and data.stat().st_mode&0o777==0o700
+    assert (configuration/'runtime.env').stat().st_mode&0o777==0o600
+    assert (configuration/'runtime.env').read_text()=='synthetic configuration'
+    assert (configuration,0,0) in ownership and (data,0,0) in ownership
+
+
+@pytest.mark.parametrize('variant',['owner','group','public_mode','setuid_mode','file'])
+def test_recovery_rejects_unsafe_private_root_metadata_before_any_changes(tmp_path,monkeypatch,variant):
+    sys.path.insert(0,str(ROOT/'tests/installer'))
+    import pilot_recovery
+    configuration=tmp_path/'etc';configuration.mkdir(mode=0o700);data=tmp_path/'data';data.mkdir(mode=0o700)
+    child=configuration/'runtime.env';child.write_text('preserve');child.chmod(0o600)
+    valid=tarfile.TarInfo('configuration/runtime.env');valid.mode=0o600;valid.uid=valid.gid=0
+    root=tarfile.TarInfo('configuration');root.type=tarfile.DIRTYPE;root.uid=root.gid=0;root.mode=0o700
+    if variant=='owner':root.uid=101
+    elif variant=='group':root.gid=101
+    elif variant=='public_mode':root.mode=0o755
+    elif variant=='setuid_mode':root.mode=0o4700
+    elif variant=='file':root.type=tarfile.REGTYPE
+    changes=[];monkeypatch.setattr(pilot_recovery.os,'chown',lambda *args:changes.append(args))
+    with pytest.raises(ValueError):pilot_recovery.restore_state_metadata([valid,root],configuration,data)
+    assert not changes and child.read_text()=='preserve' and configuration.stat().st_mode&0o777==0o700
+
+
+@pytest.mark.parametrize('variant',['known','unknown','malformed','list'])
+def test_recovery_verification_failure_evidence_never_exposes_values(variant):
+    sys.path.insert(0,str(ROOT/'tests/installer'))
+    from pilot_recovery import verification_failure_summary
+    body={'checks':[{'check':'file_permissions_and_storage','status':'FAILED','detail':'private-token'},
+                    {'check':'private_configuration','status':'PASSED','secret':'private-token'}]}
+    if variant=='unknown':body['checks'][0]['check']='private-token'
+    raw=json.dumps(body) if variant not in ('malformed','list') else ('private-token' if variant=='malformed' else '[]')
+    value=verification_failure_summary(raw)
+    if variant in ('malformed','list'):assert value is None
+    else:
+        assert value['passed_checks']==1
+        assert value['failed_checks']==(['file_permissions_and_storage'] if variant=='known' else [])
+        assert value['unknown_failed_checks']==(1 if variant=='unknown' else 0)
+        assert 'private-token' not in json.dumps(value)

@@ -24,6 +24,8 @@ def run(argv, *, data=None, output=None, check=True, operation_label=None):
     if check and p.returncode:
         from pilot_diagnostics import command_failure
         detail=command_failure((p.stdout or b'').decode(errors='replace'),(p.stderr or b'').decode(errors='replace'),p.returncode)
+        verification=verification_failure_summary(p.stdout or b'')
+        if verification is not None:detail={'verification':verification,**detail}
         label=operation_label if operation_label in ('redis_runtime_identity','redis_baseline_probe','redis_corrected_probe','redis_volume_restore') else 'controlled_recovery_command'
         raise RuntimeError('Disposable recovery operation failed: '+str(argv[0])+' / '+label+' / '+json.dumps(detail))
     return p
@@ -223,6 +225,48 @@ def restoration_guard(host):
 
 
 
+def verification_failure_summary(raw):
+    """Export only static verification names/status counts, never diagnostic values."""
+    try:value=json.loads(raw)
+    except (ValueError,TypeError):return None
+    if not isinstance(value,dict) or not isinstance(value.get('checks'),list) or len(value['checks'])>1024:return None
+    known={'ubuntu24_04_amd64_root','installation_state','installation_state_ready','recovery_gate',
+           'private_configuration','file_permissions_and_storage','approved_source_inventory','compose_configuration',
+           'healthy_services_private_bindings_internal_network_bounded_logs','postgres_connectivity_migration_head_least_privilege',
+           'worker_heartbeat','nginx_configuration','frontend_backend_and_security_headers','candidate_internal_frontend_health',
+           'systemd_service','unprivileged_ingress_service','journald','encrypted_backup_configuration',
+           'live_integrations_public_status_and_external_delivery','systemd_and_boot'}
+    failed=[];passed=0;unknown=0
+    for row in value['checks']:
+        if not isinstance(row,dict):continue
+        name=row.get('check');status=row.get('status')
+        if isinstance(name,str) and name in known:
+            if status=='FAILED':failed.append(name)
+            elif status=='PASSED':passed+=1
+        elif status=='FAILED':unknown+=1
+    return {'failed_checks':sorted(set(failed)),'passed_checks':passed,'unknown_failed_checks':unknown}
+
+
+def restore_state_metadata(members,configuration,data):
+    """Restore signed private roots as well as children; validate the full plan first."""
+    plan=[]
+    for member in members:
+        name=member.name.rstrip('/')
+        if name=='configuration':destination=Path(configuration);root=True
+        elif name.startswith('configuration/'):destination=Path(configuration)/name.removeprefix('configuration/');root=False
+        elif name=='data':destination=Path(data);root=True
+        elif name.startswith('data/'):destination=Path(data)/name.removeprefix('data/');root=False
+        else:continue
+        if Path(name).is_absolute() or '..' in Path(name).parts or destination.is_symlink() or not(member.isfile() or member.isdir()):
+            raise ValueError('Unsafe recovered state metadata path')
+        if member.uid not in (0,101,10001) or member.gid not in (0,101,10001):raise ValueError('Unexpected recovered owner')
+        if root and (not member.isdir() or member.uid!=0 or member.gid!=0 or member.mode&0o7777!=0o700):
+            raise ValueError('Signed private root metadata must remain root-owned0700')
+        plan.append((destination,member))
+    for destination,member in plan:
+        os.chown(destination,member.uid,member.gid);destination.chmod(member.mode&0o777)
+
+
 def restore_release_modes(members, release):
     """Restore reviewed code traversal after data-filter extraction; retain private metadata."""
     for member in members:
@@ -373,15 +417,7 @@ def restore(folder, expected):
             for name in manager.DATA_DIRS:
                 shutil.copytree(extracted / 'data' / name, h.lib / name, dirs_exist_ok=True)
             # Restore only reviewed identities, never arbitrary archive owners or setuid modes.
-            for m in members:
-                if m.name.startswith('configuration/'):
-                    dest = h.etc / m.name.removeprefix('configuration/')
-                elif m.name.startswith('data/'):
-                    dest = h.lib / m.name.removeprefix('data/')
-                else: continue
-                if m.uid not in (0, 101, 10001) or m.gid not in (0, 101, 10001):
-                    raise ValueError('Unexpected recovered owner')
-                os.chown(dest, m.uid, m.gid); dest.chmod(m.mode & 0o777)
+            restore_state_metadata(members,h.etc,h.lib)
             manager.write_json(h.state_path, state)
             h.prepare_ingress()
             h.compose(release, state, 'up', '-d', '--wait', 'db', 'redis')
