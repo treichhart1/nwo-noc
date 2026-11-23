@@ -294,3 +294,25 @@ bcrypt policy, checks correct/wrong-password results, unchanged rounds>=12 and a
 exact credential-free output schema. This catches embedded-program errors before
 the expensive VM sequence. Run699 is not treated as evidence of an application
 auth defect or successful VM acceptance. Final-source actual tests remain required.
+
+
+## Least-privilege access to an existing CI KVM device
+
+The harness already chooses KVM only when its process can open/dev/kvm; TCG
+selection alone did not establish whether the device was absent or merely group
+restricted. A CI-only launcher now records those exact read-only facts. If an
+existing character device10:232 is root-owned by the existing kvm group with
+group read/write and no other write access, it can launch the SAME job UID with
+only a temporary primary kvm process group. Existing supplementary groups remain
+for Docker access; only public CI provenance environment fields are preserved.
+No chmod/chown, account/group membership, kernel/module, firewall, SSH, service
+or production-host configuration is changed. If unavailable/incompatible, the
+existing TCG fallback remains and no KVM success is invented.
+
+Eight regression cases reject unsafe/nonexistent device ownership/type/mode and
+verify no global permission command or root UID is used. Actual selected
+acceleration is still measured by the real QEMU harness and must complete every
+existing acceptance check. This launcher is test infrastructure, never an
+application service or deployment prerequisite bypass.
+
+The independent VM job also requires the backend regression job before booting; a broken embedded-program regression blocks expensive VM execution and still fails the unchanged aggregate release gate. No failed or skipped dependency becomes PASS.

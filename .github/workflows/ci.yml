@@ -556,7 +556,7 @@ jobs:
     name: Independent Ubuntu VM reboot and second-host recovery
     runs-on: ubuntu-24.04
     timeout-minutes: 180
-    needs: [dependency-security]
+    needs: [dependency-security, backend]
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
@@ -573,7 +573,7 @@ jobs:
           docker build -t noc113-frontend:base frontend
           docker build -t noc117-postgres:rc -f deploy/Dockerfile.postgres .
       - name: Execute separate Ubuntu kernels, reboot and authenticated recovery
-        run: python3 tests/installer/pilot_vms.py --execute-disposable-vms --work "$RUNNER_TEMP/noc119-vms"
+        run: python3 tests/installer/hypervisor_launch.py --execute-disposable-vms --work "$RUNNER_TEMP/noc119-vms"
       - name: Preserve sanitized VM evidence only
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2

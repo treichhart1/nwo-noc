@@ -570,3 +570,29 @@ def test_installed_bcrypt_diagnostic_executes_real_policy_without_exporting_cred
                         'wrong_seconds','correct_password_accepted','incorrect_password_rejected'}
     assert all(value[k]>=0 for k in ('hash_seconds','verify_seconds','wrong_seconds'))
     assert b'synthetic-cryptographic-cost-only' not in result.stdout
+
+
+@pytest.mark.parametrize('variant,temporary_group',[
+    ('restricted_kvm',True),('accessible',False),('missing',False),('wrong_owner',False),
+    ('wrong_group',False),('regular_file',False),('world_writable',False),('no_group_write',False),
+])
+def test_hypervisor_group_is_temporary_and_only_for_existing_safe_kvm_device(variant,temporary_group):
+    sys.path.insert(0,str(ROOT/'tests/installer'))
+    from hypervisor_launch import launch_plan
+    import stat
+    device=SimpleNamespace(st_mode=stat.S_IFCHR|0o660,st_uid=0,st_gid=108,st_rdev=os.makedev(10,232))
+    if variant=='missing':device=None
+    elif variant=='wrong_owner':device.st_uid=1001
+    elif variant=='wrong_group':device.st_gid=0
+    elif variant=='regular_file':device.st_mode=stat.S_IFREG|0o660
+    elif variant=='world_writable':device.st_mode=stat.S_IFCHR|0o666
+    elif variant=='no_group_write':device.st_mode=stat.S_IFCHR|0o640
+    base=['/usr/bin/python3','fixed-disposable-harness','--execute-disposable-vms']
+    command,facts=launch_plan(base,1001,device,variant=='accessible',108)
+    if temporary_group:
+        assert command[:7]==['/usr/bin/sudo','-n','-P','-u','#1001','-g','kvm']
+        assert command[-len(base):]==base
+        assert facts['method']=='temporary-existing-kvm-process-group'
+    else:assert command==base
+    assert base==['/usr/bin/python3','fixed-disposable-harness','--execute-disposable-vms']
+    assert not any(x in command for x in ('chmod','chown','usermod','root'))
