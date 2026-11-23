@@ -26,7 +26,10 @@ def signals(text):
              'fatal_python':'fatal python error',
              'health_timeout':'health check exceeded timeout','healthcheck_timeout':'healthcheck exceeded timeout',
              'exec_deadline':'context deadline exceeded','proc_not_ready':'procready not received',
-             'resource_unavailable':'resource temporarily unavailable'}
+             'resource_unavailable':'resource temporarily unavailable',
+             'address_in_use':'address already in use','operation_not_permitted':'operation not permitted',
+             'sandbox_failed':'failed at step','envfile_failed':'failed to load environment',
+             'start_limit':'start request repeated too quickly'}
     allowed={'PermissionError','OperationalError','ImportError','ModuleNotFoundError','ValueError',
              'ValidationError','RuntimeError','OSError','KeyError','FileNotFoundError',
              'AttributeError','TypeError','AssertionError','ProgrammingError','IntegrityError'}
@@ -36,6 +39,31 @@ def signals(text):
 
 def command(args):
     return subprocess.run(args,capture_output=True,text=True,timeout=20)
+
+
+
+def unit_properties(text):
+    states = {
+        'ActiveState': {'active','inactive','failed','activating','deactivating','reloading','maintenance'},
+        'SubState': {'running','dead','failed','auto-restart','start-pre','start','start-post','stop','stop-sigterm','stop-sigkill','exited','condition','cleaning'},
+        'Result': {'success','exit-code','signal','core-dump','timeout','resources','start-limit-hit','watchdog','protocol','oom-kill'},
+    }
+    numeric = {'ExecMainCode','ExecMainStatus','MainPID','MemoryCurrent','MemoryPeak','CPUUsageNSec'}
+    result = {}
+    for line in text.splitlines():
+        key, separator, value = line.partition('=')
+        if not separator: continue
+        if key in states: result[key] = value if value in states[key] else 'unknown'
+        elif key in numeric: result[key] = int(value) if value.isdigit() else 'unavailable'
+    return result
+
+
+def ingress_diagnostics():
+    properties = ['ActiveState','SubState','Result','ExecMainCode','ExecMainStatus','MainPID','MemoryCurrent','MemoryPeak','CPUUsageNSec']
+    show = command(['systemctl','show','nwo-noc-ingress.service',*['--property='+p for p in properties]])
+    journal = command(['journalctl','-u','nwo-noc-ingress.service','-n','80','--no-pager','-o','cat'])
+    return {'available':show.returncode==0, 'properties':unit_properties(show.stdout),
+            'journal_signals':signals(journal.stdout)}
 
 
 def collect():
@@ -82,6 +110,7 @@ def collect():
     flags=next((line.split(':',1)[1].split() for line in Path('/proc/cpuinfo').read_text().splitlines() if line.startswith('flags')),[])
     kernel=command(['dmesg'])
     return {'installation_state':state.get('status'),'containers':records,
+            'private_ingress_unit':ingress_diagnostics(),
             'cpu_features':{name:name in flags for name in ('ssse3','sse4_1','sse4_2','popcnt','cx16','lahf_lm','avx','avx2')},
             'kernel_signals_available':kernel.returncode==0,
             'kernel_failure_flags':{name:token in kernel.stdout.lower() for name,token in

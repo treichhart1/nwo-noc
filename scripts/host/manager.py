@@ -47,6 +47,7 @@ from policy import (
     validate_env,
     ubuntu_candidate,
     migration_environment,
+    require_cpu_features,
 )
 
 SOURCE = Path(__file__).resolve().parents[2]
@@ -176,6 +177,7 @@ class Host:
             raise Reject(
                 "Only tested Linux amd64 packaging is supported; other architectures need acceptance"
             )
+        require_cpu_features(Path("/proc/cpuinfo").read_text())
 
     def state(self):
         return json.loads(private_file(self.state_path))

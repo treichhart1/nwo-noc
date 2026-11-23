@@ -415,3 +415,26 @@ def test_probe_defaults_share_the_application_settings_authority():
     from app.core.config import Settings
     assert Settings.model_fields['redis_url'].default==DEFAULT_REDIS_URL
     assert Settings.model_fields['planning_storage_root'].default==DEFAULT_PLANNING_STORAGE_ROOT
+
+
+@pytest.mark.parametrize('cpuinfo,accepted',[
+    ('flags : pni ssse3 sse4_1 sse4_2 popcnt cx16 lahf_lm',True),
+    ('flags : pni cx16 lahf_lm',False),
+    ('model name : synthetic',False),
+    ('flags : pni ssse3 sse4_1 sse4_2 popcnt cx16 lahf_lm\nflags : pni cx16 lahf_lm',False),
+])
+def test_installer_rejects_unsupported_native_abi_before_state_changes(cpuinfo,accepted):
+    from policy import require_cpu_features,Reject
+    if accepted:require_cpu_features(cpuinfo)
+    else:
+        with pytest.raises(Reject,match='x86-64-v2'):require_cpu_features(cpuinfo)
+
+
+def test_ingress_unit_diagnostics_allowlist_never_exports_credentials():
+    sys.path.insert(0,str(ROOT/'tests/installer'))
+    from pilot_diagnostics import unit_properties
+    result=unit_properties('ActiveState=failed\nResult=exit-code\nExecMainStatus=1\n'
+                           'Environment=PASSWORD=synthetic-secret\nExecStart=/private/path\n'
+                           'SubState=synthetic-secret\n')
+    assert result=={'ActiveState':'failed','Result':'exit-code','ExecMainStatus':1,'SubState':'unknown'}
+    assert 'synthetic-secret' not in json.dumps(result) and '/private' not in json.dumps(result)

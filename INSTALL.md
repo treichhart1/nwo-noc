@@ -9,6 +9,11 @@ acceptance until the release/security/operator gates are approved.
 ## Requirements and trust
 
 Use a dedicated, disposable Ubuntu Server24.04LTS amd64 machine for acceptance.
+The locked NumPy/GIS wheels require x86-64-v2 on every vCPU (including SSE3/SSSE3,
+SSE4.1/SSE4.2, POPCNT, CX16 and LAHF). The installer fails before creating state
+when this prerequisite is missing. A generic qemu64 virtual CPU is insufficient;
+use an independently approved compatible virtual CPU model. Do not change live
+server CPU settings as part of development validation.
 Minimum controlled-test floor:2 CPU cores,4GiB RAM and10GiB free disk, plus room for
 images, database growth and at least twice the persistent state for backups. This
 is not a production sizing guarantee. Baseline1,000-device polling exceeds15seconds;

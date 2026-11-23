@@ -155,3 +155,20 @@ validated .env fallback and shared default authority. Diagnostics retain all
 roles' probe durations and static timeout/exec-error flags. Final complete VM,
 reboot and independent recovery acceptance remains pending; run684 did not reach
 those stages and is not marked PASS.
+
+
+The same-image A/B in run685/sourcead8efb1 provided direct causal evidence:
+image4690a912... produced SIGILL (child exit-4) importing NumPy and rasterio on
+qemu64, while uvloop and pyproj passed. After the same disk rebooted with Nehalem,
+all four imports passed on that identical image. Thus the last uvloop import
+record in earlier restart logs was not proof that uvloop was the culprit.
+The backend reached healthy with zero restarts. No OOM was recorded; the original
+probe exit137 alone is not treated as proof of OOM or of a specific timeout cause.
+
+The installer now checks every vCPU's x86-64-v2 flags before creating application
+state, and INSTALL.md documents the actual locked-wheel prerequisite. Missing or
+mixed CPU feature sets fail with actionable guidance; no package downgrade or
+runtime CPU-feature bypass is used. Four tests cover supported, unsupported,
+missing and mixed-vCPU inputs. Read-only failure diagnostics additionally collect
+allowlisted private-ingress unit state/exit/memory fields and static journal flags,
+never raw journals, command lines, environment values or credential text.
