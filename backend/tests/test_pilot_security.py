@@ -838,3 +838,72 @@ def test_disposable_image_store_setup_refuses_existing_services_or_unauthorized_
     if variant=='valid':require_empty_controller(environment,uid,running)
     else:
         with pytest.raises(RuntimeError):require_empty_controller(environment,uid,running)
+
+
+def test_restricted_redis_probe_compiles_exact_restoration_payload():
+    tree=ast.parse((ROOT/'tests/installer/pilot_recovery.py').read_text())
+    sys.path.insert(0,str(ROOT/'tests/installer'))
+    from pilot_recovery import REDIS_UID,REDIS_GID,redis_restore_probe_programs
+    assignments=[n for n in ast.walk(tree) if isinstance(n,ast.Assign) and any(isinstance(t,ast.Name) and t.id=='redis_script' for t in n.targets)]
+    scope={'REDIS_UID':REDIS_UID,'REDIS_GID':REDIS_GID,'textwrap':textwrap}
+    exec(compile(ast.Module(body=sorted(assignments,key=lambda n:n.lineno),type_ignores=[]),'exact-restore-construction','exec'),scope)
+    probes=redis_restore_probe_programs(scope['redis_script'])
+    for kind,program in probes.items():compile(program,'restricted-'+kind,'exec')
+    assert set(probes)=={'baseline','corrected'}
+    assert not any(isinstance(n,ast.Constant) and n.value=='FOWNER' for n in ast.walk(tree))
+    assert 'effective==3' in probes['baseline'] and 'effective==3' in probes['corrected']
+
+
+@pytest.mark.parametrize('program',[None,'','os.chown(dest,m.uid,m.gid);dest.chmod(m.mode&0o777)',
+                                   'os.chown(dest,0,0);dest.chmod(m.mode&0o777);os.chown(dest,m.uid,m.gid)'*2])
+def test_redis_permission_probe_refuses_unreviewed_program(program):
+    sys.path.insert(0,str(ROOT/'tests/installer'))
+    from pilot_recovery import redis_restore_probe_programs
+    with pytest.raises(ValueError):redis_restore_probe_programs(program)
+
+
+def redis_metadata_permission_model(allow_foreign=False,unrelated=False):
+    # Ownership model only; actual Linux capability A/B is mandatory in the VM.
+    return chr(10).join((
+        'class Member: uid=999;gid=1000;mode=0o600',
+        'class Destination:',
+        ' owner=999;group=1000;mode=0',
+        ' def chmod(self,value):',
+        '  if self.owner!=0 and not '+repr(allow_foreign)+':raise PermissionError("synthetic ownership denial")',
+        '  self.mode=value',
+        'class Ownership:',
+        ' @staticmethod',
+        ' def chown(target,uid,gid):target.owner=uid;target.group=gid',
+        'os=Ownership();dest=Destination();m=Member()',
+        'raise PermissionError("synthetic unrelated denial")' if unrelated else 'pass',
+        'os.chown(dest,0,0);dest.chmod(m.mode&0o777);os.chown(dest,m.uid,m.gid)'))
+
+
+@pytest.mark.parametrize('variant',['expected_denial','unrelated_denial','unexpected_success'])
+def test_redis_baseline_probe_requires_the_specific_ownership_denial(monkeypatch,capsys,variant):
+    sys.path.insert(0,str(ROOT/'tests/installer'))
+    from pilot_recovery import redis_restore_probe_programs
+    original=Path.read_text
+    monkeypatch.setattr(Path,'read_text',lambda self,*a,**k:'CapEff: 0000000000000003' if str(self)=='/proc/self/status' else original(self,*a,**k))
+    program=redis_metadata_permission_model(variant=='unexpected_success',variant=='unrelated_denial')
+    probe=redis_restore_probe_programs(program)['baseline']
+    if variant=='expected_denial':
+        exec(compile(probe,'baseline-permission-model','exec'),{})
+        value=json.loads(capsys.readouterr().out)
+        assert value=={'permission_denial_reproduced':True,'effective_capabilities':3}
+    else:
+        with pytest.raises(AssertionError):exec(compile(probe,'baseline-permission-model','exec'),{})
+        assert capsys.readouterr().out==''
+
+
+def test_redis_metadata_order_restores_foreign_owner_without_fowner(monkeypatch):
+    sys.path.insert(0,str(ROOT/'tests/installer'))
+    from pilot_recovery import redis_restore_probe_programs
+    original=Path.read_text
+    monkeypatch.setattr(Path,'read_text',lambda self,*a,**k:'CapEff: 0000000000000003' if str(self)=='/proc/self/status' else original(self,*a,**k))
+    probe=redis_restore_probe_programs(redis_metadata_permission_model())['corrected']
+    prefix=probe.split('# NOC119_REDIS_METADATA_VERIFICATION')[0];scope={}
+    exec(compile(prefix,'corrected-permission-model','exec'),scope)
+    target=scope['dest']
+    assert (target.owner,target.group,target.mode)==(999,1000,0o600)
+    assert scope['effective']==3

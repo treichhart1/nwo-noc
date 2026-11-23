@@ -18,11 +18,14 @@ from artifacts import verify_signature
 from policy import safe_members, file_hash
 
 
-def run(argv, *, data=None, output=None, check=True):
+def run(argv, *, data=None, output=None, check=True, operation_label=None):
     p = subprocess.run([str(v) for v in argv], input=data, stdout=output or subprocess.PIPE,
                        stderr=subprocess.PIPE, timeout=1800)
     if check and p.returncode:
-        raise RuntimeError('Disposable recovery operation failed: ' + str(argv[0]))
+        from pilot_diagnostics import command_failure
+        detail=command_failure((p.stdout or b'').decode(errors='replace'),(p.stderr or b'').decode(errors='replace'),p.returncode)
+        label=operation_label if operation_label in ('redis_runtime_identity','redis_baseline_probe','redis_corrected_probe','redis_volume_restore') else 'controlled_recovery_command'
+        raise RuntimeError('Disposable recovery operation failed: '+str(argv[0])+' / '+label+' / '+json.dumps(detail))
     return p
 
 
@@ -257,6 +260,41 @@ def redis_restore_members(archive):
     return members
 
 
+def redis_restore_probe_programs(program):
+    """Actual restricted-capability A/B uses tmpfs, never the restoration volume."""
+    fixed='os.chown(dest,0,0);dest.chmod(m.mode&0o777);os.chown(dest,m.uid,m.gid)'
+    if not isinstance(program,str) or program.count(fixed)!=1:
+        raise ValueError('Reviewed Redis metadata sequence required')
+    legacy=program.replace(fixed,"os.chown(dest,m.uid,m.gid);probe_stage='chmod_after_foreign_chown';dest.chmod(m.mode&0o777)")
+    capability_check=chr(10).join((
+        'from pathlib import Path',
+        "effective=int(next(line.split(':',1)[1].strip() for line in Path('/proc/self/status').read_text().splitlines() if line.startswith('CapEff:')),16)",
+        "assert effective==3, 'Exact CHOWN and DAC_OVERRIDE capability set required'"))
+    baseline=chr(10).join((capability_check,'import json',"probe_stage='before_metadata'",'try:',
+        ' exec('+repr(legacy)+')','except PermissionError:',
+        " assert probe_stage=='chmod_after_foreign_chown', 'Unrelated permission error is not reproduction'",
+        " print(json.dumps({'permission_denial_reproduced':True,'effective_capabilities':effective}))",
+        "else: raise AssertionError('Unfixed ownership ordering did not reproduce denial')"))
+    verification="""
+# NOC119_REDIS_METADATA_VERIFICATION
+import hashlib,json,stat
+count=0
+with tarfile.open('/backup.tar') as proof:
+ for member in proof.getmembers():
+  destination=Path('/volume')/('/'.join(Path(member.name).parts[1:]))
+  observed=destination.stat()
+  assert (observed.st_uid,observed.st_gid)==(member.uid,member.gid)
+  assert stat.S_IMODE(observed.st_mode)==member.mode&0o777
+  if member.isfile():
+   with proof.extractfile(member) as source,destination.open('rb') as restored:
+    assert hashlib.file_digest(source,'sha256').digest()==hashlib.file_digest(restored,'sha256').digest()
+  count+=1
+assert count>0
+print(json.dumps({'restricted_restore_verified':True,'effective_capabilities':effective,'members':count}))
+"""
+    return {'baseline':baseline,'corrected':chr(10).join((capability_check,program,verification))}
+
+
 def restore(folder, expected):
     """Only on an empty independent VM, using explicitly synthetic signed artifacts."""
     if os.geteuid() != 0 or Path('/.dockerenv').exists() or not Path('/run/systemd/system').is_dir():
@@ -368,15 +406,24 @@ def restore(folder, expected):
       else:
        dest.parent.mkdir(parents=True,exist_ok=True)
        with t.extractfile(m) as src,dest.open('wb') as out: shutil.copyfileobj(src,out)
-      os.chown(dest,m.uid,m.gid);dest.chmod(m.mode&0o777)
+      os.chown(dest,0,0);dest.chmod(m.mode&0o777);os.chown(dest,m.uid,m.gid)
     """
             identity=run(['docker','run','--rm','--network','none','--read-only','--cap-drop','ALL',
-                          '--entrypoint','sh',manifest['images']['redis'],'-ec','id -u redis; id -g redis']).stdout.decode().split()
+                          '--entrypoint','sh',manifest['images']['redis'],'-ec','id -u redis; id -g redis'],operation_label='redis_runtime_identity').stdout.decode().split()
             if identity != [str(REDIS_UID),str(REDIS_GID)]:
                 raise ValueError('Pinned Redis runtime identity changed; review restore compatibility')
             redis_script=chr(10).join((f'REDIS_UID={REDIS_UID}',f'REDIS_GID={REDIS_GID}',textwrap.dedent(redis_script)))
+            probes=redis_restore_probe_programs(redis_script)
+            for kind,field in [('baseline','permission_denial_reproduced'),('corrected','restricted_restore_verified')]:
+                probe=run(['docker','run','--rm','--network','none','--read-only','--user','0:0','--cap-drop','ALL',
+                           '--cap-add','CHOWN','--cap-add','DAC_OVERRIDE','--memory','128m','--pids-limit','128',
+                           '--tmpfs','/volume:rw,noexec,nosuid,nodev,size=16m','-v',f'{extracted}/redis.tar:/backup.tar:ro',
+                           '--entrypoint','python',manifest['images']['backend'],'-c',probes[kind]],operation_label='redis_'+kind+'_probe')
+                proof=json.loads(probe.stdout)
+                passed('redis_restricted_metadata_'+kind+'_probe',proof.get(field) is True and proof.get('effective_capabilities')==3)
+
             run(['docker','run','--rm','--network','none','--read-only','--user','0:0','--cap-drop','ALL','--cap-add','CHOWN','--cap-add','DAC_OVERRIDE',
-                 '--mount',f"type=volume,src={state['project']}-redis,dst=/volume",'-v',f'{extracted}/redis.tar:/backup.tar:ro','--entrypoint','python',manifest['images']['backend'],'-c',redis_script])
+                 '--mount',f"type=volume,src={state['project']}-redis,dst=/volume",'-v',f'{extracted}/redis.tar:/backup.tar:ro','--entrypoint','python',manifest['images']['backend'],'-c',redis_script],operation_label='redis_volume_restore')
             h.switch(release); h.register(release)
             h.guard.unlink()  # All signed data, keys and migrations restored before managed startup.
             run(['systemctl', 'start', 'nwo-noc.service'])
