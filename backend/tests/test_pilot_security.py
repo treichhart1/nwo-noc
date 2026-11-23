@@ -201,10 +201,20 @@ def test_offline_bundle_preserves_nonancestor_reviewed_audit_history(tmp_path):
 
 def test_recovery_redis_payload_is_executable_and_preserves_volume_ownership(tmp_path):
     tree=ast.parse((ROOT/'tests/installer/pilot_recovery.py').read_text())
-    value=next(n.value.value for n in ast.walk(tree) if isinstance(n,ast.Assign) and any(isinstance(t,ast.Name) and t.id=='redis_script' for t in n.targets))
-    compile(textwrap.dedent(value),'redis-volume-recovery','exec')
-    # Never use arbitrary archive owners; runtime Redis data uses only its pinned identities.
-    assert 'm.uid not in(0,999)' in value and 'm.gid not in(0,999)' in value
+    sys.path.insert(0,str(ROOT/'tests/installer'))
+    from pilot_recovery import REDIS_UID,REDIS_GID
+    assert (REDIS_UID,REDIS_GID)==(999,1000)
+    assignments=[n for n in ast.walk(tree) if isinstance(n,ast.Assign)
+                 and any(isinstance(t,ast.Name) and t.id=='redis_script' for t in n.targets)]
+    scope={'REDIS_UID':REDIS_UID,'REDIS_GID':REDIS_GID,'textwrap':textwrap}
+    # Evaluate only the source string/prefix assignments, never the restore program.
+    exec(compile(ast.Module(body=sorted(assignments,key=lambda n:n.lineno),type_ignores=[]),
+                 'redis-program-construction','exec'),scope)
+    value=scope['redis_script']
+    compile(value,'redis-volume-recovery','exec')
+    assert value.startswith('REDIS_UID=999\nREDIS_GID=1000\n')
+    # Root and the exact signed-image identity only; no arbitrary saved owners.
+    assert 'm.uid not in(0,REDIS_UID)' in value and 'm.gid not in(0,REDIS_GID)' in value
 
 
 @pytest.mark.parametrize('field,value',[('User','0'),('revision','e'*40)])
