@@ -555,3 +555,18 @@ def test_redis_restore_requires_exact_pinned_alpine_ownership(variant):
         if variant=='valid':assert len(redis_restore_members(tar))==2
         else:
             with pytest.raises(ValueError):redis_restore_members(tar)
+
+
+def test_installed_bcrypt_diagnostic_executes_real_policy_without_exporting_credentials():
+    tree=ast.parse((ROOT/'tests/installer/test_ubuntu_host.py').read_text())
+    script=next(n.value.value for n in ast.walk(tree) if isinstance(n,ast.Assign)
+                and any(isinstance(t,ast.Name) and t.id=='cost_script' for t in n.targets))
+    compile(script,'installed-bcrypt-policy-diagnostic','exec')
+    result=subprocess.run([sys.executable,'-B','-c',script],capture_output=True,timeout=30,check=True)
+    value=json.loads(result.stdout)
+    assert value['scheme']=='bcrypt' and value['hash_rounds']==value['policy_rounds']>=12
+    assert value['correct_password_accepted'] and value['incorrect_password_rejected']
+    assert set(value)=={'scheme','policy_rounds','hash_rounds','hash_seconds','verify_seconds',
+                        'wrong_seconds','correct_password_accepted','incorrect_password_rejected'}
+    assert all(value[k]>=0 for k in ('hash_seconds','verify_seconds','wrong_seconds'))
+    assert b'synthetic-cryptographic-cost-only' not in result.stdout

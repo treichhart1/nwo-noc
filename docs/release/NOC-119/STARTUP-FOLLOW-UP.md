@@ -277,3 +277,20 @@ paths. Five regression cases cover the actual vendor identity and unsafe values.
 No image/version/license or production Redis configuration is changed. This is
 verified code/image-contract evidence; independent Redis recovery is still not
 claimed until actually executed.
+
+
+## Diagnostic embedded-program correction
+
+The first four-vCPU run699 reached13 checks but failed the added diagnostic's
+docker exec before a bcrypt measurement. In-memory execution reproduced a
+SyntaxError in the embedded snippet. JavaScript replacement-string handling of
+the dollar/quote sequence in hashed.split('$') had inserted source suffix text
+into that diagnostic literal. The canonical harness is reconstructed from its
+verified pre-diagnostic source with a literal callback replacement; production
+auth behavior and all assertions remain unchanged.
+
+A regression now compiles AND executes the exact embedded program against the real
+bcrypt policy, checks correct/wrong-password results, unchanged rounds>=12 and an
+exact credential-free output schema. This catches embedded-program errors before
+the expensive VM sequence. Run699 is not treated as evidence of an application
+auth defect or successful VM acceptance. Final-source actual tests remain required.
