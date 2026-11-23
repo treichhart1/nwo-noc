@@ -738,13 +738,15 @@ def test_signed_image_transport_requires_archive_and_loaded_exact_ids(tmp_path,f
     sys.path.insert(0,str(ROOT/'tests/installer'))
     from pilot_recovery import image_transport_contract
     import tarfile
-    identity='sha256:'+'a'*64;other='sha256:'+'b'*64
-    config='a'*64+'.json' if form=='legacy' else 'blobs/sha256/'+'a'*64
+    import hashlib
+    config_body=json.dumps({'os':'linux','architecture':'amd64'}).encode()
+    identity='sha256:'+hashlib.sha256(config_body).hexdigest();other='sha256:'+'b'*64
+    config=identity.split(':')[1]+'.json' if form=='legacy' else 'blobs/sha256/'+identity.split(':')[1]
     body=json.dumps([{'Config':config,'RepoTags':['noc119-recovery:synthetic']}]).encode()
     archive=tmp_path/'images.tar'
     with tarfile.open(archive,'w') as tar:
         member=tarfile.TarInfo('manifest.json');member.size=len(body);tar.addfile(member,io.BytesIO(body))
-        config_member=tarfile.TarInfo(config);config_member.size=2;tar.addfile(config_member,io.BytesIO(b'{}'))
+        config_member=tarfile.TarInfo(config);config_member.size=len(config_body);tar.addfile(config_member,io.BytesIO(config_body))
     value=image_transport_contract(archive,[identity],[other] if missing else [identity])
     assert value['all_present'] is (not missing)
     assert value['missing_archive_image_ids']==[]
@@ -755,15 +757,84 @@ def test_signed_image_transport_requires_archive_and_loaded_exact_ids(tmp_path,f
 def test_image_archive_checks_every_config_and_layer_before_loading(tmp_path,missing):
     sys.path.insert(0,str(ROOT/'tests/installer'))
     from pilot_recovery import image_transport_contract
-    identity='sha256:'+'a'*64;config='blobs/sha256/'+'a'*64;layer='blobs/sha256/'+'b'*64
+    import hashlib
+    config_body=json.dumps({'os':'linux','architecture':'amd64'}).encode()
+    identity='sha256:'+hashlib.sha256(config_body).hexdigest();config='blobs/sha256/'+identity.split(':')[1];layer='blobs/sha256/'+'b'*64
     body=json.dumps([{'Config':config,'Layers':[layer]}]).encode();archive=tmp_path/'images.tar'
     with tarfile.open(archive,'w') as tar:
         m=tarfile.TarInfo('manifest.json');m.size=len(body);tar.addfile(m,io.BytesIO(body))
         for name,kind in [(config,'config'),(layer,'layer')]:
             if kind==missing:continue
-            m=tarfile.TarInfo(name);m.size=2;tar.addfile(m,io.BytesIO(b'{}'))
+            payload=config_body if kind=='config' else b'{}'
+            m=tarfile.TarInfo(name);m.size=len(payload);tar.addfile(m,io.BytesIO(payload))
     value=image_transport_contract(archive,[identity],[identity])
     assert value['all_present'] is (missing=='none')
     assert value['all_archive_files_present'] is (missing=='none')
     assert value['missing_archive_file_count']==(0 if missing=='none' else 1)
     assert value['archive_layer_references']==1
+
+
+@pytest.mark.parametrize('variant',['valid','corrupt_config','corrupt_manifest','corrupt_index','missing_manifest','missing_layer','foreign_platform','missing_index'])
+def test_oci_index_identity_is_verified_through_manifest_and_config_hashes(tmp_path,variant):
+    sys.path.insert(0,str(ROOT/'tests/installer'))
+    from pilot_recovery import image_transport_contract
+    import hashlib
+    def encode(value):return json.dumps(value,sort_keys=True).encode()
+    def digest(value):return 'sha256:'+hashlib.sha256(value).hexdigest()
+    config=encode({'os':'linux','architecture':'amd64'});config_id=digest(config);layer=b'synthetic-layer';layer_id=digest(layer)
+    manifest=encode({'schemaVersion':2,'mediaType':'application/vnd.oci.image.manifest.v1+json',
+                    'config':{'digest':config_id},'layers':[{'digest':layer_id}]});manifest_id=digest(manifest)
+    index=encode({'schemaVersion':2,'mediaType':'application/vnd.oci.image.index.v1+json',
+                  'manifests':[{'mediaType':'application/vnd.oci.image.manifest.v1+json','digest':manifest_id,
+                                'platform':{'os':'linux','architecture':'arm64' if variant=='foreign_platform' else 'amd64'}}]});index_id=digest(index)
+    name=lambda identity:'blobs/sha256/'+identity.split(':')[1]
+    blobs={name(config_id):config,name(manifest_id):manifest,name(index_id):index,name(layer_id):layer,
+           'manifest.json':encode([{'Config':name(config_id),'Layers':[name(layer_id)]}])}
+    targets={'config':config_id,'manifest':manifest_id,'index':index_id,'layer':layer_id}
+    if variant.startswith('corrupt_'):blobs[name(targets[variant.split('_')[1]])]=b'{}'
+    if variant.startswith('missing_'):blobs.pop(name(targets[variant.split('_')[1]]))
+    archive=tmp_path/'images.tar'
+    with tarfile.open(archive,'w') as tar:
+        for path,raw in blobs.items():
+            m=tarfile.TarInfo(path);m.size=len(raw);tar.addfile(m,io.BytesIO(raw))
+    if variant in ('corrupt_config','corrupt_manifest','corrupt_index','missing_manifest','foreign_platform'):
+        with pytest.raises(ValueError):image_transport_contract(archive,[index_id],[index_id])
+    else:
+        value=image_transport_contract(archive,[index_id],[index_id])
+        assert value['all_present'] is (variant=='valid')
+        if variant=='valid':assert value['verified_oci_config_bindings']=={index_id:[config_id]}
+
+
+@pytest.mark.parametrize('original',[{}, {'log-driver':'json-file'}, {'features':{'buildkit':False}},
+                                    {'features':{'containerd-snapshotter':False},'data-root':'/retained'}])
+def test_disposable_controller_changes_only_snapshotter_feature(original):
+    sys.path.insert(0,str(ROOT/'tests/installer'))
+    from controller_image_store import daemon_configuration
+    before=copy.deepcopy(original);result=daemon_configuration(original)
+    assert original==before and result['features']['containerd-snapshotter'] is True
+    result['features'].pop('containerd-snapshotter')
+    comparison=copy.deepcopy(before);comparison.setdefault('features',{}).pop('containerd-snapshotter',None)
+    assert result==comparison
+
+
+@pytest.mark.parametrize('original',[[],{'features':[]},{'features':None}])
+def test_disposable_controller_rejects_invalid_configuration(original):
+    sys.path.insert(0,str(ROOT/'tests/installer'))
+    from controller_image_store import daemon_configuration
+    with pytest.raises(ValueError):daemon_configuration(original)
+
+
+@pytest.mark.parametrize('variant',['valid','not_ci','no_run_id','not_root','original_root','no_original_uid','running_containers'])
+def test_disposable_image_store_setup_refuses_existing_services_or_unauthorized_host(variant):
+    sys.path.insert(0,str(ROOT/'tests/installer'))
+    from controller_image_store import require_empty_controller
+    environment={'GITHUB_ACTIONS':'true','GITHUB_RUN_ID':'12345','SUDO_UID':'1001'};uid=0;running=''
+    if variant=='not_ci':environment['GITHUB_ACTIONS']='false'
+    elif variant=='no_run_id':environment.pop('GITHUB_RUN_ID')
+    elif variant=='not_root':uid=1001
+    elif variant=='original_root':environment['SUDO_UID']='0'
+    elif variant=='no_original_uid':environment.pop('SUDO_UID')
+    elif variant=='running_containers':running='existing-container'
+    if variant=='valid':require_empty_controller(environment,uid,running)
+    else:
+        with pytest.raises(RuntimeError):require_empty_controller(environment,uid,running)

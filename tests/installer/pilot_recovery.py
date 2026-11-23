@@ -43,42 +43,85 @@ def save_recovery_images(identities, stream):
 
 
 def image_transport_contract(archive, expected, available):
-    """Check bounded Docker archive config inventory and actual immutable loaded IDs."""
+    """Verify portable config/index identities and all declared files, never equate them."""
     import re
     expected=set(expected);available=set(available)
     pattern=r'sha256:[a-f0-9]{64}'
     if not expected or not all(isinstance(v,str) and re.fullmatch(pattern,v) for v in expected|available):
         raise ValueError('Invalid loaded image identity inventory')
     with tarfile.open(archive) as tar:
-        member=tar.getmember('manifest.json')
-        if not member.isfile() or member.size>1024**2:raise ValueError('Invalid image archive manifest')
-        body=json.load(tar.extractfile(member))
-    if not isinstance(body,list) or not body or len(body)>64:raise ValueError('Invalid image archive inventory')
-    recorded=set();missing_files=set();layer_count=0
-    with tarfile.open(archive) as tar:
         members=tar.getmembers()
         if len(members)>100000:raise ValueError('Image archive member limit exceeded')
         names={m.name:m for m in members}
         if len(names)!=len(members):raise ValueError('Duplicate image archive members')
-    for row in body:
-        value=row.get('Config') if isinstance(row,dict) else None
-        if not isinstance(value,str):raise ValueError('Missing image config identity')
-        match=re.fullmatch(r'(?:blobs/sha256/)?([a-f0-9]{64})(?:[.]json)?',value)
-        if not match:raise ValueError('Invalid image config identity')
-        recorded.add('sha256:'+match.group(1))
-        paths=[value]+row.get('Layers',[])
-        if not all(isinstance(path,str) for path in paths):raise ValueError('Invalid image layer inventory')
-        layer_count+=len(paths)-1
-        for path in paths:
-            item=names.get(path)
-            if item is None or not item.isfile():missing_files.add(path)
-
-    return {'expected_image_ids':sorted(expected),'archive_image_ids':sorted(recorded),
-            'missing_archive_image_ids':sorted(expected-recorded),
-            'missing_loaded_image_ids':sorted(expected-available),
+        def read(name):
+            item=names.get(name)
+            if item is None or not item.isfile() or item.size>4*1024**2:raise ValueError('Image metadata unavailable or oversized')
+            return tar.extractfile(item).read()
+        def digest_json(digest):
+            if not isinstance(digest,str) or not re.fullmatch(pattern,digest):raise ValueError('Invalid OCI digest')
+            suffix=digest.split(':')[1]
+            name='blobs/sha256/'+suffix if 'blobs/sha256/'+suffix in names else suffix+'.json'
+            raw=read(name)
+            if 'sha256:'+hashlib.sha256(raw).hexdigest()!=digest:raise ValueError('Image metadata digest mismatch')
+            value=json.loads(raw)
+            if not isinstance(value,dict):raise ValueError('Image metadata must be an object')
+            return value
+        body=json.loads(read('manifest.json'))
+        if not isinstance(body,list) or not body or len(body)>64:raise ValueError('Invalid image archive inventory')
+        configs=set();missing_files=set();layer_count=0
+        for row in body:
+            value=row.get('Config') if isinstance(row,dict) else None
+            match=re.fullmatch(r'(?:blobs/sha256/)?([a-f0-9]{64})(?:[.]json)?',value) if isinstance(value,str) else None
+            if not match:raise ValueError('Invalid image config identity')
+            config='sha256:'+match.group(1);configs.add(config)
+            paths=[value]+row.get('Layers',[])
+            if not all(isinstance(path,str) for path in paths):raise ValueError('Invalid layer inventory')
+            layer_count+=len(paths)-1
+            for path in paths:
+                item=names.get(path)
+                if item is None or not item.isfile():missing_files.add(path)
+            if value not in missing_files:digest_json(config)
+        cache={};visiting=set()
+        def resolve(digest):
+            if digest in cache:return cache[digest]
+            if digest in visiting or len(cache)+len(visiting)>=256:raise ValueError('Cyclic or excessive OCI graph')
+            visiting.add(digest);value=digest_json(digest)
+            if digest in configs:
+                if value.get('os')!='linux' or value.get('architecture')!='amd64':raise ValueError('Unsupported image config platform')
+                result={digest}
+            elif value.get('schemaVersion')==2 and isinstance(value.get('manifests'),list):
+                result=set()
+                for descriptor in value['manifests']:
+                    platform=descriptor.get('platform',{})
+                    nested=descriptor.get('mediaType','').endswith(('image.index.v1+json','manifest.list.v2+json'))
+                    if nested or (platform.get('os')=='linux' and platform.get('architecture')=='amd64'):
+                        result.update(resolve(descriptor.get('digest')))
+                if not result:raise ValueError('No approved linux/amd64 image in OCI index')
+            elif value.get('schemaVersion')==2 and isinstance(value.get('config'),dict):
+                config=value['config'].get('digest');configuration=digest_json(config)
+                if config not in configs or configuration.get('os')!='linux' or configuration.get('architecture')!='amd64':
+                    raise ValueError('OCI runtime config/platform not in archive inventory')
+                for layer in value.get('layers',[]):
+                    digest_value=layer.get('digest')
+                    if not isinstance(digest_value,str) or not re.fullmatch(pattern,digest_value):raise ValueError('Invalid OCI layer digest')
+                    name='blobs/sha256/'+digest_value.split(':')[1]
+                    if name not in names or not names[name].isfile():missing_files.add(name)
+                result={config}
+            else:raise ValueError('Unsupported OCI image identity graph')
+            visiting.remove(digest);cache[digest]=result;return result
+        bindings={};missing_ids=[]
+        for identity in sorted(expected):
+            suffix=identity.split(':')[1]
+            if 'blobs/sha256/'+suffix not in names and suffix+'.json' not in names:missing_ids.append(identity)
+            elif identity in configs and any(path.endswith(suffix) or path==suffix+'.json' for path in missing_files):missing_ids.append(identity)
+            else:bindings[identity]=sorted(resolve(identity))
+    return {'expected_image_ids':sorted(expected),'archive_image_ids':sorted(bindings),
+            'archive_config_ids':sorted(configs),'verified_oci_config_bindings':bindings,
+            'missing_archive_image_ids':missing_ids,'missing_loaded_image_ids':sorted(expected-available),
             'missing_archive_file_count':len(missing_files),'archive_layer_references':layer_count,
             'all_archive_files_present':not missing_files,
-            'all_present':expected<=recorded and expected<=available and not missing_files}
+            'all_present':not missing_ids and expected<=available and not missing_files}
 
 
 def export_checkpoint(work, clone, approved, identity, backup, password, compose, state, tested_images, extra_images=()):

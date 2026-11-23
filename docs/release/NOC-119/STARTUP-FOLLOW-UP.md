@@ -380,3 +380,14 @@ The pre-install native-ABI probe image is also explicitly included in signed tra
 
 
 Run719/a27ab83: source install and application reboot PASS (56.399seconds), source off. Explicit aliases alone did NOT resolve the import failure: Docker28.0.4 load reported missing_file=true with81.7GB free. Receiver recovery remainsNOT TESTED. Added pre-load signed archive config/layer completeness validation, safe error path categories and source/controller Docker version comparison. Do not mark the transport or installed-image scan successful until executed final-source evidence demonstrates it.
+
+
+### Confirmed Docker image-store incompatibility (run721)
+
+At ee0e62f, actual Ubuntu source Docker29.1.3 used OCI index identities; controller Docker28.0.4 used the classic store. All91layer references and config files were present; expected source image IDs differed from config digests (including Redis index7f7d30... versus configbb8953...). Source install/reboot PASS (55.928s), source powered off, receiverNOT TESTED. This was not missing layer content or disk exhaustion. The previous pre-load config-only comparison correctly failed closed but did not understand index identities.
+
+Supported correction under validation: only the EMPTY dedicated disposable CI controller enables Docker's documented containerd-snapshotter feature before any candidate builds. Existing daemon configuration is merged and privately retained; no running containers may exist; no images/volumes deleted; no production installer/daemon changes. The controller validates configuration before restart and verifies actual snapshotter mode afterward. Native host/production tests retain their existing settings.
+
+Archive validation now hashes OCI index/manifest/config metadata, follows bounded linux/amd64 descriptor relationships, checks config/layer presence, and binds source identities to actual configs instead of equating index and config digests. Corrupt hashes, missing members, foreign platforms and unavailable identities still fail. Installer, signatures, immutable IDs and vulnerability gates are not bypassed. Actual final VM scans and recovery remain required.
+
+Primary reference: https://docs.docker.com/engine/storage/containerd/ and maintainer explanation https://github.com/kubernetes-sigs/kind/issues/3795. This correction is not claimed successful until final-source VM evidence completes.
