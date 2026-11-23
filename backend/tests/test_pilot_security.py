@@ -524,3 +524,24 @@ def test_authentication_cost_diagnostics_never_export_secrets_or_hashes():
     result=safe_authentication_cost(value)
     assert result=={k:v for k,v in value.items() if k not in ('password','hash')}
     assert 'synthetic-secret' not in json.dumps(result) and 'private-hash' not in json.dumps(result)
+
+
+@pytest.mark.parametrize('variant',['valid','wrong_uid','wrong_gid','symlink','outside_path'])
+def test_redis_restore_requires_exact_pinned_alpine_ownership(variant):
+    sys.path.insert(0,str(ROOT/'tests/installer'))
+    from pilot_recovery import redis_restore_members,REDIS_UID,REDIS_GID
+    assert (REDIS_UID,REDIS_GID)==(999,1000)
+    stream=io.BytesIO()
+    with tarfile.open(fileobj=stream,mode='w') as tar:
+        root=tarfile.TarInfo('redis');root.type=tarfile.DIRTYPE;root.uid=root.gid=0;tar.addfile(root)
+        item=tarfile.TarInfo('redis/appendonly.aof');item.uid=999;item.gid=1000
+        if variant=='wrong_uid':item.uid=10001
+        if variant=='wrong_gid':item.gid=999
+        if variant=='symlink':item.type=tarfile.SYMTYPE;item.linkname='/private'
+        if variant=='outside_path':item.name='other/data'
+        tar.addfile(item)
+    stream.seek(0)
+    with tarfile.open(fileobj=stream) as tar:
+        if variant=='valid':assert len(redis_restore_members(tar))==2
+        else:
+            with pytest.raises(ValueError):redis_restore_members(tar)

@@ -143,6 +143,20 @@ def authentication_request(auth):
                    headers={'Content-Type':'application/x-www-form-urlencoded'})
 
 
+
+REDIS_UID=999
+REDIS_GID=1000
+
+
+def redis_restore_members(archive):
+    """Pinned Redis7 Alpine uses999:1000; never accept arbitrary saved owners."""
+    members=safe_members(archive)
+    for member in members:
+        if not (member.name=='redis' or member.name.startswith('redis/')) or member.uid not in (0,REDIS_UID) or member.gid not in (0,REDIS_GID):
+            raise ValueError('Unsafe Redis archive ownership or path')
+    return members
+
+
 def restore(folder, expected):
     """Only on an empty independent VM, using explicitly synthetic signed artifacts."""
     if os.geteuid() != 0 or Path('/.dockerenv').exists() or not Path('/run/systemd/system').is_dir():
@@ -240,7 +254,7 @@ def restore(folder, expected):
             h.compose(release, state, 'run', '--rm', '--no-deps', 'migrate')
             passed('restored_migrations_compatible')
             with tarfile.open(extracted / 'redis.tar') as redis:
-                passed('redis_archive_safe', bool(safe_members(redis)))
+                passed('redis_archive_safe', bool(redis_restore_members(redis)))
             h.compose(release, state, 'stop', 'redis')
             redis_script = """
     import tarfile,shutil,os
@@ -248,7 +262,7 @@ def restore(folder, expected):
     with tarfile.open('/backup.tar') as t:
      for m in t.getmembers():
       p=Path(m.name)
-      if p.is_absolute() or '..' in p.parts or not(m.isfile() or m.isdir()) or not(m.name=='redis' or m.name.startswith('redis/')) or m.uid not in(0,999) or m.gid not in(0,999): raise ValueError('Unsafe Redis archive')
+      if p.is_absolute() or '..' in p.parts or not(m.isfile() or m.isdir()) or not(m.name=='redis' or m.name.startswith('redis/')) or m.uid not in(0,REDIS_UID) or m.gid not in(0,REDIS_GID): raise ValueError('Unsafe Redis archive')
       dest=Path('/volume')/('/'.join(p.parts[1:]))
       if m.isdir(): dest.mkdir(parents=True,exist_ok=True)
       else:
@@ -256,8 +270,13 @@ def restore(folder, expected):
        with t.extractfile(m) as src,dest.open('wb') as out: shutil.copyfileobj(src,out)
       os.chown(dest,m.uid,m.gid);dest.chmod(m.mode&0o777)
     """
+            identity=run(['docker','run','--rm','--network','none','--read-only','--cap-drop','ALL',
+                          '--entrypoint','sh',manifest['images']['redis'],'-ec','id -u redis; id -g redis']).stdout.decode().split()
+            if identity != [str(REDIS_UID),str(REDIS_GID)]:
+                raise ValueError('Pinned Redis runtime identity changed; review restore compatibility')
+            redis_script=chr(10).join((f'REDIS_UID={REDIS_UID}',f'REDIS_GID={REDIS_GID}',textwrap.dedent(redis_script)))
             run(['docker','run','--rm','--network','none','--read-only','--user','0:0','--cap-drop','ALL','--cap-add','CHOWN','--cap-add','DAC_OVERRIDE',
-                 '--mount',f"type=volume,src={state['project']}-redis,dst=/volume",'-v',f'{extracted}/redis.tar:/backup.tar:ro','--entrypoint','python',manifest['images']['backend'],'-c',textwrap.dedent(redis_script)])
+                 '--mount',f"type=volume,src={state['project']}-redis,dst=/volume",'-v',f'{extracted}/redis.tar:/backup.tar:ro','--entrypoint','python',manifest['images']['backend'],'-c',redis_script])
             h.switch(release); h.register(release)
             h.guard.unlink()  # All signed data, keys and migrations restored before managed startup.
             run(['systemctl', 'start', 'nwo-noc.service'])

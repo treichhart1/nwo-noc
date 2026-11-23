@@ -262,3 +262,18 @@ its login used JSON although the existing OAuth2 endpoint requires form encoding
 The receiver now uses that same existing form contract; a regression covers
 spaces and reserved characters. No production endpoint/auth policy changes.
 Receiver restore remains NOT TESTED until the real sequence executes.
+
+
+## Exact Redis image ownership compatibility
+
+Read-only history inspection of the already cached pinned Redis image
+sha256:bb8953020f6597e47d5d699a9910a25d77a69608dbd58e0f722940598ed85fc0
+confirmed its actual build creates redis with UID999/GID1000
+(addgroup -S -g1000; adduser -S -Gredis -u999). The unexecuted receiver script
+incorrectly allowed GID999. Its strict restore guard now accepts only root or the
+correct pinned999:1000 identity, verifies that identity in the signed restored
+image before writing the Redis volume, and rejects alternate owners, links and
+paths. Five regression cases cover the actual vendor identity and unsafe values.
+No image/version/license or production Redis configuration is changed. This is
+verified code/image-contract evidence; independent Redis recovery is still not
+claimed until actually executed.
