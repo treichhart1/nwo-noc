@@ -40,10 +40,28 @@ test('phone technician scans authenticated tower, preserves draft, retries once 
  await page.getByRole('button',{name:'Sign out of field session',exact:true}).click();await expect(page.getByRole('button',{name:'Sign in',exact:true})).toBeVisible();expect(await page.evaluate(()=>Object.keys(sessionStorage).filter(k=>k.startsWith('noc101-')))).toEqual([])
 })
 test('administrator prints actual SVG QR label and revokes it without deleting work history',async({page})=>{
- const{env,f}=fixture();await login(page,`/?qr=${f.tower_qr}`,'acceptance',env.ADMIN_PASSWORD)
+ const{env,f}=fixture()
+ // Username readiness precedes QR resolution. Hold the real tower response to
+ // exercise that ordering, then require the identified tower before mutation.
+ let releaseTower!:()=>void,towerArrived!:()=>void
+ const towerGate=new Promise<void>(resolve=>{releaseTower=resolve})
+ const towerRequested=new Promise<void>(resolve=>{towerArrived=resolve})
+ await page.route('**/api/field/towers/**',async route=>{
+  if(new URL(route.request().url()).pathname!=='/api/field/towers/'+f.site_id){await route.continue();return}
+  const response=await route.fetch();expect(response.ok()).toBe(true);towerArrived()
+  await towerGate;await route.fulfill({response})
+ })
+ await login(page,`/?qr=${f.tower_qr}`,'acceptance',env.ADMIN_PASSWORD)
  await expect(page.getByRole('main',{name:'Field technician dashboard'})).toContainText('acceptance')
+ const identifiedTower=page.getByRole('region',{name:'Authorized towers',exact:true}).getByRole('heading',{level:3,name:new RegExp('tower#'+f.site_id+'$')})
+ await towerRequested
+ try{await expect(identifiedTower).toHaveCount(0)}finally{releaseTower()}
+ await expect(identifiedTower).toBeVisible()
  await page.getByLabel('Field change reason',{exact:true}).fill('Synthetic administrator approved QR lifecycle documentation');await page.getByLabel('I approve documentation changes only.',{exact:true}).check()
- await page.getByRole('button',{name:'Provision labels for all towers',exact:true}).click();await expect(page.getByRole('button',{name:`Prepare printable label #${f.label_id}`,exact:true})).toBeVisible()
+ const selectedTowerLabels=page.waitForResponse(response=>{const url=new URL(response.url());return url.pathname==='/api/field/labels'&&url.searchParams.get('site_id')===String(f.site_id)})
+ await page.getByRole('button',{name:'Provision labels for all towers',exact:true}).click()
+ expect((await selectedTowerLabels).ok()).toBe(true)
+ await expect(page.getByRole('button',{name:`Prepare printable label #${f.label_id}`,exact:true})).toBeVisible()
  await page.getByRole('button',{name:'Browse all QR labels',exact:true}).click();await expect(page.getByRole('button',{name:'Next QR labels',exact:true})).toBeEnabled();await page.getByRole('button',{name:'Next QR labels',exact:true}).click();await page.getByRole('button',{name:`Prepare printable label #${f.label_id}`,exact:true}).click();await expect(page.getByRole('region',{name:'Printable QR label'})).toContainText('https://noc.example.invalid/?qr=');await expect(page.getByRole('img',{name:'Authenticated NOC QR code'})).toBeVisible()
  await page.getByRole('button',{name:`Revoke label #${f.label_id}`,exact:true}).click();await page.goto(`/?qr=${f.tower_qr}`);await expect(page.getByRole('alert')).toContainText('unavailable');await expect(page.getByRole('button',{name:`Open work order #${f.work_id}`,exact:true})).toBeVisible()
 })
