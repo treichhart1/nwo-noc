@@ -438,3 +438,32 @@ def test_ingress_unit_diagnostics_allowlist_never_exports_credentials():
                            'SubState=synthetic-secret\n')
     assert result=={'ActiveState':'failed','Result':'exit-code','ExecMainStatus':1,'SubState':'unknown'}
     assert 'synthetic-secret' not in json.dumps(result) and '/private' not in json.dumps(result)
+
+
+@pytest.mark.parametrize('mask',[0o022,0o077])
+def test_approved_source_directories_are_traversable_under_secure_umask(tmp_path,monkeypatch,mask):
+    import manager
+    archive=io.BytesIO()
+    with tarfile.open(fileobj=archive,mode='w') as tar:
+        for name in ('scripts','scripts/host'):
+            member=tarfile.TarInfo(name);member.type=tarfile.DIRTYPE;member.mode=0o775
+            tar.addfile(member)
+        contents=b'# synthetic ingress source\n'
+        member=tarfile.TarInfo('scripts/host/ingress.py')
+        member.mode=0o664;member.size=len(contents)
+        tar.addfile(member,io.BytesIO(contents))
+    monkeypatch.setattr(manager,'run',lambda *a,**kw:SimpleNamespace(stdout=archive.getvalue()))
+    host=object.__new__(manager.Host);host.opt=tmp_path/'opt'
+    (host.opt/'releases').mkdir(parents=True)
+    previous=os.umask(mask)
+    try:
+        release=host.stage({'commit':'a'*40,'purpose':'controlled-test'})
+        assert os.umask(mask)==mask
+    finally:os.umask(previous)
+    for path in (release,release/'scripts',release/'scripts/host'):
+        assert path.stat().st_mode & 0o777==0o755
+        assert path.stat().st_mode & 0o022==0
+    source=release/'scripts/host/ingress.py'
+    assert source.read_bytes()==contents and source.stat().st_mode & 0o004
+    assert source.stat().st_mode & 0o022==0
+    assert (release/'release.json').stat().st_mode & 0o777==0o600

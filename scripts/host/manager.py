@@ -592,6 +592,13 @@ class Host:
         ).stdout
         with tarfile.open(fileobj=io.BytesIO(archive)) as tar:
             tar.extractall(target, members=safe_members(tar), filter="data")
+        # Python's data filter ignores directory modes. A secure operator umask
+        # otherwise leaves source parents0700, hiding ingress.py from its UID.
+        # Only validated source directories become traversable; generated
+        # configuration, release metadata, secrets and persistent state stay private.
+        for directory in target.rglob("*"):
+            if directory.is_dir():
+                os.chmod(directory, 0o755)
         if a.get("purpose") == "release":
             from release_trust import capture
             capture(a, self.args.approval, target / "release-trust")

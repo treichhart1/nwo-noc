@@ -172,3 +172,30 @@ runtime CPU-feature bypass is used. Four tests cover supported, unsupported,
 missing and mixed-vCPU inputs. Read-only failure diagnostics additionally collect
 allowlisted private-ingress unit state/exit/memory fields and static journal flags,
 never raw journals, command lines, environment values or credential text.
+
+
+## Verified private-ingress permissions defect
+
+Final-source run690/3ee532b booted the real Ubuntu24.04 guest and brought all six
+containers to healthy. Backend restart count was0, retained OOM/die events0,
+and all current backend/worker/planning probes exited0. Installation still FAILED
+before application reboot or receiver recovery. The real ingress unit reported
+Result=exit-code, ExecMainCode=1, ExecMainStatus=2, failed/failed, permission-denied
+and start-limit flags. This is not an ingress timeout acceptance.
+
+Python's safe tar data filter deliberately sets directory mode=None. Thus git
+archive source parents inherit the operator umask; a private077 umask leaves
+scripts/host0700 and Python cannot open ingress.py as the unprivileged UID.
+The native host's022 umask masked the defect. The installer now makes only the
+validated, newly extracted source directories0755 before generating configuration
+or release metadata. Source remains root-owned and non-writable by the service.
+No config/key/data directory permissions, service UID, sandbox, health/startup
+deadline or firewall rule is relaxed. The existing safe archive path/link checks
+and signed inventory remain enforced.
+
+Two actual staging regression cases exercise022 and077, requiring traversable
+non-writable source parents, unchanged source bytes, unchanged process umask and
+private0600 generated release metadata. Python's actual data_filter behavior was
+also inspected in memory in the cloud workspace. Complete installation, app
+reboot and independent receiver recovery remain pending the corrected final-source
+CI; runs689/690 must not be represented as successful acceptance.
