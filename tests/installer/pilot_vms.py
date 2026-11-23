@@ -252,12 +252,17 @@ def main():
         transported=work/'security-transport'
         unpack_transport(transfer,transported)
         attestation=validate(transported,fingerprint)
-        identities=sorted(set(attestation['tested_runtime_image_ids']+[report['source_native_imports']['image_id']]))
+        identities=sorted(set(attestation['tested_runtime_image_ids']+attestation['transport_image_ids']+[report['source_native_imports']['image_id']]))
         if not identities:raise AssertionError('Independent runtime scan identities missing')
         report['image_transport_bytes']=(transported/'images.tar').stat().st_size
         report['controller_storage_before_image_load']={name:{'total':shutil.disk_usage(path).total,'used':shutil.disk_usage(path).used,'free':shutil.disk_usage(path).free} for name,path in [('work',work),('docker',Path('/var/lib/docker'))]}
         report['controller_docker_server_version']=run(['docker','version','--format','{{.Server.Version}}']).stdout.decode().strip()
         run(['docker','load','-i',transported/'images.tar'])
+        from pilot_recovery import image_transport_contract
+        loaded=run(['docker','image','ls','--all','--no-trunc','--format','{{.ID}}']).stdout.decode().splitlines()
+        report['image_transport_identity']=image_transport_contract(transported/'images.tar',identities,loaded)
+        if not report['image_transport_identity']['all_present']:
+            raise RuntimeError('Signed image archive did not materialize every required immutable image; retained identity inventory, no scan acceptance')
         scans=evidence/'runtime-security'
         run(['python3',ROOT/'scripts/release/image_security.py','--require-no-high','--output',scans,*identities],timeout=1800)
         run(['python3',ROOT/'scripts/release/image_sbom.py',scans],timeout=600)

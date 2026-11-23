@@ -26,7 +26,48 @@ def run(argv, *, data=None, output=None, check=True):
     return p
 
 
-def export_checkpoint(work, clone, approved, identity, backup, password, compose, state, tested_images):
+def save_recovery_images(identities, stream):
+    """Transport every immutable config explicitly; aliases never authorize installation."""
+    import re
+    ids=sorted(set(identities))
+    if not ids or not all(isinstance(value,str) and re.fullmatch(r'sha256:[a-f0-9]{64}',value) for value in ids):
+        raise ValueError('Invalid recovery image identities')
+    tags=[]
+    for identity in ids:
+        tag='noc119-recovery:sha256-'+identity.split(':',1)[1]
+        run(['docker','tag',identity,tag])
+        observed=run(['docker','image','inspect','--format','{{.Id}}',tag]).stdout.decode().strip()
+        if observed!=identity:raise ValueError('Recovery image alias changed identity')
+        tags.append(tag)
+    run(['docker','save',*tags],output=stream)
+
+
+def image_transport_contract(archive, expected, available):
+    """Check bounded Docker archive config inventory and actual immutable loaded IDs."""
+    import re
+    expected=set(expected);available=set(available)
+    pattern=r'sha256:[a-f0-9]{64}'
+    if not expected or not all(isinstance(v,str) and re.fullmatch(pattern,v) for v in expected|available):
+        raise ValueError('Invalid loaded image identity inventory')
+    with tarfile.open(archive) as tar:
+        member=tar.getmember('manifest.json')
+        if not member.isfile() or member.size>1024**2:raise ValueError('Invalid image archive manifest')
+        body=json.load(tar.extractfile(member))
+    if not isinstance(body,list) or not body or len(body)>64:raise ValueError('Invalid image archive inventory')
+    recorded=set()
+    for row in body:
+        value=row.get('Config') if isinstance(row,dict) else None
+        if not isinstance(value,str):raise ValueError('Missing image config identity')
+        match=re.fullmatch(r'(?:blobs/sha256/)?([a-f0-9]{64})(?:\\.json)?',value)
+        if not match:raise ValueError('Invalid image config identity')
+        recorded.add('sha256:'+match.group(1))
+    return {'expected_image_ids':sorted(expected),'archive_image_ids':sorted(recorded),
+            'missing_archive_image_ids':sorted(expected-recorded),
+            'missing_loaded_image_ids':sorted(expected-available),
+            'all_present':expected<=recorded and expected<=available}
+
+
+def export_checkpoint(work, clone, approved, identity, backup, password, compose, state, tested_images, extra_images=()):
     folder = work / 'recovery-export'
     folder.mkdir(mode=0o700)
     shutil.copy2(backup, folder / 'backup.age')
@@ -37,8 +78,10 @@ def export_checkpoint(work, clone, approved, identity, backup, password, compose
     (folder / 'synthetic-auth.json').write_text(json.dumps({'username': 'admin', 'password': password}))
     images = json.loads((Path('/opt/nwo-noc/releases') / json.loads(approved.read_text())['commit'] / 'release.json').read_text())['approval']['images']
     with (folder / 'images.tar').open('xb') as stream:
-        ids=set(tested_images)|{run(['docker','image','inspect','--format','{{.Id}}',ref]).stdout.decode().strip() for ref in images.values()}
-        run(['docker', 'save', *sorted(ids)], output=stream)
+        runtime_ids=set(tested_images)|{run(['docker','image','inspect','--format','{{.Id}}',ref]).stdout.decode().strip() for ref in images.values()}
+        extra_ids={run(['docker','image','inspect','--format','{{.Id}}',ref]).stdout.decode().strip() for ref in extra_images}
+        ids=runtime_ids|extra_ids
+        save_recovery_images(ids,stream)
     # Shared clones have access to alternate objects but do not retain the
     # non-ancestor audit refs unless explicitly fetched before offline export.
     run(['git','-c',f'safe.directory={clone}','-c',f'safe.directory={ROOT}','-c',f'safe.directory={ROOT / ".git"}',
@@ -50,7 +93,7 @@ def export_checkpoint(work, clone, approved, identity, backup, password, compose
     run(['openssl','pkeyutl','-sign','-inkey',key,'-rawin','-in',folder/'approval.json','-out',folder/'approval.json.sig'])
     manifest = {'format': 1, 'purpose': 'isolated-recovery-test', 'source_machine_id': Path('/etc/machine-id').read_text().strip(),
                 'source_boot_id': Path('/proc/sys/kernel/random/boot_id').read_text().strip(),
-                'release_commit': json.loads(approved.read_text())['commit'], 'images': images, 'tested_runtime_image_ids':sorted(ids),
+                'release_commit': json.loads(approved.read_text())['commit'], 'images': images, 'tested_runtime_image_ids':sorted(runtime_ids), 'transport_image_ids':sorted(ids),
                 'files': {name: file_hash(folder / name) for name in ('backup.age', 'backup-metadata.json', 'backup.key', 'approval.json', 'approval.json.sig', 'source.bundle', 'images.tar', 'synthetic-auth.json')}}
     (folder / 'recovery.json').write_text(json.dumps(manifest))
     run(['openssl', 'pkeyutl', '-sign', '-inkey', key, '-rawin', '-in', folder / 'recovery.json', '-out', folder / 'recovery.json.sig'])

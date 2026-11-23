@@ -708,3 +708,43 @@ def test_controller_image_load_error_flags_never_export_paths_or_credentials(mes
     value=command_failure('',message,1)
     assert value['exit_code']==1 and value['process_failure_flags'][flag]
     assert 'private-token' not in json.dumps(value) and value['image_scan_error'] is None
+
+
+@pytest.mark.parametrize('invalid',[[],['latest'],['sha256:wrong']])
+def test_recovery_image_transport_rejects_mutable_or_missing_identities(invalid):
+    sys.path.insert(0,str(ROOT/'tests/installer'))
+    from pilot_recovery import save_recovery_images
+    with pytest.raises(ValueError):save_recovery_images(invalid,io.BytesIO())
+
+
+def test_recovery_transport_save_uses_explicit_aliases_without_changing_config_identity(monkeypatch):
+    sys.path.insert(0,str(ROOT/'tests/installer'))
+    import pilot_recovery
+    identities=['sha256:'+'b'*64,'sha256:'+'a'*64];calls=[];stream=io.BytesIO()
+    def operation(argv,**kw):
+        calls.append((argv,kw))
+        if argv[:3]==['docker','image','inspect']:
+            return SimpleNamespace(stdout=('sha256:'+argv[-1].split('sha256-')[1]+'\\n').encode())
+        return SimpleNamespace(stdout=b'')
+    monkeypatch.setattr(pilot_recovery,'run',operation)
+    pilot_recovery.save_recovery_images(identities,stream)
+    assert calls[-1][0]==['docker','save',*['noc119-recovery:sha256-'+v.split(':')[1] for v in sorted(identities)]]
+    assert calls[-1][1]['output'] is stream
+    assert len(calls)==5 and all(calls[i][0][:2]==['docker','tag'] for i in (0,2))
+
+
+@pytest.mark.parametrize('form,missing',[('legacy',False),('oci',False),('legacy',True),('oci',True)])
+def test_signed_image_transport_requires_archive_and_loaded_exact_ids(tmp_path,form,missing):
+    sys.path.insert(0,str(ROOT/'tests/installer'))
+    from pilot_recovery import image_transport_contract
+    import tarfile
+    identity='sha256:'+'a'*64;other='sha256:'+'b'*64
+    config='a'*64+'.json' if form=='legacy' else 'blobs/sha256/'+'a'*64
+    body=json.dumps([{'Config':config,'RepoTags':['noc119-recovery:synthetic']}]).encode()
+    archive=tmp_path/'images.tar'
+    with tarfile.open(archive,'w') as tar:
+        member=tarfile.TarInfo('manifest.json');member.size=len(body);tar.addfile(member,io.BytesIO(body))
+    value=image_transport_contract(archive,[identity],[other] if missing else [identity])
+    assert value['all_present'] is (not missing)
+    assert value['missing_archive_image_ids']==[]
+    assert value['missing_loaded_image_ids']==([identity] if missing else [])
