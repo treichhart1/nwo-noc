@@ -365,3 +365,8 @@ The exact identity/results assertion and HIGH/CRITICAL gate remain unchanged.
 No retry, severity waiver, scan omission or bypass is added. Controller errors
 carry only the allowlisted failure identity; raw tokens/stderr are never emitted.
 Actual scanner cause and required receiver recovery remain pending final CI.
+
+
+### Final-source evidence at 2104d2c (run713)
+
+Actual pinned Ubuntu24.04 KVM guest: installation/guarded upgrade/encrypted backup/isolated restore PASS; source application kernel reboot PASS,56.467seconds; source powered off. Before second-host boot, controller docker load exited1. This is not a Trivy clean result or a completed receiver recovery. Added credential-free process-error categories and controller disk/archive/version measurements to identify image transport failure without publishing raw stderr. All gates remain fail-closed. Backend968passed/958skipped; pip no known vulnerabilities/npm0includingdev; native candidate image scans0HIGH/CRITICAL (backend34lower,Redis1lower,PG/frontend0). Superseded-source evidence is not substituted for the subsequent final commit. Terminal evidence remains in the PR ledger and exact-source Actions artifacts.

@@ -151,7 +151,15 @@ def command_failure(stdout, stderr, exit_code):
             'exception_types':exceptions,'http_statuses':statuses,
             'transport_flags':{name:phrase in lower for name,phrase in {
                 'broken_pipe':'broken pipe','connection_closed':'connection closed',
-                'connection_reset':'connection reset','killed':'killed','timed_out':'timed out'}.items()}}
+                'connection_reset':'connection reset','killed':'killed','timed_out':'timed out'}.items()},
+            'process_failure_flags':{name:phrase in lower for name,phrase in {
+                'storage_full':'no space left','disk_quota':'disk quota','permission_denied':'permission denied',
+                'operation_not_permitted':'operation not permitted','missing_file':'no such file or directory',
+                'missing_image':'no such image','unexpected_eof':'unexpected eof','invalid_tar':'invalid tar',
+                'invalid_archive':'invalid archive','unsupported_media':'unsupported media type',
+                'unknown_media':'unknown media type','docker_api':'api version','daemon_unavailable':'cannot connect to the docker daemon',
+                'digest_mismatch':'digest mismatch','checksum_mismatch':'checksum mismatch','unpack_failure':'failed to unpack',
+                'unshare':'unshare','snapshot_failure':'snapshot','input_output':'input/output error'}.items()}}
 
 
 def safe_authentication_cost(value):

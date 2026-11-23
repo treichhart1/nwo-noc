@@ -5,6 +5,7 @@ import json
 import os
 from pathlib import Path
 import shlex
+import shutil
 import socket
 import subprocess
 import tarfile
@@ -253,6 +254,9 @@ def main():
         attestation=validate(transported,fingerprint)
         identities=sorted(set(attestation['tested_runtime_image_ids']+[report['source_native_imports']['image_id']]))
         if not identities:raise AssertionError('Independent runtime scan identities missing')
+        report['image_transport_bytes']=(transported/'images.tar').stat().st_size
+        report['controller_storage_before_image_load']={name:{'total':shutil.disk_usage(path).total,'used':shutil.disk_usage(path).used,'free':shutil.disk_usage(path).free} for name,path in [('work',work),('docker',Path('/var/lib/docker'))]}
+        report['controller_docker_server_version']=run(['docker','version','--format','{{.Server.Version}}']).stdout.decode().strip()
         run(['docker','load','-i',transported/'images.tar'])
         scans=evidence/'runtime-security'
         run(['python3',ROOT/'scripts/release/image_security.py','--require-no-high','--output',scans,*identities],timeout=1800)

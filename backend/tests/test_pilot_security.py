@@ -692,3 +692,19 @@ def test_failed_scanner_process_retains_complete_findings_without_raw_error_toke
     assert json.loads((root/'error-0.json').read_text())['status']=='NOT TESTED'
     assert 'private-token' not in capsys.readouterr().out
     assert not (root/'summary.json').exists()
+
+
+@pytest.mark.parametrize('message,flag',[
+    ('failed to unpack: no space left on device private-token','storage_full'),
+    ('open private-token: permission denied','permission_denied'),
+    ('unexpected EOF private-token','unexpected_eof'),
+    ('unsupported media type private-token','unsupported_media'),
+    ('unshare: operation not permitted private-token','operation_not_permitted'),
+    ('archive digest mismatch private-token','digest_mismatch'),
+])
+def test_controller_image_load_error_flags_never_export_paths_or_credentials(message,flag):
+    sys.path.insert(0,str(ROOT/'tests/installer'))
+    from pilot_diagnostics import command_failure
+    value=command_failure('',message,1)
+    assert value['exit_code']==1 and value['process_failure_flags'][flag]
+    assert 'private-token' not in json.dumps(value) and value['image_scan_error'] is None
