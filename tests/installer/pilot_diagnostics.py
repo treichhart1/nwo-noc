@@ -127,10 +127,12 @@ if __name__=='__main__':
 def command_failure(stdout, stderr, exit_code):
     """Retain failure identity without raw command output, paths or credentials."""
     import hashlib
-    checks=[];last_elapsed=None;authentication_cost=None
+    checks=[];last_elapsed=None;authentication_cost=None;image_scan_error=None
     for line in stdout.splitlines():
         try:row=json.loads(line)
         except (ValueError,TypeError):continue
+        if isinstance(row,dict) and 'image_scan_error' in row:
+            image_scan_error=safe_scan_error(row['image_scan_error'])
         if isinstance(row,dict) and 'authentication_cost' in row:
             authentication_cost=safe_authentication_cost(row['authentication_cost'])
         if isinstance(row,dict) and row.get('status') in ('PASS','PASSED') and isinstance(row.get('check'),str):
@@ -144,7 +146,7 @@ def command_failure(stdout, stderr, exit_code):
                        if m.group(1) in allowed})
     statuses=sorted({int(m.group(1)) for m in re.finditer(r'HTTP Error ([1-5][0-9]{2})(?:\D|$)',stderr)})
     lower=stderr.lower()
-    return {'exit_code':int(exit_code),'completed_check_count':len(checks),'last_completed_elapsed_seconds':last_elapsed,'authentication_cost':authentication_cost,
+    return {'exit_code':int(exit_code),'completed_check_count':len(checks),'last_completed_elapsed_seconds':last_elapsed,'authentication_cost':authentication_cost,'image_scan_error':image_scan_error,
             'last_check_sha256':hashlib.sha256(checks[-1].encode()).hexdigest() if checks else None,
             'exception_types':exceptions,'http_statuses':statuses,
             'transport_flags':{name:phrase in lower for name,phrase in {
@@ -165,4 +167,21 @@ def safe_authentication_cost(value):
         if type(x) in (int,float) and 0<=x<=1800:result[key]=x
     for key in ('correct_password_accepted','incorrect_password_rejected'):
         if type(value.get(key)) is bool:result[key]=value[key]
+    return result
+
+
+def safe_scan_error(value):
+    if not isinstance(value,dict):return None
+    result={}
+    for key in ('image_id','observed_image_id','stderr_sha256'):
+        x=value.get(key)
+        pattern=r'sha256:[a-f0-9]{64}' if key!='stderr_sha256' else r'[a-f0-9]{64}'
+        if isinstance(x,str) and re.fullmatch(pattern,x):result[key]=x
+    if value.get('kind') in ('scanner_timeout','scanner_process','invalid_json','identity_results'):
+        result['kind']=value['kind']
+    for key in ('return_code','results_count'):
+        if type(value.get(key)) is int:result[key]=value[key]
+    flags=value.get('flags',{})
+    if isinstance(flags,dict):
+        result['flags']={key:flags[key] for key in ('registry_rate_limit','registry_auth','registry_denied','timeout','dns','network','tls','storage','permission','missing_image','unsupported_cli','docker_api','download') if type(flags.get(key)) is bool}
     return result

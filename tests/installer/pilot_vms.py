@@ -18,7 +18,10 @@ def run(argv, *, data=None, output=None, timeout=1800, check=True):
     p = subprocess.run([str(v) for v in argv], input=data, stdout=output or subprocess.PIPE,
                        stderr=subprocess.PIPE, timeout=timeout)
     if check and p.returncode:
-        raise RuntimeError('Disposable VM command failed: ' + str(argv[0]))
+        from pilot_diagnostics import command_failure
+        identity=command_failure((p.stdout or b'').decode(errors='replace'),
+                                 (p.stderr or b'').decode(errors='replace'),p.returncode)
+        raise RuntimeError('Disposable VM command failed: '+str(argv[0])+' / '+json.dumps(identity))
     return p
 
 

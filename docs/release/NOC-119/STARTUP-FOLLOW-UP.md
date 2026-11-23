@@ -341,3 +341,27 @@ harness's unchanged fresh evidence-directory guard. Added tests reject root,
 wrong identities, retained capabilities,new privileges,inaccessible KVM and partial
 metadata; public-environment filtering/original groups are also checked. Actual
 KVM boot/install/reboot/recovery results remain pending the corrected final run.
+
+
+## Actual KVM source acceptance and exact-image scan failure
+
+Run709/source5a384 actually validated controller UID1001/GID993,zero capability
+sets andNoNewPrivs=1, selected KVM, booted Ubuntu in13.154s and passed the complete
+source installation/guarded upgrade/isolated restore command. It then passed
+automatic application recovery after a real kernel reboot (55.428s), verified the
+synthetic transport and powered off the source. These are executed PASS results
+for that source, not full receiver acceptance.
+
+The next required exact-installed-image security command failed before the
+receiver boot. Its controller wrapper omitted the scanner reason; only four
+small evidence files were retained, with no completed VM-image scan claim.
+Recovery remains NOT TESTED and release gate FAIL. Artifact readback from this
+cloud workspace is blocked by zero writable capacity and a download network403.
+
+Scanner errors now retain typed nonsecret process/transport/identity flags and
+hashes in machine-readable evidence. Valid JSON reports are retained BEFORE
+identity verification, so even mismatched reports are reviewable but never clean.
+The exact identity/results assertion and HIGH/CRITICAL gate remain unchanged.
+No retry, severity waiver, scan omission or bypass is added. Controller errors
+carry only the allowlisted failure identity; raw tokens/stderr are never emitted.
+Actual scanner cause and required receiver recovery remain pending final CI.

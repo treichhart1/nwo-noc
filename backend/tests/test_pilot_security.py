@@ -632,3 +632,63 @@ def test_scoped_kvm_setup_forwards_only_public_ci_metadata_and_original_groups()
     assert '--groups=120,1001' in command and 'GITHUB_ACTIONS=true' in command
     assert 'NOC_CI_EXPECTED_UID=1001' in command and '--reuid=0' not in command
     assert 'hidden-secret' not in json.dumps(command) and 'PRIVATE_TOKEN' not in json.dumps(command)
+
+
+@pytest.mark.parametrize('message,flag',[
+    ('TOOMANYREQUESTS with private-token','registry_rate_limit'),
+    ('x509 certificate failure private-token','tls'),
+    ('context deadline exceeded private-token','timeout'),
+    ('permission denied private-token','permission'),
+    ('no such image private-token','missing_image'),
+])
+def test_scan_failures_retain_typed_evidence_without_tokens(tmp_path,capsys,message,flag):
+    sys.path.insert(0,str(ROOT/'scripts/release'))
+    from image_security import scanner_error
+    identity='sha256:'+'a'*64
+    error=scanner_error(tmp_path,0,identity,'scanner_process',125,message)
+    assert error['flags'][flag] and error['scan_identity_verified'] is False
+    assert error['status']=='NOT TESTED' and error['return_code']==125
+    assert json.loads((tmp_path/'error-0.json').read_text())==error
+    assert 'private-token' not in capsys.readouterr().out and 'private-token' not in json.dumps(error)
+
+
+def test_controller_scan_failure_identity_redacts_unexpected_fields():
+    sys.path.insert(0,str(ROOT/'tests/installer'))
+    from pilot_diagnostics import command_failure
+    fault={'image_id':'sha256:'+'a'*64,'kind':'identity_results','return_code':0,
+           'observed_image_id':'private-token','flags':{'permission':True,'private-token':'secret'}}
+    value=command_failure(json.dumps({'image_scan_error':fault}),'RuntimeError: fixed failure',1)
+    assert value['image_scan_error']['flags']=={'permission':True}
+    assert 'private-token' not in json.dumps(value) and 'secret' not in json.dumps(value)
+
+
+@pytest.mark.parametrize('metadata',[None,{'ImageID':'sha256:'+'b'*64}])
+def test_invalid_scan_identity_retains_full_findings_and_never_passes(tmp_path,monkeypatch,metadata):
+    sys.path.insert(0,str(ROOT/'scripts/release'))
+    import image_security
+    body={'Metadata':metadata,'Results':[{'Target':'synthetic','Vulnerabilities':[{'VulnerabilityID':'CVE-2099-99999','Severity':'HIGH'}]}]}
+    root=tmp_path/'reports';identity='sha256:'+'a'*64
+    monkeypatch.setattr(image_security.subprocess,'check_output',lambda *a,**kw:json.dumps([{'Id':identity}]).encode())
+    monkeypatch.setattr(image_security.subprocess,'run',lambda *a,**kw:SimpleNamespace(returncode=0,stdout=json.dumps(body).encode(),stderr=b''))
+    monkeypatch.setattr(sys,'argv',['image_security.py','--require-no-high','--output',str(root),'synthetic'])
+    with pytest.raises(RuntimeError,match='identity/results'):image_security.main()
+    assert json.loads((root/'image-0.json').read_text())==body
+    error=json.loads((root/'error-0.json').read_text())
+    assert error['scan_identity_verified'] is False and error['status']=='NOT TESTED'
+    assert not (root/'summary.json').exists()
+
+
+def test_failed_scanner_process_retains_complete_findings_without_raw_error_tokens(tmp_path,monkeypatch,capsys):
+    sys.path.insert(0,str(ROOT/'scripts/release'))
+    import image_security
+    identity='sha256:'+'a'*64
+    body={'Metadata':{'ImageID':identity},'Results':[{'Target':'synthetic','Vulnerabilities':[{'VulnerabilityID':'CVE-2099-99999','Severity':'CRITICAL'}]}]}
+    root=tmp_path/'reports'
+    monkeypatch.setattr(image_security.subprocess,'check_output',lambda *a,**kw:json.dumps([{'Id':identity}]).encode())
+    monkeypatch.setattr(image_security.subprocess,'run',lambda *a,**kw:SimpleNamespace(returncode=2,stdout=json.dumps(body).encode(),stderr=b'private-token'))
+    monkeypatch.setattr(sys,'argv',['image_security.py','--require-no-high','--output',str(root),'synthetic'])
+    with pytest.raises(RuntimeError,match='scanner failed'):image_security.main()
+    assert json.loads((root/'unverified-image-0.json').read_text())==body
+    assert json.loads((root/'error-0.json').read_text())['status']=='NOT TESTED'
+    assert 'private-token' not in capsys.readouterr().out
+    assert not (root/'summary.json').exists()
