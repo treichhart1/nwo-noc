@@ -467,3 +467,26 @@ def test_approved_source_directories_are_traversable_under_secure_umask(tmp_path
     assert source.read_bytes()==contents and source.stat().st_mode & 0o004
     assert source.stat().st_mode & 0o022==0
     assert (release/'release.json').stat().st_mode & 0o777==0o600
+
+
+def test_recovered_release_preserves_code_traversal_and_private_metadata(tmp_path):
+    sys.path.insert(0,str(ROOT/'tests/installer'))
+    from pilot_recovery import restore_release_modes
+    release=tmp_path/'release';(release/'scripts/host').mkdir(parents=True)
+    (release/'scripts/host/ingress.py').write_text('# synthetic code')
+    (release/'release.json').write_text('{}')
+    members=[]
+    for name,mode,directory in [('release',0o755,True),('release/scripts',0o755,True),
+        ('release/scripts/host',0o755,True),('release/scripts/host/ingress.py',0o644,False),
+        ('release/release.json',0o600,False)]:
+        item=tarfile.TarInfo(name);item.mode=mode;item.uid=item.gid=0
+        item.type=tarfile.DIRTYPE if directory else tarfile.REGTYPE;members.append(item)
+    for path in (release,release/'scripts',release/'scripts/host'):path.chmod(0o700)
+    restore_release_modes(members,release)
+    assert all(p.stat().st_mode&0o777==0o755 for p in (release,release/'scripts',release/'scripts/host'))
+    assert (release/'release.json').stat().st_mode&0o777==0o600
+    assert (release/'scripts/host/ingress.py').read_text()=='# synthetic code'
+    unsafe=copy.copy(members[0]);unsafe.mode=0o777
+    with pytest.raises(ValueError,match='Unsafe recovered'):restore_release_modes([unsafe],release)
+    unsafe.mode=0o755;unsafe.uid=10001
+    with pytest.raises(ValueError,match='Unsafe recovered'):restore_release_modes([unsafe],release)

@@ -199,3 +199,13 @@ private0600 generated release metadata. Python's actual data_filter behavior was
 also inspected in memory in the cloud workspace. Complete installation, app
 reboot and independent receiver recovery remain pending the corrected final-source
 CI; runs689/690 must not be represented as successful acceptance.
+
+
+The second-host restore review found the same tar data-filter behavior in its
+private temporary extraction: copytree would preserve0700 code parents, even
+when the signed backup recorded0755. The disposable recovery harness now restores
+only recorded release modes after rejecting non-root ownership and any group/other
+write bits. Private0600 release metadata and0700 trust directories retain their
+original restrictions. A regression checks source traversal, unchanged bytes,
+private metadata and unsafe owner/mode rejection. This is recovery-code correction,
+not a claim that the independent restore has already executed.

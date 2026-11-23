@@ -119,6 +119,21 @@ def restoration_guard(host):
         raise
 
 
+
+def restore_release_modes(members, release):
+    """Restore reviewed code traversal after data-filter extraction; retain private metadata."""
+    for member in members:
+        if member.name != 'release' and not member.name.startswith('release/'):
+            continue
+        if member.uid != 0 or member.gid != 0 or member.mode & 0o022:
+            raise ValueError('Unsafe recovered release ownership or permissions')
+        relative=Path(member.name).relative_to('release')
+        destination=Path(release)/relative
+        if destination.is_symlink() or not (member.isfile() or member.isdir()):
+            raise ValueError('Unsafe recovered release entry')
+        destination.chmod(member.mode & 0o777)
+
+
 def restore(folder, expected):
     """Only on an empty independent VM, using explicitly synthetic signed artifacts."""
     if os.geteuid() != 0 or Path('/.dockerenv').exists() or not Path('/run/systemd/system').is_dir():
@@ -193,6 +208,7 @@ def restore(folder, expected):
             state = json.loads((extracted / 'installation.json').read_text())
             release = h.opt / 'releases' / state['commit']
             shutil.copytree(extracted / 'release', release)
+            restore_release_modes(members, release)
             for name in manager.DATA_DIRS:
                 shutil.copytree(extracted / 'data' / name, h.lib / name, dirs_exist_ok=True)
             # Restore only reviewed identities, never arbitrary archive owners or setuid modes.
