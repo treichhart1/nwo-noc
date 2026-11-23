@@ -134,6 +134,15 @@ def restore_release_modes(members, release):
         destination.chmod(member.mode & 0o777)
 
 
+
+def authentication_request(auth):
+    """Use the existing OAuth2 form contract; no new customer/session platform."""
+    from urllib.parse import urlencode
+    from urllib.request import Request
+    return Request('https://localhost:18090/api/auth/login',data=urlencode(auth).encode(),
+                   headers={'Content-Type':'application/x-www-form-urlencoded'})
+
+
 def restore(folder, expected):
     """Only on an empty independent VM, using explicitly synthetic signed artifacts."""
     if os.geteuid() != 0 or Path('/.dockerenv').exists() or not Path('/run/systemd/system').is_dir():
@@ -260,7 +269,7 @@ def restore(folder, expected):
             import ssl
             auth = json.loads((folder / 'synthetic-auth.json').read_text())
             browser = build_opener(ProxyHandler({}), HTTPSHandler(context=ssl.create_default_context(cafile=str(h.etc / 'tls-cert.pem'))))
-            with browser.open(Request('https://localhost:18090/api/auth/login', data=json.dumps(auth).encode(), headers={'Content-Type':'application/json'}), timeout=15) as response:
+            with browser.open(authentication_request(auth), timeout=15) as response:
                 passed('restored_original_user_authentication', bool(json.load(response)['access_token']))
             history = h.compose(release,state,'exec','-T','db','psql','-U','postgres','-d','nwo_noc','-t','-A','-c',"SELECT count(*) FROM audit_logs WHERE action='installer.synthetic_sentinel';").stdout.strip()
             passed('preserved_monitoring_and_audit_history', history == b'1')

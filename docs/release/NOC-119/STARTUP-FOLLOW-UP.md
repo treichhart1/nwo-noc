@@ -235,3 +235,30 @@ Compose/worker/backend health deadlines, all per-operation guards, resource
 limits, security assertions and private firewall remain unchanged. More time
 alone is not a pass: the entire sequence must still actually execute, and every
 incomplete phase remains FAIL/NOT TESTED until demonstrated.
+
+
+## Actual first-login timeout and four-vCPU test environment
+
+Run698/source696eab9's new diagnostics identified13 completed checks, with the
+last hash resolving exactly to optional_integrations_not_configured at1314.853s.
+The next real administrator login raised TimeoutError under its unchanged15s
+client bound. This supersedes speculation about a generic late upgrade failure.
+Ingress stayed active; no OOM/backend restart was recorded. Worker5s probes
+took9.422/8.345/13.300s and became unhealthy; backend probes also timed out.
+Complete authentication/reboot/recovery acceptance therefore FAILED, not PASS.
+
+The disposable guest now uses4vCPUs (same CI host has4), still5120MiB/32GiB.
+Application container resource limits, probe deadlines/intervals, bcrypt policy,
+authorization and15s login check are unchanged. This provides the emulated host
+more CPU rather than weakening readiness/security. The source guest measures
+the actual installed backend's unchanged bcrypt policy and correct/incorrect
+password verification, exporting only rounds/booleans/durations. Diagnostics retain
+those allowlisted values if the15s login still fails. No lower bcrypt cost or
+auth bypass exists. A four-vCPU TCG result does not establish two-vCPU native-host
+acceptance; that remains a separately scoped operator requirement.
+
+Review also found a definite, previously unexecuted receiver-test contract bug:
+its login used JSON although the existing OAuth2 endpoint requires form encoding.
+The receiver now uses that same existing form contract; a regression covers
+spaces and reserved characters. No production endpoint/auth policy changes.
+Receiver restore remains NOT TESTED until the real sequence executes.

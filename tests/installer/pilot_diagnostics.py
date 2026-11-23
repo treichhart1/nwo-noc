@@ -127,10 +127,12 @@ if __name__=='__main__':
 def command_failure(stdout, stderr, exit_code):
     """Retain failure identity without raw command output, paths or credentials."""
     import hashlib
-    checks=[];last_elapsed=None
+    checks=[];last_elapsed=None;authentication_cost=None
     for line in stdout.splitlines():
         try:row=json.loads(line)
         except (ValueError,TypeError):continue
+        if isinstance(row,dict) and 'authentication_cost' in row:
+            authentication_cost=safe_authentication_cost(row['authentication_cost'])
         if isinstance(row,dict) and row.get('status') in ('PASS','PASSED') and isinstance(row.get('check'),str):
             checks.append(row['check'][:256])
             value=row.get('elapsed_seconds')
@@ -142,9 +144,25 @@ def command_failure(stdout, stderr, exit_code):
                        if m.group(1) in allowed})
     statuses=sorted({int(m.group(1)) for m in re.finditer(r'HTTP Error ([1-5][0-9]{2})(?:\D|$)',stderr)})
     lower=stderr.lower()
-    return {'exit_code':int(exit_code),'completed_check_count':len(checks),'last_completed_elapsed_seconds':last_elapsed,
+    return {'exit_code':int(exit_code),'completed_check_count':len(checks),'last_completed_elapsed_seconds':last_elapsed,'authentication_cost':authentication_cost,
             'last_check_sha256':hashlib.sha256(checks[-1].encode()).hexdigest() if checks else None,
             'exception_types':exceptions,'http_statuses':statuses,
             'transport_flags':{name:phrase in lower for name,phrase in {
                 'broken_pipe':'broken pipe','connection_closed':'connection closed',
                 'connection_reset':'connection reset','killed':'killed','timed_out':'timed out'}.items()}}
+
+
+def safe_authentication_cost(value):
+    """Only public policy identifiers, booleans and bounded durations; never hashes."""
+    if not isinstance(value,dict):return None
+    result={}
+    if value.get('scheme')=='bcrypt':result['scheme']='bcrypt'
+    for key in ('policy_rounds','hash_rounds'):
+        x=value.get(key)
+        if type(x) is int and 4<=x<=31:result[key]=x
+    for key in ('hash_seconds','verify_seconds','wrong_seconds'):
+        x=value.get(key)
+        if type(x) in (int,float) and 0<=x<=1800:result[key]=x
+    for key in ('correct_password_accepted','incorrect_password_rejected'):
+        if type(value.get(key)) is bool:result[key]=value[key]
+    return result

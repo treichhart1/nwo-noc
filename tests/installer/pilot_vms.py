@@ -50,7 +50,7 @@ class VM:
         kvm = os.access('/dev/kvm',os.R_OK|os.W_OK)
         self.acceleration = 'kvm' if kvm else 'tcg'
         self.serial = (self.root/'serial.log').open('wb')
-        args=['qemu-system-x86_64','-accel',self.acceleration,'-cpu',cpu_model,'-m','5120','-smp','2','-nographic',
+        args=['qemu-system-x86_64','-accel',self.acceleration,'-cpu',cpu_model,'-m','5120','-smp','4','-nographic',
               '-serial',f'file:{self.root}/serial.log','-monitor','none','-drive',f'file={self.root}/disk.qcow2,format=qcow2,if=virtio',
               '-drive',f'file={self.root}/seed.img,format=raw,if=virtio',
               '-netdev',f'user,id=noc,hostfwd=tcp:127.0.0.1:{port}-:22','-device','virtio-net-pci,netdev=noc']
@@ -192,7 +192,7 @@ def main():
         image=json.loads((ROOT/'deploy/pilot-vm-image.json').read_text())
         run(['curl','--fail','--location','--proto','=https','--tlsv1.2','--retry','3','--max-time','900','-o',work/'ubuntu.img',image['url']],timeout=1000)
         if sha(work/'ubuntu.img')!=image['sha256']:raise ValueError('Canonical Ubuntu image digest mismatch; no fallback')
-        report['ubuntu_image']=image;report['guest_resources']={'vcpus':2,'memory_mib':5120,'disk_gib':32}
+        report['ubuntu_image']=image;report['guest_resources']={'vcpus':4,'memory_mib':5120,'disk_gib':32}
         report['hypervisor']={'qemu':run(['qemu-system-x86_64','--version']).stdout.decode().splitlines()[0], 'host_cpus':os.cpu_count(), 'host_memory':next(line for line in Path('/proc/meminfo').read_text().splitlines() if line.startswith('MemTotal:'))}
         key=work/'controller-key';run(['ssh-keygen','-q','-t','ed25519','-N','','-f',key])
         # The pinned integration audit verifies PR86's non-ancestor original against

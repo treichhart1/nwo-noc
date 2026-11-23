@@ -502,3 +502,25 @@ def test_guest_command_failure_exports_only_safe_identity():
     assert result['exit_code']==1 and result['completed_check_count']==1
     assert result['last_check_sha256']==hashlib.sha256(b'synthetic-check').hexdigest()
     assert 'private-secret' not in json.dumps(result) and '/private/' not in json.dumps(result)
+
+
+def test_recovery_login_matches_existing_oauth2_form_contract():
+    sys.path.insert(0,str(ROOT/'tests/installer'))
+    from pilot_recovery import authentication_request
+    from urllib.parse import parse_qs
+    values={'username':'synthetic technician','password':'synthetic+&=password'}
+    request=authentication_request(values)
+    assert request.full_url=='https://localhost:18090/api/auth/login'
+    assert request.get_header('Content-type')=='application/x-www-form-urlencoded'
+    assert parse_qs(request.data.decode())=={k:[v] for k,v in values.items()}
+
+
+def test_authentication_cost_diagnostics_never_export_secrets_or_hashes():
+    sys.path.insert(0,str(ROOT/'tests/installer'))
+    from pilot_diagnostics import safe_authentication_cost
+    value={'scheme':'bcrypt','policy_rounds':12,'hash_rounds':12,'hash_seconds':2.0,
+           'verify_seconds':1.75,'wrong_seconds':1.8,'correct_password_accepted':True,
+           'incorrect_password_rejected':True,'password':'synthetic-secret','hash':'private-hash'}
+    result=safe_authentication_cost(value)
+    assert result=={k:v for k,v in value.items() if k not in ('password','hash')}
+    assert 'synthetic-secret' not in json.dumps(result) and 'private-hash' not in json.dumps(result)
