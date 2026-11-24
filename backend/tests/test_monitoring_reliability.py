@@ -740,3 +740,35 @@ def test_operator_incident_correlation_deduplicates_and_requires_new_evidence(
             )
     finally:
         app.dependency_overrides.clear()
+
+@pytest.mark.parametrize("mode", ["normal", "weak", "timeout"])
+def test_collector_reuses_same_transaction_alert_locks(postgres_db, isolated, tmp_path, mode):
+    """The collector condition must not re-query the locked alert snapshot."""
+    from sqlalchemy import event
+
+    db = postgres_db
+    device, job = setup(db, mode)
+    statements = []
+
+    def track(conn, cursor, statement, params, context, executemany):
+        if statement.lstrip().upper().startswith("SELECT") and "monitoring_alerts" in statement:
+            statements.append(statement)
+
+    bind = db.get_bind()
+    event.listen(bind, "before_cursor_execute", track)
+    try:
+        result = poll(db, job, tmp_path, NOW)
+    finally:
+        event.remove(bind, "before_cursor_execute", track)
+    assert result["result"] == ("timeout" if mode == "timeout" else "success")
+    assert len(statements) == 1
+    assert "FOR UPDATE" in statements[0]
+    assert db.scalar(select(func.count(MonitoringReceipt.id))) == (0 if mode == "timeout" else 1)
+    # A subsequent poll must acquire a fresh lock, not reuse old state.
+    statements.clear()
+    event.listen(bind, "before_cursor_execute", track)
+    try:
+        poll(db, job, tmp_path, NOW + timedelta(seconds=30))
+    finally:
+        event.remove(bind, "before_cursor_execute", track)
+    assert len(statements) == 1 and "FOR UPDATE" in statements[0]

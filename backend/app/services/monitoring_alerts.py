@@ -445,3 +445,7 @@ def process(db, device_id, *, now, policy):
                     "root_cause": "unconfirmed",
                 },
             )
+
+    # Same locked device/transaction only: reuse for the collector condition.
+    # No cache survives a poll, commit, rollback or process restart.
+    return cache

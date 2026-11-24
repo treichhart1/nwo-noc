@@ -2,7 +2,8 @@
 
 import json, time, uuid, tempfile
 from datetime import datetime, timedelta, timezone
-from sqlalchemy import create_engine, text, select, func, update
+from sqlalchemy import create_engine, text, select, func, update, event
+from threading import Lock
 from sqlalchemy.orm import sessionmaker
 from app.core.config import settings
 from app.core.database import Base
@@ -44,6 +45,18 @@ def measure(size):
     factory = sessionmaker(scoped)
     base = datetime.now(timezone.utc)
     rounds = []
+    # Bounded statement categories only; never SQL text, parameters or credentials.
+    sql_counts = {}
+    sql_lock = Lock()
+
+    def count_sql(conn, cursor, statement, params, context, executemany):
+        verb = statement.lstrip().split(None, 1)[0].upper()
+        if verb not in {"SELECT", "INSERT", "UPDATE", "DELETE", "SAVEPOINT", "RELEASE"}:
+            verb = "OTHER"
+        with sql_lock:
+            sql_counts[verb] = sql_counts.get(verb, 0) + 1
+
+    event.listen(engine, "before_cursor_execute", count_sql)
     try:
         Base.metadata.create_all(scoped)
         with factory() as db:
@@ -101,6 +114,7 @@ def measure(size):
                             )
                         )
                         db.commit()
+                sql_before = dict(sql_counts)
                 resources_start = resource_snapshot()
                 started = time.perf_counter()
                 accepted = 0
@@ -130,6 +144,7 @@ def measure(size):
                 rounds.append(
                     {
                         "round": n + 1,
+                        "sql_statements": {k: v - sql_before.get(k, 0) for k, v in sql_counts.items()},
                         "samples": accepted,
                         "elapsed_seconds": round(elapsed, 3),
                         "polls_per_second": round(size / elapsed, 2),
