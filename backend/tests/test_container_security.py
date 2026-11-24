@@ -49,7 +49,7 @@ def test_installer_keeps_explicit_hardened_database_digest(tmp_path,monkeypatch)
         calls.append(reference)
         return {'Config':{'User':'' if reference==ref else '10001:10001' if reference==value['images']['backend'] else '101:101','Labels':{'org.opencontainers.image.revision':value['commit']}}}
     monkeypatch.setattr(host,'image',image)
-    monkeypatch.setattr(manager,'git',lambda *args:json.dumps({'images':{'postgres:16-alpine':'base-must-not-replace-approved-db','redis:7-alpine':'synthetic-redis'}}))
+    monkeypatch.setattr(manager,'git',lambda *args:'' if args[0]=='ls-tree' else json.dumps({'images':{'postgres:16-alpine':'base-must-not-replace-approved-db','redis:7-alpine':'synthetic-redis'}}))
     host.images(value)
     assert value['images']['postgres']==ref and 'base-must-not-replace-approved-db' not in calls
 

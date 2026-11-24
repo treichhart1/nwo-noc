@@ -360,6 +360,12 @@
     },
     "implementation": "deploy/Dockerfile.redis; supported signed repositories only, minimum-version/server/UID checks fail closed",
     "status": "NOT TESTED",
-    "terminal_evidence": "Final new-source exact-image scans and Ubuntu/upgrade/recovery jobs in PR ledger; do not infer PASS from availability"
+    "terminal_evidence": "Final new-source exact-image scans and Ubuntu/upgrade/recovery jobs in PR ledger; do not infer PASS from availability",
+    "primary_sources": [
+      "https://raw.githubusercontent.com/alpinelinux/aports/3.23-stable/main/openssl/APKBUILD",
+      "https://raw.githubusercontent.com/alpinelinux/aports/3.23-stable/main/zlib/APKBUILD",
+      "https://security.alpinelinux.org/vuln/CVE-2026-4738"
+    ],
+    "primary_review": "Official3.23-stable APKBUILD confirms OpenSSL3.5.9-r1 with all five named CVE patches and zlib1.4-r0; individual OpenSSL security tracker pages were unavailable. Supported signed APK installation and actual scans remain required."
   }
 }

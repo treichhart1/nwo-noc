@@ -528,6 +528,8 @@ jobs:
           docker build -t noc113-frontend:base frontend
           docker build -t noc117-postgres:rc -f deploy/Dockerfile.postgres .
           docker build -t noc120-redis:rc -f deploy/Dockerfile.redis .
+      - name: Verify old Redis7 data and queues survive supported-library upgrade and restart
+        run: python3 tests/installer/redis_upgrade.py --execute-disposable-test
       - name: Reject temporary PostgreSQL initialization servers using actual deployment health checks
         run: |
           sudo apt-get install -y --no-install-recommends python3-yaml

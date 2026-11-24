@@ -84,3 +84,9 @@ deploy/Dockerfile.redis therefore preserves that exact immutable server/base and
 New-source host approvals must explicitly bind the Redis derivative, matching source revision, exact original base label, server contract and read-only package/ownership probe. Historical sources without this Dockerfile retain the original exact-lock rule; that rule is not silently generalized. All four controlled-test image roles are labelled/bound to source, and actual VM/upgrade/recovery tests exercise the derivative. Compose/local acceptance captures immutable IDs; a production release still needs the separately approved derivative registry digest, complete reports and signature. Licensing is unchanged.
 
 The diagnostic11-row baseline is retained. Only final exact-image scans and completed installation/recovery/queue tests may establish remediation; pending builds are not PASS.
+
+### Redis acceptance follow-up
+
+Official Alpine3.23-stable OpenSSL APKBUILD confirms3.5.9-r1 and all five named patches; zlib APKBUILD/security tracker confirms1.4-r0. Individual OpenSSL tracker pages were unavailable, not treated as clean evidence. tests/installer/redis_upgrade.py performs an actual no-network, nonroot/capability-free old-to-derivative test on a fresh volume, preserves Redis server/client binary hashes, verifies durable AOF/RDB sentinel and queue order, and restarts the derivative. Failed fixture state is retained. This supplements, not replaces, full VM/upgrade/recovery tests.
+
+Diagnostic735/736 backend failure was a historical-source test mock returning JSON for every git subcommand, falsely reporting that a new Redis Dockerfile existed. The mock now explicitly represents absent historical files for ls-tree; original PostgreSQL digest assertions remain. New tests independently reject missing/wrong-source/wrong-base/wrong-version Redis approval and runtime probe failure. No gate or assertion is disabled to accommodate the derivative.
