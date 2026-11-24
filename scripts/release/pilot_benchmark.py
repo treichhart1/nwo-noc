@@ -21,19 +21,38 @@ def measure(backend, postgres, output):
     prefix = 'noc119-bench-' + uuid.uuid4().hex[:10]
     network, database = prefix + '-net', prefix + '-db'
     volume=prefix+'-data'
-    owned_network=owned_database=owned_volume=False
+    spool_volume=prefix+'-spool'
+    owned_network=owned_database=owned_volume=owned_spool=False
     records = []
     report = {'scope':'Synthetic2ms transport; no live equipment; process CPU/RSS exclude PostgreSQL',
               'backend':backend,'postgres':postgres,'host_cpus':os.cpu_count(),
               'host_memtotal':next(l.strip() for l in Path('/proc/meminfo').read_text().splitlines() if l.startswith('MemTotal:')),
               'limits':{'backend_cpus':2,'backend_memory_mib':768,'database_cpus':2,'database_memory_mib':1024,'polling_threads':8,'pool_size':10},
               'database_storage':'Disposable named Docker volume on CI host filesystem; physical medium unverified; not tmpfs',
+              'monitoring_spool_storage':'Separate private named Docker volume; not tmpfs; every file/directory fsync preserved',
               'records':records,'target_seconds':15,'target_status':'NOT TESTED'}
     try:
         command(['docker','network','create','--internal',network])
         owned_network=True
         if command(['docker','volume','inspect',volume],check=False).returncode==0:raise RuntimeError('Existing volume retained; refusing benchmark')
         command(['docker','volume','create',volume]);owned_volume=True
+        if command(['docker','volume','inspect',spool_volume],check=False).returncode==0:raise RuntimeError('Existing spool retained; refusing benchmark')
+        command(['docker','volume','create',spool_volume]);owned_spool=True
+        command(['docker','run','--rm','--network','none','--read-only','--user','0:0','--cap-drop','ALL','--cap-add','CHOWN',
+                 '--mount',f'type=volume,src={spool_volume},dst=/volume','--entrypoint','python',backend,'-c',
+                 "import os; os.chown('/volume',0,0); os.chmod('/volume',0o700); os.chown('/volume',10001,10001)"])
+        for name in (volume,spool_volume):
+            info=json.loads(command(['docker','volume','inspect',name]).stdout)[0]
+            if info['Driver']!='local' or info.get('Options'):raise ValueError('Ordinary durable local volumes required')
+        filesystems={}
+        for label,name in (('postgres',volume),('monitoring_outbox',spool_volume)):
+            filesystem=command(['docker','run','--rm','--network','none','--read-only','--cap-drop','ALL','--security-opt','no-new-privileges',
+                '--mount',f'type=volume,src={name},dst=/volume,readonly,volume-nocopy','--entrypoint','python',backend,'-c',
+                "rows=[r.split() for r in open('/proc/mounts')]; fs=[r[2] for r in rows if r[1]=='/volume']; assert len(fs)==1 and fs[0] not in ('tmpfs','ramfs'); print(fs[0])"]).stdout.strip()
+            filesystems[label]=filesystem
+        report['volume_filesystems']=filesystems
+
+
         uid=command(['docker','run','--rm','--network','none','--entrypoint','id',postgres,'-u','postgres']).stdout.strip()
         command(['docker','run','--rm','--network','none','--read-only','--user','0:0','--cap-drop','ALL','--cap-add','CHOWN','--mount',f'type=volume,src={volume},dst=/var/lib/postgresql/data','--entrypoint','chown',postgres,uid+':'+uid,'/var/lib/postgresql/data'])
         command(['docker','run','-d','--name',database,'--network',network,'--network-alias','db','--user',uid+':'+uid,'--cap-drop','ALL','--security-opt','no-new-privileges',
@@ -50,6 +69,8 @@ def measure(backend, postgres, output):
         for repeat in range(1,4):
             result=command(['docker','run','--rm','--network',network,'--read-only','--cap-drop','ALL','--security-opt','no-new-privileges',
                 '--cpus','2','--memory','768m','--tmpfs','/tmp:rw,noexec,nosuid,size=128m',
+                '--mount',f'type=volume,src={spool_volume},dst=/var/lib/nwo-noc/monitoring',
+                '-e','NOC_BENCHMARK_SPOOL_ROOT=/var/lib/nwo-noc/monitoring',
                 '-e','SECRET_KEY=noc119-synthetic-secret-key-noc119-synthetic', '-e','ADMIN_PASSWORD=synthetic-ci-only',
                 '-e','DATABASE_URL=postgresql+psycopg://synthetic:synthetic-ci-only@db:5432/nwo_noc',
                 '-e','APP_ENV=staging','-e','OFFLINE_MODE=true','-e','SYNTHETIC_MONITORING_ENABLED=true','-e','RF_SCHEDULER_ENABLED=true',
@@ -58,6 +79,7 @@ def measure(backend, postgres, output):
             if [r.get('devices') for r in rows] != [250,500,1000]:raise ValueError('Incomplete benchmark evidence')
             for row in rows:
                 if row['samples_and_unique_receipts'] != row['devices']*6 or len(row['rounds']) != 6:raise ValueError('Lost sample/receipt evidence')
+                if row.get('spool_parent') != 'explicit_private_volume':raise ValueError('Durable outbox profile was not used')
                 records.append({'repeat':repeat,**row})
         samples=[round['elapsed_seconds'] for record in records if record['devices']==1000 for round in record['rounds']]
         report.update(min_seconds=min(samples),median_seconds=statistics.median(samples),max_seconds=max(samples),
@@ -65,6 +87,7 @@ def measure(backend, postgres, output):
     finally:
         if owned_database:command(['docker','rm','-f',database],check=False)
         if owned_volume:command(['docker','volume','rm',volume],check=False)
+        if owned_spool:command(['docker','volume','rm',spool_volume],check=False)
         if owned_network:command(['docker','network','rm',network],check=False)
         output.parent.mkdir(parents=True,exist_ok=True)
         output.write_text(json.dumps(report,indent=2)+'\n')

@@ -1,6 +1,7 @@
 """Real PostgreSQL/concurrent polling benchmark; synthetic transport only."""
 
-import json, time, uuid, tempfile
+import json, time, uuid, tempfile, os
+from app.services.monitoring_spool import directory as private_spool_directory
 from datetime import datetime, timedelta, timezone
 from sqlalchemy import create_engine, text, select, func, update, event
 from threading import Lock
@@ -103,7 +104,10 @@ def measure(size):
                     )
                 )
             db.commit()
-        with tempfile.TemporaryDirectory(prefix="noc92-spool-") as root:
+        spool_parent = os.environ.get("NOC_BENCHMARK_SPOOL_ROOT")
+        if spool_parent:
+            private_spool_directory(spool_parent)
+        with tempfile.TemporaryDirectory(prefix="noc92-spool-", dir=spool_parent) as root:
             for n in range(6):
                 at = base + timedelta(seconds=n * 30)
                 if n == 3:
@@ -166,6 +170,7 @@ def measure(size):
             ).one()
             return {
                 "devices": size,
+                "spool_parent": "explicit_private_volume" if spool_parent else "temporary_storage_not_durable_acceptance",
                 "sites": 40,
                 "concurrency": settings.rf_scheduler_concurrency,
                 "rounds": rounds,
