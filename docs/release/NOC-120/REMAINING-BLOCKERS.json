@@ -39,19 +39,19 @@
     },
     {
       "id": "NOC120-final-source-validation",
-      "category": "remaining_software_defects",
-      "status": "NOT TESTED",
+      "category": "completed_and_verified",
+      "status": "PASS",
       "owner": "NOC120 final CI",
-      "evidence": "Final commit and terminal ten-job/artifact evidence recorded in draft PR ledger after execution",
-      "action": "Do not infer PASS from historical baseline or pending jobs. Rebuild/rescan final images and execute all required jobs."
+      "evidence": "Code candidate c9b8f42daee75eff33a56cfcee21319bd2214aad; runs739/740 all10jobs SUCCESS each, identical branch/PR-merge trees",
+      "action": "Code-freeze acceptance executed. Documentation-only final commit must also pass all10jobs, recorded in PR124 terminal ledger; this does not authorize production."
     },
     {
       "id": "A111-12",
       "category": "remaining_software_defects",
       "status": "FAIL",
       "owner": "software/performance acceptance",
-      "evidence": "NOC119 final durable results36rounds min9.976/median12.301/max15.312s;3over15; samples and receipts preserved",
-      "action": "Transaction-local locked alert snapshot removes redundant SELECT without changing fsync/leases/receipts. Repeat same resource-limited durable benchmark; evaluate every round and retain target FAIL if inconsistent. Final measurements in PR ledger/artifacts."
+      "evidence": "Code candidate c9b8f42daee75eff33a56cfcee21319bd2214aad:36 full durable-I/O1000-device rounds, min10.066/median12.6035/max15.580s;6over15. PostgreSQL and outbox ext4, fsync/synchronous_commit/full_page_writes on,6000 samples and unique receipts in each of6 invocations.",
+      "action": "FAIL remains after transaction-local query optimization; no fsync/sample/receipt relaxation. Native/unconstrained diagnostic timings are not full-I/O acceptance. Operator hardware/load/interval review and documented resource headroom remain required; no1000-device15s guarantee."
     },
     {
       "id": "Vendor-native-risk",
@@ -111,11 +111,134 @@
     },
     {
       "id": "Redis-supported-library-fixes",
-      "category": "remaining_software_defects",
-      "status": "NOT TESTED",
+      "category": "completed_and_verified",
+      "status": "PASS",
       "owner": "NOC120 final image/installer CI",
-      "evidence": "Diagnostic733 original immutable Redis7.4.12 image11lower findings; supported libcrypto3/libssl3 3.5.9-r1 and zlib1.4-r0",
-      "action": "Rebuild pinned-base derivative, retain all baseline/final scans, require source/base/version/UID binding, run complete worker/queue/backup/upgrade/two-VM recovery. Final results in PR ledger; no suppressions or major-server change."
+      "evidence": "Code candidate c9b8f42daee75eff33a56cfcee21319bd2214aad: original11lower findings -> derivative0; unchanged Redis7.4.12 binaries, actual AOF/RDB/queue/restart, both VM recoveries, exact runtime image scans0HIGH/CRITICAL",
+      "action": "Supported Alpine OpenSSL3.5.9-r1/zlib1.4-r0 applied and tested. Keep native/vendor/legal/operator blockers separate; no production registry/signing authority inferred."
     }
-  ]
+  ],
+  "pre_execution_snapshot": {
+    "format": 1,
+    "decision": "NO-GO",
+    "scope": "Operator handoff; no production or live-device authorization",
+    "baseline_commit": "60a0a34260f70fac8c7b5e9e00c263d38d1f28d8",
+    "final_source_evidence": "Exact final SHA, all job conclusions, scan identities and benchmark rounds are recorded in the new draft PR ledger and retained CI artifacts. A source snapshot cannot attest its own future execution.",
+    "categories": [
+      "completed_and_verified",
+      "remaining_software_defects",
+      "vendor_dependent_security",
+      "licensing_and_operator_approvals",
+      "actual_server_setup",
+      "live_equipment_acceptance"
+    ],
+    "rows": [
+      {
+        "id": "NOC119-install-reboot-recovery",
+        "category": "completed_and_verified",
+        "status": "PASS",
+        "owner": "CI evidence",
+        "evidence": "NOC119 run730; exact source 60a0a34260f70fac8c7b5e9e00c263d38d1f28d8",
+        "action": "Historical install, source/receiver reboot, signed source-off second-VM recovery, database/documents/keys/auth/history and negative artifacts executed successfully. Preserve failures from run670 and intervening attempts."
+      },
+      {
+        "id": "NOC119-all-ten-jobs",
+        "category": "completed_and_verified",
+        "status": "PASS",
+        "owner": "CI evidence",
+        "evidence": "https://github.com/treichhart1/nwo-noc/actions/runs/45127023991",
+        "action": "Ten jobs successful on exact baseline; does not attest NOC120 final source. See final NOC120 PR ledger."
+      },
+      {
+        "id": "NOC119-exact-image-high-critical",
+        "category": "completed_and_verified",
+        "status": "PASS",
+        "owner": "CI evidence",
+        "evidence": "Eight exact installed VM images,0HIGH/0CRITICAL; backend variants34 lower findings, Redis1 at historical execution",
+        "action": "Keep full raw findings, SBOM/provenance and immutable identities. Repeat on every new source; current scanner counts can differ."
+      },
+      {
+        "id": "NOC120-final-source-validation",
+        "category": "remaining_software_defects",
+        "status": "NOT TESTED",
+        "owner": "NOC120 final CI",
+        "evidence": "Final commit and terminal ten-job/artifact evidence recorded in draft PR ledger after execution",
+        "action": "Do not infer PASS from historical baseline or pending jobs. Rebuild/rescan final images and execute all required jobs."
+      },
+      {
+        "id": "A111-12",
+        "category": "remaining_software_defects",
+        "status": "FAIL",
+        "owner": "software/performance acceptance",
+        "evidence": "NOC119 final durable results36rounds min9.976/median12.301/max15.312s;3over15; samples and receipts preserved",
+        "action": "Transaction-local locked alert snapshot removes redundant SELECT without changing fsync/leases/receipts. Repeat same resource-limited durable benchmark; evaluate every round and retain target FAIL if inconsistent. Final measurements in PR ledger/artifacts."
+      },
+      {
+        "id": "Vendor-native-risk",
+        "category": "vendor_dependent_security",
+        "status": "BLOCKED",
+        "owner": "Canonical/upstream and independent security reviewer",
+        "evidence": "VENDOR-REVIEW.json plus historical full native dispositions and fresh raw scans",
+        "action": "Supported Noble updates only. SQLite/Expat/util-linux vulnerable, ACL intrusive-backport ignored, other deferred/evaluation issues remain. No scanner severity waiver; compare fixed versions to actual installed source packages."
+      },
+      {
+        "id": "Redis-and-dependency-legal-review",
+        "category": "licensing_and_operator_approvals",
+        "status": "BLOCKED",
+        "owner": "legal/release authority",
+        "evidence": "Redis7.4.12 exact pinned image, RSALv2/SSPLv1 and dependency inventories",
+        "action": "Independent license/distribution/service review; no automatic Redis8/Valkey substitution."
+      },
+      {
+        "id": "Production-signing-publication",
+        "category": "licensing_and_operator_approvals",
+        "status": "BLOCKED",
+        "owner": "independent release authority",
+        "evidence": "PUBLICATION.md; production registry/signing approval absent",
+        "action": "Review exact source/tree/four registry RepoDigests/full evidence; protected Ed25519 custody, independently trusted public fingerprint, revocation/rotation/withdrawal and explicit publication approval. Do not clear blockers to pass verifier."
+      },
+      {
+        "id": "Actual-host-clock-access-egress",
+        "category": "actual_server_setup",
+        "status": "BLOCKED",
+        "owner": "server/network/identity operator",
+        "evidence": "NOC119 real VM NTPSynchronized=no; VPN/MFA/actual host not certified",
+        "action": "Approved private NTP/DNS, static IP, VPN/IdP MFA/key-only SSH, host and Docker IPv6 forwarding deny policy, update/backup windows and independent access tests."
+      },
+      {
+        "id": "Operational-malware-deployment",
+        "category": "actual_server_setup",
+        "status": "BLOCKED",
+        "owner": "security/server operator with reviewed deployment configuration",
+        "evidence": "Actual CI ClamAV uses safe test definitions; packaged host scanner socket deployment is not automatic",
+        "action": "Deploy approved scanner/current authenticated definitions and reviewed least-privilege socket access/mount; execute EICAR/timeout/unavailable/quarantine/recovery tests. Do not merely set scanner flag or edit signed releases."
+      },
+      {
+        "id": "Independent-offsite-failure-domain",
+        "category": "actual_server_setup",
+        "status": "BLOCKED",
+        "owner": "backup/disaster recovery operator",
+        "evidence": "Two independent VM roots/kernels/daemons shared one CI hypervisor",
+        "action": "Independent encrypted off-site backup/key custody and empty-host restore in a physical/site-independent domain. Verify authentication/history/documents/keys/Redis/reboot and RPO/RTO; no overwrite or automatic irreversible database rollback."
+      },
+      {
+        "id": "A111-15-live-compatibility",
+        "category": "live_equipment_acceptance",
+        "status": "BLOCKED",
+        "owner": "explicitly authorized network/provider operator",
+        "evidence": "OPERATOR-CHECKLIST.md and NOC116/NOC119 contract matrices; no live access",
+        "action": "Exact firmware/MIB/API/read-only permissions/allowlists/TLS/timeouts/consent/alternate-path tests. ROS6 native collection and dedicated Wave paths unsupported. Powercode/Grafana/WordPress/Designer contracts need actual approved acceptance. Keep live integrations/delivery/publication/remediation disabled."
+      },
+      {
+        "id": "Redis-supported-library-fixes",
+        "category": "remaining_software_defects",
+        "status": "NOT TESTED",
+        "owner": "NOC120 final image/installer CI",
+        "evidence": "Diagnostic733 original immutable Redis7.4.12 image11lower findings; supported libcrypto3/libssl3 3.5.9-r1 and zlib1.4-r0",
+        "action": "Rebuild pinned-base derivative, retain all baseline/final scans, require source/base/version/UID binding, run complete worker/queue/backup/upgrade/two-VM recovery. Final results in PR ledger; no suppressions or major-server change."
+      }
+    ]
+  },
+  "executed_code_commit": "c9b8f42daee75eff33a56cfcee21319bd2214aad",
+  "executed_evidence": "ACCEPTANCE-EVIDENCE.json"
 }

@@ -359,8 +359,8 @@
       "zlib": ">=1.4-r0"
     },
     "implementation": "deploy/Dockerfile.redis; supported signed repositories only, minimum-version/server/UID checks fail closed",
-    "status": "NOT TESTED",
-    "terminal_evidence": "Final new-source exact-image scans and Ubuntu/upgrade/recovery jobs in PR ledger; do not infer PASS from availability",
+    "status": "PASS",
+    "terminal_evidence": "Code candidate c9b8f42daee75eff33a56cfcee21319bd2214aad, runs739/740: derivative0findings; canonical native image sha256:e4a4b2edffa30c436b7d0ad06f864b6fde6883ef93078d6f4a6ff980777f8487; actual binary/queue/AOF/RDB/restart and both VM recoveries passed. Production/legal approvals remain blocked.",
     "primary_sources": [
       "https://raw.githubusercontent.com/alpinelinux/aports/3.23-stable/main/openssl/APKBUILD",
       "https://raw.githubusercontent.com/alpinelinux/aports/3.23-stable/main/zlib/APKBUILD",
