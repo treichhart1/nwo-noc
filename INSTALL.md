@@ -1,6 +1,6 @@
 # Ubuntu24.04 installation
 
-This is the **complete integrated AI NOC**, based on the unmerged NOC112 stack.
+This is the **complete integrated AI NOC**, based on the unmerged NOC110–120 dependency stack. Follow the current [operator guide](docs/release/NOC-120/INSTALLATION-GUIDE.md) and exact draft PR evidence ledger; no draft PR is assumed merged.
 It is not a demo: no synthetic sites, customers or telemetry are seeded. AI Fiber
 Designer and MikroTik Management remain separate products. Current release reports
 still prohibit production/live-device pilot activation. This package is for controlled
@@ -120,7 +120,7 @@ controlled-test approval remains isolated and does not authorize a release/live 
 
 New production-purpose approvals must also include the hardened PostgreSQL registry
 digest and matching NOC source-revision label. Do not reuse a two-image NOC116 approval
-or silently substitute the upstream base. Sign a reviewed three-image target manifest,
+or silently substitute the upstream base. Sign a reviewed four-role target manifest (backend/frontend/PostgreSQL/Redis),
 retain supported upgrade_from ancestry and test encrypted backup/restore first. See
 [container security report](docs/release/NOC-117/README.md). This is not production
 authorization; all unresolved native/npm findings and operator gates remain.

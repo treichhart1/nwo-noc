@@ -2,7 +2,7 @@
 
 Obtain an approved clean target checkout and root-owned `/etc/nwo-noc-release.json`.
 Its `upgrade_from` list must explicitly include the installed commit, and the target must
-preserve that commit's ancestry. Both complete images must match the target revision.
+preserve that commit's ancestry. All four approved runtime image roles must match the signed source/image contract; backend/frontend/PostgreSQL revision labels and the exact approved Redis digest are verified.
 No automatic branch pull, registry tag following or source-code editing is performed.
 
 Configure and externally validate encrypted backups first; see BACKUP_RESTORE.md.
@@ -53,7 +53,7 @@ controlled-test approval remains isolated and does not authorize a release/live 
 
 New production-purpose approvals must also include the hardened PostgreSQL registry
 digest and matching NOC source-revision label. Do not reuse a two-image NOC116 approval
-or silently substitute the upstream base. Sign a reviewed three-image target manifest,
+or silently substitute the upstream base. Sign a reviewed four-role target manifest (backend/frontend/PostgreSQL/Redis),
 retain supported upgrade_from ancestry and test encrypted backup/restore first. See
 [container security report](docs/release/NOC-117/README.md). This is not production
 authorization; all unresolved native/npm findings and operator gates remain.

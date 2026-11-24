@@ -1,0 +1,351 @@
+{
+  "format": 1,
+  "checked_date": "2026-11-24",
+  "baseline": "../NOC-119/current-native-dispositions.json",
+  "scope": "Primary vendor review; severity reductions/missing scanner rows are not patches. Historical raw findings preserved unchanged.",
+  "rows": [
+    {
+      "cve": "CVE-2026-76642",
+      "source_packages": [
+        "util-linux"
+      ],
+      "url": "https://ubuntu.com/security/CVE-2026-76642",
+      "observed_2026_11_24": "Vulnerable",
+      "supported_noble_fix_version": null,
+      "status": "BLOCKED",
+      "action": "No supported Noble fix established by this lookup. Rebuild with signed supported repository updates, compare actual package versions and full findings; no exploitability waiver."
+    },
+    {
+      "cve": "CVE-2026-102473",
+      "source_packages": [
+        "dash"
+      ],
+      "url": "https://ubuntu.com/security/CVE-2026-102473",
+      "observed_2026_11_24": "Vulnerable, fix deferred",
+      "supported_noble_fix_version": null,
+      "status": "BLOCKED",
+      "action": "No supported Noble fix established by this lookup. Rebuild with signed supported repository updates, compare actual package versions and full findings; no exploitability waiver."
+    },
+    {
+      "cve": "CVE-2026-102474",
+      "source_packages": [
+        "dash"
+      ],
+      "url": "https://ubuntu.com/security/CVE-2026-102474",
+      "observed_2026_11_24": "Vulnerable, fix deferred",
+      "supported_noble_fix_version": null,
+      "status": "BLOCKED",
+      "action": "No supported Noble fix established by this lookup. Rebuild with signed supported repository updates, compare actual package versions and full findings; no exploitability waiver."
+    },
+    {
+      "cve": "CVE-2026-105712",
+      "source_packages": [
+        "gnupg2"
+      ],
+      "url": "https://ubuntu.com/security/CVE-2026-105712",
+      "observed_2026_11_24": "Vulnerable",
+      "supported_noble_fix_version": null,
+      "status": "BLOCKED",
+      "action": "No supported Noble fix established by this lookup. Rebuild with signed supported repository updates, compare actual package versions and full findings; no exploitability waiver."
+    },
+    {
+      "cve": "CVE-2025-66382",
+      "source_packages": [
+        "expat"
+      ],
+      "url": "https://ubuntu.com/security/CVE-2025-66382",
+      "observed_2026_11_24": "Vulnerable, fix deferred",
+      "supported_noble_fix_version": null,
+      "status": "BLOCKED",
+      "action": "No supported Noble fix established by this lookup. Rebuild with signed supported repository updates, compare actual package versions and full findings; no exploitability waiver."
+    },
+    {
+      "cve": "CVE-2026-102633",
+      "source_packages": [
+        "expat"
+      ],
+      "url": "https://ubuntu.com/security/CVE-2026-102633",
+      "observed_2026_11_24": "Vulnerable",
+      "supported_noble_fix_version": null,
+      "status": "BLOCKED",
+      "action": "No supported Noble fix established by this lookup. Rebuild with signed supported repository updates, compare actual package versions and full findings; no exploitability waiver."
+    },
+    {
+      "cve": "CVE-2026-113351",
+      "source_packages": [
+        "expat"
+      ],
+      "url": "https://ubuntu.com/security/CVE-2026-113351",
+      "observed_2026_11_24": "Vulnerable",
+      "supported_noble_fix_version": null,
+      "status": "BLOCKED",
+      "action": "No supported Noble fix established by this lookup. Rebuild with signed supported repository updates, compare actual package versions and full findings; no exploitability waiver."
+    },
+    {
+      "cve": "CVE-2026-77214",
+      "source_packages": [
+        "expat"
+      ],
+      "url": "https://ubuntu.com/security/CVE-2026-77214",
+      "observed_2026_11_24": "Vulnerable",
+      "supported_noble_fix_version": null,
+      "status": "BLOCKED",
+      "action": "No supported Noble fix established by this lookup. Rebuild with signed supported repository updates, compare actual package versions and full findings; no exploitability waiver."
+    },
+    {
+      "cve": "CVE-2026-93990",
+      "source_packages": [
+        "expat"
+      ],
+      "url": "https://ubuntu.com/security/CVE-2026-93990",
+      "observed_2026_11_24": "Vulnerable",
+      "supported_noble_fix_version": null,
+      "status": "BLOCKED",
+      "action": "No supported Noble fix established by this lookup. Rebuild with signed supported repository updates, compare actual package versions and full findings; no exploitability waiver."
+    },
+    {
+      "cve": "CVE-2026-67693",
+      "source_packages": [
+        "gnutls28"
+      ],
+      "url": "https://ubuntu.com/security/CVE-2026-67693",
+      "observed_2026_11_24": "Vulnerable, fix deferred",
+      "supported_noble_fix_version": null,
+      "status": "BLOCKED",
+      "action": "No supported Noble fix established by this lookup. Rebuild with signed supported repository updates, compare actual package versions and full findings; no exploitability waiver."
+    },
+    {
+      "cve": "CVE-2026-88647",
+      "source_packages": [
+        "gnutls28"
+      ],
+      "url": "https://ubuntu.com/security/CVE-2026-88647",
+      "observed_2026_11_24": "Vulnerable, fix deferred",
+      "supported_noble_fix_version": null,
+      "status": "BLOCKED",
+      "action": "No supported Noble fix established by this lookup. Rebuild with signed supported repository updates, compare actual package versions and full findings; no exploitability waiver."
+    },
+    {
+      "cve": "CVE-2026-88648",
+      "source_packages": [
+        "gnutls28"
+      ],
+      "url": "https://ubuntu.com/security/CVE-2026-88648",
+      "observed_2026_11_24": "Vulnerable, fix deferred",
+      "supported_noble_fix_version": null,
+      "status": "BLOCKED",
+      "action": "No supported Noble fix established by this lookup. Rebuild with signed supported repository updates, compare actual package versions and full findings; no exploitability waiver."
+    },
+    {
+      "cve": "CVE-2026-95184",
+      "source_packages": [
+        "gnutls28"
+      ],
+      "url": "https://ubuntu.com/security/CVE-2026-95184",
+      "observed_2026_11_24": "Vulnerable, fix deferred",
+      "supported_noble_fix_version": null,
+      "status": "BLOCKED",
+      "action": "No supported Noble fix established by this lookup. Rebuild with signed supported repository updates, compare actual package versions and full findings; no exploitability waiver."
+    },
+    {
+      "cve": "CVE-2026-95210",
+      "source_packages": [
+        "gnutls28"
+      ],
+      "url": "https://ubuntu.com/security/CVE-2026-95210",
+      "observed_2026_11_24": "Vulnerable, fix deferred",
+      "supported_noble_fix_version": null,
+      "status": "BLOCKED",
+      "action": "No supported Noble fix established by this lookup. Rebuild with signed supported repository updates, compare actual package versions and full findings; no exploitability waiver."
+    },
+    {
+      "cve": "CVE-2026-7210",
+      "source_packages": [
+        "python3.12"
+      ],
+      "url": "https://ubuntu.com/security/CVE-2026-7210",
+      "observed_2026_11_24": "Vulnerable",
+      "supported_noble_fix_version": null,
+      "status": "BLOCKED",
+      "action": "No supported Noble fix established by this lookup. Rebuild with signed supported repository updates, compare actual package versions and full findings; no exploitability waiver."
+    },
+    {
+      "cve": "CVE-2026-119373",
+      "source_packages": [
+        "sqlite3"
+      ],
+      "url": "https://ubuntu.com/security/CVE-2026-119373",
+      "observed_2026_11_24": "Vulnerable (sqlite3 Noble, primary Canonical package index)",
+      "supported_noble_fix_version": null,
+      "status": "BLOCKED",
+      "action": "No supported Noble fix established by this lookup. Rebuild with signed supported repository updates, compare actual package versions and full findings; no exploitability waiver.",
+      "lookup_note": "Individual CVE page timed out; primary package index explicitly lists sqlite3 Noble Vulnerable. This is not the obsolete sqlite source package.",
+      "alternate_primary_url": "https://ubuntu.com/security/cves?package=sqlite3"
+    },
+    {
+      "cve": "CVE-2026-121876",
+      "source_packages": [
+        "systemd"
+      ],
+      "url": "https://ubuntu.com/security/CVE-2026-121876",
+      "observed_2026_11_24": "Vulnerable, fix deferred",
+      "supported_noble_fix_version": null,
+      "status": "BLOCKED",
+      "action": "No supported Noble fix established by this lookup. Rebuild with signed supported repository updates, compare actual package versions and full findings; no exploitability waiver."
+    },
+    {
+      "cve": "CVE-2026-40228",
+      "source_packages": [
+        "systemd"
+      ],
+      "url": "https://ubuntu.com/security/CVE-2026-40228",
+      "observed_2026_11_24": "Vulnerable, fix deferred",
+      "supported_noble_fix_version": null,
+      "status": "BLOCKED",
+      "action": "No supported Noble fix established by this lookup. Rebuild with signed supported repository updates, compare actual package versions and full findings; no exploitability waiver."
+    },
+    {
+      "cve": "CVE-2024-56433",
+      "source_packages": [
+        "shadow"
+      ],
+      "url": "https://ubuntu.com/security/CVE-2024-56433",
+      "observed_2026_11_24": "Vulnerable, fix deferred",
+      "supported_noble_fix_version": null,
+      "status": "BLOCKED",
+      "action": "No supported Noble fix established by this lookup. Rebuild with signed supported repository updates, compare actual package versions and full findings; no exploitability waiver."
+    },
+    {
+      "cve": "CVE-2026-18477",
+      "source_packages": [
+        "tar"
+      ],
+      "url": "https://ubuntu.com/security/CVE-2026-18477",
+      "observed_2026_11_24": "Vulnerable",
+      "supported_noble_fix_version": null,
+      "status": "BLOCKED",
+      "action": "No supported Noble fix established by this lookup. Rebuild with signed supported repository updates, compare actual package versions and full findings; no exploitability waiver."
+    },
+    {
+      "cve": "CVE-2026-18508",
+      "source_packages": [
+        "tar"
+      ],
+      "url": "https://ubuntu.com/security/CVE-2026-18508",
+      "observed_2026_11_24": "Vulnerable",
+      "supported_noble_fix_version": null,
+      "status": "BLOCKED",
+      "action": "No supported Noble fix established by this lookup. Rebuild with signed supported repository updates, compare actual package versions and full findings; no exploitability waiver."
+    },
+    {
+      "cve": "CVE-2026-54369",
+      "source_packages": [
+        "acl"
+      ],
+      "url": "https://ubuntu.com/security/CVE-2026-54369",
+      "observed_2026_11_24": "Ignored: backport too intrusive",
+      "supported_noble_fix_version": null,
+      "status": "BLOCKED",
+      "action": "Source-specific Noble status; unrelated source-package exclusions or upstream major versions do not establish a supported installed fix."
+    },
+    {
+      "cve": "CVE-2026-115506",
+      "source_packages": [
+        "expat"
+      ],
+      "url": "https://ubuntu.com/security/CVE-2026-115506",
+      "observed_2026_11_24": "Needs evaluation",
+      "supported_noble_fix_version": null,
+      "status": "BLOCKED",
+      "action": "Source-specific Noble status; unrelated source-package exclusions or upstream major versions do not establish a supported installed fix."
+    },
+    {
+      "cve": "CVE-2026-117610",
+      "source_packages": [
+        "expat"
+      ],
+      "url": "https://ubuntu.com/security/CVE-2026-117610",
+      "observed_2026_11_24": "Vulnerable",
+      "supported_noble_fix_version": null,
+      "status": "BLOCKED",
+      "action": "Source-specific Noble status; unrelated source-package exclusions or upstream major versions do not establish a supported installed fix."
+    },
+    {
+      "cve": "CVE-2026-118370",
+      "source_packages": [
+        "expat"
+      ],
+      "url": "https://ubuntu.com/security/CVE-2026-118370",
+      "observed_2026_11_24": "Needs evaluation",
+      "supported_noble_fix_version": null,
+      "status": "BLOCKED",
+      "action": "Source-specific Noble status; unrelated source-package exclusions or upstream major versions do not establish a supported installed fix."
+    },
+    {
+      "cve": "CVE-2026-119379",
+      "source_packages": [
+        "sqlite3"
+      ],
+      "url": "https://ubuntu.com/security/CVE-2026-119379",
+      "observed_2026_11_24": "Needs evaluation",
+      "supported_noble_fix_version": null,
+      "status": "BLOCKED",
+      "action": "Source-specific Noble status; unrelated source-package exclusions or upstream major versions do not establish a supported installed fix."
+    },
+    {
+      "cve": "CVE-2026-78410",
+      "source_packages": [
+        "util-linux"
+      ],
+      "url": "https://ubuntu.com/security/CVE-2026-78410",
+      "observed_2026_11_24": "Needs evaluation",
+      "supported_noble_fix_version": null,
+      "status": "BLOCKED",
+      "action": "Source-specific Noble status; unrelated source-package exclusions or upstream major versions do not establish a supported installed fix."
+    },
+    {
+      "cve": "CVE-2026-119374",
+      "source_packages": [
+        "sqlite3"
+      ],
+      "url": "https://ubuntu.com/security/cves?package=sqlite3",
+      "observed_2026_11_24": "Needs evaluation",
+      "supported_noble_fix_version": null,
+      "status": "BLOCKED",
+      "action": "Primary package-index coverage gap retained independently of scanner rows; no unsupported SQLite ABI replacement."
+    },
+    {
+      "cve": "CVE-2026-119375",
+      "source_packages": [
+        "sqlite3"
+      ],
+      "url": "https://ubuntu.com/security/cves?package=sqlite3",
+      "observed_2026_11_24": "Needs evaluation",
+      "supported_noble_fix_version": null,
+      "status": "BLOCKED",
+      "action": "Primary package-index coverage gap retained independently of scanner rows; no unsupported SQLite ABI replacement."
+    },
+    {
+      "cve": "CVE-2026-119376",
+      "source_packages": [
+        "sqlite3"
+      ],
+      "url": "https://ubuntu.com/security/cves?package=sqlite3",
+      "observed_2026_11_24": "Needs evaluation",
+      "supported_noble_fix_version": null,
+      "status": "BLOCKED",
+      "action": "Primary package-index coverage gap retained independently of scanner rows; no unsupported SQLite ABI replacement."
+    },
+    {
+      "cve": "CVE-2026-119377",
+      "source_packages": [
+        "sqlite3"
+      ],
+      "url": "https://ubuntu.com/security/cves?package=sqlite3",
+      "observed_2026_11_24": "Needs evaluation",
+      "supported_noble_fix_version": null,
+      "status": "BLOCKED",
+      "action": "Primary package-index coverage gap retained independently of scanner rows; no unsupported SQLite ABI replacement."
+    }
+  ]
+}

@@ -10,6 +10,9 @@ permissions:
 
 jobs:
   dependency-security:
+    permissions:
+      contents: read
+      actions: read
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -44,6 +47,21 @@ jobs:
           set -e
           node -e 'console.log(JSON.stringify(require(process.env.GITHUB_WORKSPACE+"/npm-audit.json").metadata))'
           exit "$result"
+      - name: Independently hash and reconcile final NOC119 run730 artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -m 700 "$RUNNER_TEMP/noc119-artifacts"
+          python3 - <<'PY' > "$RUNNER_TEMP/noc119-artifact-ids"
+          import json
+          data=json.load(open('docs/release/NOC-120/NOC-119-EVIDENCE.json'))
+          assert data['repository']=='treichhart1/nwo-noc' and data['run_id']==45127023991
+          for item in data['artifacts']: print(item['id'])
+          PY
+          while read -r artifact; do
+            gh api "repos/treichhart1/nwo-noc/actions/artifacts/$artifact/zip" > "$RUNNER_TEMP/noc119-artifacts/$artifact.zip"
+          done < "$RUNNER_TEMP/noc119-artifact-ids"
+          python3 scripts/release/reconcile_evidence.py --directory "$RUNNER_TEMP/noc119-artifacts" --output noc119-reconciled-evidence.json
       - name: Retain source dependency inventory
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: always()
@@ -56,6 +74,7 @@ jobs:
             npm-dependency-chain.json
             npm-picomatch-explain.json
             npm-lock-runtime.json
+            noc119-reconciled-evidence.json
   frontend:
     runs-on: ubuntu-24.04
     defaults:
@@ -427,6 +446,23 @@ jobs:
         run: |
           docker compose pull redis
           python3 scripts/release/image_security.py --output image-security-evidence $(docker compose config --images | sort -u)
+      - name: Retain source-specific native vulnerability review details
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          rows=[]
+          for path in sorted(Path('image-security-evidence').glob('image-*.json')):
+              doc=json.loads(path.read_text())
+              for result in doc.get('Results',[]):
+                  for item in result.get('Vulnerabilities',[]) or []:
+                      rows.append({'image_id':doc['Metadata']['ImageID'],'cve':item['VulnerabilityID'],
+                          'package':item.get('PkgName'),'installed':item.get('InstalledVersion'),
+                          'fixed':item.get('FixedVersion'),'status':item.get('Status'),'severity':item['Severity'],
+                          'source':item.get('DataSource',{}).get('ID')})
+          Path('image-security-evidence/native-review.json').write_text(json.dumps(rows,indent=2)+'\n')
+          print(json.dumps({'native_review':rows}))
+          PY
       - name: Export full baseline and candidate image SPDX inventories
         run: |
           python3 scripts/release/image_sbom.py baseline-image-security-evidence

@@ -306,3 +306,9 @@ under15seconds: min10.098s/median11.529s/max14.459s. Each1000-device invocation
 preserved6000samples and unique receipts. These are superseded-source measurements,
 not proof of the next correction's acceptance. Prior run646's5/18overruns and
 unverified pilot hardware remain part of the performance limitation.
+
+## NOC120 reconciliation of historical entries
+
+The earlier design description and pending source snapshot above are historical, not terminal results. Exact NOC119 source60a0a34260f70fac8c7b5e9e00c263d38d1f28d8, PR123 final ledger and run730 completed all10jobs successfully. Actual final guests used **4vCPU/5120MiB/32GiB**, not the initial2vCPU description. Source install/reboot and source-off second-VM signed restoration/reboot completed; source/receiver reboot verification56.399/58.445s. Eight exact installed image scans had0HIGH/0CRITICAL, with34lower findings per backend variant and1Redis finding at that execution. Actual ClamAV engine tests passed with safe definitions only. The reconciled blocker matrix preserves its complete original snapshot.
+
+Across final runs729/730,36durable1000-device rounds ranged9.976–15.312s (median12.301s),3over15; no performance waiver. NTPSynchronized remained no. VPN/MFA, production signing/publication, licensing/vendor security, deployed current scanner definitions, real compatibility and independent off-site disaster acceptance remain blocked. See [NOC120 handoff](../NOC-120/README.md) for current-source evidence rather than extending historical PASS to a new commit.
