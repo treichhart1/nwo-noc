@@ -57,3 +57,7 @@ or silently substitute the upstream base. Sign a reviewed four-role target manif
 retain supported upgrade_from ancestry and test encrypted backup/restore first. See
 [container security report](docs/release/NOC-117/README.md). This is not production
 authorization; all unresolved native/npm findings and operator gates remain.
+
+## NOC120 Redis artifact requirement
+
+New-source installation/upgrade requires the supported-library-patched Redis7.4.12 derivative from deploy/Dockerfile.redis, not the unchanged upstream base. The upstream source digest remains pinned as build material; the approved runtime digest is a separately reviewed immutable derivative. Require matching NOC source revision, original base identity, Redis7.4.12 binary, UID999/GID1000 and the fail-closed runtime-library probe. Four-role approvals and exact-image scans must be regenerated/reviewed and signed independently; do not relabel an old signature or use a mutable tag. Actual queue/AOF backup/restore and second-host recovery must pass on the derivative. Redis licensing remains an independent gate.

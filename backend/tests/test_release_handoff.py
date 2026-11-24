@@ -113,3 +113,46 @@ def test_historical_artifact_integrity_and_bounded_inspection(tmp_path, case):
     else:
         with pytest.raises(ValueError):
             inspect_archive(archive, expected)
+
+
+@pytest.mark.parametrize("case", ["valid", "missing", "revision", "user", "base", "version", "probe_failed"])
+def test_hardened_redis_requires_signed_source_and_runtime_contract(tmp_path, monkeypatch, case):
+    from types import SimpleNamespace
+    import manager
+    import policy
+
+    revision = "a" * 40
+    base = "redis:7-alpine@sha256:" + "b" * 64
+    configs = {role: {"Config": {"User": user, "Labels": {"org.opencontainers.image.revision": revision}}}
+               for role, user in [("backend", "10001:10001"), ("frontend", "101:101"), ("postgres", ""), ("redis", "")]}
+    configs["redis"]["Config"]["Labels"].update({"com.nwo-noc.redis.base": base, "com.nwo-noc.redis.version": "7.4.12"})
+    approved = {"commit": revision, "images": {r: r for r in configs}}
+    monkeypatch.setattr(manager, "git", lambda *args: "deploy/Dockerfile.redis" if args[0] == "ls-tree" else json.dumps({"images": {"redis:7-alpine": base}}))
+    calls = []
+    def run(argv, **kwargs):
+        calls.append(argv)
+        if case == "probe_failed":
+            raise policy.Reject("Synthetic package verification failure")
+        return SimpleNamespace(stdout="")
+    monkeypatch.setattr(manager, "run", run)
+    if case == "missing":
+        approved["images"].pop("redis")
+    elif case == "revision":
+        configs["redis"]["Config"]["Labels"]["org.opencontainers.image.revision"] = "c" * 40
+    elif case == "user":
+        configs["redis"]["Config"]["User"] = "0:0"
+    elif case == "base":
+        configs["redis"]["Config"]["Labels"]["com.nwo-noc.redis.base"] = "other@sha256:" + "b" * 64
+    elif case == "version":
+        configs["redis"]["Config"]["Labels"]["com.nwo-noc.redis.version"] = "8.0"
+    host = SimpleNamespace(image=lambda ref: configs[ref])
+    if case != "valid":
+        with pytest.raises(policy.Reject):
+            manager.Host.images(host, approved)
+    else:
+        manager.Host.images(host, approved)
+        assert approved["images"]["redis"] == "redis"
+        assert len(calls) == 1
+        assert calls[0][calls[0].index("--network") + 1] == "none"
+        assert "--read-only" in calls[0] and "--cap-drop" in calls[0]
+        assert calls[0][-1] == "/usr/local/bin/noc-redis-verify"

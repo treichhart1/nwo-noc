@@ -108,6 +108,14 @@
       "owner": "explicitly authorized network/provider operator",
       "evidence": "OPERATOR-CHECKLIST.md and NOC116/NOC119 contract matrices; no live access",
       "action": "Exact firmware/MIB/API/read-only permissions/allowlists/TLS/timeouts/consent/alternate-path tests. ROS6 native collection and dedicated Wave paths unsupported. Powercode/Grafana/WordPress/Designer contracts need actual approved acceptance. Keep live integrations/delivery/publication/remediation disabled."
+    },
+    {
+      "id": "Redis-supported-library-fixes",
+      "category": "remaining_software_defects",
+      "status": "NOT TESTED",
+      "owner": "NOC120 final image/installer CI",
+      "evidence": "Diagnostic733 original immutable Redis7.4.12 image11lower findings; supported libcrypto3/libssl3 3.5.9-r1 and zlib1.4-r0",
+      "action": "Rebuild pinned-base derivative, retain all baseline/final scans, require source/base/version/UID binding, run complete worker/queue/backup/upgrade/two-VM recovery. Final results in PR ledger; no suppressions or major-server change."
     }
   ]
 }

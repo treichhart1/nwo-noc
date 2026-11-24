@@ -444,7 +444,7 @@ jobs:
         run: docker compose build
       - name: Record native and application image vulnerability and license evidence
         run: |
-          docker compose pull redis
+          docker image inspect noc120-redis:rc >/dev/null
           python3 scripts/release/image_security.py --output image-security-evidence $(docker compose config --images | sort -u)
       - name: Retain source-specific native vulnerability review details
         run: |
@@ -473,7 +473,7 @@ jobs:
       - name: Record database helper and Redis runtime compatibility metadata
         run: |
           docker run --rm --read-only --network none --entrypoint sh noc117-postgres:rc -c 'postgres --version; gosu --version; gosu postgres id' > image-security-evidence/postgres-runtime.txt
-          docker run --rm --read-only --network none --entrypoint sh redis:7-alpine@sha256:7f7d30b7fdd09467bac58198a1f166dd69789d348d4fe859cccb20e0cf287fbe -c 'redis-server --version; redis-cli --version' > image-security-evidence/redis-runtime.txt
+          docker run --rm --read-only --network none --entrypoint sh noc120-redis:rc -c 'redis-server --version; redis-cli --version; id redis; apk info -v libcrypto3 libssl3 zlib' > image-security-evidence/redis-runtime.txt
       - name: Bind unsigned build provenance to source inputs and retained reports
         run: python3 scripts/release/build_provenance.py image-security-evidence
       - name: Retain image security findings (not release approval)
@@ -527,6 +527,7 @@ jobs:
           docker build -t noc113-backend:base backend
           docker build -t noc113-frontend:base frontend
           docker build -t noc117-postgres:rc -f deploy/Dockerfile.postgres .
+          docker build -t noc120-redis:rc -f deploy/Dockerfile.redis .
       - name: Reject temporary PostgreSQL initialization servers using actual deployment health checks
         run: |
           sudo apt-get install -y --no-install-recommends python3-yaml
@@ -610,6 +611,7 @@ jobs:
           docker build -t noc113-backend:base backend
           docker build -t noc113-frontend:base frontend
           docker build -t noc117-postgres:rc -f deploy/Dockerfile.postgres .
+          docker build -t noc120-redis:rc -f deploy/Dockerfile.redis .
       - name: Execute separate Ubuntu kernels, reboot and authenticated recovery
         run: python3 tests/installer/hypervisor_launch.py --execute-disposable-vms --work "$RUNNER_TEMP/noc119-vms"
       - name: Preserve sanitized VM evidence only
@@ -683,6 +685,7 @@ jobs:
           docker build -t noc84-backend:rc backend
           docker build -t noc84-frontend:rc frontend
           docker build -t noc117-postgres:rc -f deploy/Dockerfile.postgres .
+          docker build -t noc120-redis:rc -f deploy/Dockerfile.redis .
       - name: Verify backend native geospatial runtime without network access
         run: docker run --rm --network none -e SECRET_KEY=ci-native-runtime-secret-key-ci-native-runtime -e ADMIN_PASSWORD=CI-password-only -e DATABASE_URL=postgresql+psycopg://synthetic:synthetic@127.0.0.1/nwo_noc --entrypoint python noc84-backend:rc -c "import app.main; import rasterio; import pyproj; import laspy; print('Native geospatial backend imports passed')"
       - name: Rehearse Ubuntu installation in a fresh userspace container

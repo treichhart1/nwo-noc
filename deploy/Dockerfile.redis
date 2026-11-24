@@ -1,0 +1,11 @@
+# Same exact Redis7.4.12 server, entrypoint, UID and persisted data layout.
+# Only supported signed Alpine repositories; fail if patched packages unavailable.
+FROM redis:7-alpine@sha256:7f7d30b7fdd09467bac58198a1f166dd69789d348d4fe859cccb20e0cf287fbe
+COPY deploy/redis-runtime-check.sh /usr/local/bin/noc-redis-verify
+RUN sha256sum /usr/local/bin/redis-server /usr/local/bin/redis-cli > /tmp/noc120-redis-binaries.sha256 \
+ && apk add --no-cache --upgrade 'libcrypto3>=3.5.9-r1' 'libssl3>=3.5.9-r1' 'zlib>=1.4-r0' \
+ && sha256sum -c /tmp/noc120-redis-binaries.sha256 && rm /tmp/noc120-redis-binaries.sha256 \
+ && chmod 0555 /usr/local/bin/noc-redis-verify \
+ && sh /usr/local/bin/noc-redis-verify
+LABEL com.nwo-noc.redis.base="redis:7-alpine@sha256:7f7d30b7fdd09467bac58198a1f166dd69789d348d4fe859cccb20e0cf287fbe" \
+      com.nwo-noc.redis.version="7.4.12"

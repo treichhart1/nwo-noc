@@ -347,5 +347,19 @@
       "status": "BLOCKED",
       "action": "Primary package-index coverage gap retained independently of scanner rows; no unsupported SQLite ABI replacement."
     }
-  ]
+  ],
+  "redis_supported_remediation": {
+    "baseline_image": "redis:7-alpine@sha256:7f7d30b7fdd09467bac58198a1f166dd69789d348d4fe859cccb20e0cf287fbe",
+    "server": "7.4.12",
+    "baseline_findings": 11,
+    "source": "Fresh full Trivy reports in diagnostic run733; FixedVersion from Alpine advisory database",
+    "fixed_packages": {
+      "libcrypto3": ">=3.5.9-r1",
+      "libssl3": ">=3.5.9-r1",
+      "zlib": ">=1.4-r0"
+    },
+    "implementation": "deploy/Dockerfile.redis; supported signed repositories only, minimum-version/server/UID checks fail closed",
+    "status": "NOT TESTED",
+    "terminal_evidence": "Final new-source exact-image scans and Ubuntu/upgrade/recovery jobs in PR ledger; do not infer PASS from availability"
+  }
 }

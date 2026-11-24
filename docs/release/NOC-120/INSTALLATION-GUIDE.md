@@ -159,3 +159,7 @@ The target must retain ancestry, exact source/images, protected configuration an
 ## 10. Handoff and stop criteria
 
 Complete [OPERATOR-CHECKLIST.md](OPERATOR-CHECKLIST.md). Stop on untrusted artifacts, bad signatures/digests, missing keys, failed verify, public exposure, unsynchronized clocks, scanner unavailability where required, incompatible firmware or unauthorized requests. Disable only the approved pilot adapter/scheduler, stop polling if necessary, close its approved egress and preserve audit/history. Do not reboot equipment, change routes/RF, send messages or publish incidents.
+
+## NOC120 Redis artifact requirement
+
+New-source installation/upgrade requires the supported-library-patched Redis7.4.12 derivative from deploy/Dockerfile.redis, not the unchanged upstream base. The upstream source digest remains pinned as build material; the approved runtime digest is a separately reviewed immutable derivative. Require matching NOC source revision, original base identity, Redis7.4.12 binary, UID999/GID1000 and the fail-closed runtime-library probe. Four-role approvals and exact-image scans must be regenerated/reviewed and signed independently; do not relabel an old signature or use a mutable tag. Actual queue/AOF backup/restore and second-host recovery must pass on the derivative. Redis licensing remains an independent gate.

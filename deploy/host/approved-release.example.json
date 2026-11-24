@@ -11,7 +11,7 @@
     "backend": "registry.example.invalid/nwo-noc-backend@sha256:REPLACE",
     "frontend": "registry.example.invalid/nwo-noc-frontend@sha256:REPLACE",
     "postgres": "registry.example.invalid/nwo-noc-postgres16@sha256:REPLACE",
-    "redis": "redis:7-alpine@sha256:7f7d30b7fdd09467bac58198a1f166dd69789d348d4fe859cccb20e0cf287fbe"
+    "redis": "registry.example.invalid/nwo-noc-redis7@sha256:REPLACE"
   },
   "evidence": {
     "sbom": {

@@ -74,3 +74,13 @@ scripts/release/prepare_publication.py only assembles **unsigned** protected evi
 [REMAINING-BLOCKERS.json](REMAINING-BLOCKERS.json) separates verified history, software/performance, vendor security, legal/operator approvals, actual server setup and live-equipment acceptance. Final CI execution does not remove those external requirements.
 
 **NO-GO for operational release/live pilot.** Code-level isolated acceptance and prepared procedures are distinct from operator authorization. Required next actions are named acceptance tasks: review supported native fixes/security dispositions; legal Redis/dependency decision; trusted publication/signing authority; approve/configure actual NTP/VPN/MFA/SSH/firewall/scanner; durable workload soak; independently encrypted offsite restore; and actual model/provider read-only compatibility. No indefinite new milestone series, production GO, equipment write, message/publication or cross-repository work is proposed or authorized.
+
+## Supported Redis runtime remediation discovered during NOC120
+
+Fresh diagnostic scans at74281e7 found11 lower-severity rows in the original Redis7.4.12 base: libcrypto3/libssl3 CVE2026-107496/95691/95692/88822/88823, and zlib CVE2026-4738. Scanner fixed-version fields identify supported Alpine3.5.9-r1 OpenSSL libraries and zlib1.4-r0. Public Docker Registry metadata was checked read-only: the7-alpine locator still resolves to the existing pinned index7f7d30b7… and Redis7.4.12; no newer tag was assumed patched.
+
+deploy/Dockerfile.redis therefore preserves that exact immutable server/base and vendor entrypoint/UID999:GID1000/data format while installing only supported signed Alpine library fixes. Build and read-only runtime checks require the unchanged Redis7.4.12 binary, ownership and minimum library versions; unavailable fixes fail closed. No custom repository, major-server change or vulnerability suppression is used.
+
+New-source host approvals must explicitly bind the Redis derivative, matching source revision, exact original base label, server contract and read-only package/ownership probe. Historical sources without this Dockerfile retain the original exact-lock rule; that rule is not silently generalized. All four controlled-test image roles are labelled/bound to source, and actual VM/upgrade/recovery tests exercise the derivative. Compose/local acceptance captures immutable IDs; a production release still needs the separately approved derivative registry digest, complete reports and signature. Licensing is unchanged.
+
+The diagnostic11-row baseline is retained. Only final exact-image scans and completed installation/recovery/queue tests may establish remediation; pending builds are not PASS.

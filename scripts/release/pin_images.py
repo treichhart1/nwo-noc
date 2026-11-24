@@ -9,7 +9,7 @@ DEFAULTS = {
     "NOC_BACKEND_IMAGE": "noc84-backend:rc",
     "NOC_FRONTEND_IMAGE": "noc84-frontend:rc",
     "NOC_POSTGRES_IMAGE": "noc117-postgres:rc",
-    "NOC_REDIS_IMAGE": "redis:7-alpine@sha256:7f7d30b7fdd09467bac58198a1f166dd69789d348d4fe859cccb20e0cf287fbe",
+    "NOC_REDIS_IMAGE": "noc120-redis:rc",
 }
 IMAGE_ID = re.compile(r"^sha256:[a-f0-9]{64}$")
 
