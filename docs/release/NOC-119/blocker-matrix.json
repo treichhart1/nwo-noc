@@ -2,7 +2,7 @@
   "format": 1,
   "decision": "NO-GO",
   "base_commit": "2370f4eec42c8198e197c0cc96e5b570b26a3239",
-  "execution_policy": "Pending entries are not PASS. Final source SHA, exact artifacts, all job conclusions and terminal execution matrix are recorded in the stacked draft PR ledger; this conservative source snapshot cannot authorize a release.",
+  "execution_policy": "Historical NOC119 source snapshot retained below. Reconciled PASS entries apply ONLY to exact NOC119 source/run730. NOC120 final source results are in its own PR ledger/artifacts; no operational authorization.",
   "rows": [
     {
       "id": "Vendor-native-risk",
@@ -11,8 +11,9 @@
     },
     {
       "id": "Fresh-container-evidence",
-      "status": "NOT TESTED",
-      "action": "Rebuild and retain full Trivy/SPDX/provenance/native versions and exact installed-image reports on final source"
+      "status": "PASS",
+      "action": "Executed successfully in NOC119 run730 at 60a0a34260f70fac8c7b5e9e00c263d38d1f28d8. Eight exact installed images0HIGH/0CRITICAL, full scan/SBOM/provenance retained; native vendor risks remain separate.",
+      "historical_status": "NOT TESTED"
     },
     {
       "id": "Signed-recovery-evidence-capture",
@@ -21,13 +22,15 @@
     },
     {
       "id": "Independent-Ubuntu-boot",
-      "status": "NOT TESTED",
-      "action": "Two separate QEMU Ubuntu24.04 roots/kernels; pinned cloud image checksum; actual installer and reboot verification; preserve environment failure if unavailable"
+      "status": "PASS",
+      "action": "Executed successfully in NOC119 run730 at 60a0a34260f70fac8c7b5e9e00c263d38d1f28d8. 4vCPU/5120MiB/32GiB actual Ubuntu24.04 source install and kernel reboot56.399s.",
+      "historical_status": "NOT TESTED"
     },
     {
       "id": "Independent-host-recovery",
-      "status": "NOT TESTED",
-      "action": "Source powered off, separate receiver root and daemon; signed synthetic recovery attestation and separately supplied fingerprint; wrong/missing keys and damaged/incomplete artifacts rejected"
+      "status": "PASS",
+      "action": "Executed successfully in NOC119 run730 at 60a0a34260f70fac8c7b5e9e00c263d38d1f28d8. Source off; signed second-VM DB/config/docs/keys/auth/monitoring/Redis restoration and receiver reboot58.445s, corrupt/incomplete/wrong-key negatives.",
+      "historical_status": "NOT TESTED"
     },
     {
       "id": "Independent-offsite-failure-domain",
@@ -36,8 +39,9 @@
     },
     {
       "id": "Host-security",
-      "status": "NOT TESTED",
-      "action": "Verify guest default-deny in/out, key-only SSH, private TLS, permissions and reboot; no actual VPN/MFA claim"
+      "status": "PASS",
+      "action": "Executed successfully in NOC119 run730 at 60a0a34260f70fac8c7b5e9e00c263d38d1f28d8. Isolated guest private TLS/default deny/key-only SSH verified. Actual VPN/MFA/IPv6 forwarding/approved NTP remain separate; NTP was unsynchronized.",
+      "historical_status": "NOT TESTED"
     },
     {
       "id": "Real-VPN-MFA-time-update-policy",
@@ -46,8 +50,9 @@
     },
     {
       "id": "ClamAV-engine-acceptance",
-      "status": "NOT TESTED",
-      "action": "Install actual clamd, safe EICAR/test definitions, application upload/quarantine/audit/approval, unavailable/timeout/restart; no live malware"
+      "status": "PASS",
+      "action": "Executed successfully in NOC119 run730 at 60a0a34260f70fac8c7b5e9e00c263d38d1f28d8. Actual safe EICAR engine/fault/quarantine/recovery tests; current production definitions/deployment NOT verified.",
+      "historical_status": "NOT TESTED"
     },
     {
       "id": "Operational-malware-definitions",
@@ -72,12 +77,102 @@
     {
       "id": "Consistent15second-performance",
       "status": "FAIL",
-      "action": "Run646/source318c5eb durable named-volume benchmark:18 rounds, min13.350/median14.513/max15.327s,5of18 over15s;6000 samples and receipts preserved per1000-device invocation. Artifact14597320450 SHA256bdcd66d2064f61e29a266c7ee901819a950fe71853f79a93c759ebce6ca9a558. Final-source reruns do not waive this evidence."
+      "action": "Final NOC119 runs729/730:36durable1000-device rounds min9.976/median12.301/max15.312s,3over15;6000 samples and unique receipts per invocation. Earlier failed measurements preserved in historical_snapshot. NOC120 targeted optimization/new measurements do not erase failures."
     },
     {
       "id": "Final-regression-CI",
-      "status": "NOT TESTED",
-      "action": "All existing9jobs plus required independent VM job; new engine tests and explicit bounded benchmarks; no assertion bypass"
+      "status": "PASS",
+      "action": "Executed successfully in NOC119 run730 at 60a0a34260f70fac8c7b5e9e00c263d38d1f28d8. All10jobs SUCCESS; this does not assert production GO.",
+      "historical_status": "NOT TESTED"
     }
-  ]
+  ],
+  "historical_snapshot": {
+    "format": 1,
+    "decision": "NO-GO",
+    "base_commit": "2370f4eec42c8198e197c0cc96e5b570b26a3239",
+    "execution_policy": "Pending entries are not PASS. Final source SHA, exact artifacts, all job conclusions and terminal execution matrix are recorded in the stacked draft PR ledger; this conservative source snapshot cannot authorize a release.",
+    "rows": [
+      {
+        "id": "Vendor-native-risk",
+        "status": "BLOCKED",
+        "action": "Canonical still vulnerable/evaluation/ignored for SQLite, Expat, ACL and util-linux; no supported Noble fix inferred from priority or missing scanner row"
+      },
+      {
+        "id": "Fresh-container-evidence",
+        "status": "NOT TESTED",
+        "action": "Rebuild and retain full Trivy/SPDX/provenance/native versions and exact installed-image reports on final source"
+      },
+      {
+        "id": "Signed-recovery-evidence-capture",
+        "status": "PASS",
+        "action": "Six local real Ed25519 tests preserve exact signed manifest, signature, public key and complete evidence; reject tampering/missing files/independent-key mismatch"
+      },
+      {
+        "id": "Independent-Ubuntu-boot",
+        "status": "NOT TESTED",
+        "action": "Two separate QEMU Ubuntu24.04 roots/kernels; pinned cloud image checksum; actual installer and reboot verification; preserve environment failure if unavailable"
+      },
+      {
+        "id": "Independent-host-recovery",
+        "status": "NOT TESTED",
+        "action": "Source powered off, separate receiver root and daemon; signed synthetic recovery attestation and separately supplied fingerprint; wrong/missing keys and damaged/incomplete artifacts rejected"
+      },
+      {
+        "id": "Independent-offsite-failure-domain",
+        "status": "BLOCKED",
+        "action": "Two guests share a CI hypervisor; real off-site backup storage and independent physical/site disaster recovery remain operator acceptance"
+      },
+      {
+        "id": "Host-security",
+        "status": "NOT TESTED",
+        "action": "Verify guest default-deny in/out, key-only SSH, private TLS, permissions and reboot; no actual VPN/MFA claim"
+      },
+      {
+        "id": "Real-VPN-MFA-time-update-policy",
+        "status": "BLOCKED",
+        "action": "Independent operator acceptance of actual VPN identities, MFA, SSH administration, approved NTP and update policy"
+      },
+      {
+        "id": "ClamAV-engine-acceptance",
+        "status": "NOT TESTED",
+        "action": "Install actual clamd, safe EICAR/test definitions, application upload/quarantine/audit/approval, unavailable/timeout/restart; no live malware"
+      },
+      {
+        "id": "Operational-malware-definitions",
+        "status": "BLOCKED",
+        "action": "Pilot scanner deployment and current authenticated production definition-update policy still require acceptance; test signature DB is not production protection"
+      },
+      {
+        "id": "Production-signing-publication",
+        "status": "BLOCKED",
+        "action": "No production key or approval; independent registry RepoDigests, complete reviewed reports and separately trusted signing custody required"
+      },
+      {
+        "id": "Redis-and-dependency-legal-review",
+        "status": "BLOCKED",
+        "action": "Redis7.4.12 RSALv2 or SSPLv1; unknown/custom third-party licenses require independent legal/operator decision"
+      },
+      {
+        "id": "Read-only-vendor-provider-compatibility",
+        "status": "BLOCKED",
+        "action": "RouterOS6 REST unsupported, model/firmware/OID/native-provider contracts need separately approved device/account verification; mocks only here"
+      },
+      {
+        "id": "Consistent15second-performance",
+        "status": "FAIL",
+        "action": "Run646/source318c5eb durable named-volume benchmark:18 rounds, min13.350/median14.513/max15.327s,5of18 over15s;6000 samples and receipts preserved per1000-device invocation. Artifact14597320450 SHA256bdcd66d2064f61e29a266c7ee901819a950fe71853f79a93c759ebce6ca9a558. Final-source reruns do not waive this evidence."
+      },
+      {
+        "id": "Final-regression-CI",
+        "status": "NOT TESTED",
+        "action": "All existing9jobs plus required independent VM job; new engine tests and explicit bounded benchmarks; no assertion bypass"
+      }
+    ]
+  },
+  "reconciled_against": {
+    "source_commit": "60a0a34260f70fac8c7b5e9e00c263d38d1f28d8",
+    "run_id": 45127023991,
+    "run_number": 730,
+    "pr": 123
+  }
 }

@@ -10,6 +10,9 @@ permissions:
 
 jobs:
   dependency-security:
+    permissions:
+      contents: read
+      actions: read
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -44,6 +47,21 @@ jobs:
           set -e
           node -e 'console.log(JSON.stringify(require(process.env.GITHUB_WORKSPACE+"/npm-audit.json").metadata))'
           exit "$result"
+      - name: Independently hash and reconcile final NOC119 run730 artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -m 700 "$RUNNER_TEMP/noc119-artifacts"
+          python3 - <<'PY' > "$RUNNER_TEMP/noc119-artifact-ids"
+          import json
+          data=json.load(open('docs/release/NOC-120/NOC-119-EVIDENCE.json'))
+          assert data['repository']=='treichhart1/nwo-noc' and data['run_id']==45127023991
+          for item in data['artifacts']: print(item['id'])
+          PY
+          while read -r artifact; do
+            gh api "repos/treichhart1/nwo-noc/actions/artifacts/$artifact/zip" > "$RUNNER_TEMP/noc119-artifacts/$artifact.zip"
+          done < "$RUNNER_TEMP/noc119-artifact-ids"
+          python3 scripts/release/reconcile_evidence.py --directory "$RUNNER_TEMP/noc119-artifacts" --output noc119-reconciled-evidence.json
       - name: Retain source dependency inventory
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: always()
@@ -56,6 +74,7 @@ jobs:
             npm-dependency-chain.json
             npm-picomatch-explain.json
             npm-lock-runtime.json
+            noc119-reconciled-evidence.json
   frontend:
     runs-on: ubuntu-24.04
     defaults:
@@ -425,8 +444,25 @@ jobs:
         run: docker compose build
       - name: Record native and application image vulnerability and license evidence
         run: |
-          docker compose pull redis
+          docker image inspect noc120-redis:rc >/dev/null
           python3 scripts/release/image_security.py --output image-security-evidence $(docker compose config --images | sort -u)
+      - name: Retain source-specific native vulnerability review details
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          rows=[]
+          for path in sorted(Path('image-security-evidence').glob('image-*.json')):
+              doc=json.loads(path.read_text())
+              for result in doc.get('Results',[]):
+                  for item in result.get('Vulnerabilities',[]) or []:
+                      rows.append({'image_id':doc['Metadata']['ImageID'],'cve':item['VulnerabilityID'],
+                          'package':item.get('PkgName'),'installed':item.get('InstalledVersion'),
+                          'fixed':item.get('FixedVersion'),'status':item.get('Status'),'severity':item['Severity'],
+                          'source':item.get('DataSource',{}).get('ID')})
+          Path('image-security-evidence/native-review.json').write_text(json.dumps(rows,indent=2)+'\n')
+          print(json.dumps({'native_review':rows}))
+          PY
       - name: Export full baseline and candidate image SPDX inventories
         run: |
           python3 scripts/release/image_sbom.py baseline-image-security-evidence
@@ -437,7 +473,7 @@ jobs:
       - name: Record database helper and Redis runtime compatibility metadata
         run: |
           docker run --rm --read-only --network none --entrypoint sh noc117-postgres:rc -c 'postgres --version; gosu --version; gosu postgres id' > image-security-evidence/postgres-runtime.txt
-          docker run --rm --read-only --network none --entrypoint sh redis:7-alpine@sha256:7f7d30b7fdd09467bac58198a1f166dd69789d348d4fe859cccb20e0cf287fbe -c 'redis-server --version; redis-cli --version' > image-security-evidence/redis-runtime.txt
+          docker run --rm --read-only --network none --entrypoint sh noc120-redis:rc -c 'redis-server --version; redis-cli --version; id redis; apk info -v libcrypto3 libssl3 zlib' > image-security-evidence/redis-runtime.txt
       - name: Bind unsigned build provenance to source inputs and retained reports
         run: python3 scripts/release/build_provenance.py image-security-evidence
       - name: Retain image security findings (not release approval)
@@ -491,6 +527,9 @@ jobs:
           docker build -t noc113-backend:base backend
           docker build -t noc113-frontend:base frontend
           docker build -t noc117-postgres:rc -f deploy/Dockerfile.postgres .
+          docker build -t noc120-redis:rc -f deploy/Dockerfile.redis .
+      - name: Verify old Redis7 data and queues survive supported-library upgrade and restart
+        run: python3 tests/installer/redis_upgrade.py --execute-disposable-test
       - name: Reject temporary PostgreSQL initialization servers using actual deployment health checks
         run: |
           sudo apt-get install -y --no-install-recommends python3-yaml
@@ -574,6 +613,7 @@ jobs:
           docker build -t noc113-backend:base backend
           docker build -t noc113-frontend:base frontend
           docker build -t noc117-postgres:rc -f deploy/Dockerfile.postgres .
+          docker build -t noc120-redis:rc -f deploy/Dockerfile.redis .
       - name: Execute separate Ubuntu kernels, reboot and authenticated recovery
         run: python3 tests/installer/hypervisor_launch.py --execute-disposable-vms --work "$RUNNER_TEMP/noc119-vms"
       - name: Preserve sanitized VM evidence only
@@ -647,6 +687,7 @@ jobs:
           docker build -t noc84-backend:rc backend
           docker build -t noc84-frontend:rc frontend
           docker build -t noc117-postgres:rc -f deploy/Dockerfile.postgres .
+          docker build -t noc120-redis:rc -f deploy/Dockerfile.redis .
       - name: Verify backend native geospatial runtime without network access
         run: docker run --rm --network none -e SECRET_KEY=ci-native-runtime-secret-key-ci-native-runtime -e ADMIN_PASSWORD=CI-password-only -e DATABASE_URL=postgresql+psycopg://synthetic:synthetic@127.0.0.1/nwo_noc --entrypoint python noc84-backend:rc -c "import app.main; import rasterio; import pyproj; import laspy; print('Native geospatial backend imports passed')"
       - name: Rehearse Ubuntu installation in a fresh userspace container

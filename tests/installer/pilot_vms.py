@@ -211,7 +211,7 @@ def main():
         run(['docker','pull',redis])
         images=work/'images.tar'
         redis_id=run(['docker','image','inspect','--format','{{.Id}}',redis]).stdout.decode().strip()
-        with images.open('xb') as out:run(['docker','save','noc113-backend:base','noc113-frontend:base','noc117-postgres:rc',redis_id],output=out)
+        with images.open('xb') as out:run(['docker','save','noc113-backend:base','noc113-frontend:base','noc117-postgres:rc','noc120-redis:rc',redis_id],output=out)
         phase('source-kernel-boot-and-pinned-ssh')
         report['acceleration']='kvm' if os.access('/dev/kvm',os.R_OK|os.W_OK) else 'tcg'
         sender=VM(work,'noc119-source',22221,work/'ubuntu.img',key,cpu_model='qemu64');guests.append(sender)

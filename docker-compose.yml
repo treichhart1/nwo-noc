@@ -16,7 +16,8 @@ services:
       retries: 10
 
   redis:
-    image: redis:7-alpine@sha256:7f7d30b7fdd09467bac58198a1f166dd69789d348d4fe859cccb20e0cf287fbe
+    image: noc120-redis:rc
+    build: {context: ., dockerfile: deploy/Dockerfile.redis}
     restart: unless-stopped
     command: redis-server --appendonly yes
     volumes:

@@ -303,7 +303,7 @@ def execute(
                 replayed=replayed,
             )
             db.add(receipt)
-            process(db, row.device_id, now=completed, policy=policy)
+            alerts = process(db, row.device_id, now=completed, policy=policy)
             if code == "success":
                 row.successes += 1
                 row.failures = 0
@@ -331,6 +331,7 @@ def execute(
                     )
                 ),
                 now=completed,
+                cache=alerts,
                 category="monitoring",
                 severity="warning",
                 evidence={
@@ -442,7 +443,7 @@ def fail(db, row, code, now, policy, duration=None):
         {"code": code, "consecutive_failures": row.failures},
     )
     poll_audit(db, row, code, now)
-    process(db, row.device_id, now=now, policy=policy)
+    alerts = process(db, row.device_id, now=now, policy=policy)
     update_alert(
         db,
         row.device_id,
@@ -450,6 +451,7 @@ def fail(db, row, code, now, policy, duration=None):
         "collection_failure",
         "active" if row.failures >= policy.consecutive else "unknown",
         now=now,
+        cache=alerts,
         category="monitoring",
         evidence={"code": code, "root_cause": "collection_failure_not_RF_outage"},
     )

@@ -33,6 +33,8 @@ def validate_image_source(source, approved):
         "${NOC_FRONTEND_IMAGE:-noc84-frontend:rc}",
         "${NOC_POSTGRES_IMAGE:-noc117-postgres:rc}",
         "noc117-postgres:rc",
+        "${NOC_REDIS_IMAGE:-noc120-redis:rc}",
+        "noc120-redis:rc",
     }
     for reference in re.findall(r"(?m)^\s*(?:FROM|image:)\s+(\S+)", source):
         if reference in local_builds:
@@ -86,6 +88,7 @@ def validate(root=ROOT):
         "examples/signup/compose.yml",
         "backend/Dockerfile",
         "deploy/Dockerfile.postgres",
+        "deploy/Dockerfile.redis",
         "frontend/Dockerfile",
         "docker-compose.yml",
         "deploy/compose.isolated.yml",

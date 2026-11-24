@@ -241,7 +241,7 @@ def test_docker29_omitted_default_user_preserves_application_identity_guards(mon
     if value=='omitted':configs[role]['Config'].pop('User')
     else:configs[role]['Config']['User']=value
     locks=json.loads((ROOT/'deploy/image-lock.json').read_text())
-    monkeypatch.setattr(manager,'git',lambda *args:json.dumps(locks))
+    monkeypatch.setattr(manager,'git',lambda *args:'' if args[0]=='ls-tree' else json.dumps(locks))
     host=SimpleNamespace(image=lambda ref:configs.get(ref,{}))
     approved={'commit':revision,'images':{k:k for k in configs}}
     if accepted:

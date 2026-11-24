@@ -334,6 +334,15 @@ class Host:
                     f"expected_revision={a['commit']} observed_revision={safe_revision} "
                     f"expected_uid={user!r} observed_uid={safe_user!r}"
                 )
+        # Historical source retains its upstream lock. New source requires the
+        # signed derivative identity plus source/base/server/ownership checks.
+        hardened_redis = bool(git("ls-tree", "--name-only", a["commit"], "deploy/Dockerfile.redis"))
+        if hardened_redis:
+            if not a["images"].get("redis"):
+                raise Reject("Approved source-bound hardened Redis image required")
+            info = self.image(a["images"]["redis"])
+            if info["Config"].get("Labels", {}).get("org.opencontainers.image.revision") != a["commit"] or info["Config"].get("User", "") != "":
+                raise Reject("Approved Redis image must match source revision and vendor entrypoint identity")
         locks = json.loads(git("show", a["commit"] + ":deploy/image-lock.json"))[
             "images"
         ]
@@ -342,6 +351,16 @@ class Host:
             ("redis", "redis:7-alpine"),
         ):
             if key == "postgres" and approved_postgres:
+                continue
+            if key == "redis" and hardened_redis:
+                info = self.image(a["images"][key])
+                labels = info["Config"].get("Labels", {})
+                if labels.get("com.nwo-noc.redis.base") != locks[tag] or labels.get("com.nwo-noc.redis.version") != "7.4.12":
+                    raise Reject("Hardened Redis must preserve the exact source base and Redis7.4.12 contract")
+                run([*DOCKER, "run", "--rm", "--network", "none", "--read-only",
+                     "--cap-drop", "ALL", "--security-opt", "no-new-privileges",
+                     "--entrypoint", "sh", a["images"][key], "/usr/local/bin/noc-redis-verify"],
+                    label="Hardened Redis version, ownership and supported-library preflight")
                 continue
             if key == "redis" and a["images"].get(key) and a["images"][key] != locks[tag]:
                 raise Reject("Approved Redis image must match the exact source lock")

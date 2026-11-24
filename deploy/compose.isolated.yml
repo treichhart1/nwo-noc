@@ -24,7 +24,7 @@ services:
       timeout: 3s
       retries: 30
   redis:
-    image: ${NOC_REDIS_IMAGE:-redis:7-alpine@sha256:7f7d30b7fdd09467bac58198a1f166dd69789d348d4fe859cccb20e0cf287fbe}
+    image: ${NOC_REDIS_IMAGE:-noc120-redis:rc}
     networks: [isolated]
     command: [redis-server, --appendonly, 'yes']
     volumes: [redis_data:/data]
