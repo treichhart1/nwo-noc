@@ -1,0 +1,47 @@
+{
+  "format": 1,
+  "base_commit": "e52cc1354a0dd3cf77905dc5179da17704ef3af2",
+  "decision": "NO-GO",
+  "scope": "Code candidate; no operational acceptance or live authorization",
+  "blockers": [
+    {
+      "id": "A111-12",
+      "status": "FAIL",
+      "evidence": "NOC120 full durable I/O72rounds:12over15seconds, min10.066 median12.5205 max15.985; new optimization NOT TESTED on durable CI until final PR ledger",
+      "candidate_status": "NOT TESTED",
+      "owner": "NOC121 performance validation"
+    },
+    {
+      "id": "Vendor-native-security",
+      "status": "BLOCKED",
+      "evidence": "Canonical Noble SQLite119373, Expat113351/117610 and util-linux76642 remain vulnerable; ACL54369 ignored backport too intrusive",
+      "owner": "Vendor updates and operator security review"
+    },
+    {
+      "id": "Redis-licensing",
+      "status": "BLOCKED",
+      "owner": "Independent legal/operator approval"
+    },
+    {
+      "id": "Production-signing",
+      "status": "BLOCKED",
+      "owner": "Registry digests, trusted Ed25519 key custody, signed manifest and operator publication approval"
+    },
+    {
+      "id": "Actual-server-acceptance",
+      "status": "BLOCKED",
+      "owner": "Operator VPN/MFA/NTP/SSH/firewall/TLS/scanner/current definitions and independent offsite restore"
+    },
+    {
+      "id": "Live-collector-acceptance",
+      "status": "BLOCKED",
+      "owner": "Separately approved exact model/firmware/permissions/rate/unit acceptance; synthetic tests do not certify compatibility"
+    },
+    {
+      "id": "Wave-secure-transport-and-MIB",
+      "status": "BLOCKED",
+      "evidence": "Vendor SNMP/MIB revisions documented, but no approved SNMPv3 contract or downloaded/validated per-firmware MIB. Archive reads blocked by proxy403; no community-string fallback.",
+      "owner": "Approved Wave firmware/MIB and secure read-only transport contract"
+    }
+  ]
+}

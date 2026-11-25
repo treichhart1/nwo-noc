@@ -772,3 +772,39 @@ def test_collector_reuses_same_transaction_alert_locks(postgres_db, isolated, tm
     finally:
         event.remove(bind, "before_cursor_execute", track)
     assert len(statements) == 1 and "FOR UPDATE" in statements[0]
+
+
+@pytest.mark.parametrize("mode", ["normal", "weak"])
+def test_poll_keeps_inventory_identity_and_advances_once(postgres_db, isolated, tmp_path, mode):
+    """Cold identity map plus autoflush reproduces the redundant reads/writes."""
+    from sqlalchemy import event
+
+    db = postgres_db
+    _, job = setup(db, mode)
+    pair = claim(db, "query-regression", now=NOW, limit=1)[0]
+    db.flush()
+    db.expunge_all()
+    previous_autoflush = db.autoflush
+    db.autoflush = True
+    statements = []
+
+    def track(conn, cursor, statement, params, context, executemany):
+        statements.append(statement.lower())
+
+    bind = db.get_bind()
+    event.listen(bind, "before_cursor_execute", track)
+    try:
+        result = execute(db, *pair, now=NOW, spool_dir=tmp_path)
+        db.flush()
+    finally:
+        event.remove(bind, "before_cursor_execute", track)
+        db.autoflush = previous_autoflush
+    assert result["result"] == "success"
+    assert sum("devices." in s and s.lstrip().startswith("select") for s in statements) == 1
+    assert sum(s.lstrip().startswith("update") and "monitoring_jobs" in s.split(" set ")[0] for s in statements) == 1
+    assert sum("monitoring_attempts." in s and s.lstrip().startswith("select") for s in statements) == 1
+    saved = db.get(MonitoringJob, pair[0])
+    assert saved.state == "ready" and saved.lease_token is None and saved.successes == 1
+    assert db.scalar(select(func.count(MonitoringReceipt.id))) == 1
+    assert db.scalar(select(func.count(TelemetrySample.id))) == 1
+    assert spool.count(tmp_path) == 1  # Caller still must commit before durable acknowledgement.

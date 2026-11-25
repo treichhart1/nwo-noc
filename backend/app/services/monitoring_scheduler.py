@@ -246,6 +246,13 @@ def execute(
             "spool_key": key,
             "spool_slot": slot,
         }
+    # Keep the same inventory object alive through collection/staging. SQLAlchemy's
+    # identity map uses weak references; releasing the collector's only reference
+    # caused a second SELECT for the same device in this transaction.
+    device = db.get(Device, row.device_id)
+    # Read before mutating job state: autoflush-enabled callers otherwise flush
+    # partial success fields, then UPDATE the job again when advancing its lease.
+    attempt = db.get(Attempt, token)
     started = time.perf_counter()
     replayed = False
     try:
@@ -271,7 +278,7 @@ def execute(
         if crash_after_spool:
             raise SystemExit("Simulated worker interruption after durable handoff")
         with db.begin_nested():
-            sample = stage(db, db.get(Device, row.device_id), delivery.observation)
+            sample = stage(db, device, delivery.observation)
             if sample is None:
                 raise IntegrationFailure("invalid_response")
             completed = now if frozen else datetime.now(timezone.utc)
@@ -339,7 +346,6 @@ def execute(
                     "root_cause": "collection_or_data_quality_not_RF_outage",
                 },
             )
-            attempt = db.get(Attempt, token)
             attempt.result = code
             attempt.finished_at = completed
             attempt.duration_ms = (time.perf_counter() - started) * 1000

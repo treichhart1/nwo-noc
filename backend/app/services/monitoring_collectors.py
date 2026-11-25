@@ -399,34 +399,46 @@ def collect(db, job, now):
             raise IntegrationFailure("disabled")
         from app.integrations.mikrotik import normalize, require_routeros7
 
-        policy = ReadPolicy(
-            settings.mikrotik_base_url,
-            tuple(settings.mikrotik_allowed_origins.split(",")),
-            MIKROTIK_PATHS,
-            True,
-            True,
-        )
-        with ReadClient(
-            policy,
-            auth=(settings.mikrotik_username, secret(settings.mikrotik_password)),
-        ) as client:
-            raw = {}
-            for k, path in [
-                ("identity", "/rest/system/identity"),
-                ("resource", "/rest/system/resource"),
-                ("interfaces", "/rest/interface"),
-                ("health", "/rest/system/health"),
-                ("neighbors", "/rest/routing/ospf/neighbor"),
-            ]:
-                try:
-                    raw[k] = client.request(path)[0]
-                except IntegrationFailure as exc:
-                    if k in {"health", "neighbors"} and exc.code == "unsupported":
-                        raw[k] = []
-                    else:
-                        raise
-        require_routeros7(raw["resource"])
-        values = normalize(raw, (settings.mikrotik_password,))
+        if settings.mikrotik_native_config_file:
+            from app.integrations.mikrotik_native import NativeConfig, NativeCredentials, NativeClient
+            from app.radio_poll import private_json
+            cfg = NativeConfig.model_validate(private_json(settings.mikrotik_native_config_file))
+            if (cfg.device_id != d.id or cfg.address != d.ip_address
+                    or job.interval_seconds < cfg.min_interval_seconds
+                    or (d.vendor or "").casefold() != "mikrotik"):
+                raise IntegrationFailure("endpoint_denied")
+            cfg.validate_connection()
+            credentials = NativeCredentials.model_validate(private_json(cfg.credentials_file, max_bytes=8192))
+            values = NativeClient(cfg, credentials).collect()
+        else:
+            policy = ReadPolicy(
+                settings.mikrotik_base_url,
+                tuple(settings.mikrotik_allowed_origins.split(",")),
+                MIKROTIK_PATHS,
+                True,
+                True,
+            )
+            with ReadClient(
+                policy,
+                auth=(settings.mikrotik_username, secret(settings.mikrotik_password)),
+            ) as client:
+                raw = {}
+                for k, path in [
+                    ("identity", "/rest/system/identity"),
+                    ("resource", "/rest/system/resource"),
+                    ("interfaces", "/rest/interface"),
+                    ("health", "/rest/system/health"),
+                    ("neighbors", "/rest/routing/ospf/neighbor"),
+                ]:
+                    try:
+                        raw[k] = client.request(path)[0]
+                    except IntegrationFailure as exc:
+                        if k in {"health", "neighbors"} and exc.code == "unsupported":
+                            raw[k] = []
+                        else:
+                            raise
+            require_routeros7(raw["resource"])
+            values = normalize(raw, (settings.mikrotik_password,))
         fields = {
             k: values[k]
             for k in ("cpu_percent", "ram_percent", "uptime_seconds", "temperature_c")

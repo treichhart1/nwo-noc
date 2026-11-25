@@ -112,6 +112,7 @@ class Settings(BaseSettings):
     integrations_admin_approved: bool = False
     mikrotik_enabled: bool = False
     mikrotik_base_url: str = ""
+    mikrotik_native_config_file: str = Field(default="",repr=False,exclude=True)
     mikrotik_allowed_origins: str = ""
     mikrotik_username: str = ""
     mikrotik_password: SecretStr = SecretStr("")
@@ -185,7 +186,7 @@ class Settings(BaseSettings):
         if self.synthetic_monitoring_enabled and (not self.offline_mode or self.app_env != "staging"):
             raise ValueError("Synthetic monitoring requires offline staging")
         if self.offline_mode:
-            if self.uisp_base_url or self.uisp_token.get_secret_value() or self.uisp_enabled or self.mikrotik_enabled or self.mikrotik_base_url or self.mikrotik_password.get_secret_value() or self.rf_collection_enabled or self.rf_history_pruning_enabled:
+            if self.uisp_base_url or self.uisp_token.get_secret_value() or self.uisp_enabled or self.mikrotik_enabled or self.mikrotik_native_config_file or self.mikrotik_base_url or self.mikrotik_password.get_secret_value() or self.rf_collection_enabled or self.rf_history_pruning_enabled:
                 raise ValueError("OFFLINE_MODE requires empty UISP settings and RF collection/pruning disabled")
         if self.uisp_enabled or self.mikrotik_enabled:
             from app.integrations.read_only import ReadPolicy, UISP_PATHS, MIKROTIK_PATHS
@@ -196,9 +197,16 @@ class Settings(BaseSettings):
                     raise ValueError("UISP requires TLS verification and a read-only token")
                 ReadPolicy(self.uisp_base_url,tuple(self.uisp_allowed_origins.split(',')),UISP_PATHS,True,True).validate()
             if self.mikrotik_enabled:
-                if not self.mikrotik_username or not self.mikrotik_password.get_secret_value() or self.mikrotik_device_id is None:
-                    raise ValueError("MikroTik requires read-only credentials and an explicit inventory device ID")
-                ReadPolicy(self.mikrotik_base_url,tuple(self.mikrotik_allowed_origins.split(',')),MIKROTIK_PATHS,True,True).validate()
+                if self.mikrotik_native_config_file:
+                    if (not self.rf_scheduler_enabled or self.mikrotik_device_id is None
+                            or not self.mikrotik_native_config_file.startswith("/")
+                            or self.mikrotik_base_url or self.mikrotik_allowed_origins
+                            or self.mikrotik_username or self.mikrotik_password.get_secret_value()):
+                        raise ValueError("Native MikroTik requires the durable scheduler, explicit device, private absolute config and no REST credentials")
+                else:
+                    if not self.mikrotik_username or not self.mikrotik_password.get_secret_value() or self.mikrotik_device_id is None:
+                        raise ValueError("MikroTik requires read-only credentials and an explicit inventory device ID")
+                    ReadPolicy(self.mikrotik_base_url,tuple(self.mikrotik_allowed_origins.split(',')),MIKROTIK_PATHS,True,True).validate()
         if self.app_env.lower() == "production":
             if not self.uisp_verify_tls:
                 raise ValueError("Production requires UISP TLS certificate verification")
