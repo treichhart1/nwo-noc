@@ -7,7 +7,7 @@
     {
       "id": "A111-12",
       "status": "FAIL",
-      "evidence": "NOC120 full durable I/O72rounds:12over15seconds, min10.066 median12.5205 max15.985; new optimization NOT TESTED on durable CI until final PR ledger",
+      "evidence": "Baseline72full-durable rounds12over15s; initial833065f optimization36rounds4over15s/max16.808, with fsync/commit tails up to401ms. Joined indexed poll snapshot and strict gate pending new CI.",
       "candidate_status": "NOT TESTED",
       "owner": "NOC121 performance validation"
     },

@@ -6,6 +6,7 @@ from pathlib import Path
 import statistics
 import subprocess
 import uuid
+import math
 
 
 def command(args, *, check=True):
@@ -93,7 +94,64 @@ def measure(backend, postgres, output):
         output.write_text(json.dumps(report,indent=2)+'\n')
         print(json.dumps(report),flush=True)
 
+    return report
+
+
+def require_acceptance(report):
+    """Release gate: recompute the complete original profile, never trust a label."""
+    limits = {'backend_cpus':2,'backend_memory_mib':768,'database_cpus':2,
+              'database_memory_mib':1024,'polling_threads':8,'pool_size':10}
+    if report.get('limits') != limits:
+        raise ValueError('Benchmark resource profile changed; evidence retained')
+    filesystems = report.get('volume_filesystems', {})
+    if set(filesystems) != {'postgres', 'monitoring_outbox'} or any(
+            not isinstance(fs, str) or not fs or fs in {'tmpfs', 'ramfs'}
+            for fs in filesystems.values()):
+        raise ValueError('Both durable volume filesystems must be verified')
+    settings = set(report.get('postgres_settings', []))
+    if not {'fsync=on','full_page_writes=on','synchronous_commit=on'} <= settings:
+        raise ValueError('PostgreSQL durability evidence is incomplete')
+    records = report.get('records', [])
+    expected = {(repeat, size) for repeat in (1,2,3) for size in (250,500,1000)}
+    identities = [(row.get('repeat'), row.get('devices')) for row in records]
+    if len(records) != 9 or len(set(identities)) != 9 or set(identities) != expected:
+        raise ValueError('All independent invocations and workload sizes required')
+    times = []
+    for row in records:
+        size, rounds = row['devices'], row.get('rounds', [])
+        if (row.get('spool_parent') != 'explicit_private_volume'
+                or row.get('concurrency') != 8 or row.get('sites') != 40
+                or row.get('samples_and_unique_receipts') != size*6
+                or len(rounds) != 6 or [r.get('round') for r in rounds] != list(range(1,7))):
+            raise ValueError('Incomplete durable sample/receipt/round evidence')
+        for result in rounds:
+            seconds = result.get('elapsed_seconds')
+            if (isinstance(seconds, bool) or not isinstance(seconds, (float, int))
+                    or not math.isfinite(seconds) or seconds <= 0
+                    or result.get('samples') != size):
+                raise ValueError('Invalid timing or missing samples')
+            if result.get('phase_profile_inclusive', {}).get('durability.fsync', {}).get('calls', 0) < size*3:
+                raise ValueError('File and directory fsync evidence is incomplete')
+            if size == 1000:
+                times.append(seconds)
+    if (len(times) != 18 or report.get('measured_rounds') != 18
+            or report.get('target_seconds') != 15 or report.get('target_status') != 'PASS'
+            or max(times) > 15):
+        raise ValueError('Full durable 1000-device 15-second target failed; complete evidence retained')
+
+
+def main(argv=None):
+    p=argparse.ArgumentParser(description=__doc__)
+    p.add_argument('--backend',required=True)
+    p.add_argument('--postgres',required=True)
+    p.add_argument('--output',type=Path,required=True)
+    p.add_argument('--require-target',action='store_true',
+                   help='Fail after retaining evidence unless every full-durable round meets the unchanged target')
+    a=p.parse_args(argv)
+    report=measure(a.backend,a.postgres,a.output)
+    if a.require_target:
+        require_acceptance(report)
+
 
 if __name__=='__main__':
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--backend',required=True);p.add_argument('--postgres',required=True);p.add_argument('--output',type=Path,required=True)
-    a=p.parse_args();measure(a.backend,a.postgres,a.output)
+    main()

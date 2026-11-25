@@ -803,8 +803,32 @@ def test_poll_keeps_inventory_identity_and_advances_once(postgres_db, isolated, 
     assert sum("devices." in s and s.lstrip().startswith("select") for s in statements) == 1
     assert sum(s.lstrip().startswith("update") and "monitoring_jobs" in s.split(" set ")[0] for s in statements) == 1
     assert sum("monitoring_attempts." in s and s.lstrip().startswith("select") for s in statements) == 1
+    locked = [s for s in statements if s.lstrip().startswith("select") and "monitoring_jobs" in s and "for update" in s]
+    assert len(locked) == 1 and "left outer join" in locked[0]
+    assert "for update of" in locked[0] and "skip locked" in locked[0]
     saved = db.get(MonitoringJob, pair[0])
     assert saved.state == "ready" and saved.lease_token is None and saved.successes == 1
     assert db.scalar(select(func.count(MonitoringReceipt.id))) == 1
     assert db.scalar(select(func.count(TelemetrySample.id))) == 1
     assert spool.count(tmp_path) == 1  # Caller still must commit before durable acknowledgement.
+
+
+def test_locked_snapshot_recognizes_existing_slot_without_recollection(postgres_db, isolated, tmp_path):
+    import uuid
+    db = postgres_db
+    device, job = setup(db)
+    pair = claim(db, "first", now=NOW)[0]
+    first = execute(db, *pair, now=NOW, spool_dir=tmp_path)
+    db.flush()
+    token = str(uuid.uuid4())
+    job.state, job.lease_token, job.slot_at = "leased", token, NOW
+    job.lease_until = NOW + timedelta(seconds=60)
+    db.add(MonitoringAttempt(token=token, job_key=job.key, worker_id="uncertain-ack", started_at=NOW))
+    db.flush()
+    def forbidden(*args): raise AssertionError("existing slot must not be recollected")
+    result = execute(db, job.key, token, now=NOW, spool_dir=tmp_path, collector=forbidden)
+    db.flush()
+    assert result["result"] == "duplicate_receipt" and result["sample_id"] == first["sample_id"]
+    assert db.get(MonitoringAttempt, token).result == "duplicate_receipt"
+    assert db.scalar(select(func.count(MonitoringReceipt.id))) == 1
+    assert db.scalar(select(func.count(TelemetrySample.id))) == 1
