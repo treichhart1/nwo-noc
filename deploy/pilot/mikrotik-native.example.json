@@ -1,0 +1,15 @@
+{
+  "enabled": false,
+  "admin_approved": false,
+  "device_id": 1,
+  "address": "192.0.2.121",
+  "allowed_addresses": [
+    "192.0.2.121"
+  ],
+  "ca_file": "/etc/nwo-noc/integrations/synthetic-router-ca.pem",
+  "credentials_file": "/etc/nwo-noc/integrations/mikrotik-native.credentials.json",
+  "timeout_seconds": 3,
+  "min_interval_seconds": 60,
+  "collect_ospf": false,
+  "temperature_unit": null
+}

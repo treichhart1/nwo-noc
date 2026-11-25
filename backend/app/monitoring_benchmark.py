@@ -1,11 +1,16 @@
 """Real PostgreSQL/concurrent polling benchmark; synthetic transport only."""
 
 import json, time, uuid, tempfile, os
+from contextlib import ExitStack
+from unittest.mock import patch
 from app.services.monitoring_spool import directory as private_spool_directory
 from datetime import datetime, timedelta, timezone
 from sqlalchemy import create_engine, text, select, func, update, event
 from threading import Lock
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, Session
+from app.services.monitoring_profile import PollProfile
+from app.services import monitoring_scheduler as scheduler
+from app.services import monitoring_alerts, monitoring_spool
 from app.core.config import settings
 from app.core.database import Base
 from app.models.entities import (
@@ -43,7 +48,15 @@ def measure(size):
     with engine.begin() as c:
         c.execute(text(f'CREATE SCHEMA "{schema}"'))
     scoped = engine.execution_options(schema_translate_map={None: schema})
-    factory = sessionmaker(scoped)
+    profile = PollProfile()
+
+    class ProfiledSession(Session):
+        def commit(self):
+            with profile.measure('transaction.commit'):
+                return super().commit()
+
+    # Keep the existing benchmark autoflush/defaults and resource profile.
+    factory = sessionmaker(scoped, class_=ProfiledSession)
     base = datetime.now(timezone.utc)
     rounds = []
     # Bounded statement categories only; never SQL text, parameters or credentials.
@@ -57,7 +70,36 @@ def measure(size):
         with sql_lock:
             sql_counts[verb] = sql_counts.get(verb, 0) + 1
 
+    def sql_start(conn, cursor, statement, params, context, executemany):
+        context._noc121_started = time.perf_counter_ns()
+        context._noc121_phase = profile.phase
+
+    def sql_end(conn, cursor, statement, params, context, executemany):
+        verb = statement.lstrip().split(None, 1)[0].upper()
+        if verb not in {'SELECT', 'INSERT', 'UPDATE', 'DELETE', 'SAVEPOINT', 'RELEASE'}:
+            verb = 'OTHER'
+        profile.record('sql.' + context._noc121_phase + '.' + verb,
+                       time.perf_counter_ns() - context._noc121_started)
+
+    instrumentation = ExitStack()
+    for module, name, label in (
+        (scheduler, 'claim', 'scheduler.claim'),
+        (scheduler, 'execute', 'scheduler.execute'),
+        (scheduler, 'stage', 'storage.stage'),
+        (scheduler, 'process', 'alerts.process'),
+        (scheduler, 'vectors', 'alerts.current_vector'),
+        (monitoring_alerts, 'vectors', 'alerts.history_vector'),
+        (monitoring_spool, 'pending', 'outbox.read'),
+        (monitoring_spool, 'put', 'outbox.put'),
+        (monitoring_spool, 'acknowledge', 'outbox.acknowledge'),
+        (monitoring_spool, 'reconcile', 'outbox.reconcile'),
+    ):
+        instrumentation.enter_context(patch.object(module, name, profile.wrap(label, getattr(module, name))))
+    instrumentation.enter_context(patch.object(os, 'fsync', profile.wrap('durability.fsync', os.fsync)))
+    measured_collector = profile.wrap('collector', scheduler.collect)
     event.listen(engine, "before_cursor_execute", count_sql)
+    event.listen(engine, "before_cursor_execute", sql_start)
+    event.listen(engine, "after_cursor_execute", sql_end)
     try:
         Base.metadata.create_all(scoped)
         with factory() as db:
@@ -118,6 +160,7 @@ def measure(size):
                             )
                         )
                         db.commit()
+                profile.reset()
                 sql_before = dict(sql_counts)
                 resources_start = resource_snapshot()
                 started = time.perf_counter()
@@ -125,6 +168,7 @@ def measure(size):
                 while True:
                     r = run_batch(
                         worker_id="benchmark",
+                        collector=measured_collector,
                         session_factory=factory,
                         now=at,
                         spool_dir=root,
@@ -150,6 +194,7 @@ def measure(size):
                         "round": n + 1,
                         "sql_statements": {k: v - sql_before.get(k, 0) for k, v in sql_counts.items()},
                         "samples": accepted,
+                        "phase_profile_inclusive": profile.snapshot(),
                         "elapsed_seconds": round(elapsed, 3),
                         "polls_per_second": round(size / elapsed, 2),
                         "active_alerts": active,
@@ -189,8 +234,10 @@ def measure(size):
                 "collection_max_ms": round(latency[1], 2),
                 "recovery_validation": "three distinct normal samples clear RF condition; virtual 30-second schedule, actual concurrent PostgreSQL processing",
                 "transport": "synthetic 2ms fixture; not real-device capacity or production SLA",
+                "profile_scope": "Concurrent inclusive wall time; nested phases overlap; SQL timings include driver/lock waits, never statements or parameters; original autoflush/resources/durability retained",
             }
     finally:
+        instrumentation.close()
         with engine.begin() as c:
             c.execute(text(f'DROP SCHEMA "{schema}" CASCADE'))
         engine.dispose()

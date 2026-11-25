@@ -1,0 +1,574 @@
+{
+  "format": 1,
+  "executed_code_commit": "668a9b2c9ddb90483971414a0ea8b8586a0a04e8",
+  "executed_tree": "daeb70d2f212df655ffbc176d7d2095bc72d1d39",
+  "scope": "Frozen successful strict synthetic acceptance. Final reporting-only error-classification follow-up and exact delivery commit require terminal PR125 CI; no live/production authorization.",
+  "decision": "NO-GO",
+  "workflows": [
+    {
+      "id": 45532368211,
+      "n": 747,
+      "event": "pull_request",
+      "head_commit": "668a9b2c9ddb90483971414a0ea8b8586a0a04e8",
+      "checkout": "340f8cd6f7a388904449adab4600acecf1aa9ad1",
+      "tree": "daeb70d2f212df655ffbc176d7d2095bc72d1d39",
+      "url": "https://github.com/treichhart1/nwo-noc/actions/runs/45532368211",
+      "jobs": [
+        {
+          "id": 138930560098,
+          "name": "compose-validation",
+          "conclusion": "success"
+        },
+        {
+          "id": 138930560368,
+          "name": "Ubuntu 24.04 approved host package",
+          "conclusion": "success"
+        },
+        {
+          "id": 138930560394,
+          "name": "backend",
+          "conclusion": "success"
+        },
+        {
+          "id": 138930560398,
+          "name": "Ubuntu 24.04 isolated installation and recovery",
+          "conclusion": "success"
+        },
+        {
+          "id": 138930560493,
+          "name": "dependency-security",
+          "conclusion": "success"
+        },
+        {
+          "id": 138930560507,
+          "name": "frontend",
+          "conclusion": "success"
+        },
+        {
+          "id": 138930560517,
+          "name": "database-migrations",
+          "conclusion": "success"
+        },
+        {
+          "id": 138930560621,
+          "name": "rf-postgres-integration",
+          "conclusion": "success"
+        },
+        {
+          "id": 138930967339,
+          "name": "Independent Ubuntu VM reboot and second-host recovery",
+          "conclusion": "success"
+        },
+        {
+          "id": 138937598652,
+          "name": "RF offline release acceptance",
+          "conclusion": "success"
+        }
+      ],
+      "artifacts": [
+        {
+          "id": 14986900266,
+          "name": "independent-pilot-vm-evidence",
+          "size_in_bytes": 457251,
+          "digest": "sha256:9da1865c95890af4073bd56dc67b8dc36d4d0fc3c5189efb13c187ba1e5afdf1",
+          "expired": false,
+          "scope": "GitHub-reported metadata; not independently rehashed locally"
+        },
+        {
+          "id": 14986565134,
+          "name": "pilot-performance-evidence",
+          "size_in_bytes": 22223,
+          "digest": "sha256:ab26a1b8038aacd12b6ebb8709afeb93db5613902df53de44188446b9cd2050e",
+          "expired": false,
+          "scope": "GitHub-reported metadata; not independently rehashed locally"
+        },
+        {
+          "id": 14985732054,
+          "name": "source-dependency-evidence",
+          "size_in_bytes": 14756,
+          "digest": "sha256:6d723831d14ab4ef8b77a0d5e05f800748d12e6516cdf545dea930956a3498dd",
+          "expired": false,
+          "scope": "GitHub-reported metadata; not independently rehashed locally"
+        },
+        {
+          "id": 14985024492,
+          "name": "ubuntu-tested-runtime-security-evidence",
+          "size_in_bytes": 609524,
+          "digest": "sha256:5d42d4174612b25e826a3f2e040f394f71fabf70fbccbf85e673843617c3109d",
+          "expired": false,
+          "scope": "GitHub-reported metadata; not independently rehashed locally"
+        },
+        {
+          "id": 14984934127,
+          "name": "native-image-security-evidence",
+          "size_in_bytes": 528045,
+          "digest": "sha256:df23102696e96ff105404089315e3eeaf61250000b3c38939ab41c2b807bbe35",
+          "expired": false,
+          "scope": "GitHub-reported metadata; not independently rehashed locally"
+        }
+      ]
+    },
+    {
+      "id": 45532362479,
+      "n": 746,
+      "event": "push",
+      "head_commit": "668a9b2c9ddb90483971414a0ea8b8586a0a04e8",
+      "checkout": "668a9b2c9ddb90483971414a0ea8b8586a0a04e8",
+      "tree": "daeb70d2f212df655ffbc176d7d2095bc72d1d39",
+      "url": "https://github.com/treichhart1/nwo-noc/actions/runs/45532362479",
+      "jobs": [
+        {
+          "id": 138930542137,
+          "name": "compose-validation",
+          "conclusion": "success"
+        },
+        {
+          "id": 138930542351,
+          "name": "dependency-security",
+          "conclusion": "success"
+        },
+        {
+          "id": 138930542361,
+          "name": "Ubuntu 24.04 isolated installation and recovery",
+          "conclusion": "success"
+        },
+        {
+          "id": 138930542374,
+          "name": "frontend",
+          "conclusion": "success"
+        },
+        {
+          "id": 138930542435,
+          "name": "Ubuntu 24.04 approved host package",
+          "conclusion": "success"
+        },
+        {
+          "id": 138930542476,
+          "name": "backend",
+          "conclusion": "success"
+        },
+        {
+          "id": 138930542598,
+          "name": "database-migrations",
+          "conclusion": "success"
+        },
+        {
+          "id": 138930542634,
+          "name": "rf-postgres-integration",
+          "conclusion": "success"
+        },
+        {
+          "id": 138930906036,
+          "name": "Independent Ubuntu VM reboot and second-host recovery",
+          "conclusion": "success"
+        },
+        {
+          "id": 138939837495,
+          "name": "RF offline release acceptance",
+          "conclusion": "success"
+        }
+      ],
+      "artifacts": [
+        {
+          "id": 14986550826,
+          "name": "independent-pilot-vm-evidence",
+          "size_in_bytes": 457424,
+          "digest": "sha256:9c95e1ba027c7b83d29a3aafe659273e789741ccb9a699a8f867bf7049668e8f",
+          "expired": false,
+          "scope": "GitHub-reported metadata; not independently rehashed locally"
+        },
+        {
+          "id": 14986435288,
+          "name": "pilot-performance-evidence",
+          "size_in_bytes": 22228,
+          "digest": "sha256:27790df450e2673a93d439ccdc67e7942b6812e88c31d90c9b2aaf9843f7c900",
+          "expired": false,
+          "scope": "GitHub-reported metadata; not independently rehashed locally"
+        },
+        {
+          "id": 14985293031,
+          "name": "source-dependency-evidence",
+          "size_in_bytes": 14756,
+          "digest": "sha256:dbbadc89e42db5da30ca10076d9a97c16345637a748c50a7b390eeee74e7516f",
+          "expired": false,
+          "scope": "GitHub-reported metadata; not independently rehashed locally"
+        },
+        {
+          "id": 14985189216,
+          "name": "ubuntu-tested-runtime-security-evidence",
+          "size_in_bytes": 609764,
+          "digest": "sha256:5e7525a79faa48eace4b7c0a6ab92d68a57d4c5161edb66e31746a4d60fe03af",
+          "expired": false,
+          "scope": "GitHub-reported metadata; not independently rehashed locally"
+        },
+        {
+          "id": 14984414129,
+          "name": "native-image-security-evidence",
+          "size_in_bytes": 528075,
+          "digest": "sha256:e44f605c5db5f380b6f310c9c363d0094acef607a82054b7409570ee7335f44d",
+          "expired": false,
+          "scope": "GitHub-reported metadata; not independently rehashed locally"
+        }
+      ]
+    }
+  ],
+  "performance": {
+    "status": "PASS",
+    "scope": "Documented synthetic full durable profile only; actual hardware/live SLA unverified",
+    "summary": {
+      "n": 36,
+      "min": 8.879,
+      "median": 9.8535,
+      "max": 10.672,
+      "over15": 0,
+      "counts": [
+        6000,
+        6000,
+        6000,
+        6000,
+        6000,
+        6000
+      ],
+      "health_ms": [
+        28.58,
+        28.99,
+        31.21,
+        28.89,
+        31.12,
+        31
+      ]
+    },
+    "resources": {
+      "peakRSSKiB": 138988,
+      "rssKiB": [
+        127968,
+        132404
+      ],
+      "cpuOneCorePercent": [
+        114.58,
+        116.06
+      ]
+    },
+    "raw": "AFTER-PERFORMANCE.json",
+    "historical_failed_profiles": [
+      "BASELINE-PERFORMANCE.json",
+      "FIRST-ITERATION-PERFORMANCE.json"
+    ],
+    "normal_round_sql": {
+      "before": {
+        "SELECT": 11834,
+        "UPDATE": 3032
+      },
+      "after": {
+        "SELECT": 8834,
+        "UPDATE": 2032
+      },
+      "unchanged": {
+        "SAVEPOINT": 1000,
+        "RELEASE": 1000,
+        "commits": 1033,
+        "fsync": 3000
+      }
+    },
+    "durability": [
+      "fsync=on",
+      "full_page_writes=on",
+      "synchronous_commit=on",
+      "file and directory fsync retained",
+      "ext4 PostgreSQL volume",
+      "ext4 outbox volume"
+    ]
+  },
+  "tests": {
+    "backend": {
+      "passed": 1115,
+      "skipped": 965,
+      "warnings": 3
+    },
+    "rf_postgresql": {
+      "passed": 1151,
+      "warnings": 58
+    },
+    "installer_security_scanner": 152,
+    "grafana": 43,
+    "customer_status_notifications": 64,
+    "integration": 54,
+    "audit": 36,
+    "browser": {
+      "successful_executions": 69,
+      "invocations": 27
+    },
+    "host_checks": 78,
+    "postgres_readiness_checks": 5,
+    "legacy_upgrade_restore_checks": 11,
+    "native_tests": {
+      "pure": 41,
+      "postgres": 1,
+      "live": 0
+    },
+    "overlap": "Collections overlap; no unique grand total asserted",
+    "final_static_error_regressions": "Six new PostgreSQL cases must pass on final delivery commit"
+  },
+  "security": {
+    "canonical_push_native": [
+      {
+        "reference": "noc117-postgres:rc",
+        "image_id": "sha256:304b5645a30c71590aff9a8270143e90850aab158ef9c61d296dc64f4c6493a5",
+        "critical": 0,
+        "high": 0,
+        "total": 0
+      },
+      {
+        "reference": "noc120-redis:rc",
+        "image_id": "sha256:96ba001e8d6d0e5facde134b978ec528c7798a5988a4f100e886098bd92c6c1b",
+        "critical": 0,
+        "high": 0,
+        "total": 0
+      },
+      {
+        "reference": "nwo-noc-backend",
+        "image_id": "sha256:e2ceb1fa1a565aa225f62f173539f0fbdd670cb3fb4787851073ecfd4a18528d",
+        "critical": 0,
+        "high": 0,
+        "total": 34
+      },
+      {
+        "reference": "nwo-noc-frontend",
+        "image_id": "sha256:85211810a75df3229d3b486618fecc2d338584c8523987a9a784f933aa74f41c",
+        "critical": 0,
+        "high": 0,
+        "total": 0
+      }
+    ],
+    "pr_native": [
+      {
+        "reference": "noc117-postgres:rc",
+        "image_id": "sha256:47e715425082cced9a44b6228ea4c6c84ae086e9c8ed10fff74b81b1d9255419",
+        "critical": 0,
+        "high": 0,
+        "total": 0
+      },
+      {
+        "reference": "noc120-redis:rc",
+        "image_id": "sha256:f1d53ab9b45db9ee837cb7e68e259355a6932fe504ba09fc4fbb070866e6fde7",
+        "critical": 0,
+        "high": 0,
+        "total": 0
+      },
+      {
+        "reference": "nwo-noc-backend",
+        "image_id": "sha256:a930d359ecfed33269b12ed80f3d2dd6dcb2903c34cc9db643f29691839a9122",
+        "critical": 0,
+        "high": 0,
+        "total": 34
+      },
+      {
+        "reference": "nwo-noc-frontend",
+        "image_id": "sha256:f4c016cefc4f5385e0d4bf3d8ce3e0be5d5f0fa755b5d7774dd8ba52fb831e6e",
+        "critical": 0,
+        "high": 0,
+        "total": 0
+      }
+    ],
+    "no_new_dependencies": true,
+    "production_release_published": false,
+    "production_signing_keys_created": false,
+    "native_vendor_risks": "BLOCKED: zero scanner HIGH/CRITICAL does not establish every historical CVE patched",
+    "npm_audit_including_development": 0,
+    "pip_audit": "No known vulnerabilities"
+  },
+  "vms": [
+    {
+      "run": 746,
+      "installation": "PASS",
+      "recovery": "PASS",
+      "source_powered_off_during_restore": true,
+      "source_reboot": {
+        "kernel_boot_changed": true,
+        "post_reboot_verification": "PASS",
+        "reboot_and_verification_seconds": 59.211
+      },
+      "receiver_reboot": {
+        "kernel_boot_changed": true,
+        "post_reboot_verification": "PASS",
+        "reboot_and_verification_seconds": 57.482
+      },
+      "resources": {
+        "vcpus": 4,
+        "memory_mib": 5120,
+        "disk_gib": 32
+      },
+      "acceleration": "kvm",
+      "ubuntu_image": {
+        "format": 1,
+        "url": "https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-amd64.img",
+        "sha256": "04e8f2461a16a44e78a370284471f29616cdd9baf1893df25807b71f985b6c94",
+        "source": "https://cloud-images.ubuntu.com/noble/current/SHA256SUMS",
+        "observed_image_build": "20261017",
+        "policy": "Fail closed if current changes; operator must review and pin the next Canonical image. No mutable-image fallback. Test image only, not production release authorization."
+      },
+      "image_scans": [
+        {
+          "image_id": "sha256:2db166917d0880a547be566aa4495b4069d6e54d00742ef3bf93bae093002980",
+          "critical": 0,
+          "high": 0,
+          "total": 34
+        },
+        {
+          "image_id": "sha256:6f7e9f562f0392313a989d01b0ef7117b692edc8f479db5f3e5494b1d8c8cf6a",
+          "critical": 0,
+          "high": 0,
+          "total": 0
+        },
+        {
+          "image_id": "sha256:a1ecae6a9a8b2b6ade95ccee473b2107608719f66a48e5d5b0583a2435758698",
+          "critical": 0,
+          "high": 0,
+          "total": 0
+        },
+        {
+          "image_id": "sha256:b99bece12ddcd60e9984bdcbe6edc053748972be15273cb06955d186e3938c4e",
+          "critical": 0,
+          "high": 0,
+          "total": 34
+        },
+        {
+          "image_id": "sha256:c475f6d34c9a69ab7d24342c84abefeb7bae310672e235ce26488d6673f51fcf",
+          "critical": 0,
+          "high": 0,
+          "total": 0
+        },
+        {
+          "image_id": "sha256:c5b2a8686b55a3a19ae33770ec401f97083e00b86ce93bf52bb89851543a46ca",
+          "critical": 0,
+          "high": 0,
+          "total": 0
+        },
+        {
+          "image_id": "sha256:c83b092f96531dfeca3af762051f00a2949c0509fec341e209ceb95f0383ad09",
+          "critical": 0,
+          "high": 0,
+          "total": 0
+        },
+        {
+          "image_id": "sha256:c8f412c107cf0719f8cf4da56ad38677402fd9ec11e8c132a14c2c1212c750c5",
+          "critical": 0,
+          "high": 0,
+          "total": 0
+        },
+        {
+          "image_id": "sha256:e301c12cd7e155d147778578506f30d601903dd904e6deb6af3c4517472499a4",
+          "critical": 0,
+          "high": 0,
+          "total": 34
+        }
+      ],
+      "ntp_synchronized": false,
+      "physical_offsite_failure_domain_independent": false
+    },
+    {
+      "run": 747,
+      "installation": "PASS",
+      "recovery": "PASS",
+      "source_powered_off_during_restore": true,
+      "source_reboot": {
+        "kernel_boot_changed": true,
+        "post_reboot_verification": "PASS",
+        "reboot_and_verification_seconds": 56.475
+      },
+      "receiver_reboot": {
+        "kernel_boot_changed": true,
+        "post_reboot_verification": "PASS",
+        "reboot_and_verification_seconds": 57.307
+      },
+      "resources": {
+        "vcpus": 4,
+        "memory_mib": 5120,
+        "disk_gib": 32
+      },
+      "acceleration": "kvm",
+      "ubuntu_image": {
+        "format": 1,
+        "url": "https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-amd64.img",
+        "sha256": "04e8f2461a16a44e78a370284471f29616cdd9baf1893df25807b71f985b6c94",
+        "source": "https://cloud-images.ubuntu.com/noble/current/SHA256SUMS",
+        "observed_image_build": "20261017",
+        "policy": "Fail closed if current changes; operator must review and pin the next Canonical image. No mutable-image fallback. Test image only, not production release authorization."
+      },
+      "image_scans": [
+        {
+          "image_id": "sha256:11ccaaeaf0fe7956718f3c0f7224ad83021d8496ab81ab6585366562c17e9e89",
+          "critical": 0,
+          "high": 0,
+          "total": 0
+        },
+        {
+          "image_id": "sha256:1c46e82c06ee86a0c4c8a19f176b9058ac57a5c730d599d09490c9d25fa2a63e",
+          "critical": 0,
+          "high": 0,
+          "total": 0
+        },
+        {
+          "image_id": "sha256:292aa1e309e10f835c588e55f33a35542e327020b5ff9b32df974ed4889d5cdd",
+          "critical": 0,
+          "high": 0,
+          "total": 0
+        },
+        {
+          "image_id": "sha256:3c58b1e072638805802e37a7a5a39a2840d207504a2c6083bc4f160f20053f5c",
+          "critical": 0,
+          "high": 0,
+          "total": 0
+        },
+        {
+          "image_id": "sha256:5507821c9630326b3d35628aa358cf8fa621113ed7470ebd3b90f15626f3e628",
+          "critical": 0,
+          "high": 0,
+          "total": 34
+        },
+        {
+          "image_id": "sha256:595ffc183052d26828004219295061e701ccf096fa8e472d26a2acff6815350d",
+          "critical": 0,
+          "high": 0,
+          "total": 34
+        },
+        {
+          "image_id": "sha256:86e9a9cd2e5c61827b12e5479ed9e7555779349b6ba88c32acfd16c260e73602",
+          "critical": 0,
+          "high": 0,
+          "total": 34
+        },
+        {
+          "image_id": "sha256:c3a4c56054971d9b975d9399644eb462001217ce7b9e89414258c8f6bf1321b6",
+          "critical": 0,
+          "high": 0,
+          "total": 0
+        },
+        {
+          "image_id": "sha256:f7245359bc6465d70fe42b22589a2e60edd9bc657c9fb4394e0d843abcc7848c",
+          "critical": 0,
+          "high": 0,
+          "total": 0
+        }
+      ],
+      "ntp_synchronized": false,
+      "physical_offsite_failure_domain_independent": false
+    }
+  ],
+  "collector_readiness": {
+    "routeros_native": "Protocol implementation >=6.43/7; fixed print-only verified TLS, synthetic/socketpair/PG tests; no live firmware certification",
+    "routeros_pre643": "Unsupported legacy login",
+    "wave": "BLOCKED secure transport/per-firmware MIB/schema; no weak fallback or guessed OIDs",
+    "native_ipam_inventory_firmware_sync": "Not implemented; native path is monitoring only",
+    "external_live_integrations_enabled": false
+  },
+  "final_followup": {
+    "scope": "Only preserve known sanitized static transport error codes; normal benchmark/polling paths unchanged",
+    "local_tests": {
+      "passed": 1115,
+      "skipped": 971,
+      "warnings": 3
+    },
+    "final_CI": "Required on exact final SHA; see PR125 terminal ledger"
+  }
+}

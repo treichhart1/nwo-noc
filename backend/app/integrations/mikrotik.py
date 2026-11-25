@@ -50,8 +50,13 @@ def require_routeros7(payload):
     return resource
 
 
-def normalize(payload,credentials=()):
-    identity=one(payload['identity']);resource=require_routeros7(payload['resource'])
+def normalize(payload,credentials=(),*,native=False):
+    if native:
+        from app.integrations.mikrotik_native import require_native_version
+        resource=require_native_version(payload['resource'])
+    else:
+        resource=require_routeros7(payload['resource'])
+    identity=one(payload['identity'])
     if not isinstance(identity.get('name'),str) or not identity['name'] or not isinstance(resource.get('version'),str) or not resource['version'].strip():raise IntegrationFailure('invalid_response')
     interfaces=payload['interfaces']
     if not isinstance(interfaces,list) or len(interfaces)>4096:raise IntegrationFailure('invalid_response')
@@ -89,6 +94,7 @@ def normalize(payload,credentials=()):
 
 def collect_mikrotik(db,*,transport=None,now=None):
     now=now or datetime.now(timezone.utc)
+    if settings.mikrotik_native_config_file:raise IntegrationFailure("operation_denied")  # Durable scheduler only.
     if settings.offline_mode or not settings.mikrotik_enabled or not settings.integrations_admin_approved:raise IntegrationFailure('disabled')
     if not settings.mikrotik_device_id or not settings.mikrotik_username or not secret(settings.mikrotik_password):raise IntegrationFailure('configuration_invalid')
     policy=ReadPolicy(settings.mikrotik_base_url,tuple(settings.mikrotik_allowed_origins.split(',')),MIKROTIK_PATHS,True,True)
