@@ -6,10 +6,10 @@
   "blockers": [
     {
       "id": "A111-12",
-      "status": "FAIL",
-      "evidence": "Baseline72full-durable rounds12over15s; initial833065f optimization36rounds4over15s/max16.808, with fsync/commit tails up to401ms. Joined indexed poll snapshot and strict gate pending new CI.",
-      "candidate_status": "NOT TESTED",
-      "owner": "NOC121 performance validation"
+      "status": "PASS",
+      "evidence": "Strict runs746/747 all10SUCCESS each.36full-durable1000-device rounds min8.879/median9.8535/max10.672s,0over15. Six6000sample/unique-receipt invocations. Both ext4 volumes,3000fsync per round. Historical baseline and first failure retained.",
+      "candidate_status": "PASS for executed scoped code snapshot; final delivery CI also required",
+      "owner": "Operator must verify actual hardware/live workload and final exact-source strict CI; no production authorization"
     },
     {
       "id": "Vendor-native-security",
@@ -43,5 +43,7 @@
       "evidence": "Vendor SNMP/MIB revisions documented, but no approved SNMPv3 contract or downloaded/validated per-firmware MIB. Archive reads blocked by proxy403; no community-string fallback.",
       "owner": "Approved Wave firmware/MIB and secure read-only transport contract"
     }
-  ]
+  ],
+  "executed_code_commit": "668a9b2c9ddb90483971414a0ea8b8586a0a04e8",
+  "executed_evidence": "EXECUTED-EVIDENCE.json"
 }

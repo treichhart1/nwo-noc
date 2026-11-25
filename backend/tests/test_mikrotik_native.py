@@ -311,3 +311,44 @@ def test_native_scheduler_uses_existing_telemetry_and_private_config(postgres_db
         collect(db, db.get(MonitoringJob, pair[0]), now)
     assert e.value.code == "endpoint_denied" and len(observed) == 1
 
+
+
+@pytest.mark.parametrize("code,expected", [
+    ("authentication_failed", "authentication_failed"),
+    ("operation_denied", "operation_denied"),
+    ("unsupported", "unsupported"),
+    ("response_too_large", "response_too_large"),
+    ("limit_exceeded", "limit_exceeded"),
+    (CANARY, "collector_failed"),
+])
+def test_scheduler_preserves_only_safe_static_transport_errors(postgres_db, monkeypatch, tmp_path, code, expected):
+    import json
+    from sqlalchemy import select, func
+    from app.core.config import settings
+    from app.models.entities import Device, MonitoringAttempt, MonitoringAlert, MonitoringReceipt, TelemetrySample, AuditLog
+    from app.services.monitoring_scheduler import enroll, claim, execute
+    db = postgres_db
+    for key, value in {"offline_mode": True, "app_env": "staging",
+                       "synthetic_monitoring_enabled": True}.items():
+        monkeypatch.setattr(settings, key, value)
+    device = Device(source="synthetic", external_id="noc121-static-error",
+                    name="Synthetic error test", vendor="MikroTik", enabled=True)
+    db.add(device)
+    db.flush()
+    now = datetime.now(timezone.utc)
+    enroll(db, {"device_id": device.id, "interval_seconds": 15}, now=now)
+    def rejected(*args):
+        raise IntegrationFailure(code)
+    for n in range(3):
+        at = now + timedelta(seconds=n*30)
+        pair = claim(db, "static-error-worker", now=at)[0]
+        result = execute(db, *pair, now=at, collector=rejected, spool_dir=tmp_path)
+        db.flush()
+        assert result["result"] == expected
+        assert db.get(MonitoringAttempt, pair[1]).result == expected
+    assert db.scalar(select(func.count(TelemetrySample.id))) == 0
+    assert db.scalar(select(func.count(MonitoringReceipt.id))) == 0
+    alerts = list(db.scalars(select(MonitoringAlert)))
+    assert len(alerts) == 1 and alerts[0].category == "monitoring"
+    assert alerts[0].rule == "collection_failure" and alerts[0].state == "active"
+    assert CANARY not in json.dumps([a.details for a in db.scalars(select(AuditLog))])
