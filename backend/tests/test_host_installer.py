@@ -585,3 +585,12 @@ def test_failed_immutable_download_is_bounded_and_preserves_state(tmp_path, monk
     assert len(calls) == 3 and delays == [2, 4]
     assert all(argv[-1] == reference for argv in calls)
     assert sorted(str(p) for p in tmp_path.rglob("*")) == before
+
+
+def test_backup_restart_has_only_the_required_runtime_write_exception():
+    text=(ROOT/'deploy/host/nwo-noc-backup.service').read_text()
+    paths=next(line.split('=',1)[1].split() for line in text.splitlines() if line.startswith('ReadWritePaths='))
+    assert set(paths)=={'/var/lib/nwo-noc','/var/log/nwo-noc','/var/backups/nwo-noc','/run/lock','/run/nwo-noc-ingress'}
+    for guard in ('ProtectSystem=strict','ProtectHome=true','NoNewPrivileges=true','PrivateTmp=true','backup --quiesce'):
+        assert guard in text
+    assert 'WantedBy=' not in text  # Timer remains a separate explicit operator choice.
