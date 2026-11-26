@@ -39,6 +39,17 @@ def main():
         for log in prepared.glob('*.log'):
             text=log.read_text(errors='replace')
             labels[log.name]={k:phrase in text for k,phrase in {'read_only':'Read-only file system','permission_denied':'Permission denied','noexec':'not executable','invalid_argument':'unrecognized arguments','missing_file':'No such file or directory','network':'ConnectionError','tls':'CERTIFICATE_VERIFY_FAILED','docker_build':'failed to solve','dependency_vulnerability':'Found '}.items()}
+        # These two fixture containers receive only public lockfiles/cache paths,
+        # never broker secrets, host credentials, customer data or private keys.
+        # Keep their exact package-audit stderr for evidence; never build/TLS logs.
+        import re
+        for name in ('pip-audit.log','npm-audit.log'):
+            log=prepared/name
+            if log.exists():
+                text=log.read_text(errors='replace')[-8000:]
+                text=re.sub(r'https?://[^\s]+','<public-registry-url>',text)
+                (retained/name).write_text(text)
+                print(json.dumps({'public_lock_audit':name,'diagnostic':text}),file=sys.stderr,flush=True)
         failed={'source':commit,'purpose':'controlled-test','status':'FAIL','safe_error':safe[:1],'step_error_flags':labels}
         (retained/'failure-summary.json').write_text(json.dumps(failed,indent=2)+'\n')
         print(json.dumps(failed),file=sys.stderr,flush=True)
