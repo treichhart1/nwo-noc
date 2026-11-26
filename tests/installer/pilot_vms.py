@@ -50,11 +50,11 @@ class VM:
         (self.root/'user-data').write_text(user)
         (self.root/'meta-data').write_text(json.dumps({'instance-id':name,'local-hostname':name}))
         run(['cloud-localds',self.root/'seed.img',self.root/'user-data',self.root/'meta-data'])
-        run(['qemu-img','create','-f','qcow2','-F','qcow2','-b',image,self.root/'disk.qcow2','32G'])
+        run(['qemu-img','create','-f','qcow2','-F','qcow2','-b',image,self.root/'disk.qcow2','120G'])
         kvm = os.access('/dev/kvm',os.R_OK|os.W_OK)
         self.acceleration = 'kvm' if kvm else 'tcg'
         self.serial = (self.root/'serial.log').open('wb')
-        args=['qemu-system-x86_64','-accel',self.acceleration,'-cpu',cpu_model,'-m','5120','-smp','4','-nographic',
+        args=['qemu-system-x86_64','-accel',self.acceleration,'-cpu',cpu_model,'-m','8192','-smp','4','-nographic',
               '-serial',f'file:{self.root}/serial.log','-monitor','none','-drive',f'file={self.root}/disk.qcow2,format=qcow2,if=virtio',
               '-drive',f'file={self.root}/seed.img,format=raw,if=virtio',
               '-netdev',f'user,id=noc,hostfwd=tcp:127.0.0.1:{port}-:22','-device','virtio-net-pci,netdev=noc']
@@ -165,6 +165,12 @@ sudo ufw default deny outgoing
 sudo ufw allow in from 10.0.2.2 to any port 22 proto tcp
 sudo ufw allow out proto udp to any port 67
 sudo ufw allow in proto udp from 10.0.2.2 port 67 to any port 68
+sudo ufw allow out proto udp to 10.0.2.2 port 123
+sudo mkdir -p /etc/systemd/timesyncd.conf.d
+printf '[Time]\nNTP=10.0.2.2\nFallbackNTP=\n' | sudo tee /etc/systemd/timesyncd.conf.d/noc123-lab.conf >/dev/null
+sudo systemctl restart systemd-timesyncd
+for attempt in $(seq 1 60); do [ "$(timedatectl show -p NTPSynchronized --value)" = yes ] && break; sleep 1; done
+[ "$(timedatectl show -p NTPSynchronized --value)" = yes ]
 sudo ufw --force enable
 python3 - <<'PY'
 import socket
@@ -189,6 +195,8 @@ def main():
         report['phase']=name
         print(json.dumps({'phase':name,'scope':'disposable independent VM acceptance'}),flush=True)
     guests=[];egress=None
+    from lab_time import LabTime
+    time_fixture=LabTime()
     try:
         phase('verify-unprivileged-controller')
         from hypervisor_launch import verify_controller_identity
@@ -201,17 +209,19 @@ def main():
         image=json.loads((ROOT/'deploy/pilot-vm-image.json').read_text())
         run(['curl','--fail','--location','--proto','=https','--tlsv1.2','--retry','3','--max-time','900','-o',work/'ubuntu.img',image['url']],timeout=1000)
         if sha(work/'ubuntu.img')!=image['sha256']:raise ValueError('Canonical Ubuntu image digest mismatch; no fallback')
-        report['ubuntu_image']=image;report['guest_resources']={'vcpus':4,'memory_mib':5120,'disk_gib':32}
+        report['ubuntu_image']=image;report['guest_resources']={'vcpus':4,'memory_mib':8192,'disk_gib':120}
         report['hypervisor']={'qemu':run(['qemu-system-x86_64','--version']).stdout.decode().splitlines()[0], 'host_cpus':os.cpu_count(), 'host_memory':next(line for line in Path('/proc/meminfo').read_text().splitlines() if line.startswith('MemTotal:'))}
         key=work/'controller-key';run(['ssh-keygen','-q','-t','ed25519','-N','','-f',key])
         # The pinned integration audit verifies PR86's non-ancestor original against
         # its reviewed replay. HEAD-only bundles omit that required side history.
         source=work/'source.bundle';run(['git','bundle','create',source,'--all'])
+        prepared=run(['sudo','--preserve-env=GITHUB_ACTIONS,GITHUB_RUN_ID','python3',ROOT/'tests/installer/guided_controller.py'])
+        guided=json.loads(prepared.stdout.decode().splitlines()[-1])
         redis=json.loads((ROOT/'deploy/image-lock.json').read_text())['images']['redis:7-alpine']
         run(['docker','pull',redis])
         images=work/'images.tar'
         redis_id=run(['docker','image','inspect','--format','{{.Id}}',redis]).stdout.decode().strip()
-        with images.open('xb') as out:run(['docker','save','noc113-backend:base','noc113-frontend:base','noc117-postgres:rc','noc120-redis:rc',redis_id],output=out)
+        with images.open('xb') as out:run(['docker','save','noc113-backend:base','noc113-frontend:base','noc117-postgres:rc','noc120-redis:rc','noc123-lab-backend','noc123-lab-frontend','noc123-lab-postgres','noc123-lab-redis',redis_id],output=out)
         phase('source-kernel-boot-and-pinned-ssh')
         report['acceleration']='kvm' if os.access('/dev/kvm',os.R_OK|os.W_OK) else 'tcg'
         sender=VM(work,'noc119-source',22221,work/'ubuntu.img',key,cpu_model='qemu64');guests.append(sender)
@@ -221,6 +231,9 @@ def main():
         report['source_cpu_features']=json.loads(sender.ssh('python3 -c '+shlex.quote(cpu_script)).stdout)
         phase('source-supported-packages-and-private-firewall')
         (evidence/'source-provision.log').write_bytes(provision(sender,source,images,redis).stdout)
+        sender.copy(Path(guided['archive']),'/home/nocpilot/guided-prepared.tar')
+        sender.ssh('sudo mkdir -m 700 /var/lib/noc123-guided\nsudo tar -xf /home/nocpilot/guided-prepared.tar -C /var/lib/noc123-guided')
+        report['guided_preparation']={'source':guided['source'],'tree':guided['tree'],'four_image_audits':'PASS','transport':'private controlled-test only'}
         probe_command='sudo python3 /home/nocpilot/source/tests/installer/native_probe.py --execute-disposable-host'
         phase('source-baseline-native-imports')
         report['baseline_native_imports']=json.loads(sender.ssh(probe_command,timeout=140).stdout)
@@ -235,7 +248,7 @@ def main():
         if not report['source_native_imports']['all_passed']:
             raise AssertionError('Supported-CPU native imports failed; no installation acceptance')
         phase('source-installer-upgrade-and-isolated-restore')
-        result=sender.ssh('cd /home/nocpilot/source\nsudo python3 tests/installer/test_ubuntu_host.py --workspace /var/tmp/noc119-acceptance --extended --pilot-checkpoint',timeout=4800 if report['acceleration']=='tcg' else 2400)
+        result=sender.ssh('cd /home/nocpilot/source\nsudo python3 tests/installer/test_ubuntu_host.py --workspace /var/tmp/noc119-acceptance --extended --pilot-checkpoint --guided-evidence /var/lib/noc123-guided',timeout=4800 if report['acceleration']=='tcg' else 2400)
         (evidence/'source-install.log').write_bytes(result.stdout)
         report['installation']='PASS';phase('source-actual-kernel-reboot');report['source_reboot']=sender.reboot()
         report['source_docker_server_version']=sender.ssh("sudo docker version --format '{{.Server.Version}}'").stdout.decode().strip()
@@ -304,6 +317,7 @@ def main():
         report['sanitized_boot_diagnostics']=diagnostics[-12:]
         raise
     finally:
+        time_fixture.close()
         for guest in guests:guest.stop()
         if egress:egress.close()
         (evidence/'summary.json').write_text(json.dumps(report,indent=2)+'\n')

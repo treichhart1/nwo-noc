@@ -98,6 +98,55 @@
       "test_id": "B603",
       "severity": "LOW",
       "justification": "Reviewed NOC122: fixed local inventory callsites only (findmnt/lsblk/docker Unix socket/ip/getent/timedatectl/ss/ufw), no shell or mutation. PATH is restricted to root-owned system directories and environment is replaced, preventing DOCKER_HOST/CONTEXT redirection. Only user arguments are a literal findmnt target and validated opt-in hostname; default performs no DNS. Popen stdout is bounded256KiB with8s deadline and kill/wait cleanup; stderr is discarded, no credentials/config/management addresses returned.30preflight boundary/read-only cases cover rejection and protected existing installs. This exact LOW source review grants no HIGH/CVE exemption."
+    },
+    {
+      "fingerprint": "adb12b01b6643d20ac7d744cc9337abfaeb2cf80f61197803e05e22e5409e63e",
+      "path": "scripts/host/lab.py",
+      "test_id": "B404",
+      "severity": "LOW",
+      "justification": "Reviewed NOC123: approved exact clean source/tree and explicit isolated-lab root authorization precede host changes. Fixed git/Docker/openssl/installer/scanner/audit argv, no shell. Work is private root0700, logs0600; no passwords/private key contents in argv or logs. Temporary /tmp references are bounded private container tmpfs with read-only root/cap-drop, not shared host files. Installer alone owns password TTY/stdin and all production signature gates remain unchanged. Evidence/source/image/audit/authorization negatives and dry-run non-mutation tested. Exact statement review only; new/changed/HIGH/stale findings still fail."
+    },
+    {
+      "fingerprint": "000042168c7342ad4da6b18901ac8350ed857f3d4775b3b813a15ae7e704db88",
+      "path": "scripts/host/lab.py",
+      "test_id": "B603",
+      "severity": "LOW",
+      "justification": "Reviewed NOC123: approved exact clean source/tree and explicit isolated-lab root authorization precede host changes. Fixed git/Docker/openssl/installer/scanner/audit argv, no shell. Work is private root0700, logs0600; no passwords/private key contents in argv or logs. Temporary /tmp references are bounded private container tmpfs with read-only root/cap-drop, not shared host files. Installer alone owns password TTY/stdin and all production signature gates remain unchanged. Evidence/source/image/audit/authorization negatives and dry-run non-mutation tested. Exact statement review only; new/changed/HIGH/stale findings still fail."
+    },
+    {
+      "fingerprint": "d8e2dc3cfd67027a7ed54ce3a05fdba97d6b47cd9d76ac3c65c4b3c3cce5e47f",
+      "path": "scripts/host/lab.py",
+      "test_id": "B603",
+      "severity": "LOW",
+      "justification": "Reviewed NOC123: approved exact clean source/tree and explicit isolated-lab root authorization precede host changes. Fixed git/Docker/openssl/installer/scanner/audit argv, no shell. Work is private root0700, logs0600; no passwords/private key contents in argv or logs. Temporary /tmp references are bounded private container tmpfs with read-only root/cap-drop, not shared host files. Installer alone owns password TTY/stdin and all production signature gates remain unchanged. Evidence/source/image/audit/authorization negatives and dry-run non-mutation tested. Exact statement review only; new/changed/HIGH/stale findings still fail."
+    },
+    {
+      "fingerprint": "ee831aca20ce79532bf50b6a4202b821b17b57ffe03009e867f29bc548159e13",
+      "path": "scripts/host/lab.py",
+      "test_id": "B108",
+      "severity": "MEDIUM",
+      "justification": "Reviewed NOC123: approved exact clean source/tree and explicit isolated-lab root authorization precede host changes. Fixed git/Docker/openssl/installer/scanner/audit argv, no shell. Work is private root0700, logs0600; no passwords/private key contents in argv or logs. Temporary /tmp references are bounded private container tmpfs with read-only root/cap-drop, not shared host files. Installer alone owns password TTY/stdin and all production signature gates remain unchanged. Evidence/source/image/audit/authorization negatives and dry-run non-mutation tested. Exact statement review only; new/changed/HIGH/stale findings still fail."
+    },
+    {
+      "fingerprint": "8cee92e01d190b1c89ae4f8f4bc44a2bed663d1543f50e2ad81f289450d5bfba",
+      "path": "scripts/host/lab.py",
+      "test_id": "B108",
+      "severity": "MEDIUM",
+      "justification": "Reviewed NOC123: approved exact clean source/tree and explicit isolated-lab root authorization precede host changes. Fixed git/Docker/openssl/installer/scanner/audit argv, no shell. Work is private root0700, logs0600; no passwords/private key contents in argv or logs. Temporary /tmp references are bounded private container tmpfs with read-only root/cap-drop, not shared host files. Installer alone owns password TTY/stdin and all production signature gates remain unchanged. Evidence/source/image/audit/authorization negatives and dry-run non-mutation tested. Exact statement review only; new/changed/HIGH/stale findings still fail."
+    },
+    {
+      "fingerprint": "77b5dbb6779cdf6c11a60bd4167db6549545a3d64381e01fca63ebd38deb00fa",
+      "path": "scripts/host/lab.py",
+      "test_id": "B603",
+      "severity": "LOW",
+      "justification": "Reviewed NOC123: approved exact clean source/tree and explicit isolated-lab root authorization precede host changes. Fixed git/Docker/openssl/installer/scanner/audit argv, no shell. Work is private root0700, logs0600; no passwords/private key contents in argv or logs. Temporary /tmp references are bounded private container tmpfs with read-only root/cap-drop, not shared host files. Installer alone owns password TTY/stdin and all production signature gates remain unchanged. Evidence/source/image/audit/authorization negatives and dry-run non-mutation tested. Exact statement review only; new/changed/HIGH/stale findings still fail."
+    },
+    {
+      "fingerprint": "9091de856a2259fe7b28361fe5daf908b0aabd23493bdfa82b6c8299fcb099f2",
+      "path": "scripts/host/lab.py",
+      "test_id": "B603",
+      "severity": "LOW",
+      "justification": "Reviewed NOC123: approved exact clean source/tree and explicit isolated-lab root authorization precede host changes. Fixed git/Docker/openssl/installer/scanner/audit argv, no shell. Work is private root0700, logs0600; no passwords/private key contents in argv or logs. Temporary /tmp references are bounded private container tmpfs with read-only root/cap-drop, not shared host files. Installer alone owns password TTY/stdin and all production signature gates remain unchanged. Evidence/source/image/audit/authorization negatives and dry-run non-mutation tested. Exact statement review only; new/changed/HIGH/stale findings still fail."
     }
   ]
 }

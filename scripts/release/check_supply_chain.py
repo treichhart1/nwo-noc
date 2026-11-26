@@ -87,6 +87,7 @@ def validate(root=ROOT):
         "deploy/Dockerfile.installer-failures",
         "examples/signup/compose.yml",
         "backend/Dockerfile",
+        "backend/Dockerfile.lab-audit",
         "deploy/Dockerfile.postgres",
         "deploy/Dockerfile.redis",
         "frontend/Dockerfile",
