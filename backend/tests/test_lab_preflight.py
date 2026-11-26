@@ -121,3 +121,22 @@ def test_nginx_security_patch_keeps_immutable_same_series_sources():
     assert ref in (ROOT/'frontend/Dockerfile').read_text()
     assert ref in (ROOT/'examples/signup/compose.yml').read_text()
     assert 'ssl_early_data on' not in (ROOT/'frontend/nginx-main.conf').read_text()
+
+
+@pytest.mark.parametrize('field,value',[('compose','2.40.3+ds1-0ubuntu1~24.04.1'),('compose','v2.40.3+ds1-0ubuntu1~24.04.1'),('docker','28.2.2-0ubuntu1~24.04.1')])
+def test_supported_distribution_build_versions(monkeypatch,field,value):
+    rows,_=report(monkeypatch,**{field:value})
+    assert rows[field]['status']=='PASS'
+
+
+@pytest.mark.parametrize('value',['3.0.0+ds1-0ubuntu1~24.04.1','2.23.9+ds1-0ubuntu1~24.04.1','2.40.3;command','2.40.3\nother-output'])
+def test_distribution_suffix_cannot_bypass_version_floor(monkeypatch,value):
+    rows,_=report(monkeypatch,compose=value)
+    assert rows['compose']['status']=='FAIL'
+
+
+@pytest.mark.parametrize('address,status',[('fec0::123','WARNING'),('fd00:123::100','PASS')])
+def test_deprecated_site_local_is_not_treated_as_private_ula(monkeypatch,address,status):
+    rows,_=report(monkeypatch,ip=json.dumps([{'operstate':'UP','addr_info':[{'local':address}]}]))
+    assert rows['network']['status']==status
+    assert address not in json.dumps(rows)

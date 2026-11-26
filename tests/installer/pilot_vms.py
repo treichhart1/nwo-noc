@@ -57,7 +57,7 @@ class VM:
         args=['qemu-system-x86_64','-accel',self.acceleration,'-cpu',cpu_model,'-m','8192','-smp','4','-nographic',
               '-serial',f'file:{self.root}/serial.log','-monitor','none','-drive',f'file={self.root}/disk.qcow2,format=qcow2,if=virtio',
               '-drive',f'file={self.root}/seed.img,format=raw,if=virtio',
-              '-netdev',f'user,id=noc,hostfwd=tcp:127.0.0.1:{port}-:22','-device','virtio-net-pci,netdev=noc']
+              '-netdev',f'user,id=noc,ipv6-net=fd00:123::/64,hostfwd=tcp:127.0.0.1:{port}-:22','-device','virtio-net-pci,netdev=noc']
         started=time.monotonic()
         self.qemu_args=args
         self.process=subprocess.Popen(args,stdout=subprocess.DEVNULL,stderr=self.serial)
