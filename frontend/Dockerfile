@@ -7,7 +7,7 @@ RUN --mount=type=secret,id=proxy_ca \
 COPY . .
 RUN npm run build
 
-FROM nginx:stable-alpine@sha256:3bc3836dc0be3b811f238210360bf8e7ca8a2d0effdae46160bf1f3578710051
+FROM nginx:1.30.8-alpine@sha256:8eb04fe3b385090e9aa02961f77398ad09b6bf33ab07f6669a5bb7acce22c0d3
 # NOC116: apply supported same-Alpine libxslt security revisions; immutable
 # release digest and retained package scan record the exact resulting version.
 RUN apk upgrade --no-cache && nginx -v
