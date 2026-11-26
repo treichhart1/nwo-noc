@@ -171,6 +171,7 @@ printf '[Time]\nNTP=10.0.2.2\nFallbackNTP=\n' | sudo tee /etc/systemd/timesyncd.
 sudo systemctl restart systemd-timesyncd
 for attempt in $(seq 1 60); do [ "$(timedatectl show -p NTPSynchronized --value)" = yes ] && break; sleep 1; done
 [ "$(timedatectl show -p NTPSynchronized --value)" = yes ]
+timedatectl show-timesync -p ServerName --value | grep -Fx 10.0.2.2
 sudo ufw --force enable
 python3 - <<'PY'
 import socket

@@ -23,8 +23,17 @@ CONTROLS = ('isolated_lab_authorized', 'private_management_reviewed', 'native_ri
 DOCKER = ['docker', '--host=unix:///var/run/docker.sock']
 
 
+def environment():
+    values=dict(os.environ)
+    for key in ('DOCKER_CONTEXT','DOCKER_TLS_VERIFY','DOCKER_CERT_PATH'):
+        values.pop(key,None)
+    values['DOCKER_HOST']='unix:///var/run/docker.sock'
+    values['PATH']='/usr/sbin:/usr/bin:/sbin:/bin'
+    return values
+
+
 def output(argv):
-    p = subprocess.run([str(x) for x in argv], cwd=SOURCE, capture_output=True, timeout=30)
+    p = subprocess.run([str(x) for x in argv], cwd=SOURCE, capture_output=True, timeout=30, env=environment())
     if p.returncode:
         raise Reject('Required local command failed; inspect protected evidence')
     return p.stdout.decode().strip()
@@ -135,7 +144,7 @@ def run(argv, work, label, *, stdout=None):
     # No secrets in argv; scanner/build output remains in private work, never echoed.
     with (work / (label + '.log')).open('xb') as log:
         os.chmod(log.name, 0o600)
-        p = subprocess.run([str(x) for x in argv], cwd=SOURCE, stdout=stdout or log, stderr=log, timeout=1800)
+        p = subprocess.run([str(x) for x in argv], cwd=SOURCE, stdout=stdout or log, stderr=log, timeout=1800, env=environment())
     if p.returncode:
         raise Reject('Lab step failed: ' + label + '; protected evidence retained; no cleanup performed')
 
@@ -270,8 +279,8 @@ def install(args, a):
     argv=[SOURCE/'install.sh','--controlled-test','--approval',work/'approval.json','--backup-recipient',a['backup_recipient'],'--tls-cert',cert,'--tls-key',key,'--tls-ca',cert]
     if args.password_stdin: argv += ['--password-stdin']
     # Existing installer owns private password prompting/stdin; never capture/persist it.
-    subprocess.run([str(v) for v in argv], cwd=SOURCE, check=True, timeout=2400)
-    subprocess.run([str(SOURCE/'verify.sh'),'--controlled-test'], cwd=SOURCE, check=True, timeout=300)
+    subprocess.run([str(v) for v in argv], cwd=SOURCE, check=True, timeout=2400, env=environment())
+    subprocess.run([str(SOURCE/'verify.sh'),'--controlled-test'], cwd=SOURCE, check=True, timeout=300, env=environment())
     print(json.dumps({'purpose':'controlled-test','services':'existing verify.sh passed','application_health':'PASS','migration':'0028_customer_status verified by installer','administrator_setup':'existing secure initializer completed','dashboard':'https://localhost:18090/','ssh_tunnel':'ssh -L 18090:127.0.0.1:18090 '+a['ssh_host'],'backup':'age public recipient configured; approved independent destination remains operator-managed','backup_destination':a['backup_destination'],'integrations':'all live collectors/Powercode/messages/publication/remediation remain disabled','troubleshooting':['sudo ./verify.sh --controlled-test','sudo systemctl status nwo-noc.service nwo-noc-ingress.service','sudo journalctl -u nwo-noc.service --since today'],'decision':'NO-GO for production/live pilot'}))
 
 
@@ -286,11 +295,17 @@ def main(argv=None):
         if args.action=='plan' or not args.execute:
             print(json.dumps({'purpose':'controlled-test only','changes_authorized':False,'source':args.commit,'tree':args.tree,'preflight':preflight.collect(),'actions':['explicit isolated-lab authorization','four source-bound image builds','complete dependency audits/raw scans/SBOM','protected purpose-separated approval','lab TLS and independently held backup recipient','existing install.sh --controlled-test','existing verify.sh --controlled-test'],'production_signature_gate':'unchanged; no production authorization'}));return 0
         if os.geteuid()!=0:raise Reject('Explicit root operator execution required; no changes made')
+        if args.action=='install' and not args.password_stdin:
+            with open('/dev/tty'):
+                pass  # refuse getpass fallback without a controlling secure terminal
         a=authorization(args)
         if args.action=='prepare':prepare(args,a)
         else:install(args,a)
         return 0
-    except (Reject,OSError,ValueError,KeyError,TypeError,subprocess.SubprocessError):
+    except Reject as error:
+        print('Guided lab rejected: '+str(error)+'. Evidence preserved; no cleanup or production authorization.',file=sys.stderr)
+        return 1
+    except (OSError,ValueError,KeyError,TypeError,subprocess.SubprocessError):
         print('Guided lab operation rejected/failed. Run plan/preflight; inspect protected evidence. Existing data, services and production gates are preserved.',file=sys.stderr)
         return 1
 

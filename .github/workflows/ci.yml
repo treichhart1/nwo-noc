@@ -604,7 +604,7 @@ jobs:
       - name: Provision disposable hypervisor tooling only
         run: |
           sudo apt-get -o APT::Update::Error-Mode=any update
-          sudo apt-get install -y --no-install-recommends qemu-system-x86 qemu-utils cloud-image-utils
+          sudo apt-get install -y --no-install-recommends qemu-system-x86 qemu-utils cloud-image-utils age python3-yaml openssl
       - name: Align empty disposable controller with OCI image identity storage
         run: sudo env GITHUB_ACTIONS=true GITHUB_RUN_ID="$GITHUB_RUN_ID" SUDO_UID="$(id -u)" python3 tests/installer/controller_image_store.py --execute-disposable-ci
       - name: Validate explicit guest CPU ABI against actual QEMU models

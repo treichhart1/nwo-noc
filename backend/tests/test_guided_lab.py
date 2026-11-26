@@ -106,3 +106,27 @@ def test_hardware_failure_cannot_enter_installer(monkeypatch):
     monkeypatch.setattr(lab.preflight,'collect',lambda:{'failed':1,'checks':[]})
     monkeypatch.setattr(lab,'validate_evidence',lambda *a:pytest.fail('Never reach install/evidence mutation'))
     with pytest.raises(lab.Reject):lab.install(SimpleNamespace(work='/no-write'),{})
+
+
+def test_remote_docker_context_cannot_redirect_lab(monkeypatch):
+    monkeypatch.setenv('DOCKER_HOST','tcp://unapproved.invalid:2375')
+    monkeypatch.setenv('DOCKER_CONTEXT','remote')
+    monkeypatch.setenv('DOCKER_TLS_VERIFY','1')
+    monkeypatch.setenv('DOCKER_CERT_PATH','/unapproved')
+    env=lab.environment()
+    assert env['DOCKER_HOST']=='unix:///var/run/docker.sock'
+    assert not {'DOCKER_CONTEXT','DOCKER_TLS_VERIFY','DOCKER_CERT_PATH'} & env.keys()
+
+
+def test_extra_secret_metadata_rejected(monkeypatch):
+    a=authorization();a['password']='SYNTHETIC-NEVER-RETAIN'
+    monkeypatch.setattr(lab,'private_file',lambda _:json.dumps(a).encode())
+    with pytest.raises(lab.Reject):lab.authorization(SimpleNamespace(authorization_file='synthetic',commit='a'*40,tree='b'*40,action='install'))
+
+
+def test_no_insecure_password_fallback(monkeypatch):
+    monkeypatch.setattr(lab,'source_check',lambda *a:None);monkeypatch.setattr(lab,'existing_install',lambda:None)
+    monkeypatch.setattr(lab.os,'geteuid',lambda:0)
+    monkeypatch.setattr(lab,'open',lambda *a:(_ for _ in ()).throw(OSError('no controlling terminal')),raising=False)
+    monkeypatch.setattr(lab,'authorization',lambda *a:pytest.fail('No authorization/mutation after missing secure TTY'))
+    assert lab.main(['install','--execute','--commit','a'*40,'--tree','b'*40])==1
