@@ -259,6 +259,13 @@
       "owner": "Named pilot owner",
       "required_input": "Aisolated\u2192Brepresentative oneatatime\u2192ConePOP\u2192Dapprovedexpansion,300s/concurrency1initial",
       "acceptance_evidence": "Separateauthorizationperphase/device; stop/disable/revokeapprovedegress, preservesamples/audit; noautomaticremediation/messages/publication"
+    },
+    {
+      "id": "NGINX-SUPPORTED-FIX",
+      "status": "PASS",
+      "owner": "Software / release reviewer",
+      "required_input": "Supported same-series Nginx1.30.8 immutable upstream base replaces vulnerable1.30.7; independently hashed registry index/manifest/config",
+      "acceptance_evidence": "SECURITY-RECHECK.json; final exact-source runtime scan, browser and Ubuntu regression evidence required in PR126 ledger"
     }
   ],
   "final_ci_reconciliation": "Draft NOC122 PR terminal ledger; no future result asserted by source document",

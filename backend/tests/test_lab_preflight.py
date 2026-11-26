@@ -112,3 +112,12 @@ def test_existing_install_is_never_overwritten(monkeypatch):
     rows,_=report(monkeypatch)
     assert rows['existing_installation']['status']=='FAIL'
     assert '/opt/nwo-noc' in rows['existing_installation']['detail']
+
+
+def test_nginx_security_patch_keeps_immutable_same_series_sources():
+    locks=json.loads((ROOT/'deploy/image-lock.json').read_text())['images']
+    ref=locks['nginx:1.30.8-alpine']
+    assert ref=='nginx:1.30.8-alpine@sha256:8eb04fe3b385090e9aa02961f77398ad09b6bf33ab07f6669a5bb7acce22c0d3'
+    assert ref in (ROOT/'frontend/Dockerfile').read_text()
+    assert ref in (ROOT/'examples/signup/compose.yml').read_text()
+    assert 'ssl_early_data on' not in (ROOT/'frontend/nginx-main.conf').read_text()
