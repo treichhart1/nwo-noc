@@ -114,7 +114,7 @@ def command(argv, *, data=None, success=True, cwd=None, env=None):
         safe_errors = [
             line
             for line in p.stderr.decode(errors="replace").splitlines()
-            if line.startswith("NOC packaging")
+            if line.startswith(("NOC packaging", "Guided lab rejected:", "Guided lab operation rejected/failed."))
         ]
         raise RuntimeError(
             "Acceptance command failed: "
@@ -229,13 +229,16 @@ def main():
         git("add", ".")
         git("commit", "--quiet", "-m", "Synthetic current worktree packaging snapshot")
     # All commits are confined to this disposable clone, never the development branch.
-    git(
-        "commit",
-        "--allow-empty",
-        "--quiet",
-        "-m",
-        "Synthetic approved first packaging release",
-    )
+    # Guided evidence is bound to the exact reviewed source, never a synthetic
+    # first-install revision. Later upgrade revisions remain disposable fixtures.
+    if not args.guided_evidence:
+        git(
+            "commit",
+            "--allow-empty",
+            "--quiet",
+            "-m",
+            "Synthetic approved first packaging release",
+        )
     root = work / "root" if args.rehearsal else Path("/")
     if args.failure_stage == "resources":
         if not args.rehearsal or not Path("/noc114-small").is_dir():
