@@ -609,14 +609,13 @@ jobs:
         run: sudo env GITHUB_ACTIONS=true GITHUB_RUN_ID="$GITHUB_RUN_ID" SUDO_UID="$(id -u)" python3 tests/installer/controller_image_store.py --execute-disposable-ci
       - name: Validate explicit guest CPU ABI against actual QEMU models
         run: python3 tests/installer/cpu_contract.py --execute-qemu
-      - name: Build actual candidate artifacts for independent guests
-        run: |
-          docker build -t noc113-backend:base backend
-          docker build -t noc113-frontend:base frontend
-          docker build -t noc117-postgres:rc -f deploy/Dockerfile.postgres .
-          docker build -t noc120-redis:rc -f deploy/Dockerfile.redis .
       - name: Prepare audited guided lab bundle before controller privilege drop
-        run: sudo --preserve-env=GITHUB_ACTIONS,GITHUB_RUN_ID python3 tests/installer/guided_controller.py > guided-controller.json
+        run: |
+          sudo --preserve-env=GITHUB_ACTIONS,GITHUB_RUN_ID python3 tests/installer/guided_controller.py > guided-controller.json
+          docker tag noc123-lab-backend noc113-backend:base
+          docker tag noc123-lab-frontend noc113-frontend:base
+          docker tag noc123-lab-postgres noc117-postgres:rc
+          docker tag noc123-lab-redis noc120-redis:rc
       - name: Execute separate Ubuntu kernels, reboot and authenticated recovery
         run: python3 tests/installer/hypervisor_launch.py --execute-disposable-vms --work "$RUNNER_TEMP/noc119-vms"
       - name: Preserve sanitized VM evidence only

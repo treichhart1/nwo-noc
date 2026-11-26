@@ -176,7 +176,7 @@ def prepare(args, a):
         images[role] = output([*DOCKER, 'image', 'inspect', '--format', '{{.Id}}', tag])
     run([*DOCKER, 'build', '-f', SOURCE/'backend/Dockerfile.lab-audit', '-t', 'noc123-lab-audit', SOURCE/'backend'], work, 'build-auditor')
     with (work/'pip-audit.json').open('xb') as f:
-        run([*DOCKER, 'run', '--rm', '--read-only', '--cap-drop', 'ALL', '--tmpfs', '/tmp:rw,nosuid,noexec,size=128m', '-e', 'XDG_CACHE_HOME=/tmp/cache', '-e', 'PIP_CACHE_DIR=/tmp/pip', 'noc123-lab-audit'], work, 'pip-audit', stdout=f)
+        run([*DOCKER, 'run', '--rm', '--read-only', '--cap-drop', 'ALL', '--tmpfs', '/tmp:rw,nosuid,noexec,size=32m', '--tmpfs', '/audit-work:rw,exec,nosuid,nodev,size=512m,mode=700', '-e', 'TMPDIR=/audit-work', '-e', 'XDG_CACHE_HOME=/audit-work/cache', '-e', 'PIP_CACHE_DIR=/audit-work/pip', 'noc123-lab-audit'], work, 'pip-audit', stdout=f)
     node = json.loads((SOURCE/'deploy/image-lock.json').read_text())['images']['node:22-alpine']
     with (work/'npm-audit.json').open('xb') as f:
         run([*DOCKER, 'run', '--rm', '--read-only', '--cap-drop', 'ALL', '--tmpfs', '/tmp:rw,nosuid,noexec,size=64m', '-e', 'npm_config_cache=/tmp/npm', '-v', str(SOURCE/'frontend')+':/source:ro', '-w', '/source', node, 'npm', 'audit', '--package-lock-only', '--include=dev', '--json'], work, 'npm-audit', stdout=f)

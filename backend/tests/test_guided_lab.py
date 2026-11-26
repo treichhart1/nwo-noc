@@ -140,3 +140,14 @@ def test_hardened_controller_adopts_clock_without_sudo(tmp_path,monkeypatch):
     monkeypatch.setattr(mod.subprocess,'Popen',lambda *a,**k:pytest.fail('No sudo/process escalation after privilege drop'))
     clock=mod.LabTime.adopt();clock.close()
     assert (tmp_path/'STOP').is_file()
+
+
+def test_auditor_exec_scratch_is_private_build_only():
+    source=(ROOT/'scripts/host/lab.py').read_text()
+    assert '/audit-work:rw,exec,nosuid,nodev,size=512m,mode=700' in source
+    assert 'TMPDIR=/audit-work' in source
+    assert '--include=dev' in source
+    assert '--require-no-high' in source
+    assert '--disable-pip' not in source and '--no-deps' not in source
+    for path in ('backend/Dockerfile','docker-compose.yml','deploy/compose.isolated.yml','scripts/host/manager.py'):
+        assert '/audit-work' not in (ROOT/path).read_text()
