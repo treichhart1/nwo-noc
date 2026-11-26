@@ -96,3 +96,19 @@ def test_supported_expat_floor():
     text=(ROOT/'backend/Dockerfile').read_text()
     assert 'dpkg --compare-versions' in text and 'ge 2.6.1-2ubuntu0.7' in text
     assert 'apt-get -o APT::Update::Error-Mode=any update' in text
+
+
+@pytest.mark.parametrize('total,free,status',[(99,80,'FAIL'),(100,29,'FAIL'),(100,30,'PASS')])
+def test_capacity_boundaries(monkeypatch,total,free,status):
+    rows,calls=report(monkeypatch)
+    monkeypatch.setattr(pf.shutil,'disk_usage',lambda _:SimpleNamespace(total=total*pf.GIB,free=free*pf.GIB))
+    result=pf.collect(run=lambda argv:None,reader=lambda path:'')
+    assert next(r for r in result['checks'] if r['check']=='disk_capacity')['status']==status
+
+
+def test_existing_install_is_never_overwritten(monkeypatch):
+    original=pf.Path.exists
+    monkeypatch.setattr(pf.Path,'exists',lambda p:True if str(p)=='/opt/nwo-noc' else original(p))
+    rows,_=report(monkeypatch)
+    assert rows['existing_installation']['status']=='FAIL'
+    assert '/opt/nwo-noc' in rows['existing_installation']['detail']

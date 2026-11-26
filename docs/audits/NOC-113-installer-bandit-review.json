@@ -84,6 +84,20 @@
       "test_id": "B103",
       "severity": "MEDIUM",
       "justification": "Reviewed NOC119A exact source-only0755 directories: safe_members first rejects links/absolute/parent paths and bounds the approved archive. Fresh extracted code parents become root-owned, traversable, never group/other-writable so UID10001 ingress can read its source under umask077. Generated config/release metadata and secrets are created afterward privately; persistent directories are elsewhere and unchanged. Regression cases022/077 require non-writable source parents, original bytes, preserved process umask and0600 release metadata. No high finding, broad ignore, severity exception or scanner suppression."
+    },
+    {
+      "fingerprint": "5514ae78713ce91561cb22ad7b7d069826aef586cad8427fea45c9c32a8d7716",
+      "path": "scripts/host/preflight.py",
+      "test_id": "B404",
+      "severity": "LOW",
+      "justification": "Reviewed NOC122: fixed local inventory callsites only (findmnt/lsblk/docker Unix socket/ip/getent/timedatectl/ss/ufw), no shell or mutation. PATH is restricted to root-owned system directories and environment is replaced, preventing DOCKER_HOST/CONTEXT redirection. Only user arguments are a literal findmnt target and validated opt-in hostname; default performs no DNS. Popen stdout is bounded256KiB with8s deadline and kill/wait cleanup; stderr is discarded, no credentials/config/management addresses returned.30preflight boundary/read-only cases cover rejection and protected existing installs. This exact LOW source review grants no HIGH/CVE exemption."
+    },
+    {
+      "fingerprint": "956f1cebf90023190013d32e2b24ef4f36234d4319a6685cea36c7cbbefcdba9",
+      "path": "scripts/host/preflight.py",
+      "test_id": "B603",
+      "severity": "LOW",
+      "justification": "Reviewed NOC122: fixed local inventory callsites only (findmnt/lsblk/docker Unix socket/ip/getent/timedatectl/ss/ufw), no shell or mutation. PATH is restricted to root-owned system directories and environment is replaced, preventing DOCKER_HOST/CONTEXT redirection. Only user arguments are a literal findmnt target and validated opt-in hostname; default performs no DNS. Popen stdout is bounded256KiB with8s deadline and kill/wait cleanup; stderr is discarded, no credentials/config/management addresses returned.30preflight boundary/read-only cases cover rejection and protected existing installs. This exact LOW source review grants no HIGH/CVE exemption."
     }
   ]
 }

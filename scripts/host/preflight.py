@@ -109,7 +109,8 @@ def listeners(raw):
 def collect(*, disk_path='/', dns_name=None, port=18090, run=command, reader=read):
     rows = []
     def add(name, status, detail):
-        assert status in STATUSES
+        if status not in STATUSES:
+            raise ValueError("Unknown preflight status")
         rows.append({'check': name, 'status': status, 'detail': detail})
     os_release = dict(line.split('=', 1) for line in reader('/etc/os-release').splitlines() if '=' in line)
     compatible = os_release.get('ID', '').strip('"') == 'ubuntu' and os_release.get('VERSION_ID', '').strip('"') == '24.04'

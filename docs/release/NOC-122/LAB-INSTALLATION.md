@@ -42,10 +42,10 @@ A clean tree is required. Fetch retains side-history used by the integration aud
 
 ```sh
 LAB_SOURCE=$(git rev-parse HEAD)
-docker build --label "org.opencontainers.image.revision=$LAB_SOURCE" -t noc122-lab-backend backend
-docker build --label "org.opencontainers.image.revision=$LAB_SOURCE" -t noc122-lab-frontend frontend
-docker build --label "org.opencontainers.image.revision=$LAB_SOURCE" -t noc122-lab-postgres -f deploy/Dockerfile.postgres .
-docker build --label "org.opencontainers.image.revision=$LAB_SOURCE" -t noc122-lab-redis -f deploy/Dockerfile.redis .
+docker build --no-cache --label "org.opencontainers.image.revision=$LAB_SOURCE" -t noc122-lab-backend backend
+docker build --no-cache --label "org.opencontainers.image.revision=$LAB_SOURCE" -t noc122-lab-frontend frontend
+docker build --no-cache --label "org.opencontainers.image.revision=$LAB_SOURCE" -t noc122-lab-postgres -f deploy/Dockerfile.postgres .
+docker build --no-cache --label "org.opencontainers.image.revision=$LAB_SOURCE" -t noc122-lab-redis -f deploy/Dockerfile.redis .
 ```
 
 Review complete SBOM/dependency/container reports for **these exact image IDs**, with the same pinned scanning tools/gates as CI, before accepting them. The Dockerfile rejects Expat below2.6.1-2ubuntu0.7. Old CI ImageIDs are neither registry digests nor scans of a new local build. Do not suppress new findings or use mutable tags in an approval. Production publication still requires approved registry digests, complete evidence, detached Ed25519 signature and independently trusted key; see [NOC120 PUBLICATION](../NOC-120/PUBLICATION.md). No production private key is used here.
