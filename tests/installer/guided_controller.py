@@ -26,13 +26,23 @@ def main():
     a={'purpose':'controlled-test','commit':commit,'tree':tree,'reference':'NOC123 disposable CI lab only','confirmation':'PREPARE ISOLATED LAB','ssh_host':'localhost','backup_recipient':run(['age-keygen','-y',key]).stdout.decode().strip(),'backup_destination':'synthetic independent recovery fixture',**{k:True for k in ('isolated_lab_authorized','private_management_reviewed','native_risks_reviewed','backup_custody_reviewed')}}
     auth=target/'authorize.json';auth.write_text(json.dumps(a));auth.chmod(0o600)
     prepared=target/'prepared'
-    result=run(['python3',source/'scripts/host/lab.py','prepare','--execute','--commit',commit,'--tree',tree,'--work',prepared,'--authorization-file',auth])
+    result=subprocess.run(['python3',str(source/'scripts/host/lab.py'),'prepare','--execute','--commit',commit,'--tree',tree,'--work',str(prepared),'--authorization-file',str(auth)],capture_output=True,timeout=2400)
     retained=ROOT/'pilot-guided-evidence';retained.mkdir(mode=0o755,exist_ok=False)
     import shutil
     for record in prepared.rglob('*.json'):
         if record.name=='authorization.json':continue
         dest=retained/record.relative_to(prepared);dest.parent.mkdir(parents=True,exist_ok=True)
         shutil.copyfile(record,dest);dest.chmod(0o644)
+    if result.returncode:
+        safe=[line for line in result.stderr.decode(errors='replace').splitlines() if line.startswith(('Guided lab rejected:','Guided lab operation rejected/failed.'))]
+        labels={}
+        for log in prepared.glob('*.log'):
+            text=log.read_text(errors='replace')
+            labels[log.name]={k:phrase in text for k,phrase in {'read_only':'Read-only file system','permission_denied':'Permission denied','noexec':'not executable','invalid_argument':'unrecognized arguments','missing_file':'No such file or directory','network':'ConnectionError','tls':'CERTIFICATE_VERIFY_FAILED','docker_build':'failed to solve','dependency_vulnerability':'Found '}.items()}
+        failed={'source':commit,'purpose':'controlled-test','status':'FAIL','safe_error':safe[:1],'step_error_flags':labels}
+        (retained/'failure-summary.json').write_text(json.dumps(failed,indent=2)+'\n')
+        print(json.dumps(failed),file=sys.stderr,flush=True)
+        raise RuntimeError('Guided preparation failed; sanitized partial evidence retained')
     archive=target/'prepared.tar';run(['tar','-cf',archive,'-C',prepared,'.'])
     archive.chmod(0o600);os.chown(archive,int(os.environ['SUDO_UID']),int(os.environ['SUDO_GID']))
     target.chmod(0o711)
