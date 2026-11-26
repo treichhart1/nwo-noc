@@ -4,6 +4,7 @@ import json
 import os
 from pathlib import Path
 import subprocess
+import time
 from uuid import uuid4
 
 
@@ -49,6 +50,13 @@ def acceptance(command, invoke, passed, identity):
         passed('scheduled_backup_sandbox:'+profile,
             data.get('expected_rejection') is True if profile=='legacy-readonly' else data.get('ingress_recovery_write')=='PASS')
         print(json.dumps({'scheduled_backup_sandbox':data}),flush=True)
+    # Earlier upgrade/rollback tests deliberately restart ingress repeatedly.
+    # Exercise a scheduled backup outside that existing 300-second rate window;
+    # never reset the service failure counter or weaken its production limit.
+    rate=command(['systemctl','show','nwo-noc-ingress.service','--property=StartLimitIntervalUSec','--value']).stdout.strip()
+    if rate!=b'5min':raise AssertionError('Unexpected ingress restart-rate policy')
+    print(json.dumps({'scheduled_backup_rate_window':'waiting 301 seconds after upgrade stress; production limits unchanged'}),flush=True)
+    time.sleep(301)
     folder=Path('/var/backups/nwo-noc')
     before=set(folder.glob('*.tar.age'))
     started=command(['systemctl','start','nwo-noc-backup.service'],success=False)
