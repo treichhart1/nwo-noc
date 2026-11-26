@@ -151,3 +151,14 @@ def test_auditor_exec_scratch_is_private_build_only():
     assert '--disable-pip' not in source and '--no-deps' not in source
     for path in ('backend/Dockerfile','docker-compose.yml','deploy/compose.isolated.yml','scripts/host/manager.py'):
         assert '/audit-work' not in (ROOT/path).read_text()
+
+
+def test_preflight_rejection_is_actionable_without_disclosing_details(monkeypatch):
+    monkeypatch.setattr(lab,'existing_install',lambda:None)
+    monkeypatch.setattr(lab,'dependencies',lambda:None)
+    monkeypatch.setattr(lab.preflight,'collect',lambda:{'failed':0,'checks':[{'check':'network','status':'WARNING','detail':'sensitive-address-or-secret'}]})
+    monkeypatch.setattr(lab,'validate_evidence',lambda *a:pytest.fail('No changes before readiness'))
+    with pytest.raises(lab.Reject,match='network=WARNING') as error:
+        lab.install(SimpleNamespace(work='/no-write'),{})
+    assert 'sensitive-address-or-secret' not in str(error.value)
+    assert 'memory=NOT VERIFIED' in str(error.value)

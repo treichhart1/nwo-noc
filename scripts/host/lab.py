@@ -263,8 +263,13 @@ def validate_evidence(work, commit, tree, *, inspect=True):
 def install(args, a):
     existing_install(); dependencies()
     report = preflight.collect()
-    if report['failed'] or any(r['status'] != 'PASS' for r in report['checks'] if r['check'] in ('os','architecture','cpu_abi','cpu_capacity','memory','disk_capacity','filesystem','docker','compose','systemd','network','time_sync','ports','existing_installation')):
-        raise Reject('Host preflight failed or required check unavailable; run read-only preflight for details')
+    required = {'os','architecture','cpu_abi','cpu_capacity','memory','disk_capacity','filesystem','docker','compose','systemd','network','time_sync','ports','existing_installation'}
+    statuses = {r['check']:r['status'] for r in report['checks']}
+    blocked = sorted(k for k in required if statuses.get(k) != 'PASS')
+    if report['failed'] or blocked:
+        # Only fixed check identifiers/statuses, never addresses or raw diagnostics.
+        detail = ', '.join(k+'='+str(statuses.get(k,'NOT VERIFIED')) for k in blocked)
+        raise Reject('Host preflight failed or required check unavailable: '+detail+'; run read-only preflight for details')
     if next((r['status'] for r in report['checks'] if r['check']=='firewall'),None) != 'WARNING':
         raise Reject('Active local UFW observation plus independent firewall review required')
     work = protected_work(args.work)
