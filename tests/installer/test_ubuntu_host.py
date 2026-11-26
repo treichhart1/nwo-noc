@@ -114,7 +114,7 @@ def command(argv, *, data=None, success=True, cwd=None, env=None):
         safe_errors = [
             line
             for line in p.stderr.decode(errors="replace").splitlines()
-            if line.startswith("NOC packaging")
+            if line.startswith(("NOC packaging", "Guided lab rejected:", "Guided lab operation rejected/failed."))
         ]
         raise RuntimeError(
             "Acceptance command failed: "
@@ -130,6 +130,7 @@ def command(argv, *, data=None, success=True, cwd=None, env=None):
 def main():
     p = argparse.ArgumentParser()
     p.add_argument("--workspace", required=True)
+    p.add_argument("--guided-evidence", type=Path)
     p.add_argument("--rehearsal", action="store_true")
     p.add_argument("--worktree-snapshot", action="store_true")
     p.add_argument("--extended", action="store_true")
@@ -228,13 +229,16 @@ def main():
         git("add", ".")
         git("commit", "--quiet", "-m", "Synthetic current worktree packaging snapshot")
     # All commits are confined to this disposable clone, never the development branch.
-    git(
-        "commit",
-        "--allow-empty",
-        "--quiet",
-        "-m",
-        "Synthetic approved first packaging release",
-    )
+    # Guided evidence is bound to the exact reviewed source, never a synthetic
+    # first-install revision. Later upgrade revisions remain disposable fixtures.
+    if not args.guided_evidence:
+        git(
+            "commit",
+            "--allow-empty",
+            "--quiet",
+            "-m",
+            "Synthetic approved first packaging release",
+        )
     root = work / "root" if args.rehearsal else Path("/")
     if args.failure_stage == "resources":
         if not args.rehearsal or not Path("/noc114-small").is_dir():
@@ -425,21 +429,28 @@ def main():
 
         preinstall_failures(invoke, first_approval, admin_secret, root, passed)
     started = time.monotonic()
-    installed = invoke(
-        "install",
-        first_approval,
-        admin_secret,
-        extra=[
-            "--backup-recipient",
-            recipient,
-            "--tls-cert",
-            certificate,
-            "--tls-key",
-            tls_key,
-            "--tls-ca",
-            certificate,
-        ],
-    )
+    if args.guided_evidence:
+        if args.rehearsal or not args.pilot_checkpoint:
+            raise RuntimeError("Guided acceptance requires the real independent disposable VM")
+        from guided_acceptance import install as guided_install
+        installed,first_approval,certificate,tls_key=guided_install(clone,args.guided_evidence,work,recipient,admin_secret,command,passed)
+        successful_release_images.update(json.loads(first_approval.read_text())["images"].values())
+    else:
+        installed = invoke(
+            "install",
+            first_approval,
+            admin_secret,
+            extra=[
+                "--backup-recipient",
+                recipient,
+                "--tls-cert",
+                certificate,
+                "--tls-key",
+                tls_key,
+                "--tls-ca",
+                certificate,
+            ],
+        )
     passed("clean_complete_application_install", installed.returncode == 0)
     passed(
         "root_install_from_operator_owned_checkout",

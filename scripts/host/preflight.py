@@ -63,7 +63,7 @@ def read(path):
 
 
 def version(text):
-    m = re.fullmatch(r'v?(\d+)\.(\d+)(?:\.(\d+))?(?:[-+][\w.]+)?', text or '')
+    m = re.fullmatch(r'v?(\d+)\.(\d+)(?:\.(\d+))?(?:[-+][A-Za-z0-9][A-Za-z0-9.+~:-]*)?', text or '')
     return tuple(int(v or 0) for v in m.groups()) if m else None
 
 

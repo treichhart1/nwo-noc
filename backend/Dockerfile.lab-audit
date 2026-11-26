@@ -1,0 +1,9 @@
+# Lab source dependency audits only; never an application/runtime image.
+FROM ubuntu:24.04@sha256:73b999393d07f2bf65a40373778a44dc9a6d54ad7718d29247d8ff9413c4d6a8
+RUN apt-get -o APT::Update::Error-Mode=any update && apt-get install -y --no-install-recommends python3.12-venv ca-certificates && rm -rf /var/lib/apt/lists/*
+RUN python3.12 -m venv /audit
+ENV PATH=/audit/bin:$PATH PYTHONDONTWRITEBYTECODE=1
+WORKDIR /source
+COPY requirements-audit.lock requirements-test.lock ./
+RUN pip install --no-cache-dir --require-hashes --only-binary=:all: -r requirements-audit.lock
+ENTRYPOINT ["pip-audit","-r","requirements-test.lock","-r","requirements-audit.lock","--vulnerability-service","pypi","--format","json"]
