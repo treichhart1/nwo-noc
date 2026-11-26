@@ -837,6 +837,8 @@ print(json.dumps({'scheme':pwd_context.identify(hashed),'policy_rounds':pwd_cont
     if args.pilot_checkpoint:
         if args.rehearsal or args.failure_stage:
             raise RuntimeError("Pilot checkpoint requires a real disposable systemd host")
+        from scheduled_backup import acceptance as scheduled_backup_acceptance
+        scheduled_backup_acceptance(command, invoke, passed, identity)
         from pilot_recovery import export_checkpoint
         container_ids=command([*compose,'ps','--all','--quiet']).stdout.decode().split()
         if not container_ids:raise AssertionError('Independent installed image identities missing')
