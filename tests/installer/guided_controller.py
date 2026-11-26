@@ -27,6 +27,12 @@ def main():
     auth=target/'authorize.json';auth.write_text(json.dumps(a));auth.chmod(0o600)
     prepared=target/'prepared'
     result=run(['python3',source/'scripts/host/lab.py','prepare','--execute','--commit',commit,'--tree',tree,'--work',prepared,'--authorization-file',auth])
+    retained=ROOT/'pilot-guided-evidence';retained.mkdir(mode=0o755,exist_ok=False)
+    import shutil
+    for record in prepared.rglob('*.json'):
+        if record.name=='authorization.json':continue
+        dest=retained/record.relative_to(prepared);dest.parent.mkdir(parents=True,exist_ok=True)
+        shutil.copyfile(record,dest);dest.chmod(0o644)
     archive=target/'prepared.tar';run(['tar','-cf',archive,'-C',prepared,'.'])
     archive.chmod(0o600);os.chown(archive,int(os.environ['SUDO_UID']),int(os.environ['SUDO_GID']))
     target.chmod(0o711)

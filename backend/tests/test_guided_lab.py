@@ -130,3 +130,13 @@ def test_no_insecure_password_fallback(monkeypatch):
     monkeypatch.setattr(lab,'open',lambda *a:(_ for _ in ()).throw(OSError('no controlling terminal')),raising=False)
     monkeypatch.setattr(lab,'authorization',lambda *a:pytest.fail('No authorization/mutation after missing secure TTY'))
     assert lab.main(['install','--execute','--commit','a'*40,'--tree','b'*40])==1
+
+
+def test_hardened_controller_adopts_clock_without_sudo(tmp_path,monkeypatch):
+    spec=importlib.util.spec_from_file_location('private_lab_time',ROOT/'tests/installer/lab_time.py')
+    mod=importlib.util.module_from_spec(spec);spec.loader.exec_module(mod)
+    tmp_path.chmod(0o700)
+    monkeypatch.setenv('NOC_CI_TIME_ROOT',str(tmp_path))
+    monkeypatch.setattr(mod.subprocess,'Popen',lambda *a,**k:pytest.fail('No sudo/process escalation after privilege drop'))
+    clock=mod.LabTime.adopt();clock.close()
+    assert (tmp_path/'STOP').is_file()

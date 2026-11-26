@@ -197,7 +197,7 @@ def main():
         print(json.dumps({'phase':name,'scope':'disposable independent VM acceptance'}),flush=True)
     guests=[];egress=None
     from lab_time import LabTime
-    time_fixture=LabTime()
+    time_fixture=LabTime.adopt()
     try:
         phase('verify-unprivileged-controller')
         from hypervisor_launch import verify_controller_identity
@@ -216,8 +216,9 @@ def main():
         # The pinned integration audit verifies PR86's non-ancestor original against
         # its reviewed replay. HEAD-only bundles omit that required side history.
         source=work/'source.bundle';run(['git','bundle','create',source,'--all'])
-        prepared=run(['sudo','--preserve-env=GITHUB_ACTIONS,GITHUB_RUN_ID','python3',ROOT/'tests/installer/guided_controller.py'])
-        guided=json.loads(prepared.stdout.decode().splitlines()[-1])
+        guided=json.loads((ROOT/'guided-controller.json').read_text())
+        if guided.get('source')!=run(['git','rev-parse','HEAD']).stdout.decode().strip() or guided.get('prepared') is not True:
+            raise RuntimeError('Pre-drop guided preparation source mismatch')
         redis=json.loads((ROOT/'deploy/image-lock.json').read_text())['images']['redis:7-alpine']
         run(['docker','pull',redis])
         images=work/'images.tar'

@@ -8,7 +8,7 @@ import sys
 
 ROOT=Path(__file__).resolve().parents[2]
 PUBLIC_ENV=("GITHUB_ACTIONS","GITHUB_SHA","GITHUB_WORKSPACE","GITHUB_RUN_ID","GITHUB_RUN_ATTEMPT",
-            "GITHUB_REPOSITORY","GITHUB_EVENT_NAME","GITHUB_REF","RUNNER_TEMP")
+            "GITHUB_REPOSITORY","GITHUB_EVENT_NAME","GITHUB_REF","RUNNER_TEMP","NOC_CI_TIME_ROOT")
 
 
 def launch_plan(base, uid, device, accessible, kvm_gid, groups=(), public_env=None):
@@ -64,6 +64,9 @@ def main():
     except FileNotFoundError:device=None
     try:kvm_gid=grp.getgrnam('kvm').gr_gid
     except KeyError:kvm_gid=None
+    from lab_time import LabTime
+    clock=LabTime()  # privileged bind happens before NoNewPrivs; responder drops privileges
+    os.environ['NOC_CI_TIME_ROOT']=str(clock.root)
     command,facts=launch_plan([sys.executable,str(ROOT/'tests/installer/pilot_vms.py'),*sys.argv[1:]],
                              os.getuid(),device,os.access('/dev/kvm',os.R_OK|os.W_OK),kvm_gid,
                              os.getgroups(),dict(os.environ))

@@ -615,6 +615,8 @@ jobs:
           docker build -t noc113-frontend:base frontend
           docker build -t noc117-postgres:rc -f deploy/Dockerfile.postgres .
           docker build -t noc120-redis:rc -f deploy/Dockerfile.redis .
+      - name: Prepare audited guided lab bundle before controller privilege drop
+        run: sudo --preserve-env=GITHUB_ACTIONS,GITHUB_RUN_ID python3 tests/installer/guided_controller.py > guided-controller.json
       - name: Execute separate Ubuntu kernels, reboot and authenticated recovery
         run: python3 tests/installer/hypervisor_launch.py --execute-disposable-vms --work "$RUNNER_TEMP/noc119-vms"
       - name: Preserve sanitized VM evidence only
@@ -624,6 +626,7 @@ jobs:
           name: independent-pilot-vm-evidence
           path: |
             pilot-vm-evidence
+            pilot-guided-evidence
             pilot-hypervisor-access.json
           if-no-files-found: error
 
