@@ -1,0 +1,266 @@
+{
+  "format": 1,
+  "repository": "treichhart1/nwo-noc",
+  "base_pr": 125,
+  "base_commit": "4d1d0bf018035d3f52c242de9d5f7a3ebe2db25a",
+  "branch": "feature/noc-122-lab-readiness",
+  "decision": "NO-GO for production/live pilot; isolated lab requires separate authorization",
+  "disabled_defaults": {
+    "live_integrations_enabled": false,
+    "customer_delivery_enabled": false,
+    "public_publication_enabled": false,
+    "automatic_remediation_enabled": false
+  },
+  "stack_oldest_first": [
+    {
+      "pr": 114,
+      "base": "feature/noc-109-customer-network-status",
+      "base_commit": "6e7f489f8f194324abaa406c07d74812c7345489",
+      "head": "feature/noc-110-full-integration",
+      "commit": "f3de701d29f6ee12b310bd27a6b9f617747e24fa",
+      "draft": true,
+      "merged_at": null,
+      "ancestor_verified": true
+    },
+    {
+      "pr": 115,
+      "base": "feature/noc-110-full-integration",
+      "base_commit": "f3de701d29f6ee12b310bd27a6b9f617747e24fa",
+      "head": "feature/noc-111-comprehensive-audit",
+      "commit": "3901106c7ed848a0d786e36bd3d4a69e99d2a8c1",
+      "draft": true,
+      "merged_at": null,
+      "ancestor_verified": true
+    },
+    {
+      "pr": 116,
+      "base": "feature/noc-111-comprehensive-audit",
+      "base_commit": "3901106c7ed848a0d786e36bd3d4a69e99d2a8c1",
+      "head": "feature/noc-112-final-hardening",
+      "commit": "b85d1af7ca1e2de1d449dac6ab1c40131012b308",
+      "draft": true,
+      "merged_at": null,
+      "ancestor_verified": true
+    },
+    {
+      "pr": 117,
+      "base": "feature/noc-112-final-hardening",
+      "base_commit": "b85d1af7ca1e2de1d449dac6ab1c40131012b308",
+      "head": "feature/noc-113-clean-installer",
+      "commit": "d501979c53837754c9ec0145b2207a8a0c5b44b7",
+      "draft": true,
+      "merged_at": null,
+      "ancestor_verified": true
+    },
+    {
+      "pr": 118,
+      "base": "feature/noc-113-clean-installer",
+      "base_commit": "d501979c53837754c9ec0145b2207a8a0c5b44b7",
+      "head": "feature/noc-114-pilot-readiness",
+      "commit": "d46ace336bce97ce52dffdcc4be0abbc203e3f84",
+      "draft": true,
+      "merged_at": null,
+      "ancestor_verified": true
+    },
+    {
+      "pr": 119,
+      "base": "feature/noc-114-pilot-readiness",
+      "base_commit": "d46ace336bce97ce52dffdcc4be0abbc203e3f84",
+      "head": "feature/noc-115-release-acceptance",
+      "commit": "6de7931f94a0b79f3808af84b182492c59fc5d1c",
+      "draft": true,
+      "merged_at": null,
+      "ancestor_verified": true
+    },
+    {
+      "pr": 120,
+      "base": "feature/noc-115-release-acceptance",
+      "base_commit": "6de7931f94a0b79f3808af84b182492c59fc5d1c",
+      "head": "feature/noc-116-release-blockers",
+      "commit": "008f54e41cb874d2d6eecebf65bb278ddb2ae25a",
+      "draft": true,
+      "merged_at": null,
+      "ancestor_verified": true
+    },
+    {
+      "pr": 121,
+      "base": "feature/noc-116-release-blockers",
+      "base_commit": "008f54e41cb874d2d6eecebf65bb278ddb2ae25a",
+      "head": "feature/noc-117-container-security",
+      "commit": "752939ade1ae3ffd167bf484d7b84c6b90b244b4",
+      "draft": true,
+      "merged_at": null,
+      "ancestor_verified": true
+    },
+    {
+      "pr": 122,
+      "base": "feature/noc-117-container-security",
+      "base_commit": "752939ade1ae3ffd167bf484d7b84c6b90b244b4",
+      "head": "feature/noc-118-backend-security",
+      "commit": "2370f4eec42c8198e197c0cc96e5b570b26a3239",
+      "draft": true,
+      "merged_at": null,
+      "ancestor_verified": true
+    },
+    {
+      "pr": 123,
+      "base": "feature/noc-118-backend-security",
+      "base_commit": "2370f4eec42c8198e197c0cc96e5b570b26a3239",
+      "head": "feature/noc-119-pilot-security",
+      "commit": "60a0a34260f70fac8c7b5e9e00c263d38d1f28d8",
+      "draft": true,
+      "merged_at": null,
+      "ancestor_verified": true
+    },
+    {
+      "pr": 124,
+      "base": "feature/noc-119-pilot-security",
+      "base_commit": "60a0a34260f70fac8c7b5e9e00c263d38d1f28d8",
+      "head": "feature/noc-120-release-handoff",
+      "commit": "e52cc1354a0dd3cf77905dc5179da17704ef3af2",
+      "draft": true,
+      "merged_at": null,
+      "ancestor_verified": true
+    },
+    {
+      "pr": 125,
+      "base": "feature/noc-120-release-handoff",
+      "base_commit": "e52cc1354a0dd3cf77905dc5179da17704ef3af2",
+      "head": "feature/noc-121-final-performance",
+      "commit": "4d1d0bf018035d3f52c242de9d5f7a3ebe2db25a",
+      "draft": true,
+      "merged_at": null,
+      "ancestor_verified": true
+    }
+  ],
+  "requirements": [
+    {
+      "id": "LAB-AUTH",
+      "status": "BLOCKED",
+      "owner": "NWO operator",
+      "required_input": "Explicit isolated disposable-host authorization, named owner, source/tree, test scope, expiration and no live access",
+      "acceptance_evidence": "Signed operator review and approved host/network"
+    },
+    {
+      "id": "SOURCE-AND-CI",
+      "status": "PASS",
+      "owner": "Release reviewer",
+      "required_input": "PR125 exact4d1d0bf base, run749 all10SUCCESS, preserved integration ancestry",
+      "acceptance_evidence": "Final NOC122 exact-source CI also required; final PR ledger"
+    },
+    {
+      "id": "PREFLIGHT",
+      "status": "PASS",
+      "owner": "Software / host operator",
+      "required_input": "Read-only utility,26initial synthetic regressions; actual cloud host reports7FAIL",
+      "acceptance_evidence": "Actual Ubuntu hardware/network controls still require operator checks"
+    },
+    {
+      "id": "PERFORMANCE-SYNTHETIC",
+      "status": "PASS",
+      "owner": "Operator capacity reviewer",
+      "required_input": "Final NOC12136full-durable1000-device rounds min8.934 median11.272 max14.172s,0misses; preserve strict final CI",
+      "acceptance_evidence": "Not live hardware certification; actual host/collector latency and durable-storage soak"
+    },
+    {
+      "id": "HOST-SIZING",
+      "status": "BLOCKED",
+      "owner": "Server operator",
+      "required_input": "4dedicated x86-64-v2 cores,8GiB RAM,100GiB durableSSD minimum; preferred8cores16GiB250GiB enterpriseSSD/NVMe",
+      "acceptance_evidence": "Actual CPU flags, persistent mount/flush/PLP, retention growth and independent backup sizing"
+    },
+    {
+      "id": "HOST-SECURITY",
+      "status": "BLOCKED",
+      "owner": "Server/security operator",
+      "required_input": "StaticprivateIP, approved DNS/NTP, VPN/MFA, SSHkeys, privateTLS, default-deny host/DockerIPv4IPv6, updates/logrotation",
+      "acceptance_evidence": "Independent reachability/time/reboot/control evidence; no real host configured here"
+    },
+    {
+      "id": "MALWARE-SCANNER",
+      "status": "BLOCKED",
+      "owner": "Security operator",
+      "required_input": "Approved ClamAV engine, authenticated current definitions, least-privilege Unixsocket integration/mount",
+      "acceptance_evidence": "Actual clean/EICAR/quarantine/timeout/restart/permission tests; CI test definitions are not deployed current signatures"
+    },
+    {
+      "id": "BACKUP-OFFSITE",
+      "status": "BLOCKED",
+      "owner": "Recovery operator",
+      "required_input": "Encrypted independent destination, separatelyheld ageidentity/trust, RPO/RTO and retention",
+      "acceptance_evidence": "Source unavailable, physical/site-independent empty-host restore of DB/config/documents/keys/auth/history and reboot"
+    },
+    {
+      "id": "VENDOR-NATIVE",
+      "status": "BLOCKED",
+      "owner": "Vendor / security authority",
+      "required_input": "SQLite119373 and util-linux76642 Noble vulnerable; ACL54369 intrusivebackport; otherNOC120rows retained",
+      "acceptance_evidence": "Supported vendor updates or explicit independent disposition; no blanket scanner waiver"
+    },
+    {
+      "id": "EXPAT-SUPPORTED-FIX",
+      "status": "PASS",
+      "owner": "Software / release reviewer",
+      "required_input": "Canonical25November fixes113351/117610 in2.6.1-2ubuntu0.7; Dockerfile enforcesminimum via dpkg",
+      "acceptance_evidence": "Final exact runtime inventory/build/scan must confirm; otherExpatfindings not closed"
+    },
+    {
+      "id": "LICENSING",
+      "status": "BLOCKED",
+      "owner": "Legal/operator authority",
+      "required_input": "Redis7.4.12 RSALv2/SSPLv1 plus dependency/SBOM license review",
+      "acceptance_evidence": "Independent documented license acceptance; no Redis majorchange"
+    },
+    {
+      "id": "PRODUCTION-ARTIFACTS",
+      "status": "BLOCKED",
+      "owner": "Independent release authority",
+      "required_input": "Approved source/tree, immutable4role registrydigests, SBOM/audits/scans/provenance, Ed25519signature/trusted independentpublickey",
+      "acceptance_evidence": "Registrypublication/signing/keycustody/rotation/risk approvals; lab localIDs never become productionapproval"
+    },
+    {
+      "id": "MIKROTIK",
+      "status": "BLOCKED",
+      "owner": "Device/network administrator",
+      "required_input": "ExactCCR1036/CCR2116/RB5009/CRS/netPower model/build, supportedROS6.43+/7, native8729CA/IP-SAN, read/api/source32; REST7separate",
+      "acceptance_evidence": "Authorized one-device300s comparison, unsupportedsensors/OSPF recorded, failures/receipts/recovery; no actual connection"
+    },
+    {
+      "id": "WAVE",
+      "status": "BLOCKED",
+      "owner": "Ubiquiti / operator",
+      "required_input": "ExactWavePro/LR/AP/AF60-XR firmware, officialui-mib.zip/modules/hash, authPrivorverifiedUISPRFcontract, exactOIDs/units/indexes",
+      "acceptance_evidence": "Official4.1.0/3.4.0archive requests proxy403; supply authentic files/sanitizedfixtures; no olderairFiberOIDfallback"
+    },
+    {
+      "id": "OTHER-RADIOS",
+      "status": "BLOCKED",
+      "owner": "Vendor / device operator",
+      "required_input": "airMAX/AF5XHD/Cambiumexactpart/RAy3/Aviat exactfirmware and officialMIB securemapping",
+      "acceptance_evidence": "AuthPriv/leastprivilege/percarriercapacity/errors/temp supportedfields and actualacceptance; no guessedForce4600Cidentity"
+    },
+    {
+      "id": "POWERCODE",
+      "status": "BLOCKED",
+      "owner": "Powercode/operator privacy authority",
+      "required_input": "Read-only documentedAPI/export contract, stablecustomer/serviceIDs,status/staleness/site/sector/device/path, consent/optoutfields",
+      "acceptance_evidence": "Currentliveflagrejected; approvedmockablecontract and separateproductionauthorization required; no writes"
+    },
+    {
+      "id": "OTHER-PROVIDERS",
+      "status": "BLOCKED",
+      "owner": "Provider/operator authority",
+      "required_input": "Grafanaprivateversion/UID/datasource; WordPressisolatedpubliccontract; FiberDesignerapprovedasbuiltversion",
+      "acceptance_evidence": "IndependentTLS/auth/permission/contractacceptance; nopublicsitechanges/notifications/otherrepomodifications"
+    },
+    {
+      "id": "PILOT-PHASES",
+      "status": "BLOCKED",
+      "owner": "Named pilot owner",
+      "required_input": "Aisolated\u2192Brepresentative oneatatime\u2192ConePOP\u2192Dapprovedexpansion,300s/concurrency1initial",
+      "acceptance_evidence": "Separateauthorizationperphase/device; stop/disable/revokeapprovedegress, preservesamples/audit; noautomaticremediation/messages/publication"
+    }
+  ],
+  "final_ci_reconciliation": "Draft NOC122 PR terminal ledger; no future result asserted by source document",
+  "historical_evidence_preserved": true
+}

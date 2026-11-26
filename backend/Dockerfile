@@ -14,6 +14,8 @@ FROM ubuntu:24.04@sha256:73b999393d07f2bf65a40373778a44dc9a6d54ad7718d29247d8ff9
 ENV DEBIAN_FRONTEND=noninteractive PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PATH=/opt/venv/bin:$PATH
 WORKDIR /app
 RUN apt-get -o APT::Update::Error-Mode=any update && apt-get upgrade -y --no-install-recommends && apt-get install -y --no-install-recommends python3.12 ca-certificates libexpat1 zlib1g && rm -rf /var/lib/apt/lists/*
+# Canonical Noble fixes CVE-2026-113351/117610; reject stale signed mirrors.
+RUN dpkg --compare-versions "$(dpkg-query -W -f='${Version}' libexpat1)" ge 2.6.1-2ubuntu0.7
 COPY --from=dependencies /opt/venv/ /opt/venv/
 RUN python -c "import ssl, sqlite3, pyexpat, rasterio, pyproj, psycopg, cryptography, fastapi, redis, alembic; print(ssl.OPENSSL_VERSION, sqlite3.sqlite_version, pyexpat.EXPAT_VERSION, rasterio.__gdal_version__, pyproj.proj_version_str)"
 COPY . .
