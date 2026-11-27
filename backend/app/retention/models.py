@@ -11,7 +11,7 @@ from sqlalchemy import (
     Numeric,
     UniqueConstraint,
     Index,
-    text,
+    text as sql_text,
 )
 from sqlalchemy.orm import Mapped, mapped_column
 from app.core.database import Base
@@ -41,7 +41,7 @@ class Policy(Base):
             "uq_retention_active_policy",
             "active",
             unique=True,
-            postgresql_where=text("active"),
+            postgresql_where=sql_text("active"),
         ),
     )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
