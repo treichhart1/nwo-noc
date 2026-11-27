@@ -126,6 +126,8 @@ class NotificationDelivery(Base):
         ForeignKey("notification_recipients.id", ondelete="CASCADE"), nullable=True
     )
     state: Mapped[str] = mapped_column(String(30), default="queued")
+    slack_authorization: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    slack_context: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     sms_provider: Mapped[str | None] = mapped_column(String(20), ForeignKey("notification_sms_providers.name"), nullable=True)
     sms_authorization: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     attempts: Mapped[int] = mapped_column(Integer, default=0)
@@ -146,13 +148,19 @@ class NotificationDelivery(Base):
 
 class NotificationAttempt(Base):
     __tablename__ = "notification_attempts"
-    __table_args__ = (UniqueConstraint("provider_name", "provider_message_id", name="uq_sms_provider_receipt"), Index("ix_sms_attempt_provider_created", "provider_name", "created_at"), Index("ix_sms_claim_expiry", "acceptance", "lease_expires_at"))
+    __table_args__ = (UniqueConstraint("slack_workspace_id", "slack_channel_id", "slack_ts", name="uq_slack_receipt"), Index("ix_slack_attempt_created", "slack_mode", "created_at"), UniqueConstraint("provider_name", "provider_message_id", name="uq_sms_provider_receipt"), Index("ix_sms_attempt_provider_created", "provider_name", "created_at"), Index("ix_sms_claim_expiry", "acceptance", "lease_expires_at"))
     id: Mapped[int] = mapped_column(primary_key=True)
     delivery_id: Mapped[int] = mapped_column(
         ForeignKey("notification_deliveries.id", ondelete="CASCADE"), index=True
     )
     attempt: Mapped[int] = mapped_column(Integer)
     outcome: Mapped[str] = mapped_column(String(40))
+    slack_mode: Mapped[str | None] = mapped_column(String(20), nullable=True, index=True)
+    slack_workspace_id: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    slack_channel_id: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    slack_ts: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    slack_thread_ts: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    slack_revision: Mapped[int | None] = mapped_column(Integer, nullable=True)
     provider_name: Mapped[str | None] = mapped_column(String(20), ForeignKey("notification_sms_providers.name"), nullable=True, index=True)
     claim_token: Mapped[str | None] = mapped_column(String(36), nullable=True, unique=True)
     provider_message_id: Mapped[str | None] = mapped_column(String(100), nullable=True, index=True)

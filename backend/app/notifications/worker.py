@@ -62,6 +62,7 @@ def run_batch(db, *, sms=None, slack=None, now=None, limit=20):
             .where(
                 NotificationDelivery.state.in_(["queued", "retry"]),
                 NotificationDelivery.sms_authorization.is_(None),
+                NotificationDelivery.slack_authorization.is_(None),
                 NotificationDelivery.next_attempt_at <= now,
             )
             .order_by(
@@ -384,13 +385,23 @@ def discover(db, now=None):
 
 
 def tick():
-    if settings.sms_native_worker_enabled:
+    if settings.sms_native_worker_enabled or settings.slack_native_worker_enabled:
         if settings.notifications_auto_drafts_enabled:
             with SessionLocal() as db:
                 discover(db)
+                if settings.slack_native_worker_enabled:
+                    from app.notifications.slack_service import discover as slack_discover
+                    slack_discover(db)
                 db.commit()
         from app.notifications.sms_service import run_native_batch
-        return run_native_batch(SessionLocal)
+        result = {}
+        if settings.sms_native_worker_enabled:
+            result["sms"] = run_native_batch(SessionLocal)
+        if settings.slack_native_worker_enabled:
+            from app.notifications.slack_service import run_batch as slack_batch, process_interactions
+            result["interactions"] = process_interactions(SessionLocal)
+            result["slack"] = slack_batch(SessionLocal)
+        return result
     with SessionLocal() as db:
         if settings.notifications_auto_drafts_enabled:
             discover(db)

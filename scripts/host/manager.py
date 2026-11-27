@@ -546,6 +546,7 @@ class Host:
             ("signup", "SIGNUP_PII_KEY_FILE"),
             ("notifications", "NOTIFICATIONS_VAULT_KEY_FILE"),
             ("sms-callback", "SMS_CALLBACK_KEY_FILE"),
+            ("slack-callback", "SLACK_CALLBACK_KEY_FILE"),
             ("fiber", "FIBER_DESIGNER_KEY_FILE"),
             ("status", "CUSTOMER_STATUS_RATE_KEY_FILE"),
         ):

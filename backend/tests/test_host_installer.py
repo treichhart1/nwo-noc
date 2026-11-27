@@ -442,7 +442,7 @@ def test_generated_unit_port_and_local_keys_do_not_require_demo_data(
     host_policy.validate_env(env)
     with pytest.raises(ValueError):
         host_policy.validate_env({**env, "UISP_ENABLED": "true"})
-    assert {p.name for p in (host.etc / "keys").iterdir()} == {"signup", "notifications", "sms-callback", "fiber", "status"}
+    assert {p.name for p in (host.etc / "keys").iterdir()} == {"signup", "notifications", "sms-callback", "slack-callback", "fiber", "status"}
     assert env["SMS_CALLBACK_KEY_FILE"] == "/run/nwo-noc-keys/sms-callback"
     assert all(env[k] == "false" for k in ("SMS_NATIVE_TRANSPORT_ENABLED", "SMS_NATIVE_WORKER_ENABLED", "SMS_CALLBACK_GATEWAY_ENABLED", "SMS_EGRESS_APPROVED"))
 
