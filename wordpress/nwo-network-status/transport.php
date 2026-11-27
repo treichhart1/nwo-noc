@@ -5,7 +5,10 @@ final class NWO_Status_Transport {
     private static function cidr(string $ip,string $range): bool {
         [$net,$bits]=explode('/',$range); $a=inet_pton($ip); $b=inet_pton($net); if ($a===false || $b===false || strlen($a)!==strlen($b)) { return false; }
         $whole=intdiv((int)$bits,8);$part=(int)$bits%8;
-        return substr($a,0,$whole)===substr($b,0,$whole) && (!$part || ((ord($a[$whole]) & (255 << (8-$part)))===(ord($b[$whole]) & (255 << (8-$part)))) ;
+        if (substr($a,0,$whole)!==substr($b,0,$whole)) { return false; }
+        if ($part===0) { return true; }
+        $mask=(255 << (8-$part)) & 255;
+        return (ord($a[$whole]) & $mask)===(ord($b[$whole]) & $mask);
     }
     public static function public_ip(string $ip): bool {
         if (!filter_var($ip,FILTER_VALIDATE_IP,FILTER_FLAG_NO_PRIV_RANGE|FILTER_FLAG_NO_RES_RANGE)) { return false; }

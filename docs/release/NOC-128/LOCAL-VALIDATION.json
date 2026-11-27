@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "scope": "supplemental isolated local validation; not WordPress/Docker/Ubuntu acceptance",
+  "backend": {
+    "passed": 1315,
+    "skipped": 1033,
+    "warnings": 3,
+    "seconds": 15.65,
+    "limitations": "No disposable PostgreSQL URL; skipped tests are not passes"
+  },
+  "php": {
+    "version": "8.3.36",
+    "runtime": "official WordPress Playground WASM",
+    "package": "@php-wasm/node@3.1.66",
+    "pure_contract_assertions": 43,
+    "network": "none",
+    "main_load": "registration hooks stubbed; no WordPress activation claim",
+    "tooling_warning": "Temporary npm11.9 is below tool package npm>=11.16 declaration; runtime execution succeeded. Application Node22/lockfiles unchanged; native PHP CI remains required."
+  },
+  "frontend": [
+    "typecheck PASS",
+    "production build PASS",
+    "public-only build PASS",
+    "JavaScript syntax PASS"
+  ],
+  "static": {
+    "undefined_names": 0,
+    "backend_reviewed_bandit": 83,
+    "host_reviewed_bandit": 21,
+    "high_or_unreviewed_bandit": 0
+  },
+  "sha256": {
+    "wordpress/nwo-network-status/transport.php": "00b93e2f701c49001d19e457f5ee9b30424813fabb2822bee7d3f474833b71d6",
+    "wordpress/nwo-network-status/validation.php": "171e66315f8c617d3e1d480777205bb2d6bd6f9808a480facc948fc56a31d3d9",
+    "wordpress/nwo-network-status/nwo-network-status.php": "091ab90426b2254bccc58b5b3920464fa36a695788f0aceb5cf33d5c89a588e5",
+    "scripts/wordpress/tests/pure-contracts.php": "4aeeaf3f667aa20780b45678c8b4822db2f6bdb09a2ca0bd66f6d4b65faad04e"
+  }
+}

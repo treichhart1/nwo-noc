@@ -20,6 +20,8 @@ test('installable ZIP, approved public display, failure isolation and safe remov
   await page.locator('#install-plugin-submit').click();
   for (const file of ['nwo-network-status.php','validation.php','transport.php','uninstall.php']) execFileSync('docker',['exec','noc128-wordpress','php','-l','/var/www/html/wp-content/plugins/nwo-network-status/'+file],{stdio:'pipe'});
   await page.getByRole('link', {name:'Activate Plugin'}).click();
+  const pure=JSON.parse(execFileSync('docker',['exec','-e','NOC128_PLUGIN_ROOT=/var/www/html/wp-content/plugins/nwo-network-status','noc128-wordpress','php','/tests/pure-contracts.php'],{encoding:'utf8'}));
+  expect(pure.pure_contract_assertions).toBeGreaterThanOrEqual(40);
   const activation = JSON.parse(control('diagnose'));
   expect(activation.active, JSON.stringify(activation)+(await page.locator('body').innerText()).slice(-1800)).toBeTruthy();
   await page.goto(origin + '/wp-admin/options-general.php?page=nwo-network-status');

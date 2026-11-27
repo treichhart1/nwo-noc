@@ -17,6 +17,8 @@ Deployment instructions: [WORDPRESS.md](WORDPRESS.md). All ten existing release 
 
 Local environment: Debian13 userspace, full root filesystem, writable RAM checkout, no Docker daemon or PHP CLI. This prevents local WordPress, PostgreSQL, container and Ubuntu execution. Local projection/package tests, communication unit regressions, frontend typecheck/build and static checks are executable; skipped database tests are not passes. Dedicated CI uses actual minimum, supported6.x and current WordPress PHP8.3 images and MariaDB, actual admin ZIP installation, real TLS/DNS pinning against an isolated synthetic gateway, browser rendering and negative cases. The required RF PostgreSQL job validates actual approved snapshots, v1 compatibility and communication relationships. Synthetic gateway data is not a live website acceptance result.
 
+Supplemental local PHP8.3.36 (official WordPress Playground WASM) compiled the plugin with inert registration hooks and passed43 explicit pure validation assertions; this reproduced and corrected a missing parenthesis in the CIDR expression that prevented activation. This is not native WordPress installation evidence. [Local evidence](LOCAL-VALIDATION.json) records scope and tooling limits; [plugin manifest](PLUGIN-MANIFEST.json) records the reproducible ZIP and member hashes.
+
 Final exact commit, all job conclusions, artifact checksum and executed counts belong in the PR acceptance ledger after CI finishes. No base-CI result substitutes for this change's CI. Preserve failed attempts and any remaining unexecuted checks.
 
 ## Remaining acceptance
