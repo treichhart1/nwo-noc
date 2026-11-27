@@ -1,6 +1,6 @@
 <?php
 $_SERVER['HTTP_HOST']='wordpress.noc128.test';$_SERVER['HTTPS']='on';$_SERVER['REQUEST_METHOD']='GET';
-require '/var/www/html/wp-load.php';require_once ABSPATH.'wp-admin/includes/plugin.php';
+require '/var/www/html/wp-load.php';require_once ABSPATH.'wp-admin/includes/file.php';require_once ABSPATH.'wp-admin/includes/plugin.php';
 $action=getenv('NOC129_ACTION');
 if($action==='page'){
 $id=wp_insert_post(['post_title'=>'Synthetic signup','post_name'=>'synthetic-signup','post_type'=>'page','post_status'=>'publish','post_content'=>'[nwo_customer_signup]']);
