@@ -171,7 +171,7 @@ def current(
         if (
             review_required
             or update > now + timedelta(seconds=60)
-            or now - update > timedelta(hours=24)
+            or now - pol["baseline_approved_at"] > timedelta(hours=24)
         ):
             raise ValueError("Approved public information is stale or future-dated")
         feed = PublicFeed(

@@ -2,6 +2,7 @@
 
 import hashlib
 import json
+from collections import Counter
 from datetime import datetime, timezone, timedelta
 from typing import Literal
 from fastapi import APIRouter, Depends, Request, Query, Response
@@ -73,11 +74,9 @@ def display(item, now):
             "partial": "partial_service_interruption",
             "degraded": "degraded_performance",
         }.get(item.impact, "service_disruption")
-    if (
-        item.starts_at
-        and item.starts_at > now
-        and item.status == "all_systems_operational"
-    ):
+    # A preapproved scheduled window does not become an operational/recovery
+    # announcement merely because its start time passed. Updates need approval.
+    if item.starts_at and item.status == "all_systems_operational":
         return "scheduled_maintenance"
     return item.status
 
@@ -135,7 +134,9 @@ def projected(db, offset, limit, now=None):
         p.get("last_withdrawal_at")
         and p["last_withdrawal_at"] > p["baseline_approved_at"]
     )
-    stale = bool(review_required or now - updated > timedelta(hours=24))
+    stale = bool(
+        review_required or now - p["baseline_approved_at"] > timedelta(hours=24)
+    )
     active = groups["incidents"] + groups["maintenance"]
     states = [p["baseline_status"]] + [
         r["display_status"]
@@ -144,18 +145,30 @@ def projected(db, offset, limit, now=None):
     ]
     overall = "unknown" if stale else min(states, key=DISPLAY.index)
     public_areas = []
+    label_counts = Counter(row["label"].casefold() for row in areas)
     for row in areas:
         a = PublicArea.model_validate(
             dict(row["details"], id=row["identifier"], label=row["label"])
         )
-        related = [
-            v["display_status"]
-            for v in active
-            if a.label in v["areas"] and v["display_status"] != "scheduled_maintenance"
-        ]
+        related = []
+        ambiguous = False
+        for value in active:
+            if value["display_status"] == "scheduled_maintenance":
+                continue
+            identifiers = {detail["id"] for detail in value["area_details"]}
+            if identifiers:
+                if a.id in identifiers:
+                    related.append(value["display_status"])
+            elif a.label.casefold() in {label.casefold() for label in value["areas"]}:
+                # Pre-v2 revisions have labels only. Duplicate labels cannot
+                # identify a technology/county safely; never infer healthy.
+                if label_counts[a.label.casefold()] > 1:
+                    ambiguous = True
+                else:
+                    related.append(value["display_status"])
         a.status = (
             "unknown"
-            if stale
+            if stale or ambiguous
             else min([p["baseline_status"]] + related, key=DISPLAY.index)
         )
         public_areas.append(a.model_dump(mode="json"))

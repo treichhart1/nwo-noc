@@ -118,7 +118,7 @@ function render(root: HTMLElement, data: any) {
         item.status === "service_disruption" ? "status-disruption" : "";
       article.append(
         node("h3", item.title),
-        node("p", labels[item.status]),
+        node("p", key === "maintenance" && item.status === "all_systems_operational" ? "Scheduled maintenance" : labels[item.status]),
         node("p", item.description),
         node("p", "Service areas: " + item.areas.join(", ")),
       );

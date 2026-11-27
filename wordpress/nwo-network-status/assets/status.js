@@ -50,7 +50,7 @@
       if (options.view !== 'banner') {
         if (feed.service_areas.length) {
           const list = el('ul');
-          feed.service_areas.forEach(area => list.append(el('li', `${area.label}${area.county ? ` (${area.county})` : ''}: ${label(area.status)}`)));
+          feed.service_areas.forEach(area => list.append(el('li', `${area.label}${area.county ? ` (${area.county})` : ''}${area.group_label ? ` · ${area.group_label}` : ''}${area.technology && area.technology !== 'unknown' ? ` · ${area.technology}` : ''}: ${label(area.status)}`)));
           root.append(el('h3', 'Service areas'), list);
         }
         [['incidents', 'Current incidents'], ['maintenance', 'Maintenance'], ['resolved', 'Incident history']].forEach(([key, title]) => {

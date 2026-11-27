@@ -161,6 +161,10 @@ def test_reproducible_plugin_zip(tmp_path):
         tmp_path / "two/nwo-network-status.zip"
     ).read_bytes()
     assert len(a["members"]) == 9
+    documented = json.loads(
+        (root / "docs/release/NOC-128/PLUGIN-MANIFEST.json").read_text()
+    )
+    assert a["sha256"] == documented["sha256"] and a["members"] == documented["members"]
 
 
 def test_postgres_v2_approved_snapshot_and_v1_compatibility(x):
@@ -321,3 +325,58 @@ def test_postgres_withdrawal_retains_update_timestamp_and_requires_baseline_revi
         from app.customer_status.public_app import app
 
         app.dependency_overrides.clear()
+
+
+@pytest.mark.parametrize("legacy", [False, True])
+def test_same_town_service_areas_use_public_uuid_not_label(legacy):
+    db = ProjectionDB()
+    wireless, fiber = str(uuid4()), str(uuid4())
+    db.areas = [
+        dict(
+            identifier=wireless,
+            label="Synthetic community",
+            details={"technology": "wireless"},
+        ),
+        dict(
+            identifier=fiber,
+            label="synthetic community",
+            details={"technology": "fiber"},
+        ),
+    ]
+    body = payload()
+    if not legacy:
+        body["area_details"] = [
+            dict(id=wireless, label="Synthetic community", technology="wireless")
+        ]
+    db.rows = [
+        dict(identifier=str(uuid4()), kind="incident", payload=body, updated_at=NOW)
+    ]
+    areas = {
+        area["id"]: area["status"]
+        for area in json.loads(projected(db, 0, 20, NOW))["service_areas"]
+    }
+    assert areas[wireless] == ("unknown" if legacy else "partial_service_interruption")
+    assert areas[fiber] == ("unknown" if legacy else "all_systems_operational")
+
+
+def test_recent_case_update_cannot_renew_an_expired_global_baseline():
+    db = ProjectionDB()
+    db.policy["baseline_approved_at"] = NOW - timedelta(days=2)
+    db.rows = [
+        dict(
+            identifier=str(uuid4()), kind="incident", payload=payload(), updated_at=NOW
+        )
+    ]
+    feed = json.loads(projected(db, 0, 20, NOW))
+    assert feed["last_public_update"] == NOW.isoformat()
+    assert feed["overall_status"] == "unknown" and feed["freshness"] == "stale"
+    assert feed["incidents"][0]["display_status"] == "partial_service_interruption"
+
+
+def test_scheduled_window_does_not_change_public_status_without_approval():
+    item = SimpleNamespace(
+        status="all_systems_operational",
+        starts_at=NOW - timedelta(hours=1),
+        impact="general",
+    )
+    assert display(item, NOW) == "scheduled_maintenance"

@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "version": "128.0.0",
-  "sha256": "6299c3cececd0c8624eb40ff1dfe5854736437d1a783f095726625dd0f5577d7",
+  "sha256": "619dc89b5b0d43eb38fddbc95143d1f81f649108dbcbdd885eaafffa24a5835f",
   "members": [
     {
       "path": "assets/editor.js",
@@ -13,7 +13,7 @@
     },
     {
       "path": "assets/status.js",
-      "sha256": "da32ad09849997b5370c5afc520b21a9227cc97206b4a8f6d0d045efa514500b"
+      "sha256": "f3e926a2ec5c653738c90dfe373e9ce130f6d04b8290726cd5f86159fe9a76e6"
     },
     {
       "path": "block.json",

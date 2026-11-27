@@ -215,7 +215,7 @@ export default function CustomerCommunications() {
                   <option value="">All areas</option>
                   {areas.map((a) => (
                     <option key={a.id} value={a.id}>
-                      {a.label}
+                      {[a.label, a.public_details?.technology, a.public_details?.county].filter(Boolean).join(" · ")}
                     </option>
                   ))}
                 </select>
@@ -489,7 +489,7 @@ export default function CustomerCommunications() {
                 >
                   {areas.map((a) => (
                     <option key={a.id} value={a.id}>
-                      {a.label}
+                      {[a.label, a.public_details?.technology, a.public_details?.county].filter(Boolean).join(" · ")}
                     </option>
                   ))}
                 </select>
