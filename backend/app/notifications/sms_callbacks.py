@@ -3,7 +3,7 @@
 from datetime import datetime, timezone
 import hashlib
 import json
-from sqlalchemy import select, text
+from sqlalchemy import select, text as sql_text
 from sqlalchemy.orm import load_only
 from app.core.config import settings
 from app.customers.models import CustomerAccount
@@ -271,7 +271,7 @@ def apply_callback(db, name, body, headers, *, now=None):
         # A one-way SECURITY DEFINER function lets the isolated callback DB
         # role enforce opt-outs without UPDATE access that could restore consent.
         db.execute(
-            text("SELECT public.noc_sms_enforce_opt_out(:phone, :at)"),
+            sql_text("SELECT public.noc_sms_enforce_opt_out(:phone, :at)"),
             {"phone": phone, "at": now},
         )
         if opted_out:

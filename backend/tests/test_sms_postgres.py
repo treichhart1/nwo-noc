@@ -383,7 +383,7 @@ def test_admin_api_never_returns_stored_credentials(native):
         yield x.db
 
     app.dependency_overrides[get_db] = db_override
-    token = create_access_token(x.admin.username, x.admin.id)
+    token = create_access_token(x.admin.username, user_id=x.admin.id)
     try:
         with TestClient(app) as c:
             r = c.get(
@@ -716,7 +716,7 @@ def test_operator_cannot_activate_or_release_native_sms(native):
     app.dependency_overrides[get_db] = overridden_db
     try:
         with TestClient(app) as c:
-            token = create_access_token(u.username, u.id)
+            token = create_access_token(u.username, user_id=u.id)
             h = {"Authorization": "Bearer " + token}
             assert (
                 c.post(
