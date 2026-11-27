@@ -310,3 +310,26 @@ def test_reconciliation_exact_identity_no_resend():
     p.config = c
     assert p.reconcile(channel=CHANNEL, timestamp=TS, text="exact").timestamp == TS
     assert all("chat.postMessage" not in x for x in seen)
+
+
+def test_private_installer_https_port_is_supported():
+    c = SlackConfig(**(config() | {"dashboard_origin": "https://localhost:18090/"}))
+    assert c.dashboard_origin == "https://localhost:18090"
+    assert (
+        "https://localhost:18090/?incident=1"
+        in payload(fields(), c.model_dump(), delivery_id=1)["text"]
+    )
+
+
+@pytest.mark.parametrize(
+    "origin",
+    [
+        "https://localhost:0",
+        "https://localhost:65536",
+        "https://user:secret@localhost:18090",
+        "http://localhost:18090",
+    ],
+)
+def test_private_origin_port_does_not_weaken_url_guards(origin):
+    with pytest.raises(ValueError):
+        SlackConfig(**(config() | {"dashboard_origin": origin}))

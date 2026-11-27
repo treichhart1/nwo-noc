@@ -66,7 +66,7 @@ class SlackConfig(SafeModel):
             or u.query
             or u.fragment
             or u.path not in {"", "/"}
-            or u.port not in {None, 443}
+            or (u.port is not None and not 1 <= u.port <= 65535)
         ):
             raise ValueError("Private HTTPS dashboard origin required")
         self.dashboard_origin = self.dashboard_origin.rstrip("/")
