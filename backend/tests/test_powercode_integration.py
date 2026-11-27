@@ -229,9 +229,9 @@ def test_status_and_financial_history_preserve_consents(inventory):
 def test_package_import_never_publishes_and_changes_invalidate_mapping(signup):
     x = signup
     db = x.db
-    v = batch()
+    v = batch(1, "incremental")
     v["packages"] = [package()]
-    synchronize(db, Provider(v))
+    assert synchronize(db, Provider(v))["status"] == "healthy"
     p = db.get(PowercodePackage, "SYN-P130")
     public = x.plan.public
     price = x.plan.monthly
