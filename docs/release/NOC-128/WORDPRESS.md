@@ -38,6 +38,7 @@ Apply the complete NOC migration history through `0031_wordpress_status` in the 
 ```sh
 # Operator supplies these absolute paths and the reviewed immutable image digest.
 export NOC_STATUS_BACKEND_IMAGE='registry.example.invalid/noc/backend@sha256:<reviewed-64-hex-digest>'
+export NOC_STATUS_PROXY_IMAGE='registry.example.invalid/noc/status-proxy@sha256:<reviewed-64-hex-digest>'
 export NOC_STATUS_DB_URL_FILE=/secure/operator/status-db-url
 export NOC_STATUS_RATE_KEY_FILE=/secure/operator/status-rate-key
 export NOC_STATUS_PG_CA_FILE=/secure/operator/postgresql-ca.pem
@@ -50,7 +51,7 @@ docker compose -f deploy/compose.customer-status.yml -f deploy/compose.customer-
 docker compose -f deploy/compose.customer-status.yml -f deploy/compose.customer-status.proxy.yml up -d
 ```
 
-The digest placeholder is operator-specific; mutable tags fail the preflight. Use the existing approved signed release manifest, independently trusted key, SBOM and exact-image scans. The example Nginx image is digest pinned, but operator must also scan/approve that exact proxy image before deployment; no new proxy-image vulnerability clearance is claimed.
+The digest placeholder is operator-specific; mutable tags fail the preflight. Use the existing approved signed release manifest, independently trusted key, SBOM and exact-image scans. Build the dedicated proxy using `docker build -f deploy/Dockerfile.status-proxy -t noc-status-proxy:reviewed .`; it contains no private frontend bundle. CI scans its exact image ID with the existing fail-closed HIGH/CRITICAL gate and retains the complete report. Both gateway and proxy registry digest, security evidence and signing/publication still require operator approval.
 
 Secret files must have correct container ownership: gateway uid1000, proxy TLS key readable only by uid101; restricted modes0600. Compose local secrets inherit host ownership, so review ownership rather than making keys world-readable. The gateway bootstrap enforces owned0600 secrets and PostgreSQL `sslmode=verify-full`; no insecure fallback. Host certificate CA trust and PostgreSQL DNS/SAN must match. Connect only approved gateway/database peers on an isolated private network; the compose network is internal by default and intentionally does not discover or attach a production DB. Operator must review a DB TLS reachability/network attachment plan. No public PostgreSQL ports.
 

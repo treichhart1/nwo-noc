@@ -12,6 +12,9 @@ def validate(environment):
     image = environment.get("NOC_STATUS_BACKEND_IMAGE", "")
     if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._:/-]*@sha256:[a-f0-9]{64}", image):
         raise ValueError("Reviewed immutable backend image digest required")
+    proxy = environment.get("NOC_STATUS_PROXY_IMAGE", "")
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._:/-]*@sha256:[a-f0-9]{64}", proxy):
+        raise ValueError("Reviewed immutable public proxy image required")
     for name in [
         "NOC_STATUS_DB_URL_FILE",
         "NOC_STATUS_RATE_KEY_FILE",

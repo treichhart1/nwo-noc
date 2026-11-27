@@ -1005,6 +1005,10 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - name: Build reviewed backend for isolated synthetic fixture
         run: docker build -t noc128-backend:test backend
+      - name: Build and scan exact restricted public proxy
+        run: |
+          docker build -t noc128-status-proxy:test -f deploy/Dockerfile.status-proxy .
+          python3 scripts/release/image_security.py --require-no-high --output "$RUNNER_TEMP/wordpress-evidence-proxy-scan" noc128-status-proxy:test
       - name: Install locked browser test dependencies
         working-directory: frontend
         run: |
@@ -1020,5 +1024,7 @@ jobs:
           path: |
             ${{ runner.temp }}/wordpress-evidence/plugin
             ${{ runner.temp }}/wordpress-evidence/compatibility.json
+            ${{ runner.temp }}/wordpress-evidence/proxy-isolation.json
             ${{ runner.temp }}/wordpress-evidence/wordpress-*.json
+            ${{ runner.temp }}/wordpress-evidence-proxy-scan
           if-no-files-found: error

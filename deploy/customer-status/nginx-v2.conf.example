@@ -11,6 +11,7 @@ server {
     client_header_timeout 5s;
     client_body_timeout 5s;
     send_timeout 5s;
+    error_log /dev/stderr crit;
     access_log off; # No addresses, query strings or internal details in public logs.
     add_header X-Content-Type-Options nosniff always;
     add_header Referrer-Policy no-referrer always;

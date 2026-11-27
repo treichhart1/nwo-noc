@@ -43,7 +43,7 @@ final class NWO_Status_Validation {
             }
         }
         if (!is_array($d['service_areas']??null) || !array_is_list($d['service_areas']) || count($d['service_areas'])>200) { self::fail(); }
-        foreach ($d['service_areas'] as $area) { if (!is_array($area)) { self::fail(); } self::area($area); }
+        foreach ($d['service_areas'] as $area) { if (!is_array($area)) { self::fail(); } self::area($area); if ($d['freshness']==='stale' && $area['status']!=='unknown') { self::fail(); } }
         if (($d['next_history_offset']??null)!==null && (!is_int($d['next_history_offset']) || $d['next_history_offset']<0 || $d['next_history_offset']>10000)) { self::fail(); }
         return $d;
     }

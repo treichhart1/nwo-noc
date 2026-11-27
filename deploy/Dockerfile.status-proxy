@@ -1,0 +1,10 @@
+# Public status proxy only: no private frontend bundle or application credentials.
+FROM nginx:1.30.8-alpine@sha256:8eb04fe3b385090e9aa02961f77398ad09b6bf33ab07f6669a5bb7acce22c0d3
+RUN apk upgrade --no-cache && nginx -v
+COPY deploy/customer-status/nginx-main-v2.conf /etc/nginx/nginx.conf
+COPY deploy/customer-status/nginx-v2.container.conf /etc/nginx/conf.d/status.conf
+RUN chmod 0444 /etc/nginx/nginx.conf /etc/nginx/conf.d/status.conf
+USER 101:101
+EXPOSE 8443
+ENTRYPOINT ["nginx"]
+CMD ["-g", "daemon off;"]

@@ -25,7 +25,7 @@ class DNS(socketserver.BaseRequestHandler):
         okay = ".".join(labels) == "status.noc128.test" and kind == 1
         header = data[:2] + struct.pack("!HHHHH", 0x8180, 1, int(okay), 0, 0)
         answer = (
-            b"\xc0\x0c" + struct.pack("!HHIH", 1, 1, 30, 4) + bytes([93, 184, 216, 34])
+            b"\xc0\x0c" + struct.pack("!HHIH", 1, 1, 30, 4) + bytes([93, 184, 216, 37])
             if okay
             else b""
         )
@@ -63,7 +63,15 @@ class Gateway(http.server.BaseHTTPRequestHandler):
             next_history_offset=None,
             revision_token="a" * 64,
         )
-        if mode == "outage":
+        if mode in {
+            "outage",
+            "partial",
+            "degraded",
+            "maintenance",
+            "scheduled",
+            "recovery",
+            "resolved",
+        }:
             feed["overall_status"] = "major_service_interruption"
             feed["revision_token"] = "b" * 64
             feed["incidents"] = [
@@ -82,6 +90,46 @@ class Gateway(http.server.BaseHTTPRequestHandler):
                     display_status="major_service_interruption",
                 )
             ]
+        if mode in {"partial", "degraded"}:
+            status = {
+                "partial": "partial_service_interruption",
+                "degraded": "degraded_performance",
+            }[mode]
+            feed["overall_status"] = status
+            feed["incidents"][0].update(impact=mode, display_status=status)
+        if mode in {"maintenance", "scheduled", "recovery", "resolved"}:
+            item = feed["incidents"].pop()
+            canonical = {
+                "maintenance": "maintenance_underway",
+                "scheduled": "all_systems_operational",
+                "recovery": "monitoring_recovery",
+                "resolved": "resolved",
+            }[mode]
+            shown = "scheduled_maintenance" if mode == "scheduled" else canonical
+            item.update(
+                title="Synthetic approved " + mode,
+                status=canonical,
+                impact="general",
+                display_status=shown,
+            )
+            if mode == "scheduled":
+                item.update(
+                    starts_at=stamp(now + timedelta(hours=1)),
+                    ends_at=stamp(now + timedelta(hours=2)),
+                )
+            group = (
+                "resolved"
+                if mode == "resolved"
+                else "incidents"
+                if mode == "recovery"
+                else "maintenance"
+            )
+            feed[group].append(item)
+            feed["overall_status"] = (
+                "all_systems_operational"
+                if mode in {"scheduled", "resolved"}
+                else canonical
+            )
         if mode == "stale":
             feed.update(
                 overall_status="unknown",
@@ -101,6 +149,8 @@ class Gateway(http.server.BaseHTTPRequestHandler):
 if __name__ == "__main__":
     dns = socketserver.UDPServer(("0.0.0.0", 53), DNS)
     threading.Thread(target=dns.serve_forever, daemon=True).start()
+    internal = http.server.ThreadingHTTPServer(("0.0.0.0", 8002), Gateway)
+    threading.Thread(target=internal.serve_forever, daemon=True).start()
     server = http.server.ThreadingHTTPServer(("0.0.0.0", 443), Gateway)
     ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
     ctx.minimum_version = ssl.TLSVersion.TLSv1_2

@@ -118,6 +118,14 @@ def main():
         "NOC128_EVIDENCE": str(evidence),
         "NOC128_WORDPRESS_ORIGIN": "http://93.184.216.36",
     }
+    for name in ["noc128-wordpress", "noc128-db", "noc128-fixture", "noc128-proxy"]:
+        check = subprocess.run(
+            ["docker", "container", "inspect", name],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        if check.returncode == 0:
+            raise RuntimeError("Refusing existing acceptance container: " + name)
     run(
         [
             "docker",
@@ -177,6 +185,133 @@ def main():
             ],
             env=env,
             stdout=subprocess.DEVNULL,
+        )
+        # Test the actual minimal proxy as its non-root image user; only disposable
+        # certificate ownership and test listener hostname/port differ from example.
+        run(
+            [
+                "docker",
+                "run",
+                "--rm",
+                "--network",
+                "none",
+                "--user",
+                "0:0",
+                "-v",
+                str(fixtures) + ":/fixtures",
+                "--entrypoint",
+                "python",
+                "noc128-backend:test",
+                "-c",
+                'import os;os.chown("/fixtures/key.pem",101,101)',
+            ]
+        )
+        proxy_conf = (
+            (ROOT / "deploy/customer-status/nginx-v2.container.conf")
+            .read_text()
+            .replace("listen 8443 ssl;", "listen 443 ssl;")
+            .replace("status.example.invalid", "status.noc128.test")
+        )
+        (fixtures / "proxy.conf").write_text(proxy_conf)
+        run(
+            [
+                "docker",
+                "run",
+                "-d",
+                "--name",
+                "noc128-proxy",
+                "--network",
+                "noc128-wp",
+                "--ip",
+                "93.184.216.37",
+                "--add-host",
+                "status-gateway:93.184.216.34",
+                "--read-only",
+                "--tmpfs",
+                "/tmp:rw,noexec,nosuid,size=16m",
+                "--cap-drop",
+                "ALL",
+                "--security-opt",
+                "no-new-privileges:true",
+                "--memory",
+                "64m",
+                "--cpus",
+                "0.5",
+                "-v",
+                str(fixtures / "proxy.conf") + ":/etc/nginx/conf.d/status.conf:ro",
+                "-v",
+                str(fixtures / "cert.pem") + ":/run/secrets/status_tls_certificate:ro",
+                "-v",
+                str(fixtures / "key.pem") + ":/run/secrets/status_tls_private_key:ro",
+                "noc128-status-proxy:test",
+            ],
+            stdout=subprocess.DEVNULL,
+        )
+        run(
+            ["docker", "exec", "noc128-proxy", "nginx", "-t"], stdout=subprocess.DEVNULL
+        )
+        run(
+            [
+                "curl",
+                "--silent",
+                "--show-error",
+                "--fail",
+                "--retry",
+                "10",
+                "--retry-connrefused",
+                "--retry-delay",
+                "1",
+                "--max-time",
+                "2",
+                "--noproxy",
+                "*",
+                "--resolve",
+                "status.noc128.test:443:93.184.216.37",
+                "--cacert",
+                str(fixtures / "ca.pem"),
+                "https://status.noc128.test/health",
+            ],
+            stdout=subprocess.DEVNULL,
+        )
+        for path in [
+            "/api/customer-status/v1/cases",
+            "/api",
+            "/private",
+            "/public/network-status/v1",
+        ]:
+            result = run(
+                [
+                    "curl",
+                    "--silent",
+                    "--show-error",
+                    "--noproxy",
+                    "*",
+                    "--resolve",
+                    "status.noc128.test:443:93.184.216.37",
+                    "--cacert",
+                    str(fixtures / "ca.pem"),
+                    "--output",
+                    "/dev/null",
+                    "--write-out",
+                    "%{http_code}",
+                    "https://status.noc128.test" + path,
+                ],
+                capture_output=True,
+            )
+            if result.stdout != "404":
+                raise RuntimeError("Public proxy exposed a non-allowlisted route")
+        (evidence / "proxy-isolation.json").write_text(
+            json.dumps(
+                {
+                    "private_paths": "404",
+                    "tls_verification": True,
+                    "user": 101,
+                    "read_only": True,
+                    "capabilities": "none",
+                    "scope": "actual proxy image; isolated synthetic upstream",
+                },
+                indent=2,
+            )
         )
         for _ in range(60):
             check = subprocess.run(
@@ -348,7 +483,7 @@ def main():
             + "\n"
         )
     finally:
-        for name in ["noc128-wordpress", "noc128-db", "noc128-fixture"]:
+        for name in ["noc128-wordpress", "noc128-db", "noc128-fixture", "noc128-proxy"]:
             subprocess.run(
                 ["docker", "rm", "-f", name],
                 stdout=subprocess.DEVNULL,

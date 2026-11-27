@@ -2,7 +2,7 @@
 # Loopback-only publishing; public ingress needs independent operator approval.
 services:
   status-proxy:
-    image: nginx:1.30.8-alpine@sha256:8eb04fe3b385090e9aa02961f77398ad09b6bf33ab07f6669a5bb7acce22c0d3
+    image: ${NOC_STATUS_PROXY_IMAGE:?Set reviewed immutable public status proxy image}
     user: "101:101"
     entrypoint: [nginx, -g, "daemon off;"]
     ports: ["127.0.0.1:18443:8443"]
