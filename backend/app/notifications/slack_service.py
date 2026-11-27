@@ -754,7 +754,7 @@ def process_interactions(factory, limit=50):
                 mapping.user_id,
                 "slack_incident_interaction",
                 incident_id=incident.id,
-                action=event.action,
+                interaction_action=event.action,
                 event_key=event.key,
             )
             event.state = "processed"
