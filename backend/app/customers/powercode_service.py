@@ -256,6 +256,7 @@ def snapshot(db, a):
         not q
         or q.status != "accepted"
         or not q.approved_by
+        or q.plan_id != plan.id
         or not (q.acceptance_ciphertext or response)
     ):
         # Public append-only responses and legacy encrypted acceptance are distinct evidence.
@@ -272,6 +273,8 @@ def snapshot(db, a):
     )
     if not w or w.status != "completed" or not w.completed_at:
         raise ValueError("Completed canonical installation work order required")
+    if a.proposed_site_id is not None and w.site_id != a.proposed_site_id:
+        raise ValueError("Installation site differs from reviewed application")
     if not db.scalar(
         select(ProvisionDraft.id).where(ProvisionDraft.application_id == a.id)
     ):

@@ -88,6 +88,9 @@ def dashboard(
                 CustomerService.revenue_basis,
                 func.count(),
                 func.sum(CustomerService.monthly_recurring),
+                CustomerService.package_id,
+                CustomerService.site_id,
+                func.count(CustomerService.monthly_recurring),
             )
             .where(CustomerService.source_deleted_at.is_(None))
             .group_by(
@@ -95,6 +98,8 @@ def dashboard(
                 CustomerService.service_type,
                 CustomerService.currency,
                 CustomerService.revenue_basis,
+                CustomerService.package_id,
+                CustomerService.site_id,
             )
         ).all()
         return {
@@ -164,6 +169,10 @@ def dashboard(
                     "currency": r[2],
                     "basis": r[3],
                     "services": r[4],
+                    "package_id": r[6],
+                    "site_id": r[7],
+                    "known_charge_services": r[8],
+                    "missing_charge_services": r[4] - r[8],
                     "monthly_recurring": r[5] if r[0] == "active" else None,
                 }
                 for r in groups
