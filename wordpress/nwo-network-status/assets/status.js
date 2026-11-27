@@ -12,7 +12,7 @@
     try { options = JSON.parse(root.dataset.nwoStatusOptions); } catch { return; }
     const endpoint = new URL(root.dataset.nwoStatusEndpoint, location.href);
     if (endpoint.origin !== location.origin) return;
-    let expiryTimer, pending = false, offset = 0;
+    let expiryTimer, pending = false, offset = 0, lastSuccess = null;
     root.dataset.theme = options.theme;
     root.dataset.view = options.view;
     const labels = options.labels || {};
@@ -20,15 +20,23 @@
       if (['operational','disruption','unknown'].includes(key) && /^#[a-f0-9]{6}$/i.test(color)) root.style.setProperty('--nwo-' + key, color);
     }
     const label = value => labels[value] || 'Status unknown';
+    function support() {
+      root.append(el('p', options.support_text));
+      if (options.support_url) {
+        try { const url = new URL(options.support_url); if (url.protocol === 'https:') { const link=el('a','Support');link.href=url.href;root.append(link); } } catch { /* fail closed */ }
+      }
+    }
+    function retrieved() { if (lastSuccess) root.append(el('p', `Last successful retrieval: ${new Date(lastSuccess).toLocaleString()}`)); }
     function unavailable(message) {
       root.replaceChildren(el('h2', options.brand), el('p', '⚠ Status unknown', 'nwo-status-summary'), el('p', message));
       root.dataset.state = 'unknown';
+      retrieved(); support();
     }
     function render(data) {
       clearTimeout(expiryTimer);
+      if (typeof data.last_success === 'string' && Number.isFinite(Date.parse(data.last_success))) lastSuccess = data.last_success;
       if (!data.available || !data.feed || Date.parse(data.valid_until) <= Date.now()) {
         unavailable('The approved gateway is unavailable. Previously cached operational status is not current.');
-        if (data.last_success) root.append(el('p', `Last successful retrieval: ${new Date(data.last_success).toLocaleString()}`));
         return;
       }
       const feed = data.feed;
@@ -66,11 +74,7 @@
           controls.append(previous, next); root.append(controls);
         }
       }
-      root.append(el('p', options.support_text));
-      if (options.support_url) {
-        const link = el('a', 'Support');
-        try { const url = new URL(options.support_url); if (url.protocol === 'https:') { link.href = url.href; root.append(link); } } catch { /* fail closed */ }
-      }
+      retrieved(); support();
       expiryTimer = setTimeout(() => unavailable('The last retrieved update expired. Current status is unknown.'), Math.max(0, Date.parse(data.valid_until) - Date.now()));
     }
     async function refresh() {
@@ -81,8 +85,9 @@
       try {
         const url = new URL(endpoint); url.searchParams.set('history_offset', String(offset));
         const response = await fetch(url, {cache: 'no-store', credentials: 'omit', redirect: 'error', signal: controller.signal});
-        if (!response.ok) throw new Error('unavailable');
-        render(await response.json());
+        if (!response.ok && response.status !== 503) throw new Error('unavailable');
+        const data = await response.json();
+        render(response.ok ? data : {available:false,last_success:data.last_success});
       } catch { clearTimeout(expiryTimer); unavailable('The approved gateway is unavailable. Current status is unknown.'); }
       finally { clearTimeout(timeout); pending = false; }
     }

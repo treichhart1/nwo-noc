@@ -277,7 +277,10 @@ def test_withdrawal_requires_new_approved_revision(x):
     step(x, r, "approve")
     assert client(x, True).get("/public/network-status/v1").json()["incidents"]
     step(x, r, "publish")
-    assert client(x, True).get("/public/network-status/v1").json()["incidents"] == []
+    # Withdrawal is not restoration or approval of a new healthy baseline.
+    assert client(x, True).get("/public/network-status/v1").status_code == 503
+    projection = client(x, True).get("/public/network-status/v2").json()
+    assert projection["incidents"] == [] and projection["overall_status"] == "unknown"
     assert r.state == "withdrawn"
     assert x.db.scalar(select(func.count()).select_from(Revision)) == 2
 

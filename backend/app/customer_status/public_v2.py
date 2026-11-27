@@ -129,7 +129,13 @@ def projected(db, offset, limit, now=None):
     )
     if updated > now + timedelta(seconds=60):
         raise ValueError("Future public approval timestamp")
-    stale = now - updated > timedelta(hours=24)
+    # Withdrawal clears the current publication pointer. It is not recovery.
+    # Require a separate reviewed baseline before presenting healthy status.
+    review_required = (
+        p.get("last_withdrawal_at")
+        and p["last_withdrawal_at"] > p["baseline_approved_at"]
+    )
+    stale = bool(review_required or now - updated > timedelta(hours=24))
     active = groups["incidents"] + groups["maintenance"]
     states = [p["baseline_status"]] + [
         r["display_status"]

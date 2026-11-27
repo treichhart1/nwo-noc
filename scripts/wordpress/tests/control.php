@@ -2,7 +2,12 @@
 $_SERVER['HTTP_HOST']='93.184.216.36';$_SERVER['REQUEST_METHOD']='GET';
 require '/var/www/html/wp-load.php';
 $mode=getenv('NOC128_ACTION');
-if ($mode==='diagnose') { echo json_encode(['active'=>in_array('nwo-network-status/nwo-network-status.php',get_option('active_plugins',[]),true),'curl'=>function_exists('curl_init'),'mbstring'=>function_exists('mb_strlen'),'class_loaded'=>class_exists('NWO_Network_Status')]); }
+if ($mode==='removed') {
+    $left=0;foreach(['nwo_status_settings','nwo_status_diagnostics'] as $key){if(get_option($key,null)!==null){$left++;}}
+    for($i=0;$i<=180;$i+=20){foreach(['cache','failure','lock'] as $kind){if(get_option('nwo_status_'.$kind.'_'.$i,null)!==null){$left++;}}}
+    echo json_encode(['installed'=>file_exists(WP_PLUGIN_DIR.'/nwo-network-status/nwo-network-status.php'),'remaining_options'=>$left,'pages_preserved'=>get_page_by_path('synthetic-network-status')!==null && get_page_by_path('status-block')!==null]);
+}
+elseif ($mode==='diagnose') { echo json_encode(['active'=>in_array('nwo-network-status/nwo-network-status.php',get_option('active_plugins',[]),true),'curl'=>function_exists('curl_init'),'mbstring'=>function_exists('mb_strlen'),'class_loaded'=>class_exists('NWO_Network_Status')]); }
 elseif ($mode==='clear') { NWO_Network_Status::clear_cache(); }
 elseif ($mode==='configure') {
     $s=NWO_Network_Status::defaults();$s['enabled']=true;

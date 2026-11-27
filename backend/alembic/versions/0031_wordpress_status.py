@@ -15,9 +15,11 @@ def upgrade():
         sa.Column("public_details", sa.JSON(), nullable=False, server_default="{}"),
     )
     op.execute("""
+CREATE INDEX ix_customer_status_public_update ON public.customer_status_revisions(published_at DESC) WHERE published_at IS NOT NULL AND approved_by IS NOT NULL AND approved_at IS NOT NULL;
 CREATE OR REPLACE VIEW noc_public_status.configuration WITH(security_barrier=true) AS
 SELECT enabled,baseline_status,baseline_approved_at,
-(SELECT max(r.published_at) FROM public.customer_status_publications p JOIN public.customer_status_revisions r ON r.id=p.published_revision_id AND r.publication_id=p.id WHERE r.approved_by IS NOT NULL AND r.approved_at IS NOT NULL AND r.published_at IS NOT NULL) AS last_public_update
+(SELECT max(r.published_at) FROM public.customer_status_revisions r WHERE r.state IN ('published','updated','resolved','withdrawn') AND r.approved_by IS NOT NULL AND r.approved_at IS NOT NULL AND r.published_at IS NOT NULL) AS last_public_update,
+(SELECT max(r.published_at) FROM public.customer_status_revisions r WHERE r.state='withdrawn' AND r.withdraw AND r.approved_by IS NOT NULL AND r.approved_at IS NOT NULL AND r.published_at IS NOT NULL) AS last_withdrawal_at
 FROM public.customer_status_policy WHERE id=1;
 CREATE OR REPLACE VIEW noc_public_status.announcements WITH(security_barrier=true) AS
 SELECT p.identifier,CASE WHEN p.maintenance_id IS NULL THEN 'incident' ELSE 'maintenance' END AS kind,

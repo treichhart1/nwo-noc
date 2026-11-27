@@ -57,6 +57,7 @@ test('installable ZIP, approved public display, failure isolation and safe remov
   for (const failure of ['down','redirect','private']) {
     await mode(failure);await page.reload();
     await expect(page.locator('.nwo-status-summary')).toContainText('Status unknown');
+    await expect(page.getByText('Last successful retrieval:',{exact:false})).toBeVisible();
     await expect(page.getByText('Synthetic approved outage',{exact:true})).toHaveCount(0);
   }
   await mode('stale');await page.reload();
@@ -70,12 +71,16 @@ test('installable ZIP, approved public display, failure isolation and safe remov
   await page.goto(origin+'/?pagename=synthetic-network-status');
   await expect(page.locator('.nwo-status-summary')).toContainText('All systems operational');
   control('theme',['-e','NOC128_THEME='+info.theme]);
-  writeFileSync(path.join(evidence,`wordpress-${info.wordpress}.json`),JSON.stringify({runtime:info,security,assertions:['ZIP admin installation and activation','shortcode','dynamic Gutenberg block','mobile viewport','operational','major interruption','withdrawal replacement','gateway failure','redirect rejected','private key rejection','stale unknown','authenticated invalid nonce','administrator settings save','partial disruption','degraded performance','maintenance','scheduled maintenance','recovery','resolved history','URL and IP guards','corrupt cache recovery']},null,2));
+  const publicEndpoint = await page.locator('[data-nwo-status-endpoint]').getAttribute('data-nwo-status-endpoint');
   await page.goto(origin + '/wp-admin/plugins.php');
   await page.locator('[data-slug=nwo-network-status] a').filter({hasText:'Deactivate'}).click();
   page.on('dialog', dialog => dialog.accept());
   await page.locator('[data-slug=nwo-network-status] a').filter({hasText:'Delete'}).click();
-  await expect(page.locator('[data-slug=nwo-network-status]')).toHaveCount(0);
-  const feed=await request.get(origin+'/wp-json/nwo-status/v1/feed');
+  await expect.poll(() => JSON.parse(control('removed')).installed).toBe(false);
+  const removal=JSON.parse(control('removed'));
+  expect(removal.remaining_options).toBe(0);
+  expect(removal.pages_preserved).toBe(true);
+  const feed=await request.get(publicEndpoint!);
   expect(feed.status()).toBe(404);
+  writeFileSync(path.join(evidence,`wordpress-${info.wordpress}.json`),JSON.stringify({runtime:info,security,pure,removal,assertions:['ZIP admin installation and activation','shortcode','dynamic Gutenberg block','mobile viewport','operational','major interruption','withdrawal replacement','gateway failure','redirect rejected','private key rejection','stale unknown','authenticated invalid nonce','administrator settings save','partial disruption','degraded performance','maintenance','scheduled maintenance','recovery','resolved history','URL and IP guards','corrupt cache recovery','safe uninstall','settings and caches deleted','pages preserved','public route removed']},null,2));
 });

@@ -401,6 +401,11 @@ def main():
                 capture_output=True,
             )
             versions.append(json.loads(result.stdout))
+            versions[-1]["image"] = image
+            versions[-1]["image_id"] = run(
+                ["docker", "inspect", "--format", "{{.Image}}", "noc128-wordpress"],
+                capture_output=True,
+            ).stdout.strip()
             opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
             for _ in range(30):
                 try:
@@ -455,6 +460,10 @@ def main():
                 cwd=ROOT / "frontend",
                 env=env,
                 timeout=600,
+            )
+            print(
+                json.dumps({"wordpress_compatibility": versions[-1], "result": "PASS"}),
+                flush=True,
             )
             run(["docker", "rm", "-f", "noc128-wordpress"], stdout=subprocess.DEVNULL)
             # New independent WP schema for the second compatibility target.

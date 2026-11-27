@@ -2,10 +2,10 @@
   "schema_version": 1,
   "scope": "supplemental isolated local validation; not WordPress/Docker/Ubuntu acceptance",
   "backend": {
-    "passed": 1315,
-    "skipped": 1033,
+    "passed": 1316,
+    "skipped": 1034,
     "warnings": 3,
-    "seconds": 15.65,
+    "seconds": 17.46,
     "limitations": "No disposable PostgreSQL URL; skipped tests are not passes"
   },
   "php": {
@@ -33,6 +33,12 @@
     "wordpress/nwo-network-status/transport.php": "00b93e2f701c49001d19e457f5ee9b30424813fabb2822bee7d3f474833b71d6",
     "wordpress/nwo-network-status/validation.php": "171e66315f8c617d3e1d480777205bb2d6bd6f9808a480facc948fc56a31d3d9",
     "wordpress/nwo-network-status/nwo-network-status.php": "091ab90426b2254bccc58b5b3920464fa36a695788f0aceb5cf33d5c89a588e5",
-    "scripts/wordpress/tests/pure-contracts.php": "4aeeaf3f667aa20780b45678c8b4822db2f6bdb09a2ca0bd66f6d4b65faad04e"
+    "scripts/wordpress/tests/pure-contracts.php": "4aeeaf3f667aa20780b45678c8b4822db2f6bdb09a2ca0bd66f6d4b65faad04e",
+    "wordpress/nwo-network-status/assets/status.js": "da32ad09849997b5370c5afc520b21a9227cc97206b4a8f6d0d045efa514500b"
+  },
+  "browser": {
+    "engine": "Chromium156.0.8078.79",
+    "passed": 11,
+    "scope": "actual plugin JavaScript/CSS with synthetic intercepted feed; not WordPress installation"
   }
 }

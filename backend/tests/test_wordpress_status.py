@@ -273,3 +273,51 @@ def test_postgres_slack_draft_endpoint_is_idempotent_and_private(x):
         from app.main import app
 
         app.dependency_overrides.clear()
+
+
+def test_withdrawal_cannot_silently_reapprove_healthy_baseline():
+    db = ProjectionDB()
+    db.policy["last_public_update"] = NOW + timedelta(seconds=1)
+    db.policy["last_withdrawal_at"] = NOW + timedelta(seconds=1)
+    feed = json.loads(projected(db, 0, 20, NOW + timedelta(seconds=2)))
+    assert feed["overall_status"] == "unknown" and feed["freshness"] == "stale"
+    db.policy["baseline_approved_at"] = NOW + timedelta(seconds=3)
+    assert (
+        json.loads(projected(db, 0, 20, NOW + timedelta(seconds=4)))["overall_status"]
+        == "all_systems_operational"
+    )
+
+
+def test_postgres_withdrawal_retains_update_timestamp_and_requires_baseline_review(x):
+    from test_customer_network_status import step
+    from app.customer_status.contracts import PolicyInput
+
+    publish(x)
+    r = draft(x, withdraw=True)
+    for action in ["request_approval", "approve", "publish"]:
+        step(x, r, action)
+    c = client(x, True)
+    try:
+        feed = c.get("/public/network-status/v2").json()
+        assert feed["incidents"] == [] and feed["overall_status"] == "unknown"
+        assert datetime.fromisoformat(feed["last_public_update"]) >= r.published_at
+        s.configure(
+            x.db,
+            x.admin,
+            b(
+                PolicyInput,
+                expected_revision=s.policy(x.db)["revision"],
+                enabled=True,
+                baseline_status="investigating",
+                public_baseline_reviewed=True,
+            ),
+        )
+        updated = c.get("/public/network-status/v2").json()
+        assert (
+            updated["overall_status"] == "investigating"
+            and updated["revision_token"] != feed["revision_token"]
+        )
+    finally:
+        from app.customer_status.public_app import app
+
+        app.dependency_overrides.clear()
