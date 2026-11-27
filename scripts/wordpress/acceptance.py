@@ -29,7 +29,8 @@ def run(args, **kw):
 
 
 def main():
-    signup_mode = "--signup" in sys.argv[2:]
+    cancellation_mode = "--cancellation" in sys.argv[2:]
+    signup_mode = "--signup" in sys.argv[2:] or cancellation_mode
     evidence = Path(sys.argv[1]).resolve()
     evidence.mkdir(parents=True, exist_ok=True)
     fixtures = evidence / "fixtures"
@@ -102,7 +103,7 @@ def main():
     run(
         [
             "python3",
-            str(ROOT / ("scripts/signup/build.py" if signup_mode else "scripts/wordpress/build.py")),
+            str(ROOT / ("scripts/cancellation/build.py" if cancellation_mode else "scripts/signup/build.py" if signup_mode else "scripts/wordpress/build.py")),
             "--output",
             str(evidence / "plugin"),
         ],
@@ -119,7 +120,9 @@ def main():
         "WORDPRESS_ACCEPTANCE": "1",
         "NOC128_EVIDENCE": str(evidence),
         "NOC128_WORDPRESS_ORIGIN": "https://wordpress.noc128.test" if signup_mode else "http://93.184.216.36",
-        "NOC129_SIGNUP_WORDPRESS": "true" if signup_mode else "false",
+        "NOC129_SIGNUP_WORDPRESS": "true" if signup_mode and not cancellation_mode else "false",
+        "NOC131_CANCELLATION_WORDPRESS": "true" if cancellation_mode else "false",
+        "CANCELLATION_ACCEPTANCE": "1" if cancellation_mode else "0",
     }
     for name in ["noc128-wordpress", "noc128-db", "noc128-fixture", "noc128-proxy"] + (["noc129-postgres"] if signup_mode else []):
         check = subprocess.run(
@@ -165,7 +168,7 @@ def main():
                 "-v",
                 str(ROOT / ("scripts/signup/fixture.py" if signup_mode else "scripts/wordpress/fixture_gateway.py")) + ":/fixture.py:ro",
                 *(["-v",str(ROOT / "examples/signup/public-role.sql")+":/signup-public-role.sql:ro",
-                   "-e","PYTHONPATH=/app","-e","WORDPRESS_ACCEPTANCE=1","-e","APP_ENV=staging","-e","OFFLINE_MODE=true","-e","SYNTHETIC_MONITORING_ENABLED=true",
+                   "-e","CANCELLATION_ACCEPTANCE="+("1" if cancellation_mode else "0"),"-e","PYTHONPATH=/app","-e","WORDPRESS_ACCEPTANCE=1","-e","APP_ENV=staging","-e","OFFLINE_MODE=true","-e","SYNTHETIC_MONITORING_ENABLED=true",
                    "-e","SECRET_KEY=synthetic-noc129-fixture-secret-synthetic","-e","ADMIN_PASSWORD=synthetic-ci-only",
                    "-e","DATABASE_URL=postgresql+psycopg://synthetic:synthetic-ci-only@noc129-postgres:5432/nwo_noc"] if signup_mode else []),
                 *(["-v",str(ROOT / "scripts/signup/quote_fixture.py")+":/quote-fixture.py:ro"] if signup_mode else []),
@@ -440,7 +443,7 @@ def main():
                 capture_output=True,
             ).stdout.strip()
             if signup_mode:
-                run(["docker","cp",str(ROOT / "scripts/signup/tests"),"noc128-wordpress:/signup-tests"])
+                run(["docker","cp",str(ROOT / ("scripts/cancellation/tests" if cancellation_mode else "scripts/signup/tests")),"noc128-wordpress:/signup-tests"])
                 run(["docker","exec","noc129-postgres","psql","-U","synthetic","-d","nwo_noc","-c","DELETE FROM signup_public_budgets"],stdout=subprocess.DEVNULL)
             import ssl
             opener = urllib.request.build_opener(urllib.request.ProxyHandler({}),urllib.request.HTTPSHandler(context=ssl.create_default_context(cafile=str(fixtures / "ca.pem"))))
@@ -491,7 +494,7 @@ def main():
                     "npx",
                     "playwright",
                     "test",
-                    "signup-wordpress.spec.ts" if signup_mode else "wordpress-plugin.spec.ts",
+                    "cancellation-wordpress.spec.ts" if cancellation_mode else "signup-wordpress.spec.ts" if signup_mode else "wordpress-plugin.spec.ts",
                     "--workers=1",
                 ],
                 cwd=ROOT / "frontend",

@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     ipam_discovery_enabled: bool = False
     signup_pii_key_file: str = Field(default='',repr=False,exclude=True)
     signup_public_origin: str = ''
+    retention_public_enabled: bool = False
     signup_public_enabled: bool = False
     signup_public_test_mode: bool = False
     signup_turnstile_mode: Literal['disabled','turnstile','fixture'] = 'disabled'

@@ -1,0 +1,24 @@
+{
+  "milestone": "NOC-131",
+  "base_commit": "a6befecf13798059e785615323ded73a4b7a4368",
+  "base_pr": 133,
+  "migration": "0034_customer_retention",
+  "default_public_intake": "disabled",
+  "native_powercode": "BLOCKED: version-matched official API specifications required",
+  "external_mutations": false,
+  "production_decision": "NO-GO",
+  "operator_actions": [
+    "Review immutable cancellation policy and billing disposition; acknowledgement does not establish debt",
+    "Approve retention criteria, reason taxonomy, competitor sources and historical cohort accuracy",
+    "Verify identities and explicit per-account service selection using approved procedures",
+    "Authorize separate public gateway, HTTPS, DNS, Turnstile, restricted DB role, egress and WordPress plugin installation",
+    "Review source disconnection evidence; never execute disconnection through this module",
+    "Independently authorize any future Twilio/Telnyx category or Slack channel/message delivery",
+    "Provide version-matched Powercode contracts, not invented endpoints",
+    "Resolve vendor-native security disposition, Redis/dependency licensing and production signing/publication approvals",
+    "Accept real VPN/MFA, malware definitions, physical independent off-site recovery and live equipment/provider compatibility",
+    "Retain base benchmark run847 max15.064 failure and independent run848 max9.732 success; obtain consistent measured capacity acceptance"
+  ],
+  "prohibited": ["production access", "actual cancellations", "billing changes", "automatic offers", "real notifications", "live equipment", "PR merges"],
+  "native_email": "Unavailable; separate bounded NOC-132 provider contract and acceptance required"
+}

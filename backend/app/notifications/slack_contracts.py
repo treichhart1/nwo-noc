@@ -6,6 +6,7 @@ from app.customers.contracts import SafeModel
 from app.notifications.slack_transport import CHANNEL
 
 EVENTS = {
+    "cancellation_request", "retention_review", "equipment_return_overdue", "cancellation_unresolved", "tower_churn",
     "core_outage",
     "tower_outage",
     "backhaul_outage",
@@ -104,6 +105,7 @@ class SlackCredentials(SafeModel):
 
 class SlackSourceRequest(SafeModel):
     kind: Literal[
+        "cancellation",
         "incident",
         "monitoring",
         "tower",

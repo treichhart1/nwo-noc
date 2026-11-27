@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "version": "131.0.0",
+  "sha256": "e9ab591aa42ba4e95336bf2d647101399cbb082e9765ff7317baf9dbb9fdd7f3",
+  "members": [
+    {
+      "path": "assets/cancellation.css",
+      "sha256": "aa9cebcc888b5a47b7daabd9eff0936efc8a04915d7e4a1eacf935bbf4f745ad"
+    },
+    {
+      "path": "assets/editor.js",
+      "sha256": "a0089ef8fa02ee06be5fcd0935e45163b096b68ca6ae2a1ee8fe5fbc5bad98b4"
+    },
+    {
+      "path": "block.json",
+      "sha256": "f7aefdf22ab1202b63628b982b772352ee91e411329aea33ddd9c175de632f90"
+    },
+    {
+      "path": "nwo-customer-cancellation.php",
+      "sha256": "b4dc96cf6af1679056dc8f3491b70e0ee491d71f34ed7dd6872138b0113615d8"
+    },
+    {
+      "path": "readme.txt",
+      "sha256": "ce5c2d299b497e095df492de7469d41d1092dd55ccbc1a690d27b9bdd17fae50"
+    },
+    {
+      "path": "transport.php",
+      "sha256": "07ba05da79aba41959962d14e564dca2350bb20019c30ca4f3a6756c7486509e"
+    },
+    {
+      "path": "uninstall.php",
+      "sha256": "8481e4ac37c57144216d59cfd4dfd226dac13b9b61b15fabe92ac773d55e28c2"
+    }
+  ]
+}

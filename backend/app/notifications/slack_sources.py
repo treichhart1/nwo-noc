@@ -98,7 +98,26 @@ def snapshot(db, kind, identifier, now=None):
         "safe_steps": "Review current monitoring evidence in the private NOC; request qualified technician investigation. Do not change equipment automatically.",
     }
     row = None
-    if kind == "incident":
+    if kind == "cancellation":
+        from app.retention.models import Case, CaseService, Policy
+        row = db.get(Case, int(identifier))
+        if row and not row.redacted_at:
+            p = db.get(Policy, row.policy_id)
+            links = list(db.scalars(select(CaseService).where(CaseService.case_id == row.id)))
+            sites = {r.snapshot.get('site_id') for r in links if r.snapshot.get('site_id')}
+            overdue = any(r.equipment_return_required and r.equipment_due and r.equipment_due < now.date() and not r.equipment_returned_at for r in links)
+            unresolved = row.status not in {'withdrawn','closed','disconnected'} and utc(row.created_at) < now - timedelta(days=p.unresolved_days)
+            base.update(event='equipment_return_overdue' if overdue else 'cancellation_unresolved' if unresolved else 'retention_review' if row.retention_state != 'pending_review' else 'cancellation_request', site_id=next(iter(sites)) if len(sites)==1 else None, confidence='Operator-reviewed cancellation workflow; no customer information included')
+            if len(sites)==1:
+                from app.retention.analytics import summary
+                report=summary(db, now.strftime('%Y-%m'), next(iter(sites)))
+                if report['observed_unique_service_cancellations'] >= p.tower_churn_threshold:
+                    base['event']='tower_churn'
+            version=[row.revision, row.status, row.retention_state, base['event'], [(r.id,str(r.equipment_due),str(r.equipment_returned_at)) for r in links]]
+            started=row.created_at
+        else:
+            row=None
+    elif kind == "incident":
         row = db.get(Incident, int(identifier))
         if row:
             d = db.get(Device, row.device_id) if row.device_id else None

@@ -16,6 +16,7 @@ CATEGORIES = {
     "restoration",
     "signup_application",
     "installation_scheduling",
+    "customer_cancellation",
 }
 
 
@@ -31,7 +32,7 @@ class ProviderInput(SafeModel):
     )
     recipient_allowlist: list[str] = Field(default_factory=list, max_length=1000)
     categories: list[str] = Field(
-        default_factory=lambda: sorted(CATEGORIES), max_length=9
+        default_factory=lambda: sorted(CATEGORIES - {"customer_cancellation"}), max_length=10
     )
     currency: Literal["USD"] = "USD"
     price_per_segment_microunits: int | None = Field(None, ge=1, le=100000000)

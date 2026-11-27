@@ -1,0 +1,16 @@
+{
+ "scope":"Local isolated development; not native PostgreSQL/WordPress/Ubuntu VM proof",
+ "base_commit":"a6befecf13798059e785615323ded73a4b7a4368",
+ "initial_backend_suite":{"passed":1375,"skipped":1090,"failed":3,"failure_cause":"Missing historical git objects in the isolated clone; original remote branch ancestry subsequently fetched"},
+ "new_contract_tests":{"passed":17,"postgresql_skipped":16},
+ "private_frontend_typecheck_build":"PASS",
+ "public_signup_and_cancellation_typecheck_build":"PASS",
+ "php_wasm":{"version":"8.3.36","transport_origin_rejections":7,"scope":"Syntax and pure contract validation; not WordPress installation"},
+ "python_undefined_name_check":"PASS",
+ "backend_bandit":{"reviewed":83,"unreviewed":0,"high":0},
+ "installer_bandit":{"reviewed":21,"unreviewed":0,"high":0,"review":"Only adjacent migration-summary fingerprint changed; exact shell=False subprocess reviewed"},
+ "unchanged_signup_plugin_sha256":"7349fdb41751b477a888f959e72457a13c1d95731ae7292bc20e67e533076d10",
+ "dependency_changes":false,
+ "ci":"Required final-commit job results and actual infrastructure evidence will be recorded in the PR acceptance ledger",
+ "decision":"NO-GO for production or actual customer cancellations"
+}

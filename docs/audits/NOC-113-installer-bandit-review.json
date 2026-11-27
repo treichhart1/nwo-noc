@@ -16,6 +16,55 @@
       "justification": "Reviewed NOC116: fixed absolute /usr/bin/openssl pkeyutl verification argv, no shell or external downloads; protected temporary files, fixed Ed25519 key encoding, bounded10s execution, static errors. Trust key separately root-owned; no secret output."
     },
     {
+      "fingerprint": "adb12b01b6643d20ac7d744cc9337abfaeb2cf80f61197803e05e22e5409e63e",
+      "path": "scripts/host/lab.py",
+      "test_id": "B404",
+      "severity": "LOW",
+      "justification": "Reviewed NOC123: approved exact clean source/tree and explicit isolated-lab root authorization precede host changes. Fixed git/Docker/openssl/installer/scanner/audit argv, no shell. Work is private root0700, logs0600; no passwords/private key contents in argv or logs. Temporary /tmp references are bounded private container tmpfs with read-only root/cap-drop, not shared host files. Installer alone owns password TTY/stdin and all production signature gates remain unchanged. Evidence/source/image/audit/authorization negatives and dry-run non-mutation tested. Exact statement review only; new/changed/HIGH/stale findings still fail. Docker helpers force the local Unix daemon, discard remote contexts/TLS redirection and use a root-system PATH; no getpass fallback without TTY or explicit private stdin. Build-only resolver TMPDIR is a private512MiB executable container tmpfs required by pinned pip-audit; nosuid/nodev/read-only root/cap-drop retained, no host mounts/secrets, all application noexec/durability controls unchanged."
+    },
+    {
+      "fingerprint": "daa85d9ccad3b2f556cc277bfdd8a210abec9cf9860369617ea13422934f5888",
+      "path": "scripts/host/lab.py",
+      "test_id": "B603",
+      "severity": "LOW",
+      "justification": "Reviewed NOC123: approved exact clean source/tree and explicit isolated-lab root authorization precede host changes. Fixed git/Docker/openssl/installer/scanner/audit argv, no shell. Work is private root0700, logs0600; no passwords/private key contents in argv or logs. Temporary /tmp references are bounded private container tmpfs with read-only root/cap-drop, not shared host files. Installer alone owns password TTY/stdin and all production signature gates remain unchanged. Evidence/source/image/audit/authorization negatives and dry-run non-mutation tested. Exact statement review only; new/changed/HIGH/stale findings still fail. Docker helpers force the local Unix daemon, discard remote contexts/TLS redirection and use a root-system PATH; no getpass fallback without TTY or explicit private stdin. Build-only resolver TMPDIR is a private512MiB executable container tmpfs required by pinned pip-audit; nosuid/nodev/read-only root/cap-drop retained, no host mounts/secrets, all application noexec/durability controls unchanged."
+    },
+    {
+      "fingerprint": "fd01943218be3aa36326a40a09fea434be9953947faf6f202ca5b53f7e03b650",
+      "path": "scripts/host/lab.py",
+      "test_id": "B603",
+      "severity": "LOW",
+      "justification": "Reviewed NOC123: approved exact clean source/tree and explicit isolated-lab root authorization precede host changes. Fixed git/Docker/openssl/installer/scanner/audit argv, no shell. Work is private root0700, logs0600; no passwords/private key contents in argv or logs. Temporary /tmp references are bounded private container tmpfs with read-only root/cap-drop, not shared host files. Installer alone owns password TTY/stdin and all production signature gates remain unchanged. Evidence/source/image/audit/authorization negatives and dry-run non-mutation tested. Exact statement review only; new/changed/HIGH/stale findings still fail. Docker helpers force the local Unix daemon, discard remote contexts/TLS redirection and use a root-system PATH; no getpass fallback without TTY or explicit private stdin. Build-only resolver TMPDIR is a private512MiB executable container tmpfs required by pinned pip-audit; nosuid/nodev/read-only root/cap-drop retained, no host mounts/secrets, all application noexec/durability controls unchanged."
+    },
+    {
+      "fingerprint": "39bd9dd0cdc654107aedb2fa63ffef9b42b2b2b4af61a85cbd4f09027f0c0643",
+      "path": "scripts/host/lab.py",
+      "test_id": "B108",
+      "severity": "MEDIUM",
+      "justification": "Reviewed NOC123: approved exact clean source/tree and explicit isolated-lab root authorization precede host changes. Fixed git/Docker/openssl/installer/scanner/audit argv, no shell. Work is private root0700, logs0600; no passwords/private key contents in argv or logs. Temporary /tmp references are bounded private container tmpfs with read-only root/cap-drop, not shared host files. Installer alone owns password TTY/stdin and all production signature gates remain unchanged. Evidence/source/image/audit/authorization negatives and dry-run non-mutation tested. Exact statement review only; new/changed/HIGH/stale findings still fail. Docker helpers force the local Unix daemon, discard remote contexts/TLS redirection and use a root-system PATH; no getpass fallback without TTY or explicit private stdin. Build-only resolver TMPDIR is a private512MiB executable container tmpfs required by pinned pip-audit; nosuid/nodev/read-only root/cap-drop retained, no host mounts/secrets, all application noexec/durability controls unchanged."
+    },
+    {
+      "fingerprint": "8cee92e01d190b1c89ae4f8f4bc44a2bed663d1543f50e2ad81f289450d5bfba",
+      "path": "scripts/host/lab.py",
+      "test_id": "B108",
+      "severity": "MEDIUM",
+      "justification": "Reviewed NOC123: approved exact clean source/tree and explicit isolated-lab root authorization precede host changes. Fixed git/Docker/openssl/installer/scanner/audit argv, no shell. Work is private root0700, logs0600; no passwords/private key contents in argv or logs. Temporary /tmp references are bounded private container tmpfs with read-only root/cap-drop, not shared host files. Installer alone owns password TTY/stdin and all production signature gates remain unchanged. Evidence/source/image/audit/authorization negatives and dry-run non-mutation tested. Exact statement review only; new/changed/HIGH/stale findings still fail. Docker helpers force the local Unix daemon, discard remote contexts/TLS redirection and use a root-system PATH; no getpass fallback without TTY or explicit private stdin. Build-only resolver TMPDIR is a private512MiB executable container tmpfs required by pinned pip-audit; nosuid/nodev/read-only root/cap-drop retained, no host mounts/secrets, all application noexec/durability controls unchanged."
+    },
+    {
+      "fingerprint": "616820cf830373ad133c1456010ae9ffd50ee1759c72ce545fc23f601ca724f0",
+      "path": "scripts/host/lab.py",
+      "test_id": "B603",
+      "severity": "LOW",
+      "justification": "Reviewed NOC123: approved exact clean source/tree and explicit isolated-lab root authorization precede host changes. Fixed git/Docker/openssl/installer/scanner/audit argv, no shell. Work is private root0700, logs0600; no passwords/private key contents in argv or logs. Temporary /tmp references are bounded private container tmpfs with read-only root/cap-drop, not shared host files. Installer alone owns password TTY/stdin and all production signature gates remain unchanged. Evidence/source/image/audit/authorization negatives and dry-run non-mutation tested. Exact statement review only; new/changed/HIGH/stale findings still fail. Docker helpers force the local Unix daemon, discard remote contexts/TLS redirection and use a root-system PATH; no getpass fallback without TTY or explicit private stdin. Build-only resolver TMPDIR is a private512MiB executable container tmpfs required by pinned pip-audit; nosuid/nodev/read-only root/cap-drop retained, no host mounts/secrets, all application noexec/durability controls unchanged."
+    },
+    {
+      "fingerprint": "5645e8d05f790722dd2bc731a98ac8728cccccb7403bc4563882d8bd78114a14",
+      "file": "scripts/host/lab.py",
+      "test_id": "B603",
+      "severity": "LOW",
+      "justification": "NOC-131 source review: existing shell=False bounded subprocess executes only the reviewed absolute SOURCE/verify.sh with fixed --controlled-test and sanitized environment. Only adjacent migration summary changed from 0033 to 0034; no argv, trust, resource or approval boundary changed. Existing installer tests remain required."
+    },
+    {
       "fingerprint": "dc8a1845b21754163ab56e3390d628e851257e04e52aa59b60a82ab41e2b6a80",
       "path": "scripts/host/manager.py",
       "test_id": "B404",
@@ -65,6 +114,13 @@
       "justification": "Permissions are explicit: source-only release directories0755 allow the unprivileged ingress to read code; configuration/secrets remain private elsewhere. Socket directory0770 is root-owned with dedicated GID10001, no other permissions; only frontend supplementary group and the unprivileged ingress share it."
     },
     {
+      "fingerprint": "9fa56c483cdd4efb176367111e4af2c5194f4baafd92477604ec7d8c1f56fb20",
+      "path": "scripts/host/manager.py",
+      "test_id": "B103",
+      "severity": "MEDIUM",
+      "justification": "Reviewed NOC119A exact source-only0755 directories: safe_members first rejects links/absolute/parent paths and bounds the approved archive. Fresh extracted code parents become root-owned, traversable, never group/other-writable so UID10001 ingress can read its source under umask077. Generated config/release metadata and secrets are created afterward privately; persistent directories are elsewhere and unchanged. Regression cases022/077 require non-writable source parents, original bytes, preserved process umask and0600 release metadata. No high finding, broad ignore, severity exception or scanner suppression."
+    },
+    {
       "fingerprint": "37289e30b7af87b5d30c2b407626fc8d22d50033651f39fc7a0b117325dda84f",
       "path": "scripts/host/manager.py",
       "test_id": "B104",
@@ -79,13 +135,6 @@
       "justification": "Arguments are fixed packaging command structure or approved root-owned image/source/paths; no shell, credentials stay in private files/stdin; error text is sanitized; bounded timeout. The rehearsal-only ingress child uses a protected exact source path and no Docker privileges."
     },
     {
-      "fingerprint": "9fa56c483cdd4efb176367111e4af2c5194f4baafd92477604ec7d8c1f56fb20",
-      "path": "scripts/host/manager.py",
-      "test_id": "B103",
-      "severity": "MEDIUM",
-      "justification": "Reviewed NOC119A exact source-only0755 directories: safe_members first rejects links/absolute/parent paths and bounds the approved archive. Fresh extracted code parents become root-owned, traversable, never group/other-writable so UID10001 ingress can read its source under umask077. Generated config/release metadata and secrets are created afterward privately; persistent directories are elsewhere and unchanged. Regression cases022/077 require non-writable source parents, original bytes, preserved process umask and0600 release metadata. No high finding, broad ignore, severity exception or scanner suppression."
-    },
-    {
       "fingerprint": "5514ae78713ce91561cb22ad7b7d069826aef586cad8427fea45c9c32a8d7716",
       "path": "scripts/host/preflight.py",
       "test_id": "B404",
@@ -98,55 +147,6 @@
       "test_id": "B603",
       "severity": "LOW",
       "justification": "Reviewed NOC122: fixed local inventory callsites only (findmnt/lsblk/docker Unix socket/ip/getent/timedatectl/ss/ufw), no shell or mutation. PATH is restricted to root-owned system directories and environment is replaced, preventing DOCKER_HOST/CONTEXT redirection. Only user arguments are a literal findmnt target and validated opt-in hostname; default performs no DNS. Popen stdout is bounded256KiB with8s deadline and kill/wait cleanup; stderr is discarded, no credentials/config/management addresses returned.30preflight boundary/read-only cases cover rejection and protected existing installs. This exact LOW source review grants no HIGH/CVE exemption."
-    },
-    {
-      "fingerprint": "adb12b01b6643d20ac7d744cc9337abfaeb2cf80f61197803e05e22e5409e63e",
-      "path": "scripts/host/lab.py",
-      "test_id": "B404",
-      "severity": "LOW",
-      "justification": "Reviewed NOC123: approved exact clean source/tree and explicit isolated-lab root authorization precede host changes. Fixed git/Docker/openssl/installer/scanner/audit argv, no shell. Work is private root0700, logs0600; no passwords/private key contents in argv or logs. Temporary /tmp references are bounded private container tmpfs with read-only root/cap-drop, not shared host files. Installer alone owns password TTY/stdin and all production signature gates remain unchanged. Evidence/source/image/audit/authorization negatives and dry-run non-mutation tested. Exact statement review only; new/changed/HIGH/stale findings still fail. Docker helpers force the local Unix daemon, discard remote contexts/TLS redirection and use a root-system PATH; no getpass fallback without TTY or explicit private stdin. Build-only resolver TMPDIR is a private512MiB executable container tmpfs required by pinned pip-audit; nosuid/nodev/read-only root/cap-drop retained, no host mounts/secrets, all application noexec/durability controls unchanged."
-    },
-    {
-      "fingerprint": "daa85d9ccad3b2f556cc277bfdd8a210abec9cf9860369617ea13422934f5888",
-      "path": "scripts/host/lab.py",
-      "test_id": "B603",
-      "severity": "LOW",
-      "justification": "Reviewed NOC123: approved exact clean source/tree and explicit isolated-lab root authorization precede host changes. Fixed git/Docker/openssl/installer/scanner/audit argv, no shell. Work is private root0700, logs0600; no passwords/private key contents in argv or logs. Temporary /tmp references are bounded private container tmpfs with read-only root/cap-drop, not shared host files. Installer alone owns password TTY/stdin and all production signature gates remain unchanged. Evidence/source/image/audit/authorization negatives and dry-run non-mutation tested. Exact statement review only; new/changed/HIGH/stale findings still fail. Docker helpers force the local Unix daemon, discard remote contexts/TLS redirection and use a root-system PATH; no getpass fallback without TTY or explicit private stdin. Build-only resolver TMPDIR is a private512MiB executable container tmpfs required by pinned pip-audit; nosuid/nodev/read-only root/cap-drop retained, no host mounts/secrets, all application noexec/durability controls unchanged."
-    },
-    {
-      "fingerprint": "fd01943218be3aa36326a40a09fea434be9953947faf6f202ca5b53f7e03b650",
-      "path": "scripts/host/lab.py",
-      "test_id": "B603",
-      "severity": "LOW",
-      "justification": "Reviewed NOC123: approved exact clean source/tree and explicit isolated-lab root authorization precede host changes. Fixed git/Docker/openssl/installer/scanner/audit argv, no shell. Work is private root0700, logs0600; no passwords/private key contents in argv or logs. Temporary /tmp references are bounded private container tmpfs with read-only root/cap-drop, not shared host files. Installer alone owns password TTY/stdin and all production signature gates remain unchanged. Evidence/source/image/audit/authorization negatives and dry-run non-mutation tested. Exact statement review only; new/changed/HIGH/stale findings still fail. Docker helpers force the local Unix daemon, discard remote contexts/TLS redirection and use a root-system PATH; no getpass fallback without TTY or explicit private stdin. Build-only resolver TMPDIR is a private512MiB executable container tmpfs required by pinned pip-audit; nosuid/nodev/read-only root/cap-drop retained, no host mounts/secrets, all application noexec/durability controls unchanged."
-    },
-    {
-      "fingerprint": "39bd9dd0cdc654107aedb2fa63ffef9b42b2b2b4af61a85cbd4f09027f0c0643",
-      "path": "scripts/host/lab.py",
-      "test_id": "B108",
-      "severity": "MEDIUM",
-      "justification": "Reviewed NOC123: approved exact clean source/tree and explicit isolated-lab root authorization precede host changes. Fixed git/Docker/openssl/installer/scanner/audit argv, no shell. Work is private root0700, logs0600; no passwords/private key contents in argv or logs. Temporary /tmp references are bounded private container tmpfs with read-only root/cap-drop, not shared host files. Installer alone owns password TTY/stdin and all production signature gates remain unchanged. Evidence/source/image/audit/authorization negatives and dry-run non-mutation tested. Exact statement review only; new/changed/HIGH/stale findings still fail. Docker helpers force the local Unix daemon, discard remote contexts/TLS redirection and use a root-system PATH; no getpass fallback without TTY or explicit private stdin. Build-only resolver TMPDIR is a private512MiB executable container tmpfs required by pinned pip-audit; nosuid/nodev/read-only root/cap-drop retained, no host mounts/secrets, all application noexec/durability controls unchanged."
-    },
-    {
-      "fingerprint": "8cee92e01d190b1c89ae4f8f4bc44a2bed663d1543f50e2ad81f289450d5bfba",
-      "path": "scripts/host/lab.py",
-      "test_id": "B108",
-      "severity": "MEDIUM",
-      "justification": "Reviewed NOC123: approved exact clean source/tree and explicit isolated-lab root authorization precede host changes. Fixed git/Docker/openssl/installer/scanner/audit argv, no shell. Work is private root0700, logs0600; no passwords/private key contents in argv or logs. Temporary /tmp references are bounded private container tmpfs with read-only root/cap-drop, not shared host files. Installer alone owns password TTY/stdin and all production signature gates remain unchanged. Evidence/source/image/audit/authorization negatives and dry-run non-mutation tested. Exact statement review only; new/changed/HIGH/stale findings still fail. Docker helpers force the local Unix daemon, discard remote contexts/TLS redirection and use a root-system PATH; no getpass fallback without TTY or explicit private stdin. Build-only resolver TMPDIR is a private512MiB executable container tmpfs required by pinned pip-audit; nosuid/nodev/read-only root/cap-drop retained, no host mounts/secrets, all application noexec/durability controls unchanged."
-    },
-    {
-      "fingerprint": "616820cf830373ad133c1456010ae9ffd50ee1759c72ce545fc23f601ca724f0",
-      "path": "scripts/host/lab.py",
-      "test_id": "B603",
-      "severity": "LOW",
-      "justification": "Reviewed NOC123: approved exact clean source/tree and explicit isolated-lab root authorization precede host changes. Fixed git/Docker/openssl/installer/scanner/audit argv, no shell. Work is private root0700, logs0600; no passwords/private key contents in argv or logs. Temporary /tmp references are bounded private container tmpfs with read-only root/cap-drop, not shared host files. Installer alone owns password TTY/stdin and all production signature gates remain unchanged. Evidence/source/image/audit/authorization negatives and dry-run non-mutation tested. Exact statement review only; new/changed/HIGH/stale findings still fail. Docker helpers force the local Unix daemon, discard remote contexts/TLS redirection and use a root-system PATH; no getpass fallback without TTY or explicit private stdin. Build-only resolver TMPDIR is a private512MiB executable container tmpfs required by pinned pip-audit; nosuid/nodev/read-only root/cap-drop retained, no host mounts/secrets, all application noexec/durability controls unchanged."
-    },
-    {
-      "fingerprint": "b4ec3fbd0a7b7c0a5120415de5cd2a81982bde151e6f888f1d012baab7804e45",
-      "path": "scripts/host/lab.py",
-      "test_id": "B603",
-      "severity": "LOW",
-      "justification": "Reviewed NOC123: approved exact clean source/tree and explicit isolated-lab root authorization precede host changes. Fixed git/Docker/openssl/installer/scanner/audit argv, no shell. Work is private root0700, logs0600; no passwords/private key contents in argv or logs. Temporary /tmp references are bounded private container tmpfs with read-only root/cap-drop, not shared host files. Installer alone owns password TTY/stdin and all production signature gates remain unchanged. Evidence/source/image/audit/authorization negatives and dry-run non-mutation tested. Exact statement review only; new/changed/HIGH/stale findings still fail. Docker helpers force the local Unix daemon, discard remote contexts/TLS redirection and use a root-system PATH; no getpass fallback without TTY or explicit private stdin. Build-only resolver TMPDIR is a private512MiB executable container tmpfs required by pinned pip-audit; nosuid/nodev/read-only root/cap-drop retained, no host mounts/secrets, all application noexec/durability controls unchanged. NOC126 exact context re-review: only the emitted current migration label changed from0028_customer_status to0029_multi_provider_sms. The fixed verify.sh argv, controlled-test flag, no-shell execution, exact reviewed source gate, private work permissions, timeout and all signature/approval/security checks are unchanged. No broader finding allowance. NOC127 reviewed: surrounding fixed verification summary now reports migration0030; the preceding fixed verify.sh argv, shell=False and controlled-test gates are unchanged. NOC128 exact context review: current migration label0031 only; fixed controlled-test verify.sh execution, no-shell argv and all installer approval/signature gates unchanged. NOC129 exact context review: only current migration summary label changes0031 to0032; the fixed verify.sh controlled-test argv, no shell, timeout and source/approval/signature gates are unchanged. No new static finding or broad allowance. NOC130 re-review: only the adjacent migration-summary label advances0032 to0033; fixed verify.sh argv, timeout, environment and fail-closed behavior are unchanged."
     }
   ]
 }

@@ -18,29 +18,33 @@ FILES = (
 )
 
 
-def build(root: Path, output: Path) -> dict:
-    source = root / "wordpress/nwo-customer-signup"
+def build(root: Path, output: Path, *, plugin="nwo-customer-signup") -> dict:
+    if plugin not in {"nwo-customer-signup", "nwo-customer-cancellation"}:
+        raise ValueError("Unknown reviewed plugin")
+    cancellation = plugin == "nwo-customer-cancellation"
+    files = tuple(n.replace("nwo-customer-signup.php", "nwo-customer-cancellation.php").replace("signup.css", "cancellation.css") for n in FILES) if cancellation else FILES
+    source = root / "wordpress" / plugin
     output.mkdir(parents=True, exist_ok=True)
-    target = output / "nwo-customer-signup.zip"
+    target = output / (plugin + ".zip")
     entries = []
     with zipfile.ZipFile(target, "w", compression=zipfile.ZIP_STORED) as archive:
-        for name in sorted(FILES):
+        for name in sorted(files):
             path = source / name
             if path.is_symlink() or not path.is_file():
                 raise ValueError(f"Missing or unsafe plugin member: {name}")
             data = path.read_bytes()
-            info = zipfile.ZipInfo("nwo-customer-signup/" + name, (1980, 1, 1, 0, 0, 0))
+            info = zipfile.ZipInfo(plugin + "/" + name, (1980, 1, 1, 0, 0, 0))
             info.create_system = 3
             info.external_attr = 0o100644 << 16
             archive.writestr(info, data)
             entries.append({"path": name, "sha256": hashlib.sha256(data).hexdigest()})
     digest = hashlib.sha256(target.read_bytes()).hexdigest()
-    (output / "nwo-customer-signup.zip.sha256").write_text(
-        f"{digest}  nwo-customer-signup.zip\n"
+    (output / (plugin + ".zip.sha256")).write_text(
+        f"{digest}  {plugin}.zip\n"
     )
     evidence = {
         "schema_version": 1,
-        "version": "129.0.0",
+        "version": "131.0.0" if cancellation else "129.0.0",
         "sha256": digest,
         "members": entries,
     }
