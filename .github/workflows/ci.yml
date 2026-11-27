@@ -62,6 +62,25 @@ jobs:
             gh api "repos/treichhart1/nwo-noc/actions/artifacts/$artifact/zip" > "$RUNNER_TEMP/noc119-artifacts/$artifact.zip"
           done < "$RUNNER_TEMP/noc119-artifact-ids"
           python3 scripts/release/reconcile_evidence.py --directory "$RUNNER_TEMP/noc119-artifacts" --output noc119-reconciled-evidence.json
+      - name: Verify original NOC128 failed performance artifact without discarding its evidence
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api repos/treichhart1/nwo-noc/actions/artifacts/15220008578/zip > "$RUNNER_TEMP/noc128-failed-performance.zip"
+          python3 - <<'PYTHON'
+          import json, os
+          from scripts.release.reconcile_evidence import inspect_archive
+          expected = {"id":15220008578,"name":"pilot-performance-evidence","size_in_bytes":22900,
+                      "sha256":"a91b71e703db09763288b2f5db1b3965c18b94426201261a72edde44ffcb1246"}
+          report = inspect_archive(os.environ['RUNNER_TEMP']+'/noc128-failed-performance.zip', expected)
+          assert len(report['benchmarks']) == 1
+          result = report['benchmarks'][0]
+          assert result['rounds']==18 and result['over15']==5 and result['max_seconds']==20.780
+          assert result['target_status']=='FAIL' and result['counts_preserved']
+          with open('noc128-original-failure-evidence.json','w') as output:
+              json.dump(report,output,indent=2)
+          print(json.dumps(report))
+          PYTHON
       - name: Retain source dependency inventory
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: always()
@@ -75,6 +94,7 @@ jobs:
             npm-picomatch-explain.json
             npm-lock-runtime.json
             noc119-reconciled-evidence.json
+            noc128-original-failure-evidence.json
   frontend:
     runs-on: ubuntu-24.04
     defaults:

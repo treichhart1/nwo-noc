@@ -74,3 +74,25 @@ def test_strict_cli_failure_retains_written_evidence(tmp_path, monkeypatch):
     with pytest.raises(ValueError, match="15-second target"):
         gate.main(["--backend","synthetic","--postgres","synthetic","--output",str(output),"--require-target"])
     assert json.loads(output.read_text())["records"][-1]["rounds"][0]["elapsed_seconds"] == 15.001
+
+
+@pytest.mark.parametrize('enabled', [False, True])
+def test_database_observation_is_read_only_and_disabled_timings_are_unavailable(monkeypatch, enabled):
+    from types import SimpleNamespace
+    calls = []
+    def command(args):
+        calls.append(args)
+        return SimpleNamespace(stdout=json.dumps({
+            'track_wal_io_timing': 'on' if enabled else 'off',
+            'track_io_timing': 'on' if enabled else 'off',
+            'wal': {'wal_write_time': 12, 'wal_sync_time': 34},
+            'database': {'blk_read_time': 56, 'blk_write_time': 78},
+        }))
+    monkeypatch.setattr(gate, 'command', command)
+    result = gate.database_evidence('synthetic-database')
+    assert len(calls) == 1 and calls[0][:3] == ['docker', 'exec', 'synthetic-database']
+    query = calls[0][-1]
+    assert query.startswith('SELECT ') and 'pg_stat_wal' in query
+    assert ';' not in query and not any(word in query.upper().split() for word in ('ALTER', 'UPDATE', 'SET', 'DELETE'))
+    assert result['wal']['wal_sync_time'] == (34 if enabled else None)
+    assert result['database']['blk_write_time'] == (78 if enabled else None)

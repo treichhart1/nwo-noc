@@ -24,3 +24,7 @@ Final exact commit, all job conclusions, artifact checksum and executed counts b
 ## Remaining acceptance
 
 Production/website deployment remains NO-GO until independent operator approval, approved public hostname/DNS/TLS/firewall/egress, WordPress current security baseline, exact gateway/proxy image scans and signatures, restricted DB role validation, CDN cache exclusion/purge behavior, public-area privacy review, accessibility/theme acceptance and publication rehearsal. Existing vendor-native, licensing, production signing, VPN/MFA, malware definitions, physical off-site recovery, equipment and provider acceptance blockers remain unchanged. No real incident, SMS or Slack delivery was performed.
+
+## Durable performance follow-up
+
+[NOC-128A investigation and correction](PERFORMANCE-FOLLOW-UP.md) preserves the original failed benchmark and all earlier comparison rounds, documents the observed durable-I/O stalls and removes one redundant inventory query per poll. Final independent acceptance results remain required in PR131; historical green checks do not waive any slow round.
