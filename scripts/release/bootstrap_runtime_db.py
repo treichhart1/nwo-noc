@@ -23,6 +23,8 @@ DO $$ BEGIN IF EXISTS(SELECT 1 FROM pg_namespace WHERE nspname='noc_analytics') 
 REVOKE CREATE ON SCHEMA public FROM PUBLIC;
 GRANT SELECT,INSERT,UPDATE,DELETE ON ALL TABLES IN SCHEMA public TO noc_app;
 GRANT USAGE,SELECT ON ALL SEQUENCES IN SCHEMA public TO noc_app;
+-- pg_restore --no-privileges intentionally omits ACLs; reapply the one-way boundary.
+DO $$ BEGIN IF to_regprocedure('public.noc_sms_enforce_opt_out(text,timestamptz)') IS NOT NULL THEN REVOKE ALL ON FUNCTION public.noc_sms_enforce_opt_out(text,timestamptz) FROM PUBLIC; GRANT EXECUTE ON FUNCTION public.noc_sms_enforce_opt_out(text,timestamptz) TO noc_app; END IF; END $$;
 ALTER DEFAULT PRIVILEGES FOR ROLE {owner} IN SCHEMA public GRANT SELECT,INSERT,UPDATE,DELETE ON TABLES TO noc_app;
 ALTER DEFAULT PRIVILEGES FOR ROLE {owner} IN SCHEMA public GRANT USAGE,SELECT ON SEQUENCES TO noc_app;
 """

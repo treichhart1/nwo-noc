@@ -132,7 +132,7 @@ def test_database_release_constraints_are_validated(postgres_db):
     db = postgres_db
     assert (
         db.scalar(text("SELECT version_num FROM alembic_version"))
-        == "0028_customer_status"
+        == "0029_multi_provider_sms"
     )
     counts = db.execute(
         text(

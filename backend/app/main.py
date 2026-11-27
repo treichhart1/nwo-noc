@@ -157,3 +157,6 @@ async def bounded_login_request(request, call_next):
     if request.url.path.startswith("/api/"):
         response.headers["Cache-Control"] = "no-store"
     return response
+
+from app.notifications.sms_routes import router as sms_router
+app.include_router(sms_router)

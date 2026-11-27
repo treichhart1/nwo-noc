@@ -126,6 +126,8 @@ class NotificationDelivery(Base):
         ForeignKey("notification_recipients.id", ondelete="CASCADE"), nullable=True
     )
     state: Mapped[str] = mapped_column(String(30), default="queued")
+    sms_provider: Mapped[str | None] = mapped_column(String(20), ForeignKey("notification_sms_providers.name"), nullable=True)
+    sms_authorization: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     attempts: Mapped[int] = mapped_column(Integer, default=0)
     next_attempt_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), index=True
@@ -144,12 +146,28 @@ class NotificationDelivery(Base):
 
 class NotificationAttempt(Base):
     __tablename__ = "notification_attempts"
+    __table_args__ = (UniqueConstraint("provider_name", "provider_message_id", name="uq_sms_provider_receipt"), Index("ix_sms_attempt_provider_created", "provider_name", "created_at"), Index("ix_sms_claim_expiry", "acceptance", "lease_expires_at"))
     id: Mapped[int] = mapped_column(primary_key=True)
     delivery_id: Mapped[int] = mapped_column(
         ForeignKey("notification_deliveries.id", ondelete="CASCADE"), index=True
     )
     attempt: Mapped[int] = mapped_column(Integer)
     outcome: Mapped[str] = mapped_column(String(40))
+    provider_name: Mapped[str | None] = mapped_column(String(20), ForeignKey("notification_sms_providers.name"), nullable=True, index=True)
+    claim_token: Mapped[str | None] = mapped_column(String(36), nullable=True, unique=True)
+    provider_message_id: Mapped[str | None] = mapped_column(String(100), nullable=True, index=True)
+    provider_error_code: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    raw_status: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    acceptance: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    lease_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    estimated_segments: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    estimated_cost_microunits: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    reported_cost_microunits: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    currency: Mapped[str | None] = mapped_column(String(3), nullable=True)
+    destination_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    content_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    config_revision: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
 
 

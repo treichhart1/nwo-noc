@@ -61,6 +61,7 @@ def run_batch(db, *, sms=None, slack=None, now=None, limit=20):
             select(NotificationDelivery)
             .where(
                 NotificationDelivery.state.in_(["queued", "retry"]),
+                NotificationDelivery.sms_authorization.is_(None),
                 NotificationDelivery.next_attempt_at <= now,
             )
             .order_by(
@@ -383,6 +384,13 @@ def discover(db, now=None):
 
 
 def tick():
+    if settings.sms_native_worker_enabled:
+        if settings.notifications_auto_drafts_enabled:
+            with SessionLocal() as db:
+                discover(db)
+                db.commit()
+        from app.notifications.sms_service import run_native_batch
+        return run_native_batch(SessionLocal)
     with SessionLocal() as db:
         if settings.notifications_auto_drafts_enabled:
             discover(db)
