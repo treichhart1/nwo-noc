@@ -2,10 +2,10 @@
   "schema_version": 1,
   "scope": "supplemental isolated local validation; not WordPress/Docker/Ubuntu acceptance",
   "backend": {
-    "passed": 1320,
+    "passed": 1321,
     "skipped": 1034,
     "warnings": 3,
-    "seconds": 16.02,
+    "seconds": 15.62,
     "limitations": "No disposable PostgreSQL URL; skipped tests are not passes"
   },
   "php": {
@@ -35,11 +35,16 @@
     "wordpress/nwo-network-status/nwo-network-status.php": "091ab90426b2254bccc58b5b3920464fa36a695788f0aceb5cf33d5c89a588e5",
     "scripts/wordpress/tests/pure-contracts.php": "4aeeaf3f667aa20780b45678c8b4822db2f6bdb09a2ca0bd66f6d4b65faad04e",
     "wordpress/nwo-network-status/assets/status.js": "f3e926a2ec5c653738c90dfe373e9ce130f6d04b8290726cd5f86159fe9a76e6",
-    "backend/app/customer_status/public_v2.py": "fc9c77f10d22cec162b5be220b6217f129cc0d923b49884e3866680db93aa38e"
+    "backend/app/customer_status/public_v2.py": "f5284b04ef827dbc8e123421c751a4d9db52c8628e4004ae146d76eb68af8dbd"
   },
   "browser": {
     "engine": "Chromium156.0.8078.79",
     "passed": 11,
     "scope": "actual plugin JavaScript/CSS with synthetic intercepted feed; not WordPress installation"
+  },
+  "publication_snapshot_regression": {
+    "scope": "synthetic transaction interleaving; PostgreSQL isolation unchanged",
+    "previous_split_reads": "all_systems_operational",
+    "single_statement_snapshot": "partial_service_interruption"
   }
 }

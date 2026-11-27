@@ -54,8 +54,21 @@ class ProjectionDB:
 
     def execute(self, statement):
         sql = str(statement)
+        if "UNION ALL" in sql:
+            return Result(
+                copy.deepcopy(
+                    [
+                        {"category": "configuration", "document": self.policy},
+                        *[
+                            {"category": "announcement", "document": row}
+                            for row in self.rows
+                        ],
+                        *[{"category": "area", "document": row} for row in self.areas],
+                    ]
+                )
+            )
         if "configuration" in sql:
-            return Result([self.policy])
+            return Result(copy.deepcopy([self.policy]))
         if "announcements" in sql:
             return Result(self.rows)
         if "noc_public_status.areas" in sql:
@@ -380,3 +393,26 @@ def test_scheduled_window_does_not_change_public_status_without_approval():
         impact="general",
     )
     assert display(item, NOW) == "scheduled_maintenance"
+
+
+def test_public_feed_cannot_mix_pre_withdrawal_policy_and_post_withdrawal_rows():
+    class ConcurrentWithdrawal(ProjectionDB):
+        def execute(self, statement):
+            result = super().execute(statement)
+            if "configuration" in str(statement):
+                self.policy["last_public_update"] = NOW + timedelta(seconds=1)
+                self.policy["last_withdrawal_at"] = NOW + timedelta(seconds=1)
+                self.rows = []
+            return result
+
+    db = ConcurrentWithdrawal()
+    db.rows = [
+        dict(
+            identifier=str(uuid4()), kind="incident", payload=payload(), updated_at=NOW
+        )
+    ]
+    before = json.loads(projected(db, 0, 20, NOW + timedelta(seconds=2)))
+    after = json.loads(projected(db, 0, 20, NOW + timedelta(seconds=2)))
+    assert before["overall_status"] == "partial_service_interruption"
+    assert after["overall_status"] == "unknown"
+    assert after["last_public_update"] > before["last_public_update"]

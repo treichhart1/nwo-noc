@@ -106,23 +106,13 @@ def current(
                 status_code=429,
                 headers={"Retry-After": "60"},
             )
-        db.execute(text("SET LOCAL statement_timeout='2000ms'"))
-        pol = (
-            db.execute(text("SELECT * FROM noc_public_status.configuration"))
-            .mappings()
-            .first()
-        )
+        from .public_v2 import snapshot
+
+        pol, rows, _ = snapshot(db)
         if not pol or not pol["enabled"] or not pol["baseline_approved_at"]:
             return JSONResponse(
                 {"detail": "Public status is not enabled"}, status_code=503
             )
-        rows = list(
-            db.execute(
-                text(
-                    "SELECT * FROM noc_public_status.announcements ORDER BY updated_at DESC LIMIT 201"
-                )
-            ).mappings()
-        )
         if len(rows) > 200:
             raise ValueError("Public projection exceeds reviewed limit")
         active = []

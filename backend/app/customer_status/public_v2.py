@@ -81,28 +81,64 @@ def display(item, now):
     return item.status
 
 
+def snapshot(db):
+    """One PostgreSQL statement gives all three views the same MVCC snapshot.
+
+    No isolation changes, source-table permissions, row locks or writes needed.
+    Budget writes must already be committed by the caller before this read.
+    """
+    db.execute(text("SET LOCAL statement_timeout='2000ms'"))
+    result = db.execute(
+        text("""
+SELECT 'configuration' AS category,to_jsonb(c) AS document FROM noc_public_status.configuration c
+UNION ALL
+SELECT 'announcement',to_jsonb(a) FROM (SELECT * FROM noc_public_status.announcements ORDER BY updated_at DESC,identifier LIMIT 201) a
+UNION ALL
+SELECT 'area',to_jsonb(a) FROM (SELECT * FROM noc_public_status.areas ORDER BY identifier LIMIT 201) a
+""")
+    ).mappings()
+    policy = None
+    rows, areas = [], []
+
+    def date(value):
+        if value is None:
+            return None
+        value = value if isinstance(value, datetime) else datetime.fromisoformat(value)
+        if not value.tzinfo or value.utcoffset() is None:
+            raise ValueError("Aware public timestamp required")
+        return value
+
+    for row in result:
+        value = dict(row["document"])
+        if row["category"] == "configuration":
+            if policy is not None:
+                raise ValueError("Duplicate public policy")
+            policy = value
+            for key in (
+                "baseline_approved_at",
+                "last_public_update",
+                "last_withdrawal_at",
+            ):
+                policy[key] = date(policy.get(key))
+        elif row["category"] == "announcement":
+            value["updated_at"] = date(value["updated_at"])
+            rows.append(value)
+        elif row["category"] == "area":
+            areas.append(value)
+        else:
+            raise ValueError("Unexpected public projection category")
+    if len(rows) > 200 or len(areas) > 200:
+        raise ValueError("Public projection exceeds bounded capacity")
+    rows.sort(key=lambda row: (-row["updated_at"].timestamp(), row["identifier"]))
+    areas.sort(key=lambda row: row["identifier"])
+    return policy, rows, areas
+
+
 def projected(db, offset, limit, now=None):
     now = now or datetime.now(timezone.utc)
-    db.execute(text("SET LOCAL statement_timeout='2000ms'"))
-    p = (
-        db.execute(text("SELECT * FROM noc_public_status.configuration"))
-        .mappings()
-        .first()
-    )
+    p, rows, areas = snapshot(db)
     if not p or not p["enabled"] or not p["baseline_approved_at"]:
         raise ValueError("Public status disabled")
-    rows = list(
-        db.execute(
-            text(
-                "SELECT * FROM noc_public_status.announcements ORDER BY updated_at DESC LIMIT 201"
-            )
-        ).mappings()
-    )
-    areas = list(
-        db.execute(
-            text("SELECT * FROM noc_public_status.areas ORDER BY identifier LIMIT 201")
-        ).mappings()
-    )
     if len(rows) > 200 or len(areas) > 200:
         raise ValueError("Public projection exceeds bounded capacity")
     groups = {"incidents": [], "maintenance": [], "resolved": []}
