@@ -183,10 +183,10 @@ def snapshot(db, kind, identifier, now=None):
         row = db.get(WorkOrder, int(identifier))
         if row:
             install = db.scalar(
-                select(AppWork.id).where(AppWork.work_order_id == row.id)
+                select(AppWork).where(AppWork.work_order_id == row.id)
             )
             base.update(
-                event="installation" if install else "technician_assignment",
+                event="installation" if install and install.kind == "installation" else "technician_assignment",
                 work_order_id=row.id,
                 site_id=row.site_id,
                 incident_id=row.incident_id,
@@ -239,12 +239,19 @@ def snapshot(db, kind, identifier, now=None):
         row = db.get(Application, int(identifier))
         if row:
             base.update(
-                event="signup",
+                event={"under_review":"application_review","qualification_pending":"application_review","quote_pending":"quote_approval","installation_scheduled":"installation_scheduled","installed":"installation_completed","completed":"installation_completed"}.get(row.state,"signup"),
                 site_id=row.proposed_site_id,
-                technician_id=row.assigned_to,
+                technician_id=None,
                 severity="info",
             )
-            version = [row.revision, row.state, row.assigned_to]
+            work=db.scalar(select(AppWork).where(AppWork.application_id==row.id).order_by(AppWork.id.desc()).limit(1))
+            appointment=db.get(WorkOrder,work.work_order_id) if work else None
+            if appointment:
+                base.update(technician_id=appointment.technician_id,work_order_id=appointment.id)
+                if work.kind=='survey' and row.state=='survey_scheduled':base['event']='technician_assignment'
+            if appointment and work.kind=='installation' and appointment.scheduled_at and utc(appointment.scheduled_at)<now and appointment.status not in {'completed','cancelled'}:
+                base['event']='installation_overdue'
+            version = [row.revision, row.state, row.assigned_to, appointment.revision if appointment else None,base['event']]
             started = row.created_at
     elif kind == "worker":
         row = db.get(MonitoringWorker, str(identifier))

@@ -1,0 +1,1 @@
+(function(wp){'use strict';wp.blocks.registerBlockType('nwo/customer-signup',{apiVersion:3,title:'NWO Customer Signup',category:'widgets',icon:'forms',edit:function(){return wp.element.createElement('p',{},'NWO secure customer application — uses the administrator-approved signup origin.');},save:function(){return null;}});})(window.wp);

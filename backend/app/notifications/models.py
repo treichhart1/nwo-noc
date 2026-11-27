@@ -10,6 +10,7 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
     Index,
+    CheckConstraint,
 )
 from sqlalchemy.orm import Mapped, mapped_column
 from app.core.database import Base
@@ -96,12 +97,16 @@ class NotificationRecipient(Base):
     __tablename__ = "notification_recipients"
     __table_args__ = (
         UniqueConstraint("plan_id", "customer_id", name="uq_notification_recipient"),
+        UniqueConstraint("plan_id", "application_id", name="uq_notification_prospect"),
+        Index("ix_notification_recipient_contact", "contact_hash", "id"),
+        CheckConstraint("(customer_id IS NULL) <> (application_id IS NULL)", name="ck_notification_recipient_subject"),
     )
     id: Mapped[int] = mapped_column(primary_key=True)
     plan_id: Mapped[int] = mapped_column(
         ForeignKey("notification_plans.id", ondelete="CASCADE"), index=True
     )
-    customer_id: Mapped[int] = mapped_column(ForeignKey("customer_accounts.id"))
+    customer_id: Mapped[int | None] = mapped_column(ForeignKey("customer_accounts.id"), nullable=True)
+    application_id: Mapped[int | None] = mapped_column(ForeignKey("signup_applications.id"), nullable=True)
     service_ids: Mapped[list] = mapped_column(JSON)
     contact_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
     state: Mapped[str] = mapped_column(String(30))
@@ -193,3 +198,10 @@ class NotificationCredential(Base):
     provider: Mapped[str] = mapped_column(String(40), primary_key=True)
     ciphertext: Mapped[str] = mapped_column(Text)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+
+
+class NotificationContactSuppression(Base):
+    __tablename__ = "notification_contact_suppressions"
+    contact_hash: Mapped[str] = mapped_column(String(64), primary_key=True)
+    reason: Mapped[str] = mapped_column(String(40))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)

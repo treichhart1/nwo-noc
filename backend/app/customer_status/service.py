@@ -753,6 +753,12 @@ def decide_message(db, u, m, b):
 
 
 def linked_approval(db, plan, user_id):
+    if plan.snapshot.get("prospect"):
+        if plan.incident_id or plan.maintenance_id or plan.kind not in {"signup_application", "installation_scheduling"}:
+            raise ValueError("Prospect source cannot replace incident/maintenance approval")
+        from app.signup.communications import snapshot as prospect_snapshot
+        prospect_snapshot(db, plan)  # Explicit current source/consent, never fake incident evidence.
+        return
     request = PlanRequest.model_validate(plan.snapshot["request"])
     p, _ = request_case(db, request)
     if p:

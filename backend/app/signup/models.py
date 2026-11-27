@@ -199,6 +199,8 @@ class Quote(Base):
     issued_at: Mapped[object | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+    access_hash: Mapped[str | None] = mapped_column(String(64), nullable=True, unique=True)
+    access_ciphertext: Mapped[str | None] = mapped_column(Text, nullable=True)
     acceptance_ciphertext: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[object] = mapped_column(DateTime(timezone=True), default=now)
 
@@ -244,4 +246,13 @@ class Photo(Base):
     scan_state: Mapped[str] = mapped_column(String(30))
     scan_source: Mapped[str] = mapped_column(String(30))
     approved: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[object] = mapped_column(DateTime(timezone=True), default=now)
+
+
+class QuoteResponse(Base):
+    __tablename__ = "signup_quote_responses"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    quote_id: Mapped[int] = mapped_column(ForeignKey("signup_quotes.id"), unique=True)
+    decision: Mapped[str] = mapped_column(String(20))
+    evidence: Mapped[dict] = mapped_column(JSON)
     created_at: Mapped[object] = mapped_column(DateTime(timezone=True), default=now)

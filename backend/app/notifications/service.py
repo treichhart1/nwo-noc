@@ -320,6 +320,8 @@ def snapshot(db, request, now=None):
         else {}
     )
     suppressed = set(db.scalars(select(NotificationSuppression.customer_id)))
+    from app.notifications.models import NotificationContactSuppression
+    contact_suppressed=set(db.scalars(select(NotificationContactSuppression.contact_hash)))
     # Missing and unconfirmed evidence never becomes an automatic customer outage.
     sms_allowed = bool(
         request.maintenance_id
@@ -452,7 +454,7 @@ def snapshot(db, request, now=None):
                     )
                 ),
             )
-        if r["customer_id"] in suppressed:
+        if r["customer_id"] in suppressed or contact_hash(accounts[r["customer_id"]].phone) in contact_suppressed:
             r.update(eligible=False, reason="suppression_list")
         if (
             request.kind in {"restoration", "cancelled"}
@@ -756,6 +758,13 @@ def create_plan(db, request, user_id, now=None):
     return existing
 
 
+def current_snapshot(db, plan, now):
+    if plan.snapshot.get("prospect"):
+        from app.signup.communications import snapshot as prospect_snapshot
+        return prospect_snapshot(db, plan), None
+    return snapshot(db, PlanRequest.model_validate(plan.snapshot["request"]), now)
+
+
 def approve(db, ident, user_id, now=None, *, expected_fingerprint=None):
     lock(db)
     from app.notifications.controls import require_processing
@@ -773,7 +782,7 @@ def approve(db, ident, user_id, now=None, *, expected_fingerprint=None):
         return plan
     from app.customer_status.service import linked_approval
     linked_approval(db, plan, user_id)
-    current, _ = snapshot(db, PlanRequest.model_validate(plan.snapshot["request"]), now)
+    current, _ = current_snapshot(db, plan, now)
     if digest(current) != plan.fingerprint:
         raise ValueError(
             "Source, policy, consent or mapping changed; prepare the draft again before approval"
@@ -816,7 +825,7 @@ def approve(db, ident, user_id, now=None, *, expected_fingerprint=None):
             NotificationDelivery(
                 plan_id=ident,
                 channel="sms",
-                recipient_key=str(r.customer_id),
+                recipient_key=("contact:" + r.contact_hash) if r.application_id is not None else str(r.customer_id),
                 recipient_id=r.id,
                 next_attempt_at=plan.due_at,
                 budget_charge_microunits=(
@@ -826,7 +835,7 @@ def approve(db, ident, user_id, now=None, *, expected_fingerprint=None):
                 ),
             )
         )
-    if SEVERITY[plan.severity] >= SEVERITY[p.slack_min_severity] or plan.maintenance_id:
+    if not plan.snapshot.get("prospect") and (SEVERITY[plan.severity] >= SEVERITY[p.slack_min_severity] or plan.maintenance_id):
         db.add(
             NotificationDelivery(
                 plan_id=ident,

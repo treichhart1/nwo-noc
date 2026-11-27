@@ -193,6 +193,14 @@ def create_location(db, b, actor):
         required(db, Site, b.site_id)
     if b.service_id:
         required(db, CustomerService, b.service_id)
+    if b.application_id:
+        from app.signup.models import Application
+        applicant=required(db,Application,b.application_id)
+        if applicant.state not in {"customer_accepted","installation_pending","installation_scheduled","installed","activation_pending","completed"} or applicant.redacted_at:
+            raise ValueError("Accepted, non-redacted application required for customer premises")
+        if not applicant.proposed_site_id or b.site_id not in {None,applicant.proposed_site_id}:
+            raise ValueError("Accepted application serving site must match customer premises")
+        b.site_id=applicant.proposed_site_id
     if db.scalar(select(Location.id).where(Location.code == b.code)):
         raise ValueError("Location code already exists")
     row = Location(**b.model_dump(exclude={"reason"}))
@@ -238,6 +246,9 @@ def check_location(db, location, state, condition, device=None):
         if location.service_id:
             service = required(db, CustomerService, location.service_id)
             site = service.site_id
+        if location.application_id:
+            from app.signup.models import Application
+            site=required(db,Application,location.application_id).proposed_site_id
         if not site or device.wisp_site_id != site:
             raise ValueError(
                 "Device and physical/serving tower mapping disagree; review inventory instead of moving monitoring records"

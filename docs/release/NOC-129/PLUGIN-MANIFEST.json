@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "version": "129.0.0",
+  "sha256": "7349fdb41751b477a888f959e72457a13c1d95731ae7292bc20e67e533076d10",
+  "members": [
+    {
+      "path": "assets/editor.js",
+      "sha256": "2040e27deb830dea94ddd13c3915d89493f09f59c925fda534eccb83bbb99eb4"
+    },
+    {
+      "path": "assets/signup.css",
+      "sha256": "70a14bf8f3010e232895f1d517643156349e56c2a93a6770b436f3df6846483a"
+    },
+    {
+      "path": "block.json",
+      "sha256": "b3f086dddfe0d5c930e8ef45995ff380f11d180aedf9f77772094457d8f4de54"
+    },
+    {
+      "path": "nwo-customer-signup.php",
+      "sha256": "d9ac184015db2ef2598527331a717abb451240dd989982e929ade91439a5e935"
+    },
+    {
+      "path": "readme.txt",
+      "sha256": "5f8df3e5e552d27d46f235ea9bcfc5847b94581f1420a73aba66a78c94730416"
+    },
+    {
+      "path": "transport.php",
+      "sha256": "9d6063344a7ed4aea33c803499903cb2801fc32f02cd75f4ab84ba44f2dfe6e9"
+    },
+    {
+      "path": "uninstall.php",
+      "sha256": "729636c4d400f4d1197d6a0e4d01ba2320a030662dd403efb166ce5701761044"
+    }
+  ]
+}

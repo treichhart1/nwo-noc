@@ -8,7 +8,7 @@ from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from app.core.database import get_db
 from app.core.config import settings
 from .models import Plan
-from .contracts import SignupInput, LookupInput
+from .contracts import SignupInput, LookupInput, PublicQuoteInput, PublicQuoteResponse
 from . import public_service as s
 
 app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
@@ -152,3 +152,33 @@ def lookup(body: LookupInput, request: Request, db=Depends(get_db)):
 # Application/contact searches and receipt tokens must not enter access logs.
 from app.signup.privacy import configure as redact_access_queries
 redact_access_queries()
+
+
+@app.post('/public/signup/quote')
+def public_quote(body:PublicQuoteInput,request:Request,db=Depends(get_db)):
+    return execute(db,lambda:quote_operation(db,request,body,False))
+
+
+@app.post('/public/signup/quote-response')
+def public_quote_response(body:PublicQuoteResponse,request:Request,db=Depends(get_db)):
+    return execute(db,lambda:quote_operation(db,request,body,True))
+
+
+def quote_operation(db,request,body,respond):
+    from sqlalchemy import text
+    from . import crypto
+    s.csrf_check(request.headers.get('origin'),request.cookies.get('signup_csrf'),request.headers.get('x-signup-csrf'))
+    s.budget(db,request,'lookup')
+    if not s.providers.turnstile(body.turnstile_token,body.request_key):raise PermissionError('Security verification failed')
+    token_hash=crypto.digest('quote_access',body.token)
+    db.execute(text("SET LOCAL statement_timeout='5000ms'"))
+    db.execute(text("SET LOCAL lock_timeout='3000ms'"))
+    if respond:
+        return db.scalar(text('SELECT public.noc_signup_quote_respond(:hash,:decision)'),{'hash':token_hash,'decision':body.decision})
+    return db.scalar(text('SELECT public.noc_signup_quote_read(:hash)'),{'hash':token_hash})
+
+
+@app.get('/public/signup/health')
+def signup_readiness():
+    s.enabled()
+    return {'status':'ok','service':'signup-only gateway'}

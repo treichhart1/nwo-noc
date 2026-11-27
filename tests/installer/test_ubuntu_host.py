@@ -352,7 +352,7 @@ def main():
             "approval_reference": "synthetic-disposable-acceptance",
             "commit": revision,
             "tree": git("rev-parse", "HEAD^{tree}"),
-            "migration_head": "0031_wordpress_status",
+            "migration_head": "0032_signup_acquisition",
             "upgrade_from": list(previous),
             "images": {
                 "backend": image("backend", revision, bad),
