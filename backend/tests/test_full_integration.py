@@ -538,9 +538,9 @@ def test_reviewed_integration_manifest_is_complete_and_single_head():
         and result["baseline_commits_beyond_default"] == 298
     )
     assert not any(p["default_contains_tip"] for p in result["pull_requests"])
-    assert len(result["migrations"]) == 32
-    assert result["migrations"][-1]["revision"] == "0032_signup_acquisition"
-    assert result["migrations"][-1]["parent"] == "0031_wordpress_status"
+    assert len(result["migrations"]) == 33
+    assert result["migrations"][-1]["revision"] == "0033_powercode_integration"
+    assert result["migrations"][-1]["parent"] == "0032_signup_acquisition"
     assert len({c["environment"] for c in result["configuration"]}) == len(
         result["configuration"]
     )

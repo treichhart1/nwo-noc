@@ -1,0 +1,27 @@
+{
+  "milestone": "NOC-130",
+  "native_powercode_enabled": false,
+  "production_decision": "NO-GO",
+  "native_compatibility": "BLOCKED",
+  "required_evidence": [
+    "Installed Powercode product, operating platform and exact build/version",
+    "Vendor-approved version-matched OpenAPI/Postman operation specifications",
+    "Sanitized auth, pagination, complete/full snapshot, incremental cursor and deletion contracts",
+    "Account/service/package/address/equipment/tower/sector identifier ownership and enums",
+    "Recurring-charge currency, contracted/estimated/billed semantics; no bank/card/payment data",
+    "Least-privilege read vs account-create vs assignment vs activation scopes and side effects",
+    "Idempotency guarantees, definitive nonacceptance, accepted IDs and timeout reconciliation examples",
+    "Approved private endpoint, source/egress allowlist, TLS trust, DNS and request/rate limits",
+    "Separate operator authorization for any future native connection or mutation"
+  ],
+  "unchanged_operational_blockers": [
+    "Vendor-native security disposition",
+    "Redis and dependency licensing review",
+    "Production artifact signing and registry publication approval",
+    "Actual VPN/MFA and host security acceptance",
+    "Current malware scanner definitions",
+    "Physical independent off-site disaster recovery",
+    "Actual equipment, Wave MIB/protocol, website and messaging-provider acceptance"
+  ],
+  "prohibited": ["production access", "real account creation", "service activation", "billing changes", "payments", "real notifications", "live network access", "PR merges"]
+}

@@ -1,5 +1,6 @@
 import React,{useEffect,useState} from 'react'
 import {request} from './lib/api'
+import PowercodeIntegration from './PowercodeIntegration'
 
 type Inventory={id:number,name:string,site_id?:number,wisp_site_id?:number,device_id?:number,link_type?:string}
 type Props={sites:Inventory[],devices:Inventory[],sectors:Inventory[],links:Inventory[],incidents:{id:number,title:string}[],maintenance:{id:number,title:string}[]}
@@ -22,6 +23,7 @@ export default function CustomerImpact({sites,devices,sectors,links,incidents,ma
  async function assess(start=0){setBusy(true);setError('');try{const result=await request('/customers/impact-preview',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({[kind]:Number(target),offset:start,limit:100})});setPreview(result);setPreviewOffset(start)}catch(e){setPreview(null);setError((e as Error).message)}finally{setBusy(false)}}
  const options=kind==='site_id'?sites:kind==='device_id'?devices:kind==='sector_id'?sectors:kind==='link_id'?links:kind==='incident_id'?incidents.map(i=>({id:i.id,name:i.title})):maintenance.map(i=>({id:i.id,name:i.title}))
  return <section aria-label="Customer impact" className="customerImpact">
+  <PowercodeIntegration/>
   <h2>Powercode customers and network impact</h2><p>Read-only customer foundation. Live Powercode is disabled. No SMS, Slack, billing writes or equipment changes.</p>
   {error&&<p role="alert" className="error">{error}</p>}{notice&&<p role="status">{notice}</p>}
   {data&&<><div className="stats"><article className="stat"><span>Synchronized customers</span><b>{data.total_customers}</b></article><article className="stat"><span>Active customers</span><b>{data.active_customers}</b></article><article className="stat"><span>Missing or unreviewed tower assignments</span><b>{data.missing_tower_services}</b></article></div>

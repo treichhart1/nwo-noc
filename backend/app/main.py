@@ -31,6 +31,8 @@ app.include_router(session_router)
 
 from app.customers.routes import router as customer_router
 app.include_router(customer_router)
+from app.customers.powercode_routes import router as powercode_router
+app.include_router(powercode_router)
 
 from fastapi.exceptions import RequestValidationError
 from fastapi.exception_handlers import request_validation_exception_handler

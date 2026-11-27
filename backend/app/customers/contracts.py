@@ -3,6 +3,7 @@
 import re
 from datetime import datetime, timezone
 from typing import Literal
+from decimal import Decimal
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
@@ -30,7 +31,11 @@ class ServiceRecord(SafeModel):
     external_id: str = Field(min_length=1, max_length=120)
     account_id: str = Field(min_length=1, max_length=120)
     status: Literal["active", "suspended", "disconnected", "unknown"]
-    service_type: Literal["wireless", "fiber", "hybrid", "unknown"]
+    service_type: Literal["wireless", "fiber", "hybrid", "lte", "5g", "unknown"]
+    package_id: str | None = Field(None, min_length=1, max_length=120)
+    monthly_recurring: Decimal | None = Field(None, ge=0, le=9999999999, max_digits=12, decimal_places=2, allow_inf_nan=False)
+    currency: str | None = Field(None, pattern=r'^[A-Z]{3}$')
+    revenue_basis: Literal['unavailable','contracted','estimated'] = 'unavailable'
     address: str | None = Field(None, max_length=500)
     plan: str | None = Field(None, max_length=120)
     download_mbps: float | None = Field(None, ge=0, le=1000000, allow_inf_nan=False)
@@ -44,12 +49,23 @@ class ServiceRecord(SafeModel):
 
     _aware = field_validator("updated_at")(AccountRecord.aware.__func__)
 
+    @model_validator(mode="after")
+    def revenue(self):
+        if self.monthly_recurring is not None and (not self.currency or self.revenue_basis == 'unavailable'):
+            raise ValueError('Currency and explicit revenue basis required')
+        if self.monthly_recurring is None and self.revenue_basis != 'unavailable':
+            raise ValueError('Missing revenue is unavailable')
+        return self
+
     @field_validator("source_refs")
     @classmethod
     def refs(cls, v):
         if any(not x or len(x) > 120 for x in v.values()):
             raise ValueError("Bounded source references required")
         return v
+
+
+from app.customers.powercode_contracts import PackageRecord
 
 
 class ExportBatch(SafeModel):
@@ -60,13 +76,14 @@ class ExportBatch(SafeModel):
     as_of: datetime
     previous_cursor: str | None = Field(None, max_length=200)
     cursor: str = Field(min_length=1, max_length=200)
+    packages: list[PackageRecord] = Field(default_factory=list, max_length=10000)
     accounts: list[AccountRecord] = Field(max_length=10000)
     services: list[ServiceRecord] = Field(max_length=20000)
     _aware = field_validator("as_of")(AccountRecord.aware.__func__)
 
     @model_validator(mode="after")
     def timestamps(self):
-        if any(r.updated_at > self.as_of for r in self.accounts + self.services):
+        if any(r.updated_at > self.as_of for r in self.accounts + self.services + self.packages):
             raise ValueError("Record newer than snapshot")
         return self
 

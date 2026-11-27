@@ -494,3 +494,6 @@ from app.notifications import sms_models  # noqa: E402,F401
 
 # Native Slack metadata belongs to the existing notification outbox.
 from app.notifications import slack_models as _slack_models
+
+# Powercode controls share the canonical customer registry used by Alembic.
+from app.customers import powercode_models as _powercode_models  # noqa: E402,F401

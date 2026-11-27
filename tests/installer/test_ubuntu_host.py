@@ -352,7 +352,7 @@ def main():
             "approval_reference": "synthetic-disposable-acceptance",
             "commit": revision,
             "tree": git("rev-parse", "HEAD^{tree}"),
-            "migration_head": "0032_signup_acquisition",
+            "migration_head": "0033_powercode_integration",
             "upgrade_from": list(previous),
             "images": {
                 "backend": image("backend", revision, bad),
