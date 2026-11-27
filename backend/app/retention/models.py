@@ -11,6 +11,7 @@ from sqlalchemy import (
     Numeric,
     UniqueConstraint,
     Index,
+    text,
 )
 from sqlalchemy.orm import Mapped, mapped_column
 from app.core.database import Base
@@ -35,6 +36,14 @@ class Policy(Base):
     unresolved_days: Mapped[int] = mapped_column(Integer, default=7)
     tower_churn_threshold: Mapped[int] = mapped_column(Integer, default=3)
     created_by: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    __table_args__ = (
+        Index(
+            "uq_retention_active_policy",
+            "active",
+            unique=True,
+            postgresql_where=text("active"),
+        ),
+    )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
 
 

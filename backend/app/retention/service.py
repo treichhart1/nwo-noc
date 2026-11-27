@@ -75,7 +75,7 @@ def event(db, c, u, action, notes="", **facts):
             actor_id=u.id if u else None,
             action=action,
             status=c.status,
-            evidence=facts,
+            evidence={**facts, "retention_state": c.retention_state},
             notes_ciphertext=crypto.seal(c, {"notes": notes}) if notes else None,
         )
     )
@@ -271,12 +271,36 @@ def verify(db, u, id, b):
             )
         }
         snap = json.loads(json.dumps(snap, default=str))
+        if s.monthly_recurring is not None:
+            snap["monthly_recurring"] = str(
+                s.monthly_recurring.quantize(Decimal(".01"))
+            )
         snap.update(
             town=data.get("town") or None,
             county=data.get("county") or None,
             reported_town=True,
         )
         db.add(CaseService(case_id=c.id, service_id=s.id, snapshot=snap))
+    replacement = data.get("replacement") or {}
+    competitor = db.scalar(
+        select(Competitor).where(
+            func.lower(Competitor.name)
+            == str(replacement.get("provider") or "").lower()
+        )
+    )
+    if competitor:
+        c.competitor_id = competitor.id
+        db.add(
+            Observation(
+                competitor_id=competitor.id,
+                case_id=c.id,
+                offer=replacement,
+                source_kind="customer_reported",
+                source_reference=c.reference,
+                observed_on=c.created_at.date(),
+                verified=False,
+            )
+        )
     c.customer_id = account.id
     c.verified_by = u.id
     c.status = "verified"
@@ -486,6 +510,18 @@ def offer_decide(db, u, id, offer_id, b):
             "Offer service, package or pricing evidence changed; create a new offer"
         )
     if b.action == "approve":
+        if db.scalar(
+            select(Offer.id)
+            .where(
+                Offer.case_id == c.id,
+                Offer.id != o.id,
+                Offer.status.in_(["approved", "accepted"]),
+            )
+            .limit(1)
+        ):
+            raise ValueError(
+                "Resolve the existing approved offer before another approval; accepted evidence cannot be replaced"
+            )
         if o.status != "draft":
             raise ValueError("Draft approval required")
         o.status = "approved"
@@ -899,7 +935,9 @@ def offer_context(db, c):
             "status": r.status,
             "package": r.package_id,
             "plan": r.plan,
-            "monthly": str(r.monthly_recurring),
+            "monthly": str(r.monthly_recurring.quantize(Decimal(".01")))
+            if r.monthly_recurring is not None
+            else None,
             "currency": r.currency,
             "basis": r.revenue_basis,
         }

@@ -198,8 +198,14 @@ def test_installable_plugin_reproducible_and_allowlisted(tmp_path):
 
 
 @pytest.fixture
-def cancellation(signup, monkeypatch):
+def cancellation(signup, monkeypatch, tmp_path):
     x = signup
+    from cryptography.fernet import Fernet
+
+    callback_key = tmp_path / "sms-callback.key"
+    callback_key.write_bytes(Fernet.generate_key())
+    callback_key.chmod(0o600)
+    monkeypatch.setattr(settings, "sms_callback_key_file", str(callback_key))
     monkeypatch.setattr(settings, "retention_public_enabled", True)
     p = s.configure(
         x.db,
@@ -690,3 +696,32 @@ def test_migration_ddl_has_no_accidental_sqlalchemy_bind_parameters():
         assert not text(statement)._bindparams, (
             "Migration DDL must never demand an invented bind parameter from a JSON literal"
         )
+
+
+def test_tower_filter_does_not_call_a_transfer_or_other_service_account_churn():
+    first = opening(
+        [{"service_id": 1, "customer_id": 8}, {"service_id": 2, "customer_id": 8}]
+    )
+    last = opening(
+        [{"service_id": 1, "customer_id": 8}, {"service_id": 2, "customer_id": 8}]
+    )
+    tower_first = opening([{"service_id": 1, "customer_id": 8}])
+    tower_last = opening([])
+    result = a.cohort_metrics(tower_first, tower_last, first, last)
+    assert (
+        result["customer_cancellations"] == 0 and result["cohort_service_losses"] == 0
+    )
+    assert result["customer_churn_rate"] == 0 and result["service_churn_rate"] == 0
+
+
+def test_retained_revenue_uses_immutable_event_date_and_basis(cancellation):
+    x = cancellation
+    test_offer_approval_acceptance_and_retained_no_automatic_change(x)
+    x.case.updated_at = s.now() + timedelta(days=45)
+    x.db.flush()
+    report = a.summary(x.db, date.today().strftime("%Y-%m"))
+    retained = report["retention"]
+    assert retained["selected_retained_services"] == 1
+    assert retained["retained_monthly_snapshot"] == [
+        {"currency": "USD", "basis": "contracted_snapshot", "monthly": "65.00"}
+    ]

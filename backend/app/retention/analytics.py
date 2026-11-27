@@ -8,14 +8,14 @@ from app.customers.models import CustomerService
 from app.customers.powercode_models import PowercodeServiceHistory
 from app.signup.models import AppWork
 from app.field.models import WorkOrder
-from .models import Case, CaseService, Cohort, Offer
+from .models import Case, CaseService, CaseEvent, Cohort, Offer
 
 
 def next_month(d):
     return date(d.year + (d.month == 12), 1 if d.month == 12 else d.month + 1, 1)
 
 
-def cohort_metrics(opening, closing):
+def cohort_metrics(opening, closing, all_opening=None, all_closing=None):
     if not opening or not closing or not opening.complete or not closing.complete:
         return {
             "opening_accounts": None,
@@ -34,17 +34,25 @@ def cohort_metrics(opening, closing):
     cs = {int(m["service_id"]) for m in closing.members}
     oa = {int(m["customer_id"]) for m in opening.members}
     ca = {int(m["customer_id"]) for m in closing.members}
+    global_oa = {int(m["customer_id"]) for m in (all_opening or opening).members}
+    global_ca = {int(m["customer_id"]) for m in (all_closing or closing).members}
+    global_os = {int(m["service_id"]) for m in (all_opening or opening).members}
+    global_cs = {int(m["service_id"]) for m in (all_closing or closing).members}
+    account_losses = oa - global_ca
+    service_losses = os - global_cs
+    new_accounts = ca - global_oa
+    new_services = cs - global_os
     return {
         "opening_accounts": len(oa),
         "opening_services": len(os),
-        "customer_cancellations": len(oa - ca),
-        "cohort_service_losses": len(os - cs),
-        "new_customers": len(ca - oa),
-        "new_services": len(cs - os),
-        "net_customer_growth": len(ca) - len(oa),
-        "net_service_growth": len(cs) - len(os),
-        "customer_churn_rate": len(oa - ca) / len(oa) if oa else None,
-        "service_churn_rate": len(os - cs) / len(os) if os else None,
+        "customer_cancellations": len(account_losses),
+        "cohort_service_losses": len(service_losses),
+        "new_customers": len(new_accounts),
+        "new_services": len(new_services),
+        "net_customer_growth": len(new_accounts) - len(account_losses),
+        "net_service_growth": len(new_services) - len(service_losses),
+        "customer_churn_rate": len(account_losses) / len(oa) if oa else None,
+        "service_churn_rate": len(service_losses) / len(os) if os else None,
         "denominator_status": "complete operator-attested source cohorts",
         "scope": "month-opening cohort attrition; not every intramonth disconnect episode",
     }
@@ -114,6 +122,7 @@ def summary(db, month, site_id=None):
         }
     opening = db.scalar(select(Cohort).where(Cohort.as_of == start))
     closing = db.scalar(select(Cohort).where(Cohort.as_of == end))
+    all_opening, all_closing = opening, closing
     if site_id:
         from types import SimpleNamespace
 
@@ -197,7 +206,7 @@ def summary(db, month, site_id=None):
                     Decimal(str(amount))
                 )
     result = {
-        **cohort_metrics(opening, closing),
+        **cohort_metrics(opening, closing, all_opening, all_closing),
         "month": month,
         "site_id": site_id,
         "observed_unique_service_cancellations": len(lost),
@@ -231,6 +240,7 @@ def summary(db, month, site_id=None):
                 WorkOrder.status == "completed",
                 WorkOrder.completed_at >= lo,
                 WorkOrder.completed_at < hi,
+                *([WorkOrder.site_id == site_id] if site_id else []),
             )
         ),
         "initial_disconnected_imports_excluded": True,
@@ -292,8 +302,15 @@ def retained(db, lo, hi, site_id=None):
             .join(Case)
             .where(
                 Case.retention_state == "customer_retained",
-                Case.updated_at >= lo,
-                Case.updated_at < hi,
+                Case.id.in_(
+                    select(CaseEvent.case_id).where(
+                        CaseEvent.action == "retention_review",
+                        CaseEvent.evidence["retention_state"].as_string()
+                        == "customer_retained",
+                        CaseEvent.created_at >= lo,
+                        CaseEvent.created_at < hi,
+                    )
+                ),
             )
             .order_by(CaseService.id)
             .limit(10001)
@@ -315,7 +332,9 @@ def retained(db, lo, hi, site_id=None):
         if v is None or not cur:
             unknown += 1
         else:
-            amounts[cur] += Decimal(str(v))
+            amounts[(cur, r.snapshot.get("revenue_basis") or "unavailable")] += Decimal(
+                str(v)
+            )
     offers = (
         list(
             db.scalars(
@@ -341,7 +360,10 @@ def retained(db, lo, hi, site_id=None):
         costs[o.currency]["one_time"] += o.one_time_cost
     return {
         "selected_retained_services": len(seen),
-        "retained_monthly_snapshot": {k: str(v) for k, v in amounts.items()},
+        "retained_monthly_snapshot": [
+            {"currency": k[0], "basis": k[1] + "_snapshot", "monthly": str(v)}
+            for k, v in amounts.items()
+        ],
         "unknown_pricing": unknown,
         "estimated_offer_costs": {
             k: {kk: str(vv) for kk, vv in v.items()} for k, v in costs.items()

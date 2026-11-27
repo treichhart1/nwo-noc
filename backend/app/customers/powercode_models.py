@@ -65,6 +65,11 @@ class PowercodePackageMapping(Base):
 
 class PowercodeServiceHistory(Base):
     __tablename__ = "powercode_service_history"
+    __table_args__ = (
+        Index(
+            "ix_powercode_history_churn", "status", "source_updated_at", "service_id"
+        ),
+    )
     id: Mapped[int] = mapped_column(primary_key=True)
     service_id: Mapped[int] = mapped_column(
         ForeignKey("customer_services.id"), index=True
