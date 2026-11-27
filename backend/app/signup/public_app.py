@@ -171,6 +171,8 @@ def quote_operation(db,request,body,respond):
     s.budget(db,request,'lookup')
     if not s.providers.turnstile(body.turnstile_token,body.request_key):raise PermissionError('Security verification failed')
     token_hash=crypto.digest('quote_access',body.token)
+    db.execute(text("SET LOCAL statement_timeout='5000ms'"))
+    db.execute(text("SET LOCAL lock_timeout='3000ms'"))
     if respond:
         return db.scalar(text('SELECT public.noc_signup_quote_respond(:hash,:decision)'),{'hash':token_hash,'decision':body.decision})
     return db.scalar(text('SELECT public.noc_signup_quote_read(:hash)'),{'hash':token_hash})

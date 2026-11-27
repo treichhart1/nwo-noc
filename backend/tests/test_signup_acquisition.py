@@ -771,3 +771,21 @@ def test_postgres_prospect_preview_uses_actual_message_category_and_segments(
     assert segments(plan.message) == segments(
         communications.rendered_message(x.db.get(NotificationDraft, draft["id"]))
     )
+
+
+def test_postgres_unknown_quote_does_not_claim_global_inventory_lock(postgres_db):
+    import os
+    from sqlalchemy import create_engine
+
+    engine = create_engine(os.environ["RF_INTEGRATION_TEST_DATABASE_URL"])
+    try:
+        with engine.begin() as owner:
+            owner.execute(text("SELECT pg_advisory_xact_lock(1000100)"))
+            postgres_db.execute(text("SET LOCAL statement_timeout='500ms'"))
+            result = postgres_db.scalar(
+                text("SELECT public.noc_signup_quote_respond(:hash,:decision)"),
+                {"hash": "f" * 64, "decision": "accepted"},
+            )
+            assert result == {"available": False}
+    finally:
+        engine.dispose()

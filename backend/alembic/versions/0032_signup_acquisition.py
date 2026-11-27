@@ -109,13 +109,15 @@ IF NOT FOUND THEN RETURN jsonb_build_object('available',false); END IF;
 RETURN jsonb_build_object('available',true,'number',v.number,'expires_at',v.expires_at,'status',v.status,'terms',jsonb_build_object('plan_name',v.snapshot::jsonb->'plan_name','currency',v.snapshot::jsonb->'currency','monthly',v.snapshot::jsonb->'monthly','installation',v.snapshot::jsonb->'installation','equipment',v.snapshot::jsonb->'equipment','construction',v.snapshot::jsonb->'construction','discount',COALESCE(v.snapshot::jsonb->'discount','0'::jsonb),'optional_services',v.snapshot::jsonb->'optional_services'));
 END $$;
 CREATE FUNCTION public.noc_signup_quote_respond(p_hash text,p_decision text) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
-DECLARE v record; a record; prior record; proof jsonb; stamp timestamptz:=clock_timestamp();
+DECLARE v record; a record; prior record; proof jsonb; stamp timestamptz;
 BEGIN
 IF p_hash !~ '^[a-f0-9]{64}$' OR p_decision NOT IN ('accepted','rejected') THEN RETURN jsonb_build_object('available',false); END IF;
+IF NOT EXISTS(SELECT 1 FROM public.signup_quotes q WHERE q.access_hash=p_hash) THEN RETURN jsonb_build_object('available',false); END IF;
 PERFORM pg_advisory_xact_lock(1000100);PERFORM pg_advisory_xact_lock(1000101);
 SELECT q.* INTO v FROM public.signup_quotes q WHERE q.access_hash=p_hash FOR UPDATE;
 IF NOT FOUND THEN RETURN jsonb_build_object('available',false); END IF;
 SELECT x.* INTO a FROM public.signup_applications x WHERE x.id=v.application_id FOR UPDATE;
+stamp:=clock_timestamp();
 IF a.redacted_at IS NOT NULL OR a.wrapped_key IS NULL OR v.approved_by IS NULL OR v.issued_at IS NULL OR v.expires_at<=stamp OR v.number<>(SELECT max(q.number) FROM public.signup_quotes q WHERE q.application_id=a.id) THEN RETURN jsonb_build_object('available',false); END IF;
 SELECT r.* INTO prior FROM public.signup_quote_responses r WHERE r.quote_id=v.id;
 IF FOUND THEN
