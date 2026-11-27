@@ -297,7 +297,7 @@ def ready(x):
         )
     )
     # Existing canonical field order, completed by documented fixture technician.
-    w = x.w
+    w = db.get(WorkOrder, x.w["id"])
     w.status = "completed"
     w.completed_at = now()
     w.completion_notes = "Synthetic installation prerequisites satisfied"
