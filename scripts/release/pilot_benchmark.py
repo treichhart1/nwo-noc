@@ -16,6 +16,27 @@ def command(args, *, check=True):
     return result
 
 
+def database_evidence(database):
+    """Read-only PG16 counters. Never enable timing or change durability for a test."""
+    query = """SELECT json_build_object(
+        'wal', (SELECT row_to_json(w) FROM (SELECT wal_records,wal_fpi,wal_bytes,
+            wal_buffers_full,wal_write,wal_sync,wal_write_time,wal_sync_time,stats_reset
+            FROM pg_stat_wal) w),
+        'database', (SELECT row_to_json(d) FROM (SELECT xact_commit,xact_rollback,
+            blks_read,blks_hit,temp_bytes,deadlocks,blk_read_time,blk_write_time,stats_reset
+            FROM pg_stat_database WHERE datname=current_database()) d),
+        'track_io_timing', current_setting('track_io_timing'),
+        'track_wal_io_timing', current_setting('track_wal_io_timing'))"""
+    value = json.loads(command(['docker','exec',database,'psql','-U','synthetic',
+                               '-d','nwo_noc','-A','-t','-c',query]).stdout)
+    # Zero timings while tracking is disabled mean unavailable, not no I/O wait.
+    if value['track_wal_io_timing'] != 'on':
+        value['wal']['wal_write_time'] = value['wal']['wal_sync_time'] = None
+    if value['track_io_timing'] != 'on':
+        value['database']['blk_read_time'] = value['database']['blk_write_time'] = None
+    return value
+
+
 def measure(backend, postgres, output):
     backend = command(['docker','image','inspect','--format','{{.Id}}',backend]).stdout.strip()
     postgres = command(['docker','image','inspect','--format','{{.Id}}',postgres]).stdout.strip()
@@ -31,6 +52,8 @@ def measure(backend, postgres, output):
               'limits':{'backend_cpus':2,'backend_memory_mib':768,'database_cpus':2,'database_memory_mib':1024,'polling_threads':8,'pool_size':10},
               'database_storage':'Disposable named Docker volume on CI host filesystem; physical medium unverified; not tmpfs',
               'monitoring_spool_storage':'Separate private named Docker volume; not tmpfs; every file/directory fsync preserved',
+              'database_observations':[],
+              'diagnostic_scope':'Additional read-only observations outside timed rounds; PG counters are cluster-wide/cumulative and may lag; disabled I/O timings are null',
               'records':records,'target_seconds':15,'target_status':'NOT TESTED'}
     try:
         command(['docker','network','create','--internal',network])
@@ -68,6 +91,8 @@ def measure(backend, postgres, output):
         else: raise RuntimeError('Disposable PostgreSQL unavailable')
         report['postgres_settings']=command(['docker','exec',database,'psql','-U','synthetic','-d','nwo_noc','-A','-t','-c',"SELECT name||'='||setting FROM pg_settings WHERE name IN('fsync','synchronous_commit','shared_buffers','max_connections','full_page_writes') ORDER BY name"]).stdout.splitlines()
         for repeat in range(1,4):
+            observation = {'repeat':repeat,'before':database_evidence(database)}
+            report['database_observations'].append(observation)
             result=command(['docker','run','--rm','--network',network,'--read-only','--cap-drop','ALL','--security-opt','no-new-privileges',
                 '--cpus','2','--memory','768m','--tmpfs','/tmp:rw,noexec,nosuid,size=128m',
                 '--mount',f'type=volume,src={spool_volume},dst=/var/lib/nwo-noc/monitoring',
@@ -76,6 +101,7 @@ def measure(backend, postgres, output):
                 '-e','DATABASE_URL=postgresql+psycopg://synthetic:synthetic-ci-only@db:5432/nwo_noc',
                 '-e','APP_ENV=staging','-e','OFFLINE_MODE=true','-e','SYNTHETIC_MONITORING_ENABLED=true','-e','RF_SCHEDULER_ENABLED=true',
                 '--entrypoint','python',backend,'-m','app.monitoring_benchmark'])
+            observation['after'] = database_evidence(database)
             rows=[json.loads(l) for l in result.stdout.splitlines() if l.startswith('{')]
             if [r.get('devices') for r in rows] != [250,500,1000]:raise ValueError('Incomplete benchmark evidence')
             for row in rows:

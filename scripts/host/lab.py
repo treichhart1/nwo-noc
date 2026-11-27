@@ -277,7 +277,7 @@ def install(args, a):
     write(work/'install-authorization.json', a)
     write(work/'approval.json', {'format':1,'purpose':'controlled-test','repository':REPOSITORY,
           'approval_reference':a['reference'],'commit':args.commit,'tree':args.tree,
-          'migration_head':'0030_native_slack','upgrade_from':[],'images':data['images']})
+          'migration_head':'0031_wordpress_status','upgrade_from':[],'images':data['images']})
     cert,key = work/'lab.crt',work/'lab.key'
     run(['openssl','req','-x509','-newkey','rsa:3072','-sha256','-days','7','-nodes','-subj','/CN=localhost','-addext','subjectAltName=DNS:localhost','-keyout',key,'-out',cert],work,'lab-tls')
     cert.chmod(0o600);key.chmod(0o600)
@@ -286,7 +286,7 @@ def install(args, a):
     # Existing installer owns private password prompting/stdin; never capture/persist it.
     subprocess.run([str(v) for v in argv], cwd=SOURCE, check=True, timeout=2400, env=environment())
     subprocess.run([str(SOURCE/'verify.sh'),'--controlled-test'], cwd=SOURCE, check=True, timeout=300, env=environment())
-    print(json.dumps({'purpose':'controlled-test','services':'existing verify.sh passed','application_health':'PASS','migration':'0030_native_slack verified by installer','administrator_setup':'existing secure initializer completed','dashboard':'https://localhost:18090/','ssh_tunnel':'ssh -L 18090:127.0.0.1:18090 '+a['ssh_host'],'backup':'age public recipient configured; approved independent destination remains operator-managed','backup_destination':a['backup_destination'],'integrations':'all live collectors/Powercode/messages/publication/remediation remain disabled','troubleshooting':['sudo ./verify.sh --controlled-test','sudo systemctl status nwo-noc.service nwo-noc-ingress.service','sudo journalctl -u nwo-noc.service --since today'],'decision':'NO-GO for production/live pilot'}))
+    print(json.dumps({'purpose':'controlled-test','services':'existing verify.sh passed','application_health':'PASS','migration':'0031_wordpress_status verified by installer','administrator_setup':'existing secure initializer completed','dashboard':'https://localhost:18090/','ssh_tunnel':'ssh -L 18090:127.0.0.1:18090 '+a['ssh_host'],'backup':'age public recipient configured; approved independent destination remains operator-managed','backup_destination':a['backup_destination'],'integrations':'all live collectors/Powercode/messages/publication/remediation remain disabled','troubleshooting':['sudo ./verify.sh --controlled-test','sudo systemctl status nwo-noc.service nwo-noc-ingress.service','sudo journalctl -u nwo-noc.service --since today'],'decision':'NO-GO for production/live pilot'}))
 
 
 def main(argv=None):

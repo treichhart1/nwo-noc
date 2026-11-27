@@ -2,6 +2,8 @@
 /**
  * Plugin Name: NWO Approved Network Status
  * Requires at least: 6.5
+ * Legacy compatibility example; prefer docs/release/NOC-128/WORDPRESS.md.
+ * Do not register alongside the installable NWO Network Status plugin.
  * Installation example only. Deploy generated dist-status/assets under /noc-status/.
  * Add [nwo_network_status] to the existing WordPress Network Status page.
  */

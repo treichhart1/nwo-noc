@@ -1,0 +1,31 @@
+# Reviewed example only. Combine with compose.customer-status.yml.
+# Loopback-only publishing; public ingress needs independent operator approval.
+services:
+  status-proxy:
+    image: ${NOC_STATUS_PROXY_IMAGE:?Set reviewed immutable public status proxy image}
+    user: "101:101"
+    entrypoint: [nginx, -g, "daemon off;"]
+    ports: ["127.0.0.1:18443:8443"]
+    volumes:
+      - ./customer-status/nginx-main-v2.conf:/etc/nginx/nginx.conf:ro
+      - ./customer-status/nginx-v2.container.conf:/etc/nginx/conf.d/status.conf:ro
+    secrets: [status_tls_certificate, status_tls_private_key]
+    networks: [status_private, status_edge]
+    depends_on:
+      status-gateway:
+        condition: service_healthy
+    read_only: true
+    tmpfs: [/tmp:rw,noexec,nosuid,size=16m]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    pids_limit: 64
+    mem_limit: 64m
+    cpus: 0.5
+    restart: unless-stopped
+networks:
+  status_edge: {}
+secrets:
+  status_tls_certificate:
+    file: ${NOC_STATUS_TLS_CERT_FILE:?Set approved status hostname certificate}
+  status_tls_private_key:
+    file: ${NOC_STATUS_TLS_KEY_FILE:?Set restricted status proxy TLS key}

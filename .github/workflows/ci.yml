@@ -62,6 +62,25 @@ jobs:
             gh api "repos/treichhart1/nwo-noc/actions/artifacts/$artifact/zip" > "$RUNNER_TEMP/noc119-artifacts/$artifact.zip"
           done < "$RUNNER_TEMP/noc119-artifact-ids"
           python3 scripts/release/reconcile_evidence.py --directory "$RUNNER_TEMP/noc119-artifacts" --output noc119-reconciled-evidence.json
+      - name: Verify original NOC128 failed performance artifact without discarding its evidence
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api repos/treichhart1/nwo-noc/actions/artifacts/15220008578/zip > "$RUNNER_TEMP/noc128-failed-performance.zip"
+          python3 - <<'PYTHON'
+          import json, os
+          from scripts.release.reconcile_evidence import inspect_archive
+          expected = {"id":15220008578,"name":"pilot-performance-evidence","size_in_bytes":22900,
+                      "sha256":"a91b71e703db09763288b2f5db1b3965c18b94426201261a72edde44ffcb1246"}
+          report = inspect_archive(os.environ['RUNNER_TEMP']+'/noc128-failed-performance.zip', expected)
+          assert len(report['benchmarks']) == 1
+          result = report['benchmarks'][0]
+          assert result['rounds']==18 and result['over15']==5 and result['max_seconds']==20.780
+          assert result['target_status']=='FAIL' and result['counts_preserved']
+          with open('noc128-original-failure-evidence.json','w') as output:
+              json.dump(report,output,indent=2)
+          print(json.dumps(report))
+          PYTHON
       - name: Retain source dependency inventory
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: always()
@@ -75,6 +94,7 @@ jobs:
             npm-picomatch-explain.json
             npm-lock-runtime.json
             noc119-reconciled-evidence.json
+            noc128-original-failure-evidence.json
   frontend:
     runs-on: ubuntu-24.04
     defaults:
@@ -307,7 +327,7 @@ jobs:
           OFFLINE_MODE: "true"
           SYNTHETIC_MONITORING_ENABLED: "true"
         run: |
-          python -m pytest -q tests/test_customer_network_status.py
+          python -m pytest -q tests/test_customer_network_status.py tests/test_wordpress_status.py
           python -m app.customer_status.benchmark
       - name: Validate combined NOC110 cross-module operational workflows
         run: python -m pytest -q -s tests/test_full_integration.py tests/test_release_acceptance.py tests/test_release_blockers.py
@@ -646,6 +666,7 @@ jobs:
       - rf-postgres-integration
       - dependency-security
       - compose-validation
+      - wordpress-status
     if: ${{ always() }}
     steps:
       - name: Require all RF release dependencies to pass
@@ -658,9 +679,10 @@ jobs:
           MIGRATIONS_RESULT: ${{ needs.database-migrations.result }}
           SECURITY_RESULT: ${{ needs.dependency-security.result }}
           RF_RESULT: ${{ needs.rf-postgres-integration.result }}
+          WORDPRESS_RESULT: ${{ needs.wordpress-status.result }}
           COMPOSE_RESULT: ${{ needs.compose-validation.result }}
         run: |
-          for name in HOST_PACKAGE_RESULT PILOT_VM_RESULT INSTALL_RESULT FRONTEND_RESULT BACKEND_RESULT MIGRATIONS_RESULT RF_RESULT COMPOSE_RESULT SECURITY_RESULT; do
+          for name in HOST_PACKAGE_RESULT PILOT_VM_RESULT INSTALL_RESULT FRONTEND_RESULT BACKEND_RESULT MIGRATIONS_RESULT RF_RESULT COMPOSE_RESULT SECURITY_RESULT WORDPRESS_RESULT; do
             result="${!name}"
             if [ "$result" != "success" ]; then
               echo "::error::$name is $result, expected success"
@@ -988,3 +1010,41 @@ jobs:
           if [ -f "$RUNNER_TEMP/noc85-wisp-state/acceptance.env" ]; then
             NOC_PROJECT=noc84-wisp-test scripts/release/manage.sh "$RUNNER_TEMP/noc85-wisp-state" down
           fi
+
+
+  wordpress-status:
+    name: WordPress public status acceptance
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Build reviewed backend for isolated synthetic fixture
+        run: docker build -t noc128-backend:test backend
+      - name: Build and scan exact restricted public proxy
+        run: |
+          docker build -t noc128-status-proxy:test -f deploy/Dockerfile.status-proxy .
+          python3 scripts/release/image_security.py --require-no-high --output "$RUNNER_TEMP/wordpress-evidence-proxy-scan" noc128-status-proxy:test
+      - name: Install locked browser test dependencies
+        working-directory: frontend
+        run: |
+          npm ci --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Execute actual disposable WordPress installation and TLS retrieval
+        run: python3 scripts/wordpress/acceptance.py "$RUNNER_TEMP/wordpress-evidence"
+      - name: Preserve plugin ZIP, checksum and compatibility evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: wordpress-status-plugin-and-acceptance
+          path: |
+            ${{ runner.temp }}/wordpress-evidence/plugin
+            ${{ runner.temp }}/wordpress-evidence/compatibility.json
+            ${{ runner.temp }}/wordpress-evidence/proxy-isolation.json
+            ${{ runner.temp }}/wordpress-evidence/wordpress-*.json
+            ${{ runner.temp }}/wordpress-evidence-proxy-scan
+          if-no-files-found: error

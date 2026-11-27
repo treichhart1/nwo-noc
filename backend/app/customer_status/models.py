@@ -32,6 +32,7 @@ class Area(Base):
     id = C(I, primary_key=True)
     identifier = C(S(36), unique=True, nullable=False, default=uid)
     label = C(S(100), nullable=False)
+    public_details = C(JSON, nullable=False, default=dict, server_default="{}")
     active = C(B, nullable=False, default=True)
     revision = C(I, nullable=False, default=1)
     created_by = C(I, FK("users.id"), nullable=False)
@@ -100,6 +101,17 @@ class Revision(Base):
     approved_at = C(D(timezone=True))
     published_at = C(D(timezone=True))
     created_at = C(D(timezone=True), nullable=False, default=now)
+
+
+Index(
+    "ix_customer_status_public_update",
+    Revision.published_at.desc(),
+    postgresql_where=(
+        Revision.published_at.is_not(None)
+        & Revision.approved_by.is_not(None)
+        & Revision.approved_at.is_not(None)
+    ),
+)
 
 
 class Event(Base):

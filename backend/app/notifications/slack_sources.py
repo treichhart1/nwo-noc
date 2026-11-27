@@ -15,7 +15,7 @@ from app.field.models import WorkOrder
 from app.maintenance_ops.models import Schedule
 from app.signup.models import Application, AppWork
 from app.tower_health.models import TowerFinding
-from app.notifications.models import NotificationPlan
+from app.notifications.models import NotificationPlan, NotificationMaintenance
 from app.notifications.service import utc, clock, digest
 from app.notifications.slack_contracts import EVENTS
 
@@ -220,6 +220,21 @@ def snapshot(db, kind, identifier, now=None):
                 base["event"],
             ]
             started = row.next_due_at
+    elif kind == "notification_maintenance":
+        row = db.get(NotificationMaintenance, int(identifier))
+        if row:
+            base.update(
+                event="maintenance", severity="info", site_id=row.target.get("site_id")
+            )
+            version = [
+                row.id,
+                row.revision,
+                row.status,
+                row.starts_at.isoformat(),
+                row.ends_at.isoformat(),
+                row.target,
+            ]
+            started = row.starts_at
     elif kind == "signup":
         row = db.get(Application, int(identifier))
         if row:
@@ -264,8 +279,6 @@ def snapshot(db, kind, identifier, now=None):
             if row.incident_id:
                 base = snapshot(db, "incident", str(row.incident_id), now)
             else:
-                from app.notifications.models import NotificationMaintenance
-
                 m = db.get(NotificationMaintenance, row.maintenance_id)
                 if not m:
                     raise LookupError()

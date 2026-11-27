@@ -805,6 +805,8 @@ def test_poll_keeps_inventory_identity_and_advances_once(postgres_db, isolated, 
     assert sum("monitoring_attempts." in s and s.lstrip().startswith("select") for s in statements) == 1
     locked = [s for s in statements if s.lstrip().startswith("select") and "monitoring_jobs" in s and "for update" in s]
     assert len(locked) == 1 and "left outer join" in locked[0]
+    assert "join devices" in locked[0]
+    assert not any("from devices" in s and s.lstrip().startswith("select") for s in statements)
     assert "for update of" in locked[0] and "skip locked" in locked[0]
     saved = db.get(MonitoringJob, pair[0])
     assert saved.state == "ready" and saved.lease_token is None and saved.successes == 1

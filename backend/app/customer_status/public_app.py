@@ -106,23 +106,13 @@ def current(
                 status_code=429,
                 headers={"Retry-After": "60"},
             )
-        db.execute(text("SET LOCAL statement_timeout='2000ms'"))
-        pol = (
-            db.execute(text("SELECT * FROM noc_public_status.configuration"))
-            .mappings()
-            .first()
-        )
+        from .public_v2 import snapshot
+
+        pol, rows, _ = snapshot(db)
         if not pol or not pol["enabled"] or not pol["baseline_approved_at"]:
             return JSONResponse(
                 {"detail": "Public status is not enabled"}, status_code=503
             )
-        rows = list(
-            db.execute(
-                text(
-                    "SELECT * FROM noc_public_status.announcements ORDER BY updated_at DESC LIMIT 201"
-                )
-            ).mappings()
-        )
         if len(rows) > 200:
             raise ValueError("Public projection exceeds reviewed limit")
         active = []
@@ -130,7 +120,15 @@ def current(
         history = []
         for r in rows:
             item = PublicAnnouncement.model_validate(
-                dict(r["payload"], id=r["identifier"], updated_at=r["updated_at"])
+                dict(
+                    {
+                        k: v
+                        for k, v in r["payload"].items()
+                        if k not in {"impact", "area_details"}
+                    },
+                    id=r["identifier"],
+                    updated_at=r["updated_at"],
+                )
             )
             if item.status == "resolved":
                 history.append(item)
@@ -148,7 +146,24 @@ def current(
         ]
         states = [pol["baseline_status"]] + [i.status for i in active + maintenance]
         overall = min(states, key=order.index)
-        update = max([pol["baseline_approved_at"]] + [r["updated_at"] for r in rows])
+        update = max(
+            [
+                pol["baseline_approved_at"],
+                pol["last_public_update"] or pol["baseline_approved_at"],
+            ]
+            + [r["updated_at"] for r in rows]
+        )
+        now = datetime.now(timezone.utc)
+        review_required = (
+            pol.get("last_withdrawal_at")
+            and pol["last_withdrawal_at"] > pol["baseline_approved_at"]
+        )
+        if (
+            review_required
+            or update > now + timedelta(seconds=60)
+            or now - pol["baseline_approved_at"] > timedelta(hours=24)
+        ):
+            raise ValueError("Approved public information is stale or future-dated")
         feed = PublicFeed(
             overall_status=overall,
             last_public_update=update,
@@ -163,6 +178,8 @@ def current(
         )
         data = feed.model_dump(mode="json")
         raw = json.dumps(data, sort_keys=True, separators=(",", ":"))
+        if len(raw.encode()) > 524288:
+            raise ValueError("Public response too large")
         etag = '"' + hashlib.sha256(raw.encode()).hexdigest() + '"'
         headers = {
             "Cache-Control": "public, max-age=30, must-revalidate",
@@ -183,3 +200,8 @@ def current(
             status_code=503,
             headers={"Cache-Control": "no-store"},
         )
+
+
+from .public_v2 import router as v2_router
+
+app.include_router(v2_router)

@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "version": "128.0.0",
+  "sha256": "619dc89b5b0d43eb38fddbc95143d1f81f649108dbcbdd885eaafffa24a5835f",
+  "members": [
+    {
+      "path": "assets/editor.js",
+      "sha256": "92fc2349683e7d1413b14edb917fa93e9093bec51864dea196baa39449b12ddd"
+    },
+    {
+      "path": "assets/status.css",
+      "sha256": "67b274a2bd6f591322c3880db593790f719f240d21e66672ea4c8e3ea38a1247"
+    },
+    {
+      "path": "assets/status.js",
+      "sha256": "f3e926a2ec5c653738c90dfe373e9ce130f6d04b8290726cd5f86159fe9a76e6"
+    },
+    {
+      "path": "block.json",
+      "sha256": "af230cedf9cf00fe4d30bdf514d3a2bff19867ce99bdd1d252b9087d0cfbbddc"
+    },
+    {
+      "path": "nwo-network-status.php",
+      "sha256": "091ab90426b2254bccc58b5b3920464fa36a695788f0aceb5cf33d5c89a588e5"
+    },
+    {
+      "path": "readme.txt",
+      "sha256": "1cadd7dd3076a9d563fc31f2da21865d415f23531f7a9bd97612951f52e4d372"
+    },
+    {
+      "path": "transport.php",
+      "sha256": "00b93e2f701c49001d19e457f5ee9b30424813fabb2822bee7d3f474833b71d6"
+    },
+    {
+      "path": "uninstall.php",
+      "sha256": "fb99a6648b580e89779467b4d44331e1ae506c57079dde8eb909af4b31bb8ea6"
+    },
+    {
+      "path": "validation.php",
+      "sha256": "171e66315f8c617d3e1d480777205bb2d6bd6f9808a480facc948fc56a31d3d9"
+    }
+  ],
+  "artifact": "wordpress-status-plugin-and-acceptance / wordpress-evidence/plugin/nwo-network-status.zip",
+  "base_commit": "3c49888f7a4e023f1ea544db28cd7978f4449f06"
+}

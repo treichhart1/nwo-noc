@@ -101,7 +101,7 @@ def test_release_versions_and_migrations_consistent():
     script = ScriptDirectory.from_config(config)
     assert (
         len(script.get_heads()) == 1
-        and script.get_current_head() == "0030_native_slack"
+        and script.get_current_head() == "0031_wordpress_status"
     )
 
 

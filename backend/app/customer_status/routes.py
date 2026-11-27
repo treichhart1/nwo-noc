@@ -275,3 +275,28 @@ def decide(id: int, b: MessageDecision, db=Depends(get_db), u=Depends(access)):
 @router.post("/templates/initialize")
 def templates(b: Mutation, db=Depends(get_db), u=Depends(access)):
     return change(db, u, b, "templates", lambda: s.install_templates(db, u, b), True)
+
+
+@router.post("/cases/{id}/slack-draft")
+def slack_draft(id: int, b: Mutation, db=Depends(get_db), u=Depends(access)):
+    def prepare():
+        from app.notifications.slack_service import prepare
+
+        p = s.get(db, Publication, id)
+        plan = prepare(
+            db,
+            "incident" if p.incident_id else "notification_maintenance",
+            p.incident_id or p.maintenance_id,
+            u.id,
+        )
+        s.event(
+            db, u, "slack_draft_prepared", b.reason, p=p, details={"plan_id": plan.id}
+        )
+        return {
+            "plan_id": plan.id,
+            "status": plan.status,
+            "channel": "slack",
+            "delivery_authorized": False,
+        }
+
+    return change(db, u, b, "slack-draft", prepare)

@@ -1,0 +1,2221 @@
+{
+  "format": 1,
+  "source_commit": "26ef26c06b00ab9072a3bd670efce132538e4c0c",
+  "scope": "Complete measured-round summaries from original full workflow JSON logs; raw profiles retained in immutable GitHub artifacts. Artifact ZIP integrity independently rechecked by new CI.",
+  "failed_artifact": {
+    "id": 15220008578,
+    "node_id": "MDg6QXJ0aWZhY3QxNTIyMDAwODU3OA==",
+    "name": "pilot-performance-evidence",
+    "size_in_bytes": 22900,
+    "url": "https://api.github.com/repos/treichhart1/nwo-noc/actions/artifacts/15220008578",
+    "archive_download_url": "https://api.github.com/repos/treichhart1/nwo-noc/actions/artifacts/15220008578/zip",
+    "expired": false,
+    "digest": "sha256:a91b71e703db09763288b2f5db1b3965c18b94426201261a72edde44ffcb1246",
+    "created_at": "2026-11-27T17:30:58Z",
+    "updated_at": "2026-11-27T17:30:58Z",
+    "expires_at": "2027-02-25T17:14:21Z",
+    "workflow_run": {
+      "id": 46040229642,
+      "repository_id": 1313118237,
+      "head_repository_id": 1313118237,
+      "head_branch": "feature/noc-128-wordpress-network-status",
+      "head_sha": "26ef26c06b00ab9072a3bd670efce132538e4c0c"
+    }
+  },
+  "prior_candidates": [
+    {
+      "number": 125,
+      "sha": "4d1d0bf018035d3f52c242de9d5f7a3ebe2db25a",
+      "base": "feature/noc-120-release-handoff",
+      "runs": [
+        "45535527028",
+        "45535532989"
+      ]
+    },
+    {
+      "number": 128,
+      "sha": "c2d8298fcca02f17580265ab7515e4d985ce51f9",
+      "base": "feature/noc-123-lab-installation",
+      "runs": [
+        "45898170406",
+        "45898178502"
+      ]
+    },
+    {
+      "number": 129,
+      "sha": "59300dc4bca881e0d09c5aa7397342d6b3f1f26c",
+      "base": "feature/noc-124-release-handoff",
+      "runs": [
+        "45940574804",
+        "45940568355"
+      ]
+    },
+    {
+      "number": 130,
+      "sha": "3c49888f7a4e023f1ea544db28cd7978f4449f06",
+      "base": "feature/noc-126-multi-provider-sms",
+      "runs": [
+        "45948345991",
+        "45948350877"
+      ]
+    }
+  ],
+  "prior_rounds": [
+    {
+      "pr": 125,
+      "run": "45535527028",
+      "job": 138941060301,
+      "min": 12.144,
+      "median": 13.3295,
+      "max": 14.172,
+      "status": "PASS",
+      "rounds": [
+        12.18,
+        12.223,
+        13.823,
+        13.182,
+        13.332,
+        13.969,
+        12.144,
+        12.301,
+        13.758,
+        13.156,
+        13.491,
+        14.124,
+        12.338,
+        12.399,
+        13.932,
+        13.327,
+        13.402,
+        14.172
+      ]
+    },
+    {
+      "pr": 125,
+      "run": "45535532989",
+      "job": 138941080932,
+      "min": 8.934,
+      "median": 9.8,
+      "max": 10.4,
+      "status": "PASS",
+      "rounds": [
+        9.137,
+        9.11,
+        10.233,
+        9.689,
+        9.857,
+        10.367,
+        9.054,
+        9.136,
+        10.297,
+        9.793,
+        9.866,
+        10.4,
+        8.934,
+        9.015,
+        10.211,
+        9.648,
+        9.807,
+        10.313
+      ]
+    },
+    {
+      "pr": 128,
+      "run": "45898170406",
+      "job": 140177137397,
+      "min": 8.691,
+      "median": 9.587,
+      "max": 10.426,
+      "status": "PASS",
+      "rounds": [
+        8.691,
+        8.806,
+        9.898,
+        9.441,
+        9.572,
+        10.022,
+        8.709,
+        8.755,
+        9.882,
+        9.419,
+        9.602,
+        10.09,
+        8.897,
+        8.968,
+        10.201,
+        9.69,
+        9.803,
+        10.426
+      ]
+    },
+    {
+      "pr": 128,
+      "run": "45898178502",
+      "job": 140177165727,
+      "min": 6.894,
+      "median": 7.965999999999999,
+      "max": 8.914,
+      "status": "PASS",
+      "rounds": [
+        7.814,
+        7.7,
+        7.983,
+        7.885,
+        8.417,
+        8.483,
+        7.406,
+        7.68,
+        8.668,
+        7.624,
+        8.527,
+        8.649,
+        6.894,
+        7.601,
+        8.914,
+        8.181,
+        8.473,
+        7.949
+      ]
+    },
+    {
+      "pr": 129,
+      "run": "45940574804",
+      "job": 140313688346,
+      "min": 11.676,
+      "median": 12.826,
+      "max": 13.511,
+      "status": "PASS",
+      "rounds": [
+        12.021,
+        12.009,
+        13.369,
+        12.865,
+        12.767,
+        13.469,
+        11.676,
+        11.774,
+        13.208,
+        12.707,
+        13.215,
+        13.491,
+        11.76,
+        11.949,
+        13.511,
+        12.787,
+        12.875,
+        13.182
+      ]
+    },
+    {
+      "pr": 129,
+      "run": "45940568355",
+      "job": 140313668464,
+      "min": 8.732,
+      "median": 9.636,
+      "max": 10.161,
+      "status": "PASS",
+      "rounds": [
+        8.732,
+        8.819,
+        10.052,
+        9.502,
+        9.626,
+        10.161,
+        8.86,
+        8.908,
+        9.994,
+        9.505,
+        9.663,
+        10.138,
+        8.817,
+        8.821,
+        10.117,
+        9.678,
+        9.646,
+        10.078
+      ]
+    },
+    {
+      "pr": 130,
+      "run": "45948345991",
+      "job": 140338133437,
+      "min": 7.178,
+      "median": 7.823,
+      "max": 8.332,
+      "status": "PASS",
+      "rounds": [
+        7.498,
+        7.244,
+        8.26,
+        8.037,
+        7.873,
+        8.324,
+        7.212,
+        7.178,
+        8.047,
+        7.64,
+        7.839,
+        8.332,
+        7.273,
+        7.216,
+        8.207,
+        7.753,
+        7.807,
+        8.299
+      ]
+    },
+    {
+      "pr": 130,
+      "run": "45948350877",
+      "job": 140347305361,
+      "min": 7.078,
+      "median": 7.952500000000001,
+      "max": 8.612,
+      "status": "PASS",
+      "rounds": [
+        7.247,
+        7.078,
+        7.947,
+        7.844,
+        8.167,
+        7.992,
+        7.364,
+        7.28,
+        8.315,
+        7.958,
+        7.861,
+        8.612,
+        7.202,
+        7.342,
+        8.302,
+        7.978,
+        8.124,
+        8.466
+      ]
+    }
+  ],
+  "same_source_pass": {
+    "min": 8.912,
+    "median": 9.736,
+    "max": 10.327,
+    "limits": {
+      "backend_cpus": 2,
+      "backend_memory_mib": 768,
+      "database_cpus": 2,
+      "database_memory_mib": 1024,
+      "polling_threads": 8,
+      "pool_size": 10
+    },
+    "settings": [
+      "fsync=on",
+      "full_page_writes=on",
+      "max_connections=100",
+      "shared_buffers=16384",
+      "synchronous_commit=on"
+    ],
+    "filesystems": {
+      "postgres": "ext4",
+      "monitoring_outbox": "ext4"
+    },
+    "rounds": [
+      {
+        "repeat": 1,
+        "round": 1,
+        "seconds": 8.958,
+        "sql": {
+          "SELECT": 8834,
+          "OTHER": 0,
+          "INSERT": 2032,
+          "UPDATE": 2032,
+          "SAVEPOINT": 1000,
+          "RELEASE": 1000
+        },
+        "resources": {
+          "cpu_seconds": 10.337,
+          "cpu_one_core_percent": 115.38,
+          "rss_kib": 128204,
+          "process_peak_rss_kib": 139080,
+          "scope": "Python polling process; peak RSS since process start; excludes PostgreSQL/other containers"
+        },
+        "phases": {
+          "alerts.process": {
+            "calls": 1000,
+            "total_ms": 9417.05,
+            "max_ms": 26.542
+          },
+          "collector": {
+            "calls": 1000,
+            "total_ms": 4201.11,
+            "max_ms": 14.496
+          },
+          "durability.fsync": {
+            "calls": 3000,
+            "total_ms": 2564.907,
+            "max_ms": 8.437
+          },
+          "scheduler.claim": {
+            "calls": 33,
+            "total_ms": 190.056,
+            "max_ms": 9.694
+          },
+          "storage.stage": {
+            "calls": 1000,
+            "total_ms": 13704.105,
+            "max_ms": 75.205
+          },
+          "transaction.commit": {
+            "calls": 1033,
+            "total_ms": 2288.095,
+            "max_ms": 9.568
+          }
+        }
+      },
+      {
+        "repeat": 1,
+        "round": 2,
+        "seconds": 8.934,
+        "sql": {
+          "SELECT": 8834,
+          "OTHER": 0,
+          "INSERT": 2032,
+          "UPDATE": 2032,
+          "SAVEPOINT": 1000,
+          "RELEASE": 1000
+        },
+        "resources": {
+          "cpu_seconds": 10.334,
+          "cpu_one_core_percent": 115.67,
+          "rss_kib": 128212,
+          "process_peak_rss_kib": 139080,
+          "scope": "Python polling process; peak RSS since process start; excludes PostgreSQL/other containers"
+        },
+        "phases": {
+          "alerts.process": {
+            "calls": 1000,
+            "total_ms": 9514.933,
+            "max_ms": 22.381
+          },
+          "collector": {
+            "calls": 1000,
+            "total_ms": 4186.165,
+            "max_ms": 10.774
+          },
+          "durability.fsync": {
+            "calls": 3000,
+            "total_ms": 2599.045,
+            "max_ms": 6.858
+          },
+          "scheduler.claim": {
+            "calls": 33,
+            "total_ms": 229.676,
+            "max_ms": 59.056
+          },
+          "storage.stage": {
+            "calls": 1000,
+            "total_ms": 13332.644,
+            "max_ms": 27.566
+          },
+          "transaction.commit": {
+            "calls": 1033,
+            "total_ms": 2351.472,
+            "max_ms": 12.908
+          }
+        }
+      },
+      {
+        "repeat": 1,
+        "round": 3,
+        "seconds": 10.015,
+        "sql": {
+          "SELECT": 8834,
+          "OTHER": 0,
+          "INSERT": 4432,
+          "UPDATE": 2032,
+          "SAVEPOINT": 1000,
+          "RELEASE": 1000
+        },
+        "resources": {
+          "cpu_seconds": 11.543,
+          "cpu_one_core_percent": 115.26,
+          "rss_kib": 128228,
+          "process_peak_rss_kib": 139080,
+          "scope": "Python polling process; peak RSS since process start; excludes PostgreSQL/other containers"
+        },
+        "phases": {
+          "alerts.process": {
+            "calls": 1000,
+            "total_ms": 15123.36,
+            "max_ms": 67.881
+          },
+          "collector": {
+            "calls": 1000,
+            "total_ms": 4219.004,
+            "max_ms": 14.223
+          },
+          "durability.fsync": {
+            "calls": 3000,
+            "total_ms": 2621.682,
+            "max_ms": 6.912
+          },
+          "scheduler.claim": {
+            "calls": 33,
+            "total_ms": 172.14,
+            "max_ms": 6.401
+          },
+          "storage.stage": {
+            "calls": 1000,
+            "total_ms": 13531.643,
+            "max_ms": 66.559
+          },
+          "transaction.commit": {
+            "calls": 1033,
+            "total_ms": 2291.642,
+            "max_ms": 11.617
+          }
+        }
+      },
+      {
+        "repeat": 1,
+        "round": 4,
+        "seconds": 9.535,
+        "sql": {
+          "SELECT": 8834,
+          "OTHER": 0,
+          "INSERT": 2032,
+          "UPDATE": 2832,
+          "SAVEPOINT": 1000,
+          "RELEASE": 1000
+        },
+        "resources": {
+          "cpu_seconds": 11.05,
+          "cpu_one_core_percent": 115.9,
+          "rss_kib": 128232,
+          "process_peak_rss_kib": 139080,
+          "scope": "Python polling process; peak RSS since process start; excludes PostgreSQL/other containers"
+        },
+        "phases": {
+          "alerts.process": {
+            "calls": 1000,
+            "total_ms": 10155.136,
+            "max_ms": 58.26
+          },
+          "collector": {
+            "calls": 1000,
+            "total_ms": 4298.288,
+            "max_ms": 53.327
+          },
+          "durability.fsync": {
+            "calls": 3000,
+            "total_ms": 2671.626,
+            "max_ms": 51.2
+          },
+          "scheduler.claim": {
+            "calls": 33,
+            "total_ms": 169.403,
+            "max_ms": 5.999
+          },
+          "storage.stage": {
+            "calls": 1000,
+            "total_ms": 13455.098,
+            "max_ms": 70.33
+          },
+          "transaction.commit": {
+            "calls": 1033,
+            "total_ms": 2228.992,
+            "max_ms": 9.761
+          }
+        }
+      },
+      {
+        "repeat": 1,
+        "round": 5,
+        "seconds": 9.725,
+        "sql": {
+          "SELECT": 8834,
+          "OTHER": 0,
+          "INSERT": 2032,
+          "UPDATE": 2832,
+          "SAVEPOINT": 1000,
+          "RELEASE": 1000
+        },
+        "resources": {
+          "cpu_seconds": 11.201,
+          "cpu_one_core_percent": 115.18,
+          "rss_kib": 128244,
+          "process_peak_rss_kib": 139080,
+          "scope": "Python polling process; peak RSS since process start; excludes PostgreSQL/other containers"
+        },
+        "phases": {
+          "alerts.process": {
+            "calls": 1000,
+            "total_ms": 10817.536,
+            "max_ms": 68.806
+          },
+          "collector": {
+            "calls": 1000,
+            "total_ms": 4245.653,
+            "max_ms": 13.252
+          },
+          "durability.fsync": {
+            "calls": 3000,
+            "total_ms": 2595.099,
+            "max_ms": 6.956
+          },
+          "scheduler.claim": {
+            "calls": 33,
+            "total_ms": 175.649,
+            "max_ms": 6.36
+          },
+          "storage.stage": {
+            "calls": 1000,
+            "total_ms": 13692.8,
+            "max_ms": 79.311
+          },
+          "transaction.commit": {
+            "calls": 1033,
+            "total_ms": 2340.415,
+            "max_ms": 12.787
+          }
+        }
+      },
+      {
+        "repeat": 1,
+        "round": 6,
+        "seconds": 10.206,
+        "sql": {
+          "SELECT": 8834,
+          "OTHER": 0,
+          "INSERT": 2832,
+          "UPDATE": 2832,
+          "SAVEPOINT": 1000,
+          "RELEASE": 1000
+        },
+        "resources": {
+          "cpu_seconds": 11.761,
+          "cpu_one_core_percent": 115.23,
+          "rss_kib": 129116,
+          "process_peak_rss_kib": 139080,
+          "scope": "Python polling process; peak RSS since process start; excludes PostgreSQL/other containers"
+        },
+        "phases": {
+          "alerts.process": {
+            "calls": 1000,
+            "total_ms": 10808.697,
+            "max_ms": 24.435
+          },
+          "collector": {
+            "calls": 1000,
+            "total_ms": 4378.219,
+            "max_ms": 14.803
+          },
+          "durability.fsync": {
+            "calls": 3000,
+            "total_ms": 2682.847,
+            "max_ms": 5.802
+          },
+          "scheduler.claim": {
+            "calls": 33,
+            "total_ms": 169.696,
+            "max_ms": 6.545
+          },
+          "storage.stage": {
+            "calls": 1000,
+            "total_ms": 13505.865,
+            "max_ms": 31.117
+          },
+          "transaction.commit": {
+            "calls": 1033,
+            "total_ms": 2352.15,
+            "max_ms": 12.245
+          }
+        }
+      },
+      {
+        "repeat": 2,
+        "round": 1,
+        "seconds": 8.912,
+        "sql": {
+          "SELECT": 8834,
+          "OTHER": 0,
+          "INSERT": 2032,
+          "UPDATE": 2032,
+          "SAVEPOINT": 1000,
+          "RELEASE": 1000
+        },
+        "resources": {
+          "cpu_seconds": 10.282,
+          "cpu_one_core_percent": 115.38,
+          "rss_kib": 129084,
+          "process_peak_rss_kib": 138828,
+          "scope": "Python polling process; peak RSS since process start; excludes PostgreSQL/other containers"
+        },
+        "phases": {
+          "alerts.process": {
+            "calls": 1000,
+            "total_ms": 9347.57,
+            "max_ms": 21.629
+          },
+          "collector": {
+            "calls": 1000,
+            "total_ms": 4170.805,
+            "max_ms": 13.341
+          },
+          "durability.fsync": {
+            "calls": 3000,
+            "total_ms": 2468.681,
+            "max_ms": 6.598
+          },
+          "scheduler.claim": {
+            "calls": 33,
+            "total_ms": 183.046,
+            "max_ms": 10.349
+          },
+          "storage.stage": {
+            "calls": 1000,
+            "total_ms": 13638.28,
+            "max_ms": 76.957
+          },
+          "transaction.commit": {
+            "calls": 1033,
+            "total_ms": 2261.595,
+            "max_ms": 10.955
+          }
+        }
+      },
+      {
+        "repeat": 2,
+        "round": 2,
+        "seconds": 9.141,
+        "sql": {
+          "SELECT": 8834,
+          "OTHER": 0,
+          "INSERT": 2032,
+          "UPDATE": 2032,
+          "SAVEPOINT": 1000,
+          "RELEASE": 1000
+        },
+        "resources": {
+          "cpu_seconds": 10.554,
+          "cpu_one_core_percent": 115.45,
+          "rss_kib": 129080,
+          "process_peak_rss_kib": 138828,
+          "scope": "Python polling process; peak RSS since process start; excludes PostgreSQL/other containers"
+        },
+        "phases": {
+          "alerts.process": {
+            "calls": 1000,
+            "total_ms": 9924.432,
+            "max_ms": 73.973
+          },
+          "collector": {
+            "calls": 1000,
+            "total_ms": 4231.93,
+            "max_ms": 13.065
+          },
+          "durability.fsync": {
+            "calls": 3000,
+            "total_ms": 2560.066,
+            "max_ms": 6.488
+          },
+          "scheduler.claim": {
+            "calls": 33,
+            "total_ms": 177.513,
+            "max_ms": 6.568
+          },
+          "storage.stage": {
+            "calls": 1000,
+            "total_ms": 13982.737,
+            "max_ms": 76.328
+          },
+          "transaction.commit": {
+            "calls": 1033,
+            "total_ms": 2376.833,
+            "max_ms": 9.195
+          }
+        }
+      },
+      {
+        "repeat": 2,
+        "round": 3,
+        "seconds": 10.221,
+        "sql": {
+          "SELECT": 8834,
+          "OTHER": 0,
+          "INSERT": 4432,
+          "UPDATE": 2032,
+          "SAVEPOINT": 1000,
+          "RELEASE": 1000
+        },
+        "resources": {
+          "cpu_seconds": 11.744,
+          "cpu_one_core_percent": 114.9,
+          "rss_kib": 129100,
+          "process_peak_rss_kib": 138828,
+          "scope": "Python polling process; peak RSS since process start; excludes PostgreSQL/other containers"
+        },
+        "phases": {
+          "alerts.process": {
+            "calls": 1000,
+            "total_ms": 14986.054,
+            "max_ms": 32.749
+          },
+          "collector": {
+            "calls": 1000,
+            "total_ms": 4342.517,
+            "max_ms": 14.404
+          },
+          "durability.fsync": {
+            "calls": 3000,
+            "total_ms": 2649.193,
+            "max_ms": 6.145
+          },
+          "scheduler.claim": {
+            "calls": 33,
+            "total_ms": 232.623,
+            "max_ms": 61.742
+          },
+          "storage.stage": {
+            "calls": 1000,
+            "total_ms": 13731.983,
+            "max_ms": 30.248
+          },
+          "transaction.commit": {
+            "calls": 1033,
+            "total_ms": 2407.611,
+            "max_ms": 9.813
+          }
+        }
+      },
+      {
+        "repeat": 2,
+        "round": 4,
+        "seconds": 9.627,
+        "sql": {
+          "SELECT": 8834,
+          "OTHER": 0,
+          "INSERT": 2032,
+          "UPDATE": 2832,
+          "SAVEPOINT": 1000,
+          "RELEASE": 1000
+        },
+        "resources": {
+          "cpu_seconds": 11.153,
+          "cpu_one_core_percent": 115.85,
+          "rss_kib": 129100,
+          "process_peak_rss_kib": 138828,
+          "scope": "Python polling process; peak RSS since process start; excludes PostgreSQL/other containers"
+        },
+        "phases": {
+          "alerts.process": {
+            "calls": 1000,
+            "total_ms": 10072.057,
+            "max_ms": 25.975
+          },
+          "collector": {
+            "calls": 1000,
+            "total_ms": 4239.318,
+            "max_ms": 11.986
+          },
+          "durability.fsync": {
+            "calls": 3000,
+            "total_ms": 2656.56,
+            "max_ms": 6.679
+          },
+          "scheduler.claim": {
+            "calls": 33,
+            "total_ms": 173.783,
+            "max_ms": 6.447
+          },
+          "storage.stage": {
+            "calls": 1000,
+            "total_ms": 13463.085,
+            "max_ms": 71.426
+          },
+          "transaction.commit": {
+            "calls": 1033,
+            "total_ms": 2364.835,
+            "max_ms": 12.466
+          }
+        }
+      },
+      {
+        "repeat": 2,
+        "round": 5,
+        "seconds": 9.781,
+        "sql": {
+          "SELECT": 8834,
+          "OTHER": 0,
+          "INSERT": 2032,
+          "UPDATE": 2832,
+          "SAVEPOINT": 1000,
+          "RELEASE": 1000
+        },
+        "resources": {
+          "cpu_seconds": 11.306,
+          "cpu_one_core_percent": 115.59,
+          "rss_kib": 129120,
+          "process_peak_rss_kib": 138828,
+          "scope": "Python polling process; peak RSS since process start; excludes PostgreSQL/other containers"
+        },
+        "phases": {
+          "alerts.process": {
+            "calls": 1000,
+            "total_ms": 10530.792,
+            "max_ms": 63.616
+          },
+          "collector": {
+            "calls": 1000,
+            "total_ms": 4345.167,
+            "max_ms": 64.305
+          },
+          "durability.fsync": {
+            "calls": 3000,
+            "total_ms": 2688.97,
+            "max_ms": 6.556
+          },
+          "scheduler.claim": {
+            "calls": 33,
+            "total_ms": 178.073,
+            "max_ms": 6.864
+          },
+          "storage.stage": {
+            "calls": 1000,
+            "total_ms": 13583.574,
+            "max_ms": 66.593
+          },
+          "transaction.commit": {
+            "calls": 1033,
+            "total_ms": 2374.498,
+            "max_ms": 10.275
+          }
+        }
+      },
+      {
+        "repeat": 2,
+        "round": 6,
+        "seconds": 10.327,
+        "sql": {
+          "SELECT": 8834,
+          "OTHER": 0,
+          "INSERT": 2832,
+          "UPDATE": 2832,
+          "SAVEPOINT": 1000,
+          "RELEASE": 1000
+        },
+        "resources": {
+          "cpu_seconds": 11.873,
+          "cpu_one_core_percent": 114.97,
+          "rss_kib": 129992,
+          "process_peak_rss_kib": 138828,
+          "scope": "Python polling process; peak RSS since process start; excludes PostgreSQL/other containers"
+        },
+        "phases": {
+          "alerts.process": {
+            "calls": 1000,
+            "total_ms": 11234.22,
+            "max_ms": 27.375
+          },
+          "collector": {
+            "calls": 1000,
+            "total_ms": 4250.48,
+            "max_ms": 62.983
+          },
+          "durability.fsync": {
+            "calls": 3000,
+            "total_ms": 2714.823,
+            "max_ms": 58.304
+          },
+          "scheduler.claim": {
+            "calls": 33,
+            "total_ms": 173.679,
+            "max_ms": 6.263
+          },
+          "storage.stage": {
+            "calls": 1000,
+            "total_ms": 14133.012,
+            "max_ms": 79.785
+          },
+          "transaction.commit": {
+            "calls": 1033,
+            "total_ms": 2470.756,
+            "max_ms": 12.606
+          }
+        }
+      },
+      {
+        "repeat": 3,
+        "round": 1,
+        "seconds": 8.938,
+        "sql": {
+          "SELECT": 8834,
+          "OTHER": 0,
+          "INSERT": 2032,
+          "UPDATE": 2032,
+          "SAVEPOINT": 1000,
+          "RELEASE": 1000
+        },
+        "resources": {
+          "cpu_seconds": 10.323,
+          "cpu_one_core_percent": 115.5,
+          "rss_kib": 130116,
+          "process_peak_rss_kib": 138972,
+          "scope": "Python polling process; peak RSS since process start; excludes PostgreSQL/other containers"
+        },
+        "phases": {
+          "alerts.process": {
+            "calls": 1000,
+            "total_ms": 9460.815,
+            "max_ms": 21.049
+          },
+          "collector": {
+            "calls": 1000,
+            "total_ms": 4173.984,
+            "max_ms": 11.621
+          },
+          "durability.fsync": {
+            "calls": 3000,
+            "total_ms": 2450.62,
+            "max_ms": 6.345
+          },
+          "scheduler.claim": {
+            "calls": 33,
+            "total_ms": 241.587,
+            "max_ms": 60.915
+          },
+          "storage.stage": {
+            "calls": 1000,
+            "total_ms": 13407.236,
+            "max_ms": 28.214
+          },
+          "transaction.commit": {
+            "calls": 1033,
+            "total_ms": 2231.286,
+            "max_ms": 12.847
+          }
+        }
+      },
+      {
+        "repeat": 3,
+        "round": 2,
+        "seconds": 8.918,
+        "sql": {
+          "SELECT": 8834,
+          "OTHER": 0,
+          "INSERT": 2032,
+          "UPDATE": 2032,
+          "SAVEPOINT": 1000,
+          "RELEASE": 1000
+        },
+        "resources": {
+          "cpu_seconds": 10.321,
+          "cpu_one_core_percent": 115.73,
+          "rss_kib": 130120,
+          "process_peak_rss_kib": 138972,
+          "scope": "Python polling process; peak RSS since process start; excludes PostgreSQL/other containers"
+        },
+        "phases": {
+          "alerts.process": {
+            "calls": 1000,
+            "total_ms": 9810.951,
+            "max_ms": 66.763
+          },
+          "collector": {
+            "calls": 1000,
+            "total_ms": 4164.189,
+            "max_ms": 12.949
+          },
+          "durability.fsync": {
+            "calls": 3000,
+            "total_ms": 2564.215,
+            "max_ms": 7.267
+          },
+          "scheduler.claim": {
+            "calls": 33,
+            "total_ms": 177.724,
+            "max_ms": 6.296
+          },
+          "storage.stage": {
+            "calls": 1000,
+            "total_ms": 13055.742,
+            "max_ms": 73.818
+          },
+          "transaction.commit": {
+            "calls": 1033,
+            "total_ms": 2340.607,
+            "max_ms": 12.129
+          }
+        }
+      },
+      {
+        "repeat": 3,
+        "round": 3,
+        "seconds": 10.205,
+        "sql": {
+          "SELECT": 8834,
+          "OTHER": 0,
+          "INSERT": 4432,
+          "UPDATE": 2032,
+          "SAVEPOINT": 1000,
+          "RELEASE": 1000
+        },
+        "resources": {
+          "cpu_seconds": 11.738,
+          "cpu_one_core_percent": 115.02,
+          "rss_kib": 130124,
+          "process_peak_rss_kib": 138972,
+          "scope": "Python polling process; peak RSS since process start; excludes PostgreSQL/other containers"
+        },
+        "phases": {
+          "alerts.process": {
+            "calls": 1000,
+            "total_ms": 15017.328,
+            "max_ms": 71.972
+          },
+          "collector": {
+            "calls": 1000,
+            "total_ms": 4292.538,
+            "max_ms": 13.871
+          },
+          "durability.fsync": {
+            "calls": 3000,
+            "total_ms": 2674.505,
+            "max_ms": 60.407
+          },
+          "scheduler.claim": {
+            "calls": 33,
+            "total_ms": 172.801,
+            "max_ms": 6.732
+          },
+          "storage.stage": {
+            "calls": 1000,
+            "total_ms": 13932.598,
+            "max_ms": 81.051
+          },
+          "transaction.commit": {
+            "calls": 1033,
+            "total_ms": 2329.777,
+            "max_ms": 9.106
+          }
+        }
+      },
+      {
+        "repeat": 3,
+        "round": 4,
+        "seconds": 9.748,
+        "sql": {
+          "SELECT": 8834,
+          "OTHER": 0,
+          "INSERT": 2032,
+          "UPDATE": 2832,
+          "SAVEPOINT": 1000,
+          "RELEASE": 1000
+        },
+        "resources": {
+          "cpu_seconds": 11.267,
+          "cpu_one_core_percent": 115.59,
+          "rss_kib": 130124,
+          "process_peak_rss_kib": 138972,
+          "scope": "Python polling process; peak RSS since process start; excludes PostgreSQL/other containers"
+        },
+        "phases": {
+          "alerts.process": {
+            "calls": 1000,
+            "total_ms": 10677.506,
+            "max_ms": 75.643
+          },
+          "collector": {
+            "calls": 1000,
+            "total_ms": 4280.653,
+            "max_ms": 13.294
+          },
+          "durability.fsync": {
+            "calls": 3000,
+            "total_ms": 2594.509,
+            "max_ms": 6.604
+          },
+          "scheduler.claim": {
+            "calls": 33,
+            "total_ms": 172.588,
+            "max_ms": 6.215
+          },
+          "storage.stage": {
+            "calls": 1000,
+            "total_ms": 13815.369,
+            "max_ms": 84.836
+          },
+          "transaction.commit": {
+            "calls": 1033,
+            "total_ms": 2282.943,
+            "max_ms": 10.295
+          }
+        }
+      },
+      {
+        "repeat": 3,
+        "round": 5,
+        "seconds": 9.747,
+        "sql": {
+          "SELECT": 8834,
+          "OTHER": 0,
+          "INSERT": 2032,
+          "UPDATE": 2832,
+          "SAVEPOINT": 1000,
+          "RELEASE": 1000
+        },
+        "resources": {
+          "cpu_seconds": 11.275,
+          "cpu_one_core_percent": 115.68,
+          "rss_kib": 130132,
+          "process_peak_rss_kib": 138972,
+          "scope": "Python polling process; peak RSS since process start; excludes PostgreSQL/other containers"
+        },
+        "phases": {
+          "alerts.process": {
+            "calls": 1000,
+            "total_ms": 10727.953,
+            "max_ms": 68.307
+          },
+          "collector": {
+            "calls": 1000,
+            "total_ms": 4243.825,
+            "max_ms": 61.801
+          },
+          "durability.fsync": {
+            "calls": 3000,
+            "total_ms": 2725.742,
+            "max_ms": 56.471
+          },
+          "scheduler.claim": {
+            "calls": 33,
+            "total_ms": 173.033,
+            "max_ms": 6.844
+          },
+          "storage.stage": {
+            "calls": 1000,
+            "total_ms": 13745.217,
+            "max_ms": 80.681
+          },
+          "transaction.commit": {
+            "calls": 1033,
+            "total_ms": 2358.897,
+            "max_ms": 9.958
+          }
+        }
+      },
+      {
+        "repeat": 3,
+        "round": 6,
+        "seconds": 10.259,
+        "sql": {
+          "SELECT": 8834,
+          "OTHER": 0,
+          "INSERT": 2832,
+          "UPDATE": 2832,
+          "SAVEPOINT": 1000,
+          "RELEASE": 1000
+        },
+        "resources": {
+          "cpu_seconds": 11.811,
+          "cpu_one_core_percent": 115.14,
+          "rss_kib": 131036,
+          "process_peak_rss_kib": 138972,
+          "scope": "Python polling process; peak RSS since process start; excludes PostgreSQL/other containers"
+        },
+        "phases": {
+          "alerts.process": {
+            "calls": 1000,
+            "total_ms": 10981.336,
+            "max_ms": 66.724
+          },
+          "collector": {
+            "calls": 1000,
+            "total_ms": 4267.098,
+            "max_ms": 15.66
+          },
+          "durability.fsync": {
+            "calls": 3000,
+            "total_ms": 2729.562,
+            "max_ms": 7.39
+          },
+          "scheduler.claim": {
+            "calls": 33,
+            "total_ms": 170.837,
+            "max_ms": 6.377
+          },
+          "storage.stage": {
+            "calls": 1000,
+            "total_ms": 14053.294,
+            "max_ms": 81.775
+          },
+          "transaction.commit": {
+            "calls": 1033,
+            "total_ms": 2403.177,
+            "max_ms": 10.704
+          }
+        }
+      }
+    ]
+  },
+  "same_source_failure": {
+    "min": 10.778,
+    "median": 12.312000000000001,
+    "max": 20.78,
+    "limits": {
+      "backend_cpus": 2,
+      "backend_memory_mib": 768,
+      "database_cpus": 2,
+      "database_memory_mib": 1024,
+      "polling_threads": 8,
+      "pool_size": 10
+    },
+    "settings": [
+      "fsync=on",
+      "full_page_writes=on",
+      "max_connections=100",
+      "shared_buffers=16384",
+      "synchronous_commit=on"
+    ],
+    "filesystems": {
+      "postgres": "ext4",
+      "monitoring_outbox": "ext4"
+    },
+    "rounds": [
+      {
+        "repeat": 1,
+        "round": 1,
+        "seconds": 11.592,
+        "sql": {
+          "SELECT": 8834,
+          "OTHER": 0,
+          "INSERT": 2032,
+          "UPDATE": 2032,
+          "SAVEPOINT": 1000,
+          "RELEASE": 1000
+        },
+        "resources": {
+          "cpu_seconds": 10.791,
+          "cpu_one_core_percent": 93.1,
+          "rss_kib": 128956,
+          "process_peak_rss_kib": 138964,
+          "scope": "Python polling process; peak RSS since process start; excludes PostgreSQL/other containers"
+        },
+        "phases": {
+          "alerts.process": {
+            "calls": 1000,
+            "total_ms": 9002.402,
+            "max_ms": 88.933
+          },
+          "collector": {
+            "calls": 1000,
+            "total_ms": 4278.38,
+            "max_ms": 87.626
+          },
+          "durability.fsync": {
+            "calls": 3000,
+            "total_ms": 8553.324,
+            "max_ms": 321.328
+          },
+          "scheduler.claim": {
+            "calls": 33,
+            "total_ms": 246.005,
+            "max_ms": 13.147
+          },
+          "storage.stage": {
+            "calls": 1000,
+            "total_ms": 13215.124,
+            "max_ms": 93.531
+          },
+          "transaction.commit": {
+            "calls": 1033,
+            "total_ms": 9223.777,
+            "max_ms": 262.83
+          }
+        }
+      },
+      {
+        "repeat": 1,
+        "round": 2,
+        "seconds": 10.778,
+        "sql": {
+          "SELECT": 8834,
+          "OTHER": 0,
+          "INSERT": 2032,
+          "UPDATE": 2032,
+          "SAVEPOINT": 1000,
+          "RELEASE": 1000
+        },
+        "resources": {
+          "cpu_seconds": 10.885,
+          "cpu_one_core_percent": 101,
+          "rss_kib": 128960,
+          "process_peak_rss_kib": 138964,
+          "scope": "Python polling process; peak RSS since process start; excludes PostgreSQL/other containers"
+        },
+        "phases": {
+          "alerts.process": {
+            "calls": 1000,
+            "total_ms": 9644.187,
+            "max_ms": 46.049
+          },
+          "collector": {
+            "calls": 1000,
+            "total_ms": 4211.004,
+            "max_ms": 12.906
+          },
+          "durability.fsync": {
+            "calls": 3000,
+            "total_ms": 5971.194,
+            "max_ms": 290.888
+          },
+          "scheduler.claim": {
+            "calls": 33,
+            "total_ms": 225.061,
+            "max_ms": 8.563
+          },
+          "storage.stage": {
+            "calls": 1000,
+            "total_ms": 13756.35,
+            "max_ms": 94.336
+          },
+          "transaction.commit": {
+            "calls": 1033,
+            "total_ms": 8536.066,
+            "max_ms": 259.747
+          }
+        }
+      },
+      {
+        "repeat": 1,
+        "round": 3,
+        "seconds": 11.87,
+        "sql": {
+          "SELECT": 8834,
+          "OTHER": 0,
+          "INSERT": 4432,
+          "UPDATE": 2032,
+          "SAVEPOINT": 1000,
+          "RELEASE": 1000
+        },
+        "resources": {
+          "cpu_seconds": 12.04,
+          "cpu_one_core_percent": 101.43,
+          "rss_kib": 128968,
+          "process_peak_rss_kib": 138964,
+          "scope": "Python polling process; peak RSS since process start; excludes PostgreSQL/other containers"
+        },
+        "phases": {
+          "alerts.process": {
+            "calls": 1000,
+            "total_ms": 14345.765,
+            "max_ms": 33.971
+          },
+          "collector": {
+            "calls": 1000,
+            "total_ms": 4158.586,
+            "max_ms": 10.74
+          },
+          "durability.fsync": {
+            "calls": 3000,
+            "total_ms": 5596.142,
+            "max_ms": 185.227
+          },
+          "scheduler.claim": {
+            "calls": 33,
+            "total_ms": 224.29,
+            "max_ms": 9.432
+          },
+          "storage.stage": {
+            "calls": 1000,
+            "total_ms": 13659.908,
+            "max_ms": 88.802
+          },
+          "transaction.commit": {
+            "calls": 1033,
+            "total_ms": 10533.848,
+            "max_ms": 197.595
+          }
+        }
+      },
+      {
+        "repeat": 1,
+        "round": 4,
+        "seconds": 16.214,
+        "sql": {
+          "SELECT": 8834,
+          "OTHER": 0,
+          "INSERT": 2032,
+          "UPDATE": 2832,
+          "SAVEPOINT": 1000,
+          "RELEASE": 1000
+        },
+        "resources": {
+          "cpu_seconds": 11.658,
+          "cpu_one_core_percent": 71.9,
+          "rss_kib": 128976,
+          "process_peak_rss_kib": 138964,
+          "scope": "Python polling process; peak RSS since process start; excludes PostgreSQL/other containers"
+        },
+        "phases": {
+          "alerts.process": {
+            "calls": 1000,
+            "total_ms": 9985.479,
+            "max_ms": 24.149
+          },
+          "collector": {
+            "calls": 1000,
+            "total_ms": 4129.21,
+            "max_ms": 12.218
+          },
+          "durability.fsync": {
+            "calls": 3000,
+            "total_ms": 13598.403,
+            "max_ms": 690.445
+          },
+          "scheduler.claim": {
+            "calls": 33,
+            "total_ms": 223.723,
+            "max_ms": 9.005
+          },
+          "storage.stage": {
+            "calls": 1000,
+            "total_ms": 13270.017,
+            "max_ms": 89.434
+          },
+          "transaction.commit": {
+            "calls": 1033,
+            "total_ms": 22271.083,
+            "max_ms": 690.213
+          }
+        }
+      },
+      {
+        "repeat": 1,
+        "round": 5,
+        "seconds": 11.942,
+        "sql": {
+          "SELECT": 8834,
+          "OTHER": 0,
+          "INSERT": 2032,
+          "UPDATE": 2832,
+          "SAVEPOINT": 1000,
+          "RELEASE": 1000
+        },
+        "resources": {
+          "cpu_seconds": 11.998,
+          "cpu_one_core_percent": 100.47,
+          "rss_kib": 128980,
+          "process_peak_rss_kib": 138964,
+          "scope": "Python polling process; peak RSS since process start; excludes PostgreSQL/other containers"
+        },
+        "phases": {
+          "alerts.process": {
+            "calls": 1000,
+            "total_ms": 10823.486,
+            "max_ms": 106.093
+          },
+          "collector": {
+            "calls": 1000,
+            "total_ms": 4361.011,
+            "max_ms": 105.503
+          },
+          "durability.fsync": {
+            "calls": 3000,
+            "total_ms": 6494.512,
+            "max_ms": 199.305
+          },
+          "scheduler.claim": {
+            "calls": 33,
+            "total_ms": 224.128,
+            "max_ms": 8.59
+          },
+          "storage.stage": {
+            "calls": 1000,
+            "total_ms": 13870.252,
+            "max_ms": 109.35
+          },
+          "transaction.commit": {
+            "calls": 1033,
+            "total_ms": 8112.695,
+            "max_ms": 149.416
+          }
+        }
+      },
+      {
+        "repeat": 1,
+        "round": 6,
+        "seconds": 13.359,
+        "sql": {
+          "SELECT": 8834,
+          "OTHER": 0,
+          "INSERT": 2832,
+          "UPDATE": 2832,
+          "SAVEPOINT": 1000,
+          "RELEASE": 1000
+        },
+        "resources": {
+          "cpu_seconds": 12.27,
+          "cpu_one_core_percent": 91.85,
+          "rss_kib": 129908,
+          "process_peak_rss_kib": 138964,
+          "scope": "Python polling process; peak RSS since process start; excludes PostgreSQL/other containers"
+        },
+        "phases": {
+          "alerts.process": {
+            "calls": 1000,
+            "total_ms": 10867.556,
+            "max_ms": 80.487
+          },
+          "collector": {
+            "calls": 1000,
+            "total_ms": 4184.459,
+            "max_ms": 13.204
+          },
+          "durability.fsync": {
+            "calls": 3000,
+            "total_ms": 8972.64,
+            "max_ms": 177.366
+          },
+          "scheduler.claim": {
+            "calls": 33,
+            "total_ms": 214.986,
+            "max_ms": 8.082
+          },
+          "storage.stage": {
+            "calls": 1000,
+            "total_ms": 13894.039,
+            "max_ms": 139.041
+          },
+          "transaction.commit": {
+            "calls": 1033,
+            "total_ms": 13487.274,
+            "max_ms": 194.864
+          }
+        }
+      },
+      {
+        "repeat": 2,
+        "round": 1,
+        "seconds": 12.367,
+        "sql": {
+          "SELECT": 8834,
+          "OTHER": 0,
+          "INSERT": 2032,
+          "UPDATE": 2032,
+          "SAVEPOINT": 1000,
+          "RELEASE": 1000
+        },
+        "resources": {
+          "cpu_seconds": 10.658,
+          "cpu_one_core_percent": 86.18,
+          "rss_kib": 130848,
+          "process_peak_rss_kib": 140416,
+          "scope": "Python polling process; peak RSS since process start; excludes PostgreSQL/other containers"
+        },
+        "phases": {
+          "alerts.process": {
+            "calls": 1000,
+            "total_ms": 8670.601,
+            "max_ms": 23.812
+          },
+          "collector": {
+            "calls": 1000,
+            "total_ms": 4183.817,
+            "max_ms": 11.032
+          },
+          "durability.fsync": {
+            "calls": 3000,
+            "total_ms": 9189.493,
+            "max_ms": 382.984
+          },
+          "scheduler.claim": {
+            "calls": 33,
+            "total_ms": 319.124,
+            "max_ms": 82.113
+          },
+          "storage.stage": {
+            "calls": 1000,
+            "total_ms": 12973.931,
+            "max_ms": 52.968
+          },
+          "transaction.commit": {
+            "calls": 1033,
+            "total_ms": 10918.038,
+            "max_ms": 198.805
+          }
+        }
+      },
+      {
+        "repeat": 2,
+        "round": 2,
+        "seconds": 11.174,
+        "sql": {
+          "SELECT": 8834,
+          "OTHER": 0,
+          "INSERT": 2032,
+          "UPDATE": 2032,
+          "SAVEPOINT": 1000,
+          "RELEASE": 1000
+        },
+        "resources": {
+          "cpu_seconds": 10.849,
+          "cpu_one_core_percent": 97.09,
+          "rss_kib": 130856,
+          "process_peak_rss_kib": 140416,
+          "scope": "Python polling process; peak RSS since process start; excludes PostgreSQL/other containers"
+        },
+        "phases": {
+          "alerts.process": {
+            "calls": 1000,
+            "total_ms": 9606.034,
+            "max_ms": 23.27
+          },
+          "collector": {
+            "calls": 1000,
+            "total_ms": 4121.916,
+            "max_ms": 12.765
+          },
+          "durability.fsync": {
+            "calls": 3000,
+            "total_ms": 6757.399,
+            "max_ms": 155.927
+          },
+          "scheduler.claim": {
+            "calls": 33,
+            "total_ms": 225.826,
+            "max_ms": 8.337
+          },
+          "storage.stage": {
+            "calls": 1000,
+            "total_ms": 13241.192,
+            "max_ms": 35.148
+          },
+          "transaction.commit": {
+            "calls": 1033,
+            "total_ms": 10953.33,
+            "max_ms": 206.277
+          }
+        }
+      },
+      {
+        "repeat": 2,
+        "round": 3,
+        "seconds": 12.257,
+        "sql": {
+          "SELECT": 8834,
+          "OTHER": 0,
+          "INSERT": 4432,
+          "UPDATE": 2032,
+          "SAVEPOINT": 1000,
+          "RELEASE": 1000
+        },
+        "resources": {
+          "cpu_seconds": 12.283,
+          "cpu_one_core_percent": 100.21,
+          "rss_kib": 130864,
+          "process_peak_rss_kib": 140416,
+          "scope": "Python polling process; peak RSS since process start; excludes PostgreSQL/other containers"
+        },
+        "phases": {
+          "alerts.process": {
+            "calls": 1000,
+            "total_ms": 14523.076,
+            "max_ms": 96.971
+          },
+          "collector": {
+            "calls": 1000,
+            "total_ms": 4289.833,
+            "max_ms": 13.438
+          },
+          "durability.fsync": {
+            "calls": 3000,
+            "total_ms": 6375.003,
+            "max_ms": 184.245
+          },
+          "scheduler.claim": {
+            "calls": 33,
+            "total_ms": 222.573,
+            "max_ms": 8.401
+          },
+          "storage.stage": {
+            "calls": 1000,
+            "total_ms": 14084.961,
+            "max_ms": 113.773
+          },
+          "transaction.commit": {
+            "calls": 1033,
+            "total_ms": 10294.741,
+            "max_ms": 186.823
+          }
+        }
+      },
+      {
+        "repeat": 2,
+        "round": 4,
+        "seconds": 11.655,
+        "sql": {
+          "SELECT": 8834,
+          "OTHER": 0,
+          "INSERT": 2032,
+          "UPDATE": 2832,
+          "SAVEPOINT": 1000,
+          "RELEASE": 1000
+        },
+        "resources": {
+          "cpu_seconds": 11.869,
+          "cpu_one_core_percent": 101.84,
+          "rss_kib": 130872,
+          "process_peak_rss_kib": 140416,
+          "scope": "Python polling process; peak RSS since process start; excludes PostgreSQL/other containers"
+        },
+        "phases": {
+          "alerts.process": {
+            "calls": 1000,
+            "total_ms": 10294.568,
+            "max_ms": 92.935
+          },
+          "collector": {
+            "calls": 1000,
+            "total_ms": 4399.483,
+            "max_ms": 86.419
+          },
+          "durability.fsync": {
+            "calls": 3000,
+            "total_ms": 5796.434,
+            "max_ms": 203.37
+          },
+          "scheduler.claim": {
+            "calls": 33,
+            "total_ms": 221.716,
+            "max_ms": 8.013
+          },
+          "storage.stage": {
+            "calls": 1000,
+            "total_ms": 14002.183,
+            "max_ms": 96.723
+          },
+          "transaction.commit": {
+            "calls": 1033,
+            "total_ms": 10692.958,
+            "max_ms": 201.614
+          }
+        }
+      },
+      {
+        "repeat": 2,
+        "round": 5,
+        "seconds": 11.171,
+        "sql": {
+          "SELECT": 8834,
+          "OTHER": 0,
+          "INSERT": 2032,
+          "UPDATE": 2832,
+          "SAVEPOINT": 1000,
+          "RELEASE": 1000
+        },
+        "resources": {
+          "cpu_seconds": 12.06,
+          "cpu_one_core_percent": 107.96,
+          "rss_kib": 130888,
+          "process_peak_rss_kib": 140416,
+          "scope": "Python polling process; peak RSS since process start; excludes PostgreSQL/other containers"
+        },
+        "phases": {
+          "alerts.process": {
+            "calls": 1000,
+            "total_ms": 10967.179,
+            "max_ms": 27.68
+          },
+          "collector": {
+            "calls": 1000,
+            "total_ms": 4256.814,
+            "max_ms": 15.408
+          },
+          "durability.fsync": {
+            "calls": 3000,
+            "total_ms": 4982.782,
+            "max_ms": 198.781
+          },
+          "scheduler.claim": {
+            "calls": 33,
+            "total_ms": 223.272,
+            "max_ms": 7.932
+          },
+          "storage.stage": {
+            "calls": 1000,
+            "total_ms": 14069.449,
+            "max_ms": 35.473
+          },
+          "transaction.commit": {
+            "calls": 1033,
+            "total_ms": 7207.637,
+            "max_ms": 194.01
+          }
+        }
+      },
+      {
+        "repeat": 2,
+        "round": 6,
+        "seconds": 14.612,
+        "sql": {
+          "SELECT": 8834,
+          "OTHER": 0,
+          "INSERT": 2832,
+          "UPDATE": 2832,
+          "SAVEPOINT": 1000,
+          "RELEASE": 1000
+        },
+        "resources": {
+          "cpu_seconds": 12.479,
+          "cpu_one_core_percent": 85.4,
+          "rss_kib": 131768,
+          "process_peak_rss_kib": 140416,
+          "scope": "Python polling process; peak RSS since process start; excludes PostgreSQL/other containers"
+        },
+        "phases": {
+          "alerts.process": {
+            "calls": 1000,
+            "total_ms": 11484.949,
+            "max_ms": 101.572
+          },
+          "collector": {
+            "calls": 1000,
+            "total_ms": 4161.294,
+            "max_ms": 12.588
+          },
+          "durability.fsync": {
+            "calls": 3000,
+            "total_ms": 10703.13,
+            "max_ms": 334.262
+          },
+          "scheduler.claim": {
+            "calls": 33,
+            "total_ms": 220.624,
+            "max_ms": 7.891
+          },
+          "storage.stage": {
+            "calls": 1000,
+            "total_ms": 13894.825,
+            "max_ms": 31.787
+          },
+          "transaction.commit": {
+            "calls": 1033,
+            "total_ms": 16718.967,
+            "max_ms": 275.506
+          }
+        }
+      },
+      {
+        "repeat": 3,
+        "round": 1,
+        "seconds": 13.308,
+        "sql": {
+          "SELECT": 8834,
+          "OTHER": 0,
+          "INSERT": 2032,
+          "UPDATE": 2032,
+          "SAVEPOINT": 1000,
+          "RELEASE": 1000
+        },
+        "resources": {
+          "cpu_seconds": 10.884,
+          "cpu_one_core_percent": 81.79,
+          "rss_kib": 129260,
+          "process_peak_rss_kib": 139212,
+          "scope": "Python polling process; peak RSS since process start; excludes PostgreSQL/other containers"
+        },
+        "phases": {
+          "alerts.process": {
+            "calls": 1000,
+            "total_ms": 8772.468,
+            "max_ms": 22.79
+          },
+          "collector": {
+            "calls": 1000,
+            "total_ms": 4276.825,
+            "max_ms": 83.013
+          },
+          "durability.fsync": {
+            "calls": 3000,
+            "total_ms": 11806.564,
+            "max_ms": 245.999
+          },
+          "scheduler.claim": {
+            "calls": 33,
+            "total_ms": 251.787,
+            "max_ms": 12.971
+          },
+          "storage.stage": {
+            "calls": 1000,
+            "total_ms": 13420.828,
+            "max_ms": 94.911
+          },
+          "transaction.commit": {
+            "calls": 1033,
+            "total_ms": 16009.654,
+            "max_ms": 244.238
+          }
+        }
+      },
+      {
+        "repeat": 3,
+        "round": 2,
+        "seconds": 12.082,
+        "sql": {
+          "SELECT": 8834,
+          "OTHER": 0,
+          "INSERT": 2032,
+          "UPDATE": 2032,
+          "SAVEPOINT": 1000,
+          "RELEASE": 1000
+        },
+        "resources": {
+          "cpu_seconds": 11.548,
+          "cpu_one_core_percent": 95.58,
+          "rss_kib": 129264,
+          "process_peak_rss_kib": 139212,
+          "scope": "Python polling process; peak RSS since process start; excludes PostgreSQL/other containers"
+        },
+        "phases": {
+          "alerts.process": {
+            "calls": 1000,
+            "total_ms": 9987.002,
+            "max_ms": 28.089
+          },
+          "collector": {
+            "calls": 1000,
+            "total_ms": 4371.317,
+            "max_ms": 16.186
+          },
+          "durability.fsync": {
+            "calls": 3000,
+            "total_ms": 8265.986,
+            "max_ms": 180.085
+          },
+          "scheduler.claim": {
+            "calls": 33,
+            "total_ms": 246.202,
+            "max_ms": 9.841
+          },
+          "storage.stage": {
+            "calls": 1000,
+            "total_ms": 14554.636,
+            "max_ms": 110.941
+          },
+          "transaction.commit": {
+            "calls": 1033,
+            "total_ms": 9639.377,
+            "max_ms": 182.828
+          }
+        }
+      },
+      {
+        "repeat": 3,
+        "round": 3,
+        "seconds": 20.78,
+        "sql": {
+          "SELECT": 8834,
+          "OTHER": 0,
+          "INSERT": 4432,
+          "UPDATE": 2032,
+          "SAVEPOINT": 1000,
+          "RELEASE": 1000
+        },
+        "resources": {
+          "cpu_seconds": 12.733,
+          "cpu_one_core_percent": 61.28,
+          "rss_kib": 129272,
+          "process_peak_rss_kib": 139212,
+          "scope": "Python polling process; peak RSS since process start; excludes PostgreSQL/other containers"
+        },
+        "phases": {
+          "alerts.process": {
+            "calls": 1000,
+            "total_ms": 14179.307,
+            "max_ms": 35.594
+          },
+          "collector": {
+            "calls": 1000,
+            "total_ms": 4388.818,
+            "max_ms": 13.71
+          },
+          "durability.fsync": {
+            "calls": 3000,
+            "total_ms": 23082.203,
+            "max_ms": 579.667
+          },
+          "scheduler.claim": {
+            "calls": 33,
+            "total_ms": 229.807,
+            "max_ms": 8.071
+          },
+          "storage.stage": {
+            "calls": 1000,
+            "total_ms": 14307.545,
+            "max_ms": 117.999
+          },
+          "transaction.commit": {
+            "calls": 1033,
+            "total_ms": 33274.798,
+            "max_ms": 426.292
+          }
+        }
+      },
+      {
+        "repeat": 3,
+        "round": 4,
+        "seconds": 19.687,
+        "sql": {
+          "SELECT": 8834,
+          "OTHER": 0,
+          "INSERT": 2032,
+          "UPDATE": 2832,
+          "SAVEPOINT": 1000,
+          "RELEASE": 1000
+        },
+        "resources": {
+          "cpu_seconds": 11.697,
+          "cpu_one_core_percent": 59.41,
+          "rss_kib": 129272,
+          "process_peak_rss_kib": 139212,
+          "scope": "Python polling process; peak RSS since process start; excludes PostgreSQL/other containers"
+        },
+        "phases": {
+          "alerts.process": {
+            "calls": 1000,
+            "total_ms": 9819.644,
+            "max_ms": 25.294
+          },
+          "collector": {
+            "calls": 1000,
+            "total_ms": 4224.003,
+            "max_ms": 12.652
+          },
+          "durability.fsync": {
+            "calls": 3000,
+            "total_ms": 25324.799,
+            "max_ms": 432.211
+          },
+          "scheduler.claim": {
+            "calls": 33,
+            "total_ms": 226.579,
+            "max_ms": 8.435
+          },
+          "storage.stage": {
+            "calls": 1000,
+            "total_ms": 13184.281,
+            "max_ms": 85.329
+          },
+          "transaction.commit": {
+            "calls": 1033,
+            "total_ms": 28632.292,
+            "max_ms": 431.334
+          }
+        }
+      },
+      {
+        "repeat": 3,
+        "round": 5,
+        "seconds": 15.352,
+        "sql": {
+          "SELECT": 8834,
+          "OTHER": 0,
+          "INSERT": 2032,
+          "UPDATE": 2832,
+          "SAVEPOINT": 1000,
+          "RELEASE": 1000
+        },
+        "resources": {
+          "cpu_seconds": 11.701,
+          "cpu_one_core_percent": 76.22,
+          "rss_kib": 129300,
+          "process_peak_rss_kib": 139212,
+          "scope": "Python polling process; peak RSS since process start; excludes PostgreSQL/other containers"
+        },
+        "phases": {
+          "alerts.process": {
+            "calls": 1000,
+            "total_ms": 9692.817,
+            "max_ms": 23.573
+          },
+          "collector": {
+            "calls": 1000,
+            "total_ms": 4310.489,
+            "max_ms": 86.785
+          },
+          "durability.fsync": {
+            "calls": 3000,
+            "total_ms": 15462.156,
+            "max_ms": 345.195
+          },
+          "scheduler.claim": {
+            "calls": 33,
+            "total_ms": 221.82,
+            "max_ms": 8.63
+          },
+          "storage.stage": {
+            "calls": 1000,
+            "total_ms": 12829.905,
+            "max_ms": 100.337
+          },
+          "transaction.commit": {
+            "calls": 1033,
+            "total_ms": 16585.05,
+            "max_ms": 345.675
+          }
+        }
+      },
+      {
+        "repeat": 3,
+        "round": 6,
+        "seconds": 18.215,
+        "sql": {
+          "SELECT": 8834,
+          "OTHER": 0,
+          "INSERT": 2832,
+          "UPDATE": 2832,
+          "SAVEPOINT": 1000,
+          "RELEASE": 1000
+        },
+        "resources": {
+          "cpu_seconds": 12.393,
+          "cpu_one_core_percent": 68.04,
+          "rss_kib": 130196,
+          "process_peak_rss_kib": 139212,
+          "scope": "Python polling process; peak RSS since process start; excludes PostgreSQL/other containers"
+        },
+        "phases": {
+          "alerts.process": {
+            "calls": 1000,
+            "total_ms": 11197.394,
+            "max_ms": 100.268
+          },
+          "collector": {
+            "calls": 1000,
+            "total_ms": 4302.766,
+            "max_ms": 89.869
+          },
+          "durability.fsync": {
+            "calls": 3000,
+            "total_ms": 21051.758,
+            "max_ms": 713.012
+          },
+          "scheduler.claim": {
+            "calls": 33,
+            "total_ms": 221.927,
+            "max_ms": 9.362
+          },
+          "storage.stage": {
+            "calls": 1000,
+            "total_ms": 13507.015,
+            "max_ms": 107.101
+          },
+          "transaction.commit": {
+            "calls": 1033,
+            "total_ms": 19197.618,
+            "max_ms": 661.405
+          }
+        }
+      }
+    ]
+  }
+}

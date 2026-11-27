@@ -37,6 +37,7 @@ function validate(data: any) {
   )
     throw new Error("Invalid public contract");
   date(data.last_public_update);
+  if (Date.parse(data.last_public_update) > Date.now() + 60000) throw new Error("Future public update");
   for (const key of ["incidents", "maintenance", "resolved"]) {
     if (!Array.isArray(data[key]) || data[key].length > 200)
       throw new Error("Invalid public list");
@@ -75,16 +76,17 @@ function validate(data: any) {
 }
 function render(root: HTMLElement, data: any) {
   root.replaceChildren(node("h1", "Network status"));
+  const stale = Date.now() - Date.parse(data.last_public_update) > 86400000;
   const overview = node("section");
   overview.className =
     "status-summary " +
-    (data.overall_status === "all_systems_operational"
+    (!stale && data.overall_status === "all_systems_operational"
       ? "status-operational"
       : "status-investigating");
   overview.setAttribute("aria-label", "Overall public network status");
   overview.setAttribute("aria-live", "polite");
   overview.append(
-    node("h2", labels[data.overall_status]),
+    node("h2", stale ? "Status unknown — stale approved information" : labels[data.overall_status]),
     node("p", "Last public update: " + date(data.last_public_update)),
   );
   root.append(overview);
@@ -116,7 +118,7 @@ function render(root: HTMLElement, data: any) {
         item.status === "service_disruption" ? "status-disruption" : "";
       article.append(
         node("h3", item.title),
-        node("p", labels[item.status]),
+        node("p", key === "maintenance" && item.status === "all_systems_operational" ? "Scheduled maintenance" : labels[item.status]),
         node("p", item.description),
         node("p", "Service areas: " + item.areas.join(", ")),
       );
@@ -172,6 +174,7 @@ for (const element of document.querySelectorAll<HTMLElement>(
   "[data-nwo-network-status]",
 )) {
   let busy = false;
+  let expiry: ReturnType<typeof setTimeout> | undefined;
   async function refresh() {
     if (busy) return;
     busy = true;
@@ -200,12 +203,17 @@ for (const element of document.querySelectorAll<HTMLElement>(
         throw new Error("Approved same-origin public endpoint required");
       const r = await fetch(url, {
         credentials: "omit",
+        cache: "no-store",
+        redirect: "error",
         signal: controller.signal,
         headers: { Accept: "application/json" },
       });
       if (!r.ok) throw new Error("Public status unavailable");
       render(element, validate(await boundedJSON(r)));
+      clearTimeout(expiry);
+      expiry = setTimeout(() => element.replaceChildren(node("h1", "Network status"), node("p", "Status unknown — the last retrieved snapshot expired.")), 90000);
     } catch {
+      clearTimeout(expiry);
       element.replaceChildren(
         node("h1", "Network status"),
         node(
@@ -219,6 +227,7 @@ for (const element of document.querySelectorAll<HTMLElement>(
     }
   }
   element.addEventListener("nwo-status-refresh", refresh);
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) void refresh(); });
   void refresh();
   setInterval(() => {
     if (!document.hidden) void refresh();

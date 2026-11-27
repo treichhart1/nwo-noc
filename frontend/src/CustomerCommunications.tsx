@@ -54,6 +54,9 @@ export default function CustomerCommunications() {
     [confirmed, CF] = useState(false),
     [update, UP] = useState(0),
     [areaName, AN] = useState(""),
+    [county, COUNTY] = useState(""),
+    [technology, TECH] = useState("unknown"),
+    [publicImpact, PUBLICIMPACT] = useState("general"),
     [incidentFilter, IF] = useState(""),
     [siteFilter, SF] = useState(""),
     [areaFilter, AF] = useState(""),
@@ -212,7 +215,7 @@ export default function CustomerCommunications() {
                   <option value="">All areas</option>
                   {areas.map((a) => (
                     <option key={a.id} value={a.id}>
-                      {a.label}
+                      {[a.label, a.public_details?.technology, a.public_details?.county].filter(Boolean).join(" · ")}
                     </option>
                   ))}
                 </select>
@@ -469,6 +472,12 @@ export default function CustomerCommunications() {
                 </select>
               </label>
               <label>
+                Interruption classification
+                <select aria-label="Interruption classification" value={publicImpact} onChange={e => PUBLICIMPACT(e.target.value)}>
+                  {["general", "partial", "major", "degraded"].map(v => <option key={v}>{v}</option>)}
+                </select>
+              </label>
+              <label>
                 Approved public areas
                 <select
                   aria-label="Approved public areas"
@@ -480,7 +489,7 @@ export default function CustomerCommunications() {
                 >
                   {areas.map((a) => (
                     <option key={a.id} value={a.id}>
-                      {a.label}
+                      {[a.label, a.public_details?.technology, a.public_details?.county].filter(Boolean).join(" · ")}
                     </option>
                   ))}
                 </select>
@@ -534,6 +543,7 @@ export default function CustomerCommunications() {
                       title,
                       description,
                       status,
+                      impact: status === "service_disruption" ? publicImpact : "general",
                       area_ids: areaIds.map(Number),
                       privacy_reviewed: privacy,
                       withdraw,
@@ -640,6 +650,11 @@ export default function CustomerCommunications() {
                   </article>
                 ))}
               </div>
+              <h3>Related internal Slack draft</h3>
+              <button disabled={!safe} onClick={() => act(async () => {
+                const result = await api("/cases/" + detail.id + "/slack-draft", mutation());
+                N("Slack draft " + result.plan_id + " prepared. Provider release and source approval remain separate; nothing sent.");
+              })}>Prepare related Slack draft only</button>
               <h3>SMS recipient and message draft</h3>
               <label>
                 Notification transition
@@ -862,6 +877,8 @@ export default function CustomerCommunications() {
                   onChange={(e) => AN(e.target.value)}
                 />
               </label>
+              <label>Public county grouping <input aria-label="Public county grouping" value={county} onChange={e => COUNTY(e.target.value)} /></label>
+              <label>Public service technology <select aria-label="Public service technology" value={technology} onChange={e => TECH(e.target.value)}>{["unknown", "wireless", "fiber", "hybrid", "regional"].map(v => <option key={v}>{v}</option>)}</select></label>
               <button
                 disabled={!safe || areaName.length < 3}
                 onClick={() =>
@@ -869,6 +886,8 @@ export default function CustomerCommunications() {
                     await api("/areas", {
                       ...mutation(),
                       label: areaName,
+                      county: county || null,
+                      technology,
                       publicly_approved: true,
                     });
                     await load();

@@ -90,6 +90,7 @@ def validate(root=ROOT):
         "backend/Dockerfile.lab-audit",
         "deploy/Dockerfile.postgres",
         "deploy/Dockerfile.redis",
+        "deploy/Dockerfile.status-proxy",
         "frontend/Dockerfile",
         "docker-compose.yml",
         "deploy/compose.isolated.yml",

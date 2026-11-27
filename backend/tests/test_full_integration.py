@@ -538,9 +538,9 @@ def test_reviewed_integration_manifest_is_complete_and_single_head():
         and result["baseline_commits_beyond_default"] == 298
     )
     assert not any(p["default_contains_tip"] for p in result["pull_requests"])
-    assert len(result["migrations"]) == 30
-    assert result["migrations"][-1]["revision"] == "0030_native_slack"
-    assert result["migrations"][-1]["parent"] == "0029_multi_provider_sms"
+    assert len(result["migrations"]) == 31
+    assert result["migrations"][-1]["revision"] == "0031_wordpress_status"
+    assert result["migrations"][-1]["parent"] == "0030_native_slack"
     assert len({c["environment"] for c in result["configuration"]}) == len(
         result["configuration"]
     )

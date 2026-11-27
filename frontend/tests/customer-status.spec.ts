@@ -247,3 +247,14 @@ test("public widget refuses a manipulated endpoint before making any private API
   ).toBeVisible();
   expect(privateRequests).toEqual([]);
 });
+
+test("legacy public widget identifies stale approved information as unknown", async ({ page }) => {
+  await page.route("**/public/network-status/v1", route => route.fulfill({json:{
+    api_version:"1", overall_status:"all_systems_operational", last_public_update:new Date(Date.now()-172800000).toISOString(),
+    basis:"administrator-approved announcements",incidents:[],maintenance:[{id:"11111111-1111-4111-8111-111111111111",title:"Approved synthetic maintenance",description:"An approved scheduled window awaiting an operator update.",status:"all_systems_operational",areas:["Synthetic community"],starts_at:new Date(Date.now()-3600000).toISOString(),ends_at:new Date(Date.now()+3600000).toISOString(),estimated_restoration_at:null,updated_at:new Date().toISOString()}],resolved:[],next_history_offset:null,
+  }}));
+  await page.goto(publicURL+"/network-status.html");
+  await expect(page.getByRole('heading',{name:'Status unknown — stale approved information'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'All systems operational',exact:true})).toHaveCount(0);
+  await expect(page.getByText('Scheduled maintenance',{exact:true})).toBeVisible();
+});

@@ -49,7 +49,7 @@ def install(db, password):
     db.execute(text(f'GRANT CONNECT ON DATABASE "{name}" TO noc_status_public'))
     db.execute(
         text(
-            "GRANT USAGE ON SCHEMA public,noc_public_status TO noc_status_public; GRANT SELECT ON noc_public_status.configuration,noc_public_status.announcements TO noc_status_public; GRANT SELECT,INSERT,UPDATE,DELETE ON public.customer_status_public_budgets TO noc_status_public;"
+            "GRANT USAGE ON SCHEMA public,noc_public_status TO noc_status_public; GRANT SELECT ON noc_public_status.configuration,noc_public_status.announcements,noc_public_status.areas TO noc_status_public; GRANT SELECT,INSERT,UPDATE,DELETE ON public.customer_status_public_budgets TO noc_status_public;"
         )
     )
     if db.scalar(

@@ -127,7 +127,14 @@ def area(db, u, b):
     admin(u)
     if not b.publicly_approved:
         raise ValueError("Explicitly approved generic service-area name required")
-    row = Area(label=b.label, created_by=u.id)
+    row = Area(
+        label=b.label,
+        created_by=u.id,
+        public_details={
+            k: getattr(b, k)
+            for k in ("county", "technology", "group_label", "description")
+        },
+    )
     db.add(row)
     db.flush()
     event(db, u, "area_approved", b.reason)
@@ -380,6 +387,10 @@ def draft(db, u, p, b):
         "description": b.description,
         "status": b.status,
         "areas": [a.label for a in areas],
+        "impact": b.impact,
+        "area_details": [
+            dict(a.public_details or {}, id=a.identifier, label=a.label) for a in areas
+        ],
         "starts_at": data["starts_at"] if p.maintenance_id else None,
         "ends_at": data["ends_at"] if p.maintenance_id else None,
         "estimated_restoration_at": (

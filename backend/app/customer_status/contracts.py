@@ -57,6 +57,18 @@ class PolicyInput(Mutation):
 
 
 class AreaInput(Mutation):
+    county: str | None = Field(None, max_length=100)
+    technology: Literal["unknown", "wireless", "fiber", "hybrid", "regional"] = (
+        "unknown"
+    )
+    group_label: str | None = Field(None, max_length=100)
+    description: str | None = Field(None, max_length=200)
+
+    @field_validator("county", "group_label", "description")
+    @classmethod
+    def public_detail(cls, v):
+        return public_text(v) if v is not None else None
+
     label: str = Field(min_length=3, max_length=100)
     publicly_approved: bool
     _label = field_validator("label")(public_text)
@@ -83,6 +95,7 @@ class DraftInput(Mutation):
     title: str = Field(min_length=5, max_length=120)
     description: str = Field(min_length=10, max_length=1200)
     status: Status
+    impact: Literal["general", "partial", "major", "degraded"] = "general"
     area_ids: list[int] = Field(min_length=1, max_length=20)
     estimated_restoration_at: datetime | None = None
     restoration_estimate_approved: bool = False
@@ -93,6 +106,8 @@ class DraftInput(Mutation):
 
     @model_validator(mode="after")
     def safe(self):
+        if self.impact != "general" and self.status != "service_disruption":
+            raise ValueError("Interruption classification requires service_disruption")
         if not self.privacy_reviewed:
             raise ValueError("Public content/privacy review required")
         if len(set(self.area_ids)) != len(self.area_ids) or any(

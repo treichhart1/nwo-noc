@@ -221,15 +221,16 @@ def execute(
     # Lock ONLY the job (nullable outer joins must never widen FOR UPDATE).
     # The original device/global advisory locks and receipt uniqueness remain.
     snapshot = db.execute(
-        select(Job, Attempt, Receipt)
+        select(Job, Attempt, Receipt, Device)
         .outerjoin(Attempt, and_(Attempt.token == token, Attempt.job_key == Job.key))
         .outerjoin(Receipt, and_(Receipt.job_key == Job.key, Receipt.slot_at == Job.slot_at))
+        .outerjoin(Device, Device.id == Job.device_id)
         .where(Job.key == key)
         .with_for_update(of=Job, skip_locked=True)
     ).first()
     if snapshot is None:
         return {"result": "fenced", "network_requests": 0}
-    row, attempt, existing = snapshot
+    row, attempt, existing, device = snapshot
     if row.state != "leased" or row.lease_token != token:
         return {"result": "fenced", "network_requests": 0}
     if not row.enabled:
@@ -264,7 +265,8 @@ def execute(
     # Keep the same inventory object alive through collection/staging. SQLAlchemy's
     # identity map uses weak references; releasing the collector's only reference
     # caused a second SELECT for the same device in this transaction.
-    device = db.get(Device, row.device_id)
+    # Inventory is retained from the same locked snapshot; collectors/staging
+    # reuse its identity-map entry instead of a second database round trip.
     # Attempt was loaded before mutation in the locked snapshot, avoiding a
     # partial autoflush UPDATE before final atomic job advancement.
     started = time.perf_counter()

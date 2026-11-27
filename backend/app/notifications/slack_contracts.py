@@ -104,6 +104,7 @@ class SlackSourceRequest(SafeModel):
         "tower",
         "work_order",
         "maintenance",
+        "notification_maintenance",
         "signup",
         "worker",
         "audit",
