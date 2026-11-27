@@ -333,3 +333,10 @@ def test_private_installer_https_port_is_supported():
 def test_private_origin_port_does_not_weaken_url_guards(origin):
     with pytest.raises(ValueError):
         SlackConfig(**(config() | {"dashboard_origin": origin}))
+
+
+def test_non_incident_alert_has_private_dashboard_without_incident_actions():
+    f = fields() | {"incident_id": None, "event": "maintenance", "work_order_id": 7}
+    result = payload(f, config() | {"interactions_enabled": True}, delivery_id=1)
+    assert "Private NOC: https://noc.example.invalid/" in result["text"]
+    assert not any(block["type"] == "actions" for block in result["blocks"])

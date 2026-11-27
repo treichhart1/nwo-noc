@@ -402,6 +402,17 @@ def payload(fields, config, *, delivery_id, thread_ts=None):
                     "text": {"type": "plain_text", "text": "Private NOC: " + url},
                 }
             )
+    else:
+        # Work orders, schedules and application-health sources need an
+        # authenticated destination too; do not invent unsupported deep links.
+        url = config["dashboard_origin"] + "/"
+        text += "\nPrivate NOC: " + url
+        blocks.append(
+            {
+                "type": "section",
+                "text": {"type": "plain_text", "text": "Private NOC: " + url},
+            }
+        )
     result = {
         "text": text,
         "blocks": blocks,
