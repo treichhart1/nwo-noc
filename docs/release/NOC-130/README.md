@@ -39,3 +39,5 @@ Initial CI run835 retained an actual Alembic drift failure: all seven new tables
 Permission review restricted the new dashboard/recurring-charge observations to the existing financial_access administrator dependency. Operators retain the original customer mapping/impact views; a regression asserts the new aggregate does not leak through operator customer access. The frontend does not request the administrator panel for other roles.
 
 Real PostgreSQL run835 additionally reached1217 passing cases but retained8 failures/7 setup errors in new tests: one replayed-package fixture and a work-order fixture treated a canonical service DTO as an ORM row. The package case now uses a new contiguous cursor; provisioning setup explicitly resolves the existing canonical WorkOrder by ID. Production work-order models and assertions are unchanged.
+
+CI runs the dedicated Powercode PostgreSQL acceptance module before the complete existing RF regression gate for prompt failure evidence; it remains included in the complete gate as well. Overlapping test counts are reported separately, never summed as unique cases. All twelve jobs and every original gate remain required.
