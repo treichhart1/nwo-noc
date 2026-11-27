@@ -16,7 +16,8 @@ import time
 import urllib.request
 
 ROOT = Path(__file__).resolve().parents[2]
-WP_CURRENT = "wordpress:6-php8.3-apache@sha256:5d2c212561c4b5442ebc4d98933a9cbadcf3dee8888ed3fd9ed44667c27cc905"
+WP_SIX = "wordpress:6-php8.3-apache@sha256:5d2c212561c4b5442ebc4d98933a9cbadcf3dee8888ed3fd9ed44667c27cc905"
+WP_CURRENT = "wordpress:php8.3-apache@sha256:9b46af6a41fd0dcb2e5cf85033a6350d05010356847ede1cfcac5cf94292eb26"
 WP_MIN = "wordpress:6.5-php8.3-apache@sha256:a9ea04325159fcf4a724c7fdd2d2db5454befb2f99fa59934838a46dbe348398"
 DB = "mariadb:11.4@sha256:a8992b5e5404d11e03c54a31d0c1bdea3fd116d283aa6d1a627551f29045309b"
 
@@ -336,7 +337,7 @@ def main():
         else:
             raise RuntimeError("Disposable MariaDB did not become ready")
         versions = []
-        for image in [WP_MIN, WP_CURRENT]:
+        for image in [WP_MIN, WP_SIX, WP_CURRENT]:
             (fixtures / "mode").write_text("healthy")
             run(
                 [

@@ -2,7 +2,8 @@
 $_SERVER['HTTP_HOST']='93.184.216.36';$_SERVER['REQUEST_METHOD']='GET';
 require '/var/www/html/wp-load.php';
 $mode=getenv('NOC128_ACTION');
-if ($mode==='clear') { NWO_Network_Status::clear_cache(); }
+if ($mode==='diagnose') { echo json_encode(['active'=>in_array('nwo-network-status/nwo-network-status.php',get_option('active_plugins',[]),true),'curl'=>function_exists('curl_init'),'mbstring'=>function_exists('mb_strlen'),'class_loaded'=>class_exists('NWO_Network_Status')]); }
+elseif ($mode==='clear') { NWO_Network_Status::clear_cache(); }
 elseif ($mode==='configure') {
     $s=NWO_Network_Status::defaults();$s['enabled']=true;
     $e=NWO_Status_Transport::endpoint('https://status.noc128.test/network-status-api/v2');

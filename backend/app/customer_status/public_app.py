@@ -163,6 +163,9 @@ def current(
             ]
             + [r["updated_at"] for r in rows]
         )
+        now = datetime.now(timezone.utc)
+        if update > now + timedelta(seconds=60) or now - update > timedelta(hours=24):
+            raise ValueError("Approved public information is stale or future-dated")
         feed = PublicFeed(
             overall_status=overall,
             last_public_update=update,

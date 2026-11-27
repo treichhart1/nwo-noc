@@ -14,7 +14,7 @@ final class NWO_Status_Validation {
         $date=strtotime($v); $parts=date_parse($v); if ($date===false || $parts['warning_count'] || $parts['error_count']) { self::fail(); } return $date;
     }
     public static function uuid(mixed $v): void { if (!is_string($v) || !preg_match('/^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/D',$v)) { self::fail(); } }
-    public static function status(mixed $v): void { if (!is_string($v) || !isset(self::LABELS[$v])) { self::fail(); } }
+    public static function status(mixed $v): void { if (!is_string($v) || !array_key_exists($v,self::LABELS)) { self::fail(); } }
     public static function area(array $a): void {
         self::keys($a,['id','label','county','technology','group_label','description','status']); self::uuid($a['id']??null); self::prose($a['label']??null,100,3); self::status($a['status']??null);
         if (!in_array($a['technology']??null,['unknown','wireless','fiber','hybrid','regional'],true)) { self::fail(); }

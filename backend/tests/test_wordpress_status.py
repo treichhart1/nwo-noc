@@ -221,3 +221,55 @@ def test_canonical_maintenance_slack_draft_invalidates_on_status_change():
     assert first["source_revision"] != later["source_revision"]
     assert first["event"] == "maintenance" and first["site_id"] == 4
     assert "title" not in first and "description" not in first
+
+
+def test_postgres_legacy_stale_feed_fails_closed(x):
+    from app.customer_status.models import Policy
+
+    x.db.get(Policy, 1).baseline_approved_at = s.clock() - timedelta(days=2)
+    x.db.flush()
+    c = client(x, True)
+    try:
+        assert c.get("/public/network-status/v1").status_code == 503
+        response = c.get("/public/network-status/v2")
+        assert (
+            response.status_code == 200
+            and response.json()["overall_status"] == "unknown"
+        )
+    finally:
+        from app.customer_status.public_app import app
+
+        app.dependency_overrides.clear()
+
+
+def test_postgres_slack_draft_endpoint_is_idempotent_and_private(x):
+    from app.customer_status.contracts import Mutation
+    from app.customer_status.models import Event
+    from sqlalchemy import select, func
+
+    c = client(x)
+    body = b(Mutation).model_dump(mode="json")
+    try:
+        url = f"/api/customer-status/v1/cases/{x.p.id}/slack-draft"
+        first = c.post(url, json=body)
+        assert first.status_code == 200, first.text
+        assert (
+            first.json()["status"] == "draft"
+            and first.json()["delivery_authorized"] is False
+        )
+        assert c.post(url, json=body).json() == first.json()
+        assert (
+            x.db.scalar(
+                select(func.count())
+                .select_from(Event)
+                .where(
+                    Event.publication_id == x.p.id,
+                    Event.action == "slack_draft_prepared",
+                )
+            )
+            == 1
+        )
+    finally:
+        from app.main import app
+
+        app.dependency_overrides.clear()

@@ -18,9 +18,12 @@ test('installable ZIP, approved public display, failure isolation and safe remov
   await page.goto(origin + '/wp-admin/plugin-install.php?tab=upload');
   await page.locator('#pluginzip').setInputFiles(path.join(evidence, 'plugin/nwo-network-status.zip'));
   await page.locator('#install-plugin-submit').click();
+  for (const file of ['nwo-network-status.php','validation.php','transport.php','uninstall.php']) execFileSync('docker',['exec','noc128-wordpress','php','-l','/var/www/html/wp-content/plugins/nwo-network-status/'+file],{stdio:'pipe'});
   await page.getByRole('link', {name:'Activate Plugin'}).click();
+  const activation = JSON.parse(control('diagnose'));
+  expect(activation.active, JSON.stringify(activation)+(await page.locator('body').innerText()).slice(-1800)).toBeTruthy();
   await page.goto(origin + '/wp-admin/options-general.php?page=nwo-network-status');
-  await expect(page.getByRole('heading', {name:'NWO Network Status'})).toBeVisible();
+  await expect(page.getByRole('heading', {name:'NWO Network Status'}), (await page.locator('body').innerText()).slice(0,1800)).toBeVisible();
   const denied = await request.post(origin + '/wp-admin/admin-post.php', {form:{action:'nwo_status_save'},maxRedirects:0});
   expect([302,400,403]).toContain(denied.status());
   const csrf = await page.request.post(origin + '/wp-admin/admin-post.php', {form:{action:'nwo_status_save'},maxRedirects:0});
