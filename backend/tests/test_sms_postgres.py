@@ -765,6 +765,7 @@ def test_restricted_callback_database_role_cannot_restore_consent_or_resend(nati
         for statement in [
             "SELECT * FROM public.users LIMIT 0",
             "SELECT * FROM public.notification_credentials LIMIT 0",
+            "SELECT details FROM public.audit_logs LIMIT 0",
             "UPDATE public.customer_accounts SET sms_opt_out=false WHERE id=-1",
             "UPDATE public.notification_attempts SET acceptance='not_accepted' WHERE id=-1",
             "DELETE FROM public.notification_sms_events WHERE key='synthetic-no-entry'",

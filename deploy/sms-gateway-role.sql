@@ -20,6 +20,8 @@ GRANT SELECT(id,state,provider_status,provider_status_at,completed_at)
 GRANT UPDATE(state,provider_status,provider_status_at,completed_at)
   ON public.notification_deliveries TO noc_sms_gateway_access;
 GRANT INSERT ON public.audit_logs TO noc_sms_gateway_access;
+-- SQLAlchemy INSERT RETURNING requires SELECT on the returned identifier only.
+GRANT SELECT(id) ON public.audit_logs TO noc_sms_gateway_access;
 GRANT USAGE ON SEQUENCE public.audit_logs_id_seq TO noc_sms_gateway_access;
 GRANT EXECUTE ON FUNCTION public.noc_sms_enforce_opt_out(text,timestamptz) TO noc_sms_gateway_access;
 -- Deliberately no private user/customer/credential table reads, consent updates,

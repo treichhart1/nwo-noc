@@ -222,6 +222,8 @@ jobs:
       - run: 'pip install --require-hashes --only-binary=:all: -r requirements-test.lock'
       - name: Migrate disposable PostgreSQL database
         run: alembic upgrade head
+      - name: Validate native SMS contracts, durable claims and least-privilege callbacks
+        run: python -m pytest -q tests/test_sms_providers.py tests/test_sms_postgres.py
       - name: Deploy actual ClamAV engine with safe test definitions
         run: |
           sudo apt-get -o APT::Update::Error-Mode=any update
@@ -279,8 +281,6 @@ jobs:
             tests/test_powercode_customers.py \
             tests/test_notifications.py \
             tests/test_notification_expansion.py \
-            tests/test_sms_providers.py \
-            tests/test_sms_postgres.py \
             tests/test_down_detector.py \
             tests/test_tower_health.py \
             tests/test_ipam.py \
