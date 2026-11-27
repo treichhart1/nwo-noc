@@ -103,6 +103,17 @@ class Revision(Base):
     created_at = C(D(timezone=True), nullable=False, default=now)
 
 
+Index(
+    "ix_customer_status_public_update",
+    Revision.published_at.desc(),
+    postgresql_where=(
+        Revision.published_at.is_not(None)
+        & Revision.approved_by.is_not(None)
+        & Revision.approved_at.is_not(None)
+    ),
+)
+
+
 class Event(Base):
     __tablename__ = "customer_status_events"
     id = C(I, primary_key=True)
