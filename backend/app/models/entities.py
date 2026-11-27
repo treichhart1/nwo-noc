@@ -489,3 +489,5 @@ from app.finance import models as finance_models
 from app.analytics import models as analytics_models
 
 from app.customer_status import models as customer_status_models
+
+from app.notifications import sms_models  # noqa: E402,F401

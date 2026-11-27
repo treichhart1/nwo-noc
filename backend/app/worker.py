@@ -21,8 +21,9 @@ def main():
     runner = Runner(runtime.id)
     legacy = LegacyTasks()
     from concurrent.futures import ThreadPoolExecutor
-    notification_pool = ThreadPoolExecutor(max_workers=1, thread_name_prefix='noc-mock-notifications') if settings.notifications_worker_enabled else None
+    notification_pool = ThreadPoolExecutor(max_workers=1, thread_name_prefix='noc-notifications') if (settings.notifications_worker_enabled or settings.sms_native_worker_enabled) else None
     notification_future = None
+    notification_last = 0.0
     detector_pool = ThreadPoolExecutor(max_workers=1, thread_name_prefix="noc-down-detector") if settings.down_detector_enabled else None
     detector_future = None
     detector_last = 0.0
@@ -58,12 +59,13 @@ def main():
                 from app.down_detector.worker import tick as detector_tick
                 detector_future=detector_pool.submit(detector_tick)
                 detector_last=now
-            if notification_pool and (notification_future is None or notification_future.done()):
+            if notification_pool and (not settings.sms_native_worker_enabled or now-notification_last>=settings.sms_worker_interval_seconds) and (notification_future is None or notification_future.done()):
                 if notification_future is not None:
                     try: notification_future.result()
                     except Exception: log.warning('Notification queue interrupted; durable work retained')
                 from app.notifications.worker import tick
                 notification_future = notification_pool.submit(tick)
+                notification_last = now
             if now - last["tcp"] >= 15 and legacy.submit("tcp", run_due_checks):
                 last["tcp"] = now
             if settings.rf_scheduler_enabled:

@@ -106,7 +106,7 @@ def migration_inventory(candidate=None):
         if current in [r["revision"] for r in ordered]:
             raise ValueError("Migration cycle")
         ordered.append(rows[current])
-    if len(ordered) != len(rows) or current != "0028_customer_status":
+    if len(ordered) != len(rows) or current not in {"0028_customer_status", "0029_multi_provider_sms"}:
         raise ValueError("Unexpected or disconnected migration history")
     return ordered
 

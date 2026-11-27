@@ -279,6 +279,8 @@ jobs:
             tests/test_powercode_customers.py \
             tests/test_notifications.py \
             tests/test_notification_expansion.py \
+            tests/test_sms_providers.py \
+            tests/test_sms_postgres.py \
             tests/test_down_detector.py \
             tests/test_tower_health.py \
             tests/test_ipam.py \

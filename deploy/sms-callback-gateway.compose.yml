@@ -1,0 +1,33 @@
+# Optional separate gateway. Not included by install.sh or the private base stack.
+services:
+  sms-callback-gateway:
+    profiles: [approved-sms-callbacks]
+    image: ${NOC_SMS_GATEWAY_REPOSITORY:?approved repository required}@sha256:${NOC_SMS_GATEWAY_SHA256:?approved 64-hex manifest digest required}
+    pull_policy: never
+    command: [uvicorn, app.notifications.sms_gateway:app, --host, 0.0.0.0, --port, '8011', --no-access-log]
+    env_file: /etc/nwo-noc/sms-gateway.env
+    user: '10001:10001'
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    pids_limit: 64
+    mem_limit: 256m
+    cpus: 0.5
+    tmpfs: ['/tmp:rw,noexec,nosuid,size=16m,mode=1777']
+    ports: ['127.0.0.1:18191:8011']
+    volumes:
+      - /etc/nwo-noc/keys/sms-callback:/run/secrets/sms-callback.key:ro
+    networks: [approved-noc-database]
+    healthcheck:
+      test: [CMD, python, -c, "import json,urllib.request; r=json.load(urllib.request.urlopen('http://127.0.0.1:8011/health',timeout=3)); assert r['service']=='sms-callbacks-only' and r['status']=='ok'"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options: {max-size: 10m, max-file: '3'}
+networks:
+  approved-noc-database:
+    external: true
+    name: ${NOC_SMS_DATABASE_NETWORK:?operator-approved private database network required}
