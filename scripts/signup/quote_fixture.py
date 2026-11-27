@@ -27,7 +27,7 @@ with SessionLocal() as db:
             Application.reference == os.environ["NOC129_REFERENCE"]
         )
     )
-    if not a or not s.pii(a)["email"].endswith("@example.invalid"):
+    if not a or s.pii(a)["email"] != "synthetic-signup@example.com":
         raise ValueError("Synthetic applicant required")
     u = User(
         username="fixture-" + uuid4().hex,

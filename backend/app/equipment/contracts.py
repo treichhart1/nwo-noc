@@ -69,6 +69,7 @@ class ProductInput(Reason):
 
 
 class LocationInput(Reason):
+    application_id: int | None = Field(None, ge=1)
     code: str = Field(pattern=r"^[a-zA-Z0-9][a-zA-Z0-9_.-]{1,79}$")
     name: str = Field(min_length=1, max_length=160)
     kind: Literal[
@@ -90,8 +91,10 @@ class LocationInput(Reason):
     def context(self):
         if self.kind == "tower" and not self.site_id:
             raise ValueError("Tower location must reference the existing NOC Site")
-        if self.kind == "customer_premises" and not self.service_id:
-            raise ValueError("Customer location requires a reviewed service")
+        if self.kind == "customer_premises" and bool(self.service_id) == bool(self.application_id):
+            raise ValueError("Customer location requires exactly one reviewed service or accepted application")
+        if self.application_id and self.kind != "customer_premises":
+            raise ValueError("Application reference is limited to customer premises")
         return self
 
 

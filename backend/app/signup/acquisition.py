@@ -242,6 +242,22 @@ def install_asset(db, u, a, b):
 
     asset = field.get(db, Asset, b.asset_id)
     location = field.get(db, Location, b.customer_location_id)
+    if location.application_id != a.id:
+        from app.customers.models import CustomerService
+
+        service = (
+            db.get(CustomerService, location.service_id)
+            if location.service_id
+            else None
+        )
+        if (
+            not service
+            or not a.matched_customer_id
+            or service.customer_id != a.matched_customer_id
+        ):
+            raise ValueError(
+                "Customer premises must reference this application or its administrator-matched customer"
+            )
     if (
         location.kind != "customer_premises"
         or asset.state not in {"available", "reserved"}

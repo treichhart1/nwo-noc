@@ -10,6 +10,33 @@ depends_on = None
 
 
 def upgrade():
+    op.add_column(
+        "equipment_locations", sa.Column("application_id", sa.Integer(), nullable=True)
+    )
+    op.create_foreign_key(
+        "fk_equipment_location_application",
+        "equipment_locations",
+        "signup_applications",
+        ["application_id"],
+        ["id"],
+    )
+    op.create_index(
+        "ix_equipment_locations_application_id",
+        "equipment_locations",
+        ["application_id"],
+    )
+    # Extend the existing authoritative guard without rewriting migration0019
+    # or replacing later technician/lifecycle corrections made in migration0020.
+    op.execute("""
+DO $patch$ DECLARE definition text; old_rule text := 'IF NEW.kind=''customer_premises'' AND NEW.service_id IS NULL THEN RAISE EXCEPTION ''Reviewed customer reference required'' USING ERRCODE=''23514''; END IF;';
+BEGIN
+SELECT pg_get_functiondef('public.equipment_context_guard()'::regprocedure) INTO definition;
+IF strpos(definition,old_rule)=0 THEN RAISE EXCEPTION 'Inventory guard changed; explicit migration review required'; END IF;
+definition:=replace(definition,old_rule,'IF NEW.kind=''customer_premises'' AND (NEW.service_id IS NULL)=(NEW.application_id IS NULL) THEN RAISE EXCEPTION ''Exactly one reviewed customer service or application required'' USING ERRCODE=''23514''; END IF; IF NEW.application_id IS NOT NULL AND (NEW.kind<>''customer_premises'' OR NOT EXISTS(SELECT 1 FROM public.signup_applications a WHERE a.id=NEW.application_id AND a.proposed_site_id=NEW.site_id AND a.redacted_at IS NULL AND a.state IN (''customer_accepted'',''installation_pending'',''installation_scheduled'',''installed'',''activation_pending'',''completed''))) THEN RAISE EXCEPTION ''Accepted application premises required'' USING ERRCODE=''23514''; END IF;');
+definition:=replace(definition,'(NEW.kind,NEW.site_id,NEW.service_id) IS DISTINCT FROM (OLD.kind,OLD.site_id,OLD.service_id)','(NEW.kind,NEW.site_id,NEW.service_id,NEW.application_id) IS DISTINCT FROM (OLD.kind,OLD.site_id,OLD.service_id,OLD.application_id)');
+EXECUTE definition;
+END $patch$;
+""")
     op.alter_column("notification_recipients", "customer_id", nullable=True)
     op.add_column(
         "notification_recipients",

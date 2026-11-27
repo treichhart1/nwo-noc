@@ -71,6 +71,7 @@ class Product(Base):
 
 class Location(Base):
     __tablename__ = "equipment_locations"
+    application_id: Mapped[int | None] = mapped_column(ForeignKey("signup_applications.id"), nullable=True, index=True)
     id: Mapped[int] = mapped_column(primary_key=True)
     code: Mapped[str] = mapped_column(String(80), unique=True)
     name: Mapped[str] = mapped_column(String(160))

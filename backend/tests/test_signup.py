@@ -995,7 +995,8 @@ def test_concurrent_exact_submissions_use_one_postgres_application(signup):
         grant_sql = (
             (Path(__file__).resolve().parents[2] / "examples/signup/public-role.sql")
             .read_text()
-            .replace("noc_signup", role)
+            .replace("CREATE ROLE noc_signup ", "CREATE ROLE " + role + " ")
+            .replace(" TO noc_signup", " TO " + role)
             .replace("ON DATABASE nwo_noc", "ON DATABASE " + name)
         )
         with engine.begin() as c:

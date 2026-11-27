@@ -470,7 +470,11 @@ def test_postgres_install_asset_preserves_canonical_inventory_history(signup):
     spare = create_asset(x)
     row = spare
     location = Location(
-        code="SYN-129-CPE", name="Synthetic customer premises", kind="customer_premises"
+        code="SYN-129-CPE",
+        name="Synthetic customer premises",
+        kind="customer_premises",
+        application_id=a.id,
+        site_id=x.a.id,
     )
     x.db.add(location)
     x.db.flush()
@@ -658,6 +662,8 @@ def test_postgres_complete_acquisition_survey_quote_and_installation_documentati
         code="SYN-129-FLOW",
         name="Synthetic installation premises",
         kind="customer_premises",
+        application_id=a.id,
+        site_id=x.a.id,
     )
     x.db.add(location)
     x.db.flush()
