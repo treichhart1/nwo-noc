@@ -75,6 +75,12 @@ class Settings(BaseSettings):
     down_detector_interval_seconds: int = Field(30,ge=15,le=300)
     down_detector_policy: dict = Field(default_factory=dict)
     # Native SMS is a separate, explicit opt-in. Legacy mock-only gates remain.
+    slack_callback_key_file: str = Field(default="", repr=False, exclude=True)
+    slack_native_transport_enabled: bool = False
+    slack_native_worker_enabled: bool = False
+    slack_interaction_gateway_enabled: bool = False
+    slack_egress_approved: bool = False
+    slack_worker_interval_seconds: int = Field(5, ge=5, le=300)
     sms_callback_key_file: str = Field(default="", repr=False, exclude=True)
     sms_native_transport_enabled: bool = False
     sms_native_worker_enabled: bool = False
@@ -88,6 +94,10 @@ class Settings(BaseSettings):
 
     @model_validator(mode='after')
     def notification_isolation(self):
+        if self.slack_native_transport_enabled and (self.offline_mode or not self.slack_egress_approved):
+            raise ValueError("Native Slack requires explicit online egress approval")
+        if self.slack_native_worker_enabled and (not self.slack_native_transport_enabled or self.notifications_worker_enabled):
+            raise ValueError("Native Slack worker requires authorized exclusive native queue ownership")
         if self.sms_native_worker_enabled and (not self.sms_native_transport_enabled or not self.sms_egress_approved or self.offline_mode or self.notifications_worker_enabled):
             raise ValueError('Native SMS worker requires explicit host/egress approval, online mode and exclusive queue ownership')
         if self.sms_native_transport_enabled and (self.offline_mode or not self.sms_egress_approved):

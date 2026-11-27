@@ -1,6 +1,9 @@
 """Interchangeable provider protocol; NOC-96 exposes no live network transport."""
 
-from typing import Protocol
+from typing import Protocol, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from app.notifications.slack_transport import SlackReceipt
 import hashlib, hmac, json
 import httpx
 
@@ -24,7 +27,7 @@ class DeliveryFailure(RuntimeError):
 
 
 class Sender(Protocol):
-    def send(self, *, key: str, destination: str, payload: dict) -> str: ...
+    def send(self, *, key: str, destination: str, payload: dict) -> "str | SlackReceipt": ...
 
 
 class MockSender:

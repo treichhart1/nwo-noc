@@ -352,7 +352,7 @@ def main():
             "approval_reference": "synthetic-disposable-acceptance",
             "commit": revision,
             "tree": git("rev-parse", "HEAD^{tree}"),
-            "migration_head": "0029_multi_provider_sms",
+            "migration_head": "0030_native_slack",
             "upgrade_from": list(previous),
             "images": {
                 "backend": image("backend", revision, bad),

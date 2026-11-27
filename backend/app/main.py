@@ -160,3 +160,6 @@ async def bounded_login_request(request, call_next):
 
 from app.notifications.sms_routes import router as sms_router
 app.include_router(sms_router)
+
+from app.notifications.slack_routes import router as slack_router
+app.include_router(slack_router)

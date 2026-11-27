@@ -344,7 +344,7 @@ def recover_claims(db, now):
     rows = list(
         db.scalars(
             select(Attempt)
-            .where(Attempt.acceptance == "pending", Attempt.lease_expires_at <= now)
+            .where(Attempt.provider_name.is_not(None), Attempt.acceptance == "pending", Attempt.lease_expires_at <= now)
             .order_by(Attempt.id)
             .limit(100)
             .with_for_update(skip_locked=True)
