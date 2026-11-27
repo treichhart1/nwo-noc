@@ -1,0 +1,1 @@
+{"apiVersion":3,"name":"nwo/network-status","version":"128.0.0","title":"NWO Network Status","category":"widgets","icon":"info-outline","description":"Administrator-approved public network updates without private NOC access.","textdomain":"nwo-network-status","attributes":{"view":{"type":"string","default":"full","enum":["full","banner"]}},"supports":{"html":false}}

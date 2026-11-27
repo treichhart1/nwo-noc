@@ -130,7 +130,15 @@ def current(
         history = []
         for r in rows:
             item = PublicAnnouncement.model_validate(
-                dict(r["payload"], id=r["identifier"], updated_at=r["updated_at"])
+                dict(
+                    {
+                        k: v
+                        for k, v in r["payload"].items()
+                        if k not in {"impact", "area_details"}
+                    },
+                    id=r["identifier"],
+                    updated_at=r["updated_at"],
+                )
             )
             if item.status == "resolved":
                 history.append(item)
@@ -148,7 +156,13 @@ def current(
         ]
         states = [pol["baseline_status"]] + [i.status for i in active + maintenance]
         overall = min(states, key=order.index)
-        update = max([pol["baseline_approved_at"]] + [r["updated_at"] for r in rows])
+        update = max(
+            [
+                pol["baseline_approved_at"],
+                pol["last_public_update"] or pol["baseline_approved_at"],
+            ]
+            + [r["updated_at"] for r in rows]
+        )
         feed = PublicFeed(
             overall_status=overall,
             last_public_update=update,
@@ -163,6 +177,8 @@ def current(
         )
         data = feed.model_dump(mode="json")
         raw = json.dumps(data, sort_keys=True, separators=(",", ":"))
+        if len(raw.encode()) > 524288:
+            raise ValueError("Public response too large")
         etag = '"' + hashlib.sha256(raw.encode()).hexdigest() + '"'
         headers = {
             "Cache-Control": "public, max-age=30, must-revalidate",
@@ -183,3 +199,8 @@ def current(
             status_code=503,
             headers={"Cache-Control": "no-store"},
         )
+
+
+from .public_v2 import router as v2_router
+
+app.include_router(v2_router)

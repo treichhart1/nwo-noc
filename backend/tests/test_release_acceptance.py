@@ -132,7 +132,7 @@ def test_database_release_constraints_are_validated(postgres_db):
     db = postgres_db
     assert (
         db.scalar(text("SELECT version_num FROM alembic_version"))
-        == "0030_native_slack"
+        == "0031_wordpress_status"
     )
     counts = db.execute(
         text(
