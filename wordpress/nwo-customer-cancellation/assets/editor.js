@@ -1,0 +1,1 @@
+(function(wp){'use strict';wp.blocks.registerBlockType('nwo/customer-cancellation',{apiVersion:3,title:'NWO Customer Cancellation',category:'widgets',icon:'forms',edit:function(){return wp.element.createElement('p',{},'NWO secure customer application — uses the administrator-approved signup origin.');},save:function(){return null;}});})(window.wp);
