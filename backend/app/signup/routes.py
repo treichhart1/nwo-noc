@@ -235,6 +235,14 @@ def context(work_id: int, db=Depends(get_db), u=Depends(access)):
     return run(db, u, lambda: s.work_context(db, u, work_id), True)
 
 
+@router.get("/analytics/summary")
+def acquisition_analytics(since:datetime,until:datetime,db=Depends(get_db),u=Depends(access)):
+    from .acquisition import analytics
+    if since.tzinfo is None or until.tzinfo is None or not since<until or (until-since).days>366:
+        raise HTTPException(422,"Aware UTC range of at most366days required")
+    return run(db,u,lambda:analytics(db,u,since,until),True)
+
+
 @router.get("/{id}")
 def detail(
     id: int,
@@ -362,3 +370,54 @@ def photo_download(id: int, db=Depends(get_db), u=Depends(access)):
         )
 
     return run(db, u, read)
+
+
+@router.post('/{id}/quote-access')
+def quote_access(id:int,b:QuoteAccessInput,db=Depends(get_db),u=Depends(access)):
+    from .acquisition import prepare_quote_access
+    return change(db,u,b,'quote_access_'+str(id),lambda:prepare_quote_access(db,u,s.get(db,id),b),True)
+
+
+@router.get('/{id}/quote-access/{quote_id}')
+def quote_access_token(id:int,quote_id:int,response:Response,db=Depends(get_db),u=Depends(access)):
+    response.headers["Cache-Control"]="no-store"
+    response.headers["Referrer-Policy"]="no-referrer"
+    from .acquisition import quote_token
+    return run(db,u,lambda:quote_token(db,u,id,quote_id),True)
+
+
+@router.post('/{id}/sms-plan/{draft_id}')
+def prospect_sms(id:int,draft_id:int,b:Mutation,db=Depends(get_db),u=Depends(access)):
+    from .communications import prepare
+    def write():
+        draft=field.get(db,NotificationDraft,draft_id)
+        if draft.application_id!=id:raise ValueError('Scoped application draft required')
+        return prepare(db,u,draft_id)
+    return change(db,u,b,'sms_plan_'+str(id),write)
+
+
+@router.post('/{id}/slack-draft')
+def signup_slack(id:int,b:Mutation,db=Depends(get_db),u=Depends(access)):
+    def write():
+        s.get(db,id)
+        from app.notifications.slack_service import prepare
+        r=prepare(db,'signup',str(id),u.id)
+        s.audit(db,u,'slack_draft_prepared',id)
+        return {'id':r.id,'fingerprint':r.fingerprint,'status':r.status,'external_delivery':False}
+    return change(db,u,b,'slack_draft_'+str(id),write)
+
+
+@router.get('/{id}/provisioning-preview')
+def provisioning_preview(id:int,db=Depends(get_db),u=Depends(access)):
+    from .acquisition import provision_preview
+    return run(db,u,lambda:provision_preview(db,u,s.get(db,id)),True)
+
+
+@router.post('/{id}/installation-asset')
+def installation_asset(id:int,b:InstallAssetInput,db=Depends(get_db),u=Depends(access)):
+    from .acquisition import install_asset
+    def authorized():
+        m=db.scalar(select(AppWork).where(AppWork.application_id==id,AppWork.work_order_id==b.work_order_id))
+        if not m:raise PermissionError('Assigned installation context required')
+        s.work_access(db,u,m)
+    return change(db,u,b,'installation_asset_'+str(id),lambda:install_asset(db,u,s.get(db,id),b),authorize=authorized)

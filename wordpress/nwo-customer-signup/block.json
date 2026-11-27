@@ -1,0 +1,1 @@
+{"apiVersion":3,"name":"nwo/customer-signup","title":"NWO Customer Signup","category":"widgets","icon":"forms","description":"Secure form on the approved dedicated signup origin","editorScript":"nwo-signup-editor","supports":{"html":false}}

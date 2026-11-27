@@ -29,6 +29,7 @@ def run(args, **kw):
 
 
 def main():
+    signup_mode = "--signup" in sys.argv[2:]
     evidence = Path(sys.argv[1]).resolve()
     evidence.mkdir(parents=True, exist_ok=True)
     fixtures = evidence / "fixtures"
@@ -72,7 +73,7 @@ def main():
         stderr=subprocess.DEVNULL,
     )
     (fixtures / "extensions").write_text(
-        "subjectAltName=DNS:status.noc128.test\nextendedKeyUsage=serverAuth\n"
+        ("subjectAltName=DNS:status.noc128.test,DNS:wordpress.noc128.test\nextendedKeyUsage=serverAuth\n" if signup_mode else "subjectAltName=DNS:status.noc128.test\nextendedKeyUsage=serverAuth\n")
     )
     run(
         [
@@ -101,7 +102,7 @@ def main():
     run(
         [
             "python3",
-            str(ROOT / "scripts/wordpress/build.py"),
+            str(ROOT / ("scripts/signup/build.py" if signup_mode else "scripts/wordpress/build.py")),
             "--output",
             str(evidence / "plugin"),
         ],
@@ -117,9 +118,10 @@ def main():
         "MYSQL_PWD": password,
         "WORDPRESS_ACCEPTANCE": "1",
         "NOC128_EVIDENCE": str(evidence),
-        "NOC128_WORDPRESS_ORIGIN": "http://93.184.216.36",
+        "NOC128_WORDPRESS_ORIGIN": "https://wordpress.noc128.test" if signup_mode else "http://93.184.216.36",
+        "NOC129_SIGNUP_WORDPRESS": "true" if signup_mode else "false",
     }
-    for name in ["noc128-wordpress", "noc128-db", "noc128-fixture", "noc128-proxy"]:
+    for name in ["noc128-wordpress", "noc128-db", "noc128-fixture", "noc128-proxy"] + (["noc129-postgres"] if signup_mode else []):
         check = subprocess.run(
             ["docker", "container", "inspect", name],
             stdout=subprocess.DEVNULL,
@@ -139,6 +141,12 @@ def main():
         ]
     )
     try:
+        if signup_mode:
+            run(["docker","run","-d","--name","noc129-postgres","--network","noc128-wp","-e","POSTGRES_USER=synthetic","-e","POSTGRES_PASSWORD=synthetic-ci-only","-e","POSTGRES_DB=nwo_noc","noc117-postgres:rc"],stdout=subprocess.DEVNULL)
+            for _ in range(60):
+                if subprocess.run(["docker","exec","noc129-postgres","pg_isready","-h","127.0.0.1","-U","synthetic","-d","nwo_noc"],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode==0:break
+                time.sleep(1)
+            else:raise RuntimeError("Synthetic PostgreSQL did not become ready")
         run(
             [
                 "docker",
@@ -155,7 +163,12 @@ def main():
                 "-v",
                 str(fixtures) + ":/fixtures:ro",
                 "-v",
-                str(ROOT / "scripts/wordpress/fixture_gateway.py") + ":/fixture.py:ro",
+                str(ROOT / ("scripts/signup/fixture.py" if signup_mode else "scripts/wordpress/fixture_gateway.py")) + ":/fixture.py:ro",
+                *(["-v",str(ROOT / "examples/signup/public-role.sql")+":/signup-public-role.sql:ro",
+                   "-e","WORDPRESS_ACCEPTANCE=1","-e","APP_ENV=staging","-e","OFFLINE_MODE=true","-e","SYNTHETIC_MONITORING_ENABLED=true",
+                   "-e","SECRET_KEY=synthetic-noc129-fixture-secret-synthetic","-e","ADMIN_PASSWORD=synthetic-ci-only",
+                   "-e","DATABASE_URL=postgresql+psycopg://synthetic:synthetic-ci-only@noc129-postgres:5432/nwo_noc"] if signup_mode else []),
+                *(["-v",str(ROOT / "scripts/signup/quote_fixture.py")+":/quote-fixture.py:ro"] if signup_mode else []),
                 "--entrypoint",
                 "python",
                 "noc128-backend:test",
@@ -213,6 +226,7 @@ def main():
             .replace("listen 8443 ssl;", "listen 443 ssl;")
             .replace("status.example.invalid", "status.noc128.test")
         )
+        if signup_mode:proxy_conf=(ROOT / "scripts/signup/proxy.conf").read_text()
         (fixtures / "proxy.conf").write_text(proxy_conf)
         run(
             [
@@ -227,6 +241,7 @@ def main():
                 "93.184.216.37",
                 "--add-host",
                 "status-gateway:93.184.216.34",
+                *(["--add-host","signup-gateway:93.184.216.34"] if signup_mode else []),
                 "--read-only",
                 "--tmpfs",
                 "/tmp:rw,noexec,nosuid,size=16m",
@@ -244,7 +259,7 @@ def main():
                 str(fixtures / "cert.pem") + ":/run/secrets/status_tls_certificate:ro",
                 "-v",
                 str(fixtures / "key.pem") + ":/run/secrets/status_tls_private_key:ro",
-                "noc128-status-proxy:test",
+                "noc129-signup-web:test" if signup_mode else "noc128-status-proxy:test",
             ],
             stdout=subprocess.DEVNULL,
         )
@@ -336,6 +351,10 @@ def main():
             time.sleep(1)
         else:
             raise RuntimeError("Disposable MariaDB did not become ready")
+        if signup_mode:
+            nss=Path.home()/'.pki/nssdb';nss.mkdir(parents=True,exist_ok=True)
+            if not (nss/'cert9.db').exists():run(['certutil','-N','--empty-password','-d','sql:'+str(nss)])
+            run(['certutil','-A','-d','sql:'+str(nss),'-n','noc129-disposable-ca','-t','C,,','-i',str(fixtures/'ca.pem')])
         versions = []
         for image in [WP_MIN, WP_SIX, WP_CURRENT]:
             (fixtures / "mode").write_text("healthy")
@@ -363,7 +382,7 @@ def main():
                     "-e",
                     "WORDPRESS_DB_PASSWORD",
                     "-e",
-                    'WORDPRESS_CONFIG_EXTRA=define("FS_METHOD","direct"); define("DISALLOW_FILE_EDIT",true);',
+                    'WORDPRESS_CONFIG_EXTRA=define("FS_METHOD","direct"); define("DISALLOW_FILE_EDIT",true); if(isset($_SERVER["HTTP_X_FORWARDED_PROTO"]) && $_SERVER["HTTP_X_FORWARDED_PROTO"]==="https"){$_SERVER["HTTPS"]="on";}',
                     "-v",
                     str(ROOT / "scripts/wordpress/tests") + ":/tests:ro",
                     "-v",
@@ -406,11 +425,15 @@ def main():
                 ["docker", "inspect", "--format", "{{.Image}}", "noc128-wordpress"],
                 capture_output=True,
             ).stdout.strip()
-            opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+            if signup_mode:
+                run(["docker","cp",str(ROOT / "scripts/signup/tests"),"noc128-wordpress:/signup-tests"])
+                run(["docker","exec","noc129-postgres","psql","-U","synthetic","-d","nwo_noc","-c","DELETE FROM signup_public_budgets"],stdout=subprocess.DEVNULL)
+            import ssl
+            opener = urllib.request.build_opener(urllib.request.ProxyHandler({}),urllib.request.HTTPSHandler(context=ssl.create_default_context(cafile=str(fixtures / "ca.pem"))))
             for _ in range(30):
                 try:
                     with opener.open(
-                        env["NOC128_WORDPRESS_ORIGIN"] + "/wp-login.php", timeout=2
+                        ("http://93.184.216.36/wp-includes/js/wp-embed.min.js" if signup_mode else env["NOC128_WORDPRESS_ORIGIN"]+"/wp-login.php"), timeout=2
                     ) as response:
                         if response.status == 200:
                             break
@@ -454,7 +477,7 @@ def main():
                     "npx",
                     "playwright",
                     "test",
-                    "wordpress-plugin.spec.ts",
+                    "signup-wordpress.spec.ts" if signup_mode else "wordpress-plugin.spec.ts",
                     "--workers=1",
                 ],
                 cwd=ROOT / "frontend",
@@ -493,7 +516,9 @@ def main():
             + "\n"
         )
     finally:
-        for name in ["noc128-wordpress", "noc128-db", "noc128-fixture", "noc128-proxy"]:
+        if signup_mode:
+            subprocess.run(["certutil","-D","-d","sql:"+str(Path.home()/".pki/nssdb"),"-n","noc129-disposable-ca"],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+        for name in ["noc128-wordpress", "noc128-db", "noc128-fixture", "noc128-proxy"] + (["noc129-postgres"] if signup_mode else []):
             subprocess.run(
                 ["docker", "rm", "-f", name],
                 stdout=subprocess.DEVNULL,

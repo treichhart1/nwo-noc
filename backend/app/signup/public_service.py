@@ -134,6 +134,8 @@ def receipt(a):
 
 def submit(db, b, verify=providers.turnstile):
     payload = b.model_dump(mode="json", exclude={"turnstile_token", "website"})
+    if not b.first_name and not b.last_name:
+        payload.pop("first_name",None);payload.pop("last_name",None)
     signature = crypto.digest(
         "submission", json.dumps(payload, sort_keys=True, separators=(",", ":"))
     )

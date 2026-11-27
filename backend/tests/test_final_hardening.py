@@ -59,7 +59,9 @@ def test_workflow_yaml_and_run_steps_parse():
     import yaml
 
     workflow = yaml.safe_load((ROOT / ".github/workflows/ci.yml").read_text())
-    assert len(workflow["jobs"]) == 11
+    assert len(workflow["jobs"]) == 12
+    assert "signup-acceptance" in workflow["jobs"]["rf-release-acceptance"]["needs"]
+    assert "SIGNUP_RESULT" in workflow["jobs"]["rf-release-acceptance"]["steps"][0]["run"]
     assert "wordpress-status" in workflow["jobs"]["rf-release-acceptance"]["needs"]
     assert "independent-pilot" in workflow["jobs"]["rf-release-acceptance"]["needs"]
     assert "PILOT_VM_RESULT" in workflow["jobs"]["rf-release-acceptance"]["steps"][0]["run"]

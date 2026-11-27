@@ -61,6 +61,9 @@ GRAPH = {
     "cancelled": set(),
 }
 TEMPLATES = {
+    "installation_reminder": "Northwest Ohio Broadband: Please contact our office to confirm your approved installation appointment.",
+    "appointment_rescheduled": "Northwest Ohio Broadband: Your installation arrangements require confirmation. Please contact our office.",
+    "installation_completed": "Northwest Ohio Broadband: Your installation work has been documented. Service activation still requires separate confirmation.",
     "application_received": "We received your service application for review. Availability is not guaranteed.",
     "information_required": "Please contact our office about information needed for your application.",
     "survey_scheduling": "Please contact our office to confirm a proposed site survey.",
@@ -439,7 +442,10 @@ def qualify(db, u, a, b):
             if any(r.technology in {"fiber", "hybrid"} for r in planned)
             else "unknown"
         )
-        if active:
+        if a.technology in {"lte", "5g"}:
+            snapshot["status"] = "manual_review_required"
+            snapshot["uncertainty"].append("Carrier coverage, eligibility and capacity require independently verified evidence; no LTE/5G guarantee")
+        elif active:
             snapshot["status"] = "potentially_serviceable"
         elif planned or candidates:
             snapshot["status"] = "requires_site_survey"
@@ -681,6 +687,9 @@ def quote_draft(db, u, a, b):
         or p.audience not in {"both", a.audience}
     ):
         raise ValueError("Eligible active plan required")
+    known=all(v is not None for v in [b.installation,b.equipment,b.construction])
+    upfront=sum([b.installation,b.equipment,b.construction],Decimal(0))+sum((Decimal(str(x['amount'])) for x in b.optional_services),Decimal(0)) if known else None
+    if upfront is not None and b.discount>upfront:raise ValueError('One-time discount exceeds known upfront charges')
     n = (
         db.scalar(select(func.max(Quote.number)).where(Quote.application_id == a.id))
         or 0
@@ -695,6 +704,8 @@ def quote_draft(db, u, a, b):
         )
         | {
             "plan_name": p.name,
+            "upfront_total": str(upfront-b.discount) if upfront is not None else None,
+            "discount_basis": "One-time upfront charges only; monthly charge unchanged",
             "plan_catalog_revision": p.revision,
             "commitment": "Manual quote only; no payment or contract execution",
         },
@@ -767,6 +778,10 @@ def control(db, u, a, b):
             db.add(ProvisionDraft(application_id=a.id, approved_by=u.id))
     elif b.action == "record_opt_out":
         data = pii(a)
+        from app.notifications.models import NotificationContactSuppression
+        from app.notifications.service import contact_hash
+        if not db.get(NotificationContactSuppression, contact_hash(data.get("phone"))):
+            db.add(NotificationContactSuppression(contact_hash=contact_hash(data.get("phone")), reason="prospect_withdrawal"))
         data.update(
             {
                 "consent_email": False,
@@ -939,8 +954,11 @@ def detail(db, u, a, offset=0):
                 .limit(20)
             )
         ],
+        "quote_responses": [
+            inventory.view(r) for r in db.scalars(select(QuoteResponse).join(Quote).where(Quote.application_id == a.id).order_by(QuoteResponse.id.desc()).limit(50))
+        ],
         "quotes": [
-            inventory.view(q, exclude={"acceptance_ciphertext"})
+            inventory.view(q, exclude={"acceptance_ciphertext", "access_hash", "access_ciphertext"})
             for q in db.scalars(
                 select(Quote)
                 .where(Quote.application_id == a.id)

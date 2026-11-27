@@ -257,23 +257,31 @@ def validate_delivery(db, d, name, now):
     from app.customer_status.service import linked_approval
 
     linked_approval(db, p, operator.id)
-    current, _ = snapshot(db, PlanRequest.model_validate(p.snapshot["request"]), now)
+    from app.notifications.service import current_snapshot
+    current, _ = current_snapshot(db, p, now)
     if digest(current) != p.fingerprint:
         raise ValueError("Source, maintenance, targeting or consent changed")
     recipient = db.get(Recipient, d.recipient_id)
-    account = db.get(CustomerAccount, recipient.customer_id) if recipient else None
-    if (
-        not account
-        or account.source_deleted_at
-        or account.sms_consent != "granted"
-        or not account.consent_record
-        or account.sms_opt_out
-        or account.communication_preference not in {"sms", "both"}
-        or not e164(account.phone)
-        or contact_hash(account.phone) != recipient.contact_hash
-        or db.get(Suppression, account.id)
-    ):
-        raise ValueError("Customer consent/contact/suppression prevents SMS")
+    if recipient and recipient.application_id is not None:
+        from app.signup.communications import contact
+        account = contact(db, recipient)
+    else:
+        account = db.get(CustomerAccount, recipient.customer_id) if recipient and recipient.customer_id is not None else None
+        if (
+            not account
+            or account.source_deleted_at
+            or account.sms_consent != "granted"
+            or not account.consent_record
+            or account.sms_opt_out
+            or account.communication_preference not in {"sms", "both"}
+            or not e164(account.phone)
+            or contact_hash(account.phone) != recipient.contact_hash
+            or db.get(Suppression, account.id)
+        ):
+            raise ValueError("Customer consent/contact/suppression prevents SMS")
+    from app.notifications.models import NotificationContactSuppression
+    if db.get(NotificationContactSuppression, contact_hash(account.phone)):
+        raise ValueError("Shared contact opt-out")
     blocked = db.scalar(
         select(Event.key)
         .where(
@@ -431,7 +439,7 @@ def reserve(db, now):
                         Attempt.acceptance != "not_accepted",
                         Attempt.created_at >= now - timedelta(seconds=seconds),
                         *(
-                            [Delivery.recipient_key == d.recipient_key]
+                            [Attempt.destination_hash == native_contact_hash(account.phone)]
                             if personal
                             else []
                         ),
@@ -529,7 +537,7 @@ def record_provider_opt_out(db, attempt, delivery, code, now):
     recipient = (
         db.get(Recipient, delivery.recipient_id) if delivery.recipient_id else None
     )
-    account = db.get(CustomerAccount, recipient.customer_id) if recipient else None
+    account = db.get(CustomerAccount, recipient.customer_id) if recipient and recipient.customer_id is not None else None
     if account and native_contact_hash(account.phone) == attempt.destination_hash:
         db.execute(
             text("SELECT public.noc_sms_enforce_opt_out(:phone,:at)"),
@@ -751,7 +759,11 @@ def reconcile_attempt(
         raise LookupError()
     d = db.get(Delivery, a.delivery_id)
     recipient = db.get(Recipient, d.recipient_id)
-    account = db.get(CustomerAccount, recipient.customer_id)
+    if recipient and recipient.application_id is not None:
+        from app.signup.communications import contact
+        account = contact(db, recipient, consent=False)
+    else:
+        account = db.get(CustomerAccount, recipient.customer_id) if recipient and recipient.customer_id is not None else None
     if not account or native_contact_hash(account.phone) != a.destination_hash:
         raise ValueError(
             "Original recipient changed; preserve quarantine for manual provider investigation"
@@ -1009,5 +1021,5 @@ def signup_preview(db, identifier, actor):
         "eligible_for_review": allowed,
         "providers": previews,
         "messages_sent": 0,
-        "next_action": "Existing signup approval/workflow remains draft-only; no customer, incident or delivery record is fabricated",
+        "next_action": "Prepare the canonical prospect SMS plan, approve its fingerprint and independently authorize native delivery; no customer or incident is fabricated",
     }

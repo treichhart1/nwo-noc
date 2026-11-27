@@ -11,3 +11,6 @@ GRANT SELECT, INSERT ON signup_captcha_uses TO noc_signup;
 GRANT USAGE, SELECT ON SEQUENCE signup_applications_id_seq, signup_events_id_seq TO noc_signup;
 -- Do not grant customer, topology, users, quotes, coverage, documents or work-order tables.
 -- Audit existing PUBLIC grants and schema CREATE rights before enabling any public ingress.
+
+-- Quote access is capability-based and cannot read private quote/application tables.
+GRANT EXECUTE ON FUNCTION public.noc_signup_quote_read(text), public.noc_signup_quote_respond(text,text) TO noc_signup;

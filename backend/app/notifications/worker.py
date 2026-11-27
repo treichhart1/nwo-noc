@@ -93,9 +93,8 @@ def run_batch(db, *, sms=None, slack=None, now=None, limit=20):
                 raise ValueError("approval_invalid")
             from app.customer_status.service import linked_approval
             linked_approval(db, plan, actor.id)
-            current, _ = snapshot(
-                db, PlanRequest.model_validate(plan.snapshot["request"]), now
-            )
+            from app.notifications.service import current_snapshot
+            current, _ = current_snapshot(db, plan, now)
             if digest(current) != plan.fingerprint:
                 raise ValueError("source_or_consent_changed")
         except (ValueError, LookupError):
@@ -113,26 +112,38 @@ def run_batch(db, *, sms=None, slack=None, now=None, limit=20):
             continue
         if d.channel == "sms":
             r = db.get(NotificationRecipient, d.recipient_id)
-            account = db.scalar(
-                select(CustomerAccount)
-                .where(CustomerAccount.id == r.customer_id)
-                .with_for_update()
-                .execution_options(populate_existing=True)
-            )
-            if (
-                not account
-                or account.source_deleted_at
-                or account.sms_consent != "granted"
-                or not account.consent_record
-                or account.sms_opt_out
-                or account.communication_preference not in {"sms", "both"}
-                or not e164(account.phone)
-                or contact_hash(account.phone) != r.contact_hash
-                or db.get(NotificationSuppression, r.customer_id)
-            ):
-                d.state = "suppressed"
-                d.last_error = "contact_or_suppression_changed"
-                d.completed_at = now
+            if r and r.application_id is not None:
+                from app.signup.communications import contact
+                try:
+                    account = contact(db, r)
+                except ValueError:
+                    d.state, d.last_error, d.completed_at = "suppressed", "prospect_consent_changed", now
+                    continue
+            else:
+                account = db.scalar(
+                    select(CustomerAccount)
+                    .where(CustomerAccount.id == r.customer_id)
+                    .with_for_update()
+                    .execution_options(populate_existing=True)
+                )
+                if (
+                    not account
+                    or account.source_deleted_at
+                    or account.sms_consent != "granted"
+                    or not account.consent_record
+                    or account.sms_opt_out
+                    or account.communication_preference not in {"sms", "both"}
+                    or not e164(account.phone)
+                    or contact_hash(account.phone) != r.contact_hash
+                    or db.get(NotificationSuppression, r.customer_id)
+                ):
+                    d.state = "suppressed"
+                    d.last_error = "contact_or_suppression_changed"
+                    d.completed_at = now
+                    continue
+            from app.notifications.models import NotificationContactSuppression
+            if db.get(NotificationContactSuppression, contact_hash(account.phone)):
+                d.state, d.last_error, d.completed_at = "suppressed", "shared_opt_out", now
                 continue
             due = quiet_due(
                 now, p, plan.snapshot["request"].get("critical_quiet_bypass", False)
@@ -179,7 +190,7 @@ def run_batch(db, *, sms=None, slack=None, now=None, limit=20):
             personal = db.scalar(
                 select(func.count(NotificationDelivery.id)).where(
                     NotificationDelivery.channel == "sms",
-                    NotificationDelivery.recipient_key == d.recipient_key,
+                    NotificationDelivery.recipient_id.in_(select(NotificationRecipient.id).where(NotificationRecipient.contact_hash==r.contact_hash)),
                     NotificationDelivery.completed_at >= now - timedelta(days=1),
                     NotificationDelivery.state == "simulated",
                 )
@@ -199,7 +210,7 @@ def run_batch(db, *, sms=None, slack=None, now=None, limit=20):
                 .join(NotificationPlan)
                 .where(
                     NotificationDelivery.channel == "sms",
-                    NotificationDelivery.recipient_key == d.recipient_key,
+                    NotificationDelivery.recipient_id.in_(select(NotificationRecipient.id).where(NotificationRecipient.contact_hash==r.contact_hash)),
                     NotificationDelivery.state == "simulated",
                     NotificationDelivery.completed_at
                     >= now - timedelta(seconds=p.outage_cooldown_seconds),

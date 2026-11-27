@@ -1,0 +1,27 @@
+import {test,expect} from '@playwright/test';
+import {execFileSync} from 'node:child_process';
+import path from 'node:path';
+test.skip(process.env.NOC129_SIGNUP_WORDPRESS!=='true','Dedicated isolated WordPress/PostgreSQL signup acceptance only');
+const origin=process.env.NOC128_WORDPRESS_ORIGIN!;
+const control=(action:string)=>JSON.parse(execFileSync('docker',['exec','-e','NOC129_ACTION='+action,'noc128-wordpress','php','/signup-tests/control.php'],{encoding:'utf8'}));
+test('actual installed signup plugin, mobile iframe, restricted submission, quote response and safe uninstall',async({page})=>{
+ await page.route('**/*',async route=>{const u=new URL(route.request().url());if(!['https://wordpress.noc128.test','https://status.noc128.test'].includes(u.origin))await route.abort();else await route.continue()});
+ await page.goto(origin+'/wp-login.php');await page.locator('#user_login').fill('noc128-admin');await page.locator('#user_pass').fill(process.env.NOC128_PASSWORD!);await page.locator('#wp-submit').click();await expect(page).toHaveURL(/wp-admin/);
+ await page.goto(origin+'/wp-admin/plugin-install.php?tab=upload');await page.locator('#pluginzip').setInputFiles(path.join(process.env.NOC128_EVIDENCE!,'plugin/nwo-customer-signup.zip'));await page.locator('#install-plugin-submit').click();await page.getByRole('link',{name:'Activate Plugin'}).click();
+ const pages=control('page');expect(pages.page).toBeGreaterThan(0);expect(control('contracts').origin_rejections).toBe(7);
+ const rejected=await page.request.post(origin+'/wp-admin/admin-post.php',{form:{action:'nwo_signup_save'},maxRedirects:0});expect(rejected.status()).toBe(403);
+ await page.goto(origin+'/wp-admin/options-general.php?page=nwo-customer-signup');await page.getByLabel('Enable approved signup integration').check();await page.getByLabel('Approved HTTPS signup origin').fill('https://status.noc128.test');await page.getByLabel(/I approve this public origin/).check();await page.getByRole('button',{name:'Save signup settings',exact:true}).click();await page.getByRole('button',{name:'Check connection',exact:true}).click();await expect(page.locator('body')).toContainText('connected');
+ await page.setViewportSize({width:390,height:844});await page.goto(origin+'/?pagename=synthetic-signup');const frame=page.frameLocator('iframe[title="Secure service application"]');await expect(frame.getByRole('heading',{name:'Request internet service'})).toBeVisible();
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBeTruthy();
+ await frame.getByLabel('First name',{exact:true}).fill('Synthetic');await frame.getByLabel('Last name',{exact:true}).fill('Signup');await frame.getByLabel('Requested plan',{exact:true}).selectOption({label:'Synthetic configured wireless — USD 65.00/month'});
+ for(const [label,value] of Object.entries({'Service address — Street address':'129 Synthetic Road','Service address — City':'Synthetic Town','Service address — ZIP code':'43500','Email':'synthetic-signup@example.invalid','Phone (international format, e.g. +15555550123)':'+15555550129'}))await frame.getByLabel(label,{exact:true}).fill(value);
+ await expect(frame.getByLabel(/I consent to sms contact/)).not.toBeChecked();await frame.getByLabel(/I consent to storage and review/).check();
+ let captured:any;page.on('request',request=>{if(request.url().endsWith('/public/signup/applications')&&request.method()==='POST'){expect(new URL(request.url()).origin).toBe('https://status.noc128.test');captured=request.postDataJSON()}});
+ const submission=page.waitForResponse(r=>r.url().endsWith('/public/signup/applications')&&r.request().method()==='POST');await frame.getByRole('button',{name:'Submit application',exact:true}).click();const response=await submission;expect(response.status()).toBe(200);const receipt=await response.json();await expect(frame.getByRole('heading',{name:'Application received'})).toBeVisible();expect(captured.first_name).toBe('Synthetic');
+ // Browser-context exact retry retains the same receipt; no second application.
+ const retry=await page.frames().find(f=>f.url().includes('status.noc128.test/signup.html'))!.evaluate(async(body)=>{const config=await(await fetch('/public/signup/config')).json();const r=await fetch('/public/signup/applications',{method:'POST',headers:{'Content-Type':'application/json','X-Signup-CSRF':config.csrf_token},body:JSON.stringify(body)});return {status:r.status,body:await r.json()}},captured);expect(retry.status).toBe(200);expect(retry.body.reference).toBe(receipt.reference);
+ const quote=JSON.parse(execFileSync('docker',['exec','-e','NOC129_REFERENCE='+receipt.reference,'noc128-fixture','python','/quote-fixture.py'],{encoding:'utf8'}));
+ await frame.getByLabel('Private quote token',{exact:true}).fill(quote.token);await frame.getByRole('button',{name:'Review quote',exact:true}).click();await expect(frame.getByText('Synthetic configured wireless',{exact:true})).toBeVisible();await frame.getByLabel(/I explicitly confirm this response/).check();await frame.getByRole('button',{name:'Accept quote',exact:true}).click();await expect(frame.getByText('Quote response recorded: accepted')).toBeVisible();
+ await page.goto(origin+'/?pagename=signup-block');await expect(page.locator('.nwo-signup-frame')).toHaveCount(1);control('classic');await page.reload();await expect(page.locator('.nwo-signup-frame')).toHaveCount(1);
+ control('deactivate');expect(control('uninstall')).toEqual({removed:true,page_preserved:true});
+});

@@ -60,6 +60,8 @@ class SignupInput(SafeModel):
     audience: Literal["residential", "business"]
     request_kind: Literal["new", "upgrade", "additional_location"] = "new"
     customer_name: str = Field(min_length=2, max_length=200)
+    first_name: str = Field("", max_length=100)
+    last_name: str = Field("", max_length=100)
     business_name: str | None = Field(None, max_length=200)
     service_address: Address
     billing_address: Address | None = None
@@ -70,14 +72,14 @@ class SignupInput(SafeModel):
     consent_phone: bool = False
     consent_sms: bool = False
     privacy_consent: bool
-    technology: Literal["wireless", "fiber", "hybrid"]
+    technology: Literal["wireless", "fiber", "hybrid", "lte", "5g"]
     plan_id: int = Field(ge=1)
     installation_preferences: str = Field("", max_length=1000)
     notes: str = Field("", max_length=2000)
     website: str = Field("", max_length=200)
     turnstile_token: str = Field(min_length=1, max_length=2048)
 
-    @field_validator("customer_name", "business_name", mode="before")
+    @field_validator("customer_name", "business_name", "first_name", "last_name", mode="before")
     @classmethod
     def applicant_name(cls, v):
         return (
@@ -96,6 +98,10 @@ class SignupInput(SafeModel):
 
     @model_validator(mode="after")
     def validate_request(self):
+        if bool(self.first_name) != bool(self.last_name):
+            raise ValueError("Both first and last names required when provided")
+        if self.first_name and self.customer_name != (self.first_name + " " + self.last_name).strip():
+            raise ValueError("Combined name must match first and last name")
         if self.audience == "business" and not self.business_name:
             raise ValueError("Business name required")
         if not self.privacy_consent:
@@ -133,7 +139,7 @@ class LookupInput(SafeModel):
 class PlanInput(Mutation):
     name: str = Field(min_length=3, max_length=160)
     audience: Literal["residential", "business", "both"]
-    technology: Literal["wireless", "fiber", "hybrid"]
+    technology: Literal["wireless", "fiber", "hybrid", "lte", "5g"]
     active: bool = True
     public: bool = False
     currency: str | None = Field(None, pattern=r"^[A-Z]{3}$")
@@ -167,7 +173,7 @@ class PlanUpdate(PlanInput):
 
 class AreaInput(Mutation):
     name: str = Field(min_length=3, max_length=160)
-    technology: Literal["wireless", "fiber", "hybrid", "service_boundary"]
+    technology: Literal["wireless", "fiber", "hybrid", "lte", "5g", "service_boundary"]
     status: Literal["active", "planned"]
     polygon: list[list[float]] = Field(min_length=4, max_length=500)
     site_id: int | None = Field(None, ge=1)
@@ -277,7 +283,7 @@ class SurveyInput(Mutation):
     longitude: float | None = Field(None, ge=-180, le=180, allow_inf_nan=False)
     proposed_site_id: int = Field(ge=1)
     proposed_sector_id: int | None = Field(None, ge=1)
-    technology: Literal["wireless", "fiber", "hybrid"]
+    technology: Literal["wireless", "fiber", "hybrid", "lte", "5g"]
     line_of_sight: str = Field(min_length=3, max_length=1000)
     signal_observation: str = Field(min_length=3, max_length=1000)
     equipment: list[Short] = Field(default_factory=list, max_length=30)
@@ -303,6 +309,7 @@ class QuoteInput(Mutation):
     installation: Money | None = None
     equipment: Money | None = None
     construction: Money | None = None
+    discount: Money = Decimal("0.00")
     optional_services: list[dict] = Field(default_factory=list, max_length=20)
     expires_at: datetime
 
@@ -361,6 +368,9 @@ class NotifyInput(Mutation):
         "quote_available",
         "installation_scheduling",
         "status_update",
+        "installation_reminder",
+        "appointment_rescheduled",
+        "installation_completed",
     ]
     channel: Literal["email", "sms", "phone"]
 
@@ -368,3 +378,27 @@ class NotifyInput(Mutation):
 class PhotoInput(AttachmentInput):
     operation_key: UUID
     app_work_id: int = Field(ge=1)
+
+
+class QuoteAccessInput(Mutation):
+    expected_revision: int = Field(ge=1)
+    quote_id: int = Field(ge=1)
+
+
+class PublicQuoteInput(SafeModel):
+    token: str = Field(min_length=48, max_length=100, pattern=r"^[A-Za-z0-9_-]+$")
+    request_key: UUID
+    turnstile_token: str = Field(min_length=1, max_length=2048)
+
+
+class PublicQuoteResponse(PublicQuoteInput):
+    decision: Literal["accepted", "rejected"]
+    acknowledge: Literal[True]
+
+
+class InstallAssetInput(Mutation):
+    expected_revision: int = Field(ge=1)
+    work_order_id: int = Field(ge=1)
+    asset_id: int = Field(ge=1)
+    asset_revision: int = Field(ge=1)
+    customer_location_id: int = Field(ge=1)

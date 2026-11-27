@@ -280,6 +280,8 @@ def detail(
             "recipients": [
                 {
                     "customer_id": r.customer_id,
+                    "application_id": r.application_id,
+                    "subject_kind": "signup_application" if r.application_id is not None else "customer",
                     "service_ids": r.service_ids,
                     "state": r.state,
                     "reason": r.reason,
@@ -711,7 +713,10 @@ def retry_delivery(
                 "Only explicitly confirmed dead-letter simulations may be retried"
             )
         p = db.get(NotificationPlan, d.plan_id)
-        current, _ = snapshot(db, PlanRequest.model_validate(p.snapshot["request"]))
+        if d.sms_authorization or d.slack_authorization:
+            raise ValueError("Native submissions require provider reconciliation, not simulation retry")
+        from app.notifications.service import current_snapshot
+        current, _ = current_snapshot(db, p, clock())
         if digest(current) != p.fingerprint:
             raise ValueError("Approved context changed; fresh operator review required")
         p.status = "approved"

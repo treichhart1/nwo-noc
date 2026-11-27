@@ -239,12 +239,16 @@ def snapshot(db, kind, identifier, now=None):
         row = db.get(Application, int(identifier))
         if row:
             base.update(
-                event="signup",
+                event={"under_review":"application_review","qualification_pending":"application_review","quote_pending":"quote_approval","installation_scheduled":"installation_scheduled","installed":"installation_completed","completed":"installation_completed"}.get(row.state,"signup"),
                 site_id=row.proposed_site_id,
                 technician_id=row.assigned_to,
                 severity="info",
             )
-            version = [row.revision, row.state, row.assigned_to]
+            work=db.scalar(select(AppWork).where(AppWork.application_id==row.id,AppWork.kind=='installation'))
+            appointment=db.get(WorkOrder,work.work_order_id) if work else None
+            if appointment and appointment.scheduled_at and utc(appointment.scheduled_at)<now and appointment.status not in {'completed','cancelled'}:
+                base['event']='installation_overdue'
+            version = [row.revision, row.state, row.assigned_to, appointment.revision if appointment else None,base['event']]
             started = row.created_at
     elif kind == "worker":
         row = db.get(MonitoringWorker, str(identifier))
