@@ -574,3 +574,16 @@ def test_sanitized_source_fixture_has_multiple_statuses_and_duplicate_contacts()
     assert len(b.packages) == 4 and all(
         r.revenue_basis == "contracted" for r in b.services
     )
+
+
+def test_standalone_alembic_registry_contains_powercode_tables():
+    import subprocess
+    import sys
+
+    code = "from app.models import entities; from app.core.database import Base; assert all(name in Base.metadata.tables for name in ['powercode_connection','powercode_packages','powercode_package_mappings','powercode_service_history','powercode_provisions','powercode_attempts','powercode_provision_events'])"
+    result = subprocess.run(
+        [sys.executable, "-c", code], capture_output=True, text=True, timeout=30
+    )
+    assert result.returncode == 0, (
+        "Standalone migration registry must include every additive Powercode model"
+    )
