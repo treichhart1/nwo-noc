@@ -667,3 +667,26 @@ def test_unauthorized_retention_routes(cancellation):
             )
     finally:
         app.dependency_overrides.clear()
+
+
+def test_migration_ddl_has_no_accidental_sqlalchemy_bind_parameters():
+    import ast
+
+    migration = ast.parse(
+        (ROOT / "backend/alembic/versions/0034_customer_retention.py").read_text()
+    )
+    statements = []
+    for node in ast.walk(migration):
+        if (
+            isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Attribute)
+            and node.func.attr == "execute"
+            and node.args
+            and isinstance(node.args[0], ast.Constant)
+        ):
+            statements.append(node.args[0].value)
+    assert len(statements) >= 20
+    for statement in statements:
+        assert not text(statement)._bindparams, (
+            "Migration DDL must never demand an invented bind parameter from a JSON literal"
+        )

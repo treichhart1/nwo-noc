@@ -22,6 +22,7 @@ from .models import (
     Reason,
     Policy,
     Competitor,
+    Observation,
     Offer,
     Cohort,
     ImportRun,

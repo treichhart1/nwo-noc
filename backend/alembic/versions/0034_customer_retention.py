@@ -123,7 +123,7 @@ BEGIN
  IF NOT EXISTS(SELECT 1 FROM public.retention_policies WHERE id=p_policy AND active) OR NOT EXISTS(SELECT 1 FROM public.retention_reasons WHERE code=p_reason AND active) THEN RAISE EXCEPTION 'Current policy and cancellation reason required'; END IF;
  INSERT INTO public.retention_cases(reference,submission_key,digest,receipt_hash,wrapped_key,pii_ciphertext,requested_date,reported_reason,policy_id,policy_ack_at,equipment_ack,status,retention_state,billing_disposition,revision,source,legal_hold,created_at,updated_at)
  VALUES(p_ref,p_key,p_digest,p_receipt,p_wrapped,p_pii,p_requested,p_reason,p_policy,clock_timestamp(),true,'pending_verification','pending_review','unreviewed',1,'public_request',false,clock_timestamp(),clock_timestamp()) RETURNING id INTO cid;
- INSERT INTO public.retention_case_events(case_id,action,status,evidence,created_at) VALUES(cid,'request_received','pending_verification','{"account_lookup":false,"service_changes":0}'::json,clock_timestamp());
+ INSERT INTO public.retention_case_events(case_id,action,status,evidence,created_at) VALUES(cid,'request_received','pending_verification',json_build_object('account_lookup',false,'service_changes',0),clock_timestamp());
  RETURN jsonb_build_object('received',true,'reference',p_ref,'message','Request received for identity verification and review. No service or billing changes have been made.');
 END; $$;
 REVOKE ALL ON FUNCTION public.noc_cancel_config(),public.noc_cancel_replay(text,text),public.noc_cancel_submit(text,text,text,text,text,text,date,text,integer),public.noc_retention_guard(),public.noc_retention_immutable() FROM PUBLIC;
