@@ -4,6 +4,7 @@ from sqlalchemy import (
     DateTime,
     Integer,
     Float,
+    Numeric,
     Boolean,
     ForeignKey,
     JSON,
@@ -55,6 +56,10 @@ class CustomerService(Base):
     )
     status: Mapped[str] = mapped_column(String(20))
     service_type: Mapped[str] = mapped_column(String(20))
+    package_id: Mapped[str | None] = mapped_column(String(120), nullable=True, index=True)
+    monthly_recurring: Mapped[object | None] = mapped_column(Numeric(12,2), nullable=True)
+    currency: Mapped[str | None] = mapped_column(String(3), nullable=True)
+    revenue_basis: Mapped[str] = mapped_column(String(20), default='unavailable', server_default='unavailable')
     address: Mapped[str | None] = mapped_column(String(500), nullable=True)
     plan: Mapped[str | None] = mapped_column(String(120), nullable=True)
     download_mbps: Mapped[float | None] = mapped_column(Float, nullable=True)

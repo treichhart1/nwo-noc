@@ -101,7 +101,7 @@ def test_release_versions_and_migrations_consistent():
     script = ScriptDirectory.from_config(config)
     assert (
         len(script.get_heads()) == 1
-        and script.get_current_head() == "0032_signup_acquisition"
+        and script.get_current_head() == "0033_powercode_integration"
     )
 
 

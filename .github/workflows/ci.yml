@@ -300,7 +300,7 @@ jobs:
             tests/test_mikrotik_native.py \
             tests/test_release_combined_postgres.py \
             tests/test_final_release_security.py \
-            tests/test_powercode_customers.py \
+            tests/test_powercode_customers.py tests/test_powercode_integration.py \
             tests/test_notifications.py \
             tests/test_notification_expansion.py \
             tests/test_down_detector.py \

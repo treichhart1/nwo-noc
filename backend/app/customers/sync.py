@@ -65,6 +65,9 @@ def synchronize(db, provider, *, user_id=None):
                 raise ProviderFailure("cursor_conflict")
             if state.watermark and batch.as_of <= utc(state.watermark):
                 raise ProviderFailure("stale_snapshot")
+            from app.customers.powercode_service import catalog_sync
+            from app.customers.powercode_models import PowercodeServiceHistory
+            catalog_sync(db,batch)
             accounts = unique(batch.accounts)
             services = unique(batch.services)
             received = len(accounts) + len(services)
@@ -76,6 +79,7 @@ def synchronize(db, provider, *, user_id=None):
                 s.external_id: s
                 for s in db.scalars(select(CustomerService).limit(100001))
             }
+            previous_statuses = {key: row.status for key,row in existing_services.items()}
             if (
                 len(set(existing_accounts) | set(accounts)) > 50000
                 or len(set(existing_services) | set(services)) > 100000
@@ -176,6 +180,7 @@ def synchronize(db, provider, *, user_id=None):
                     and any(
                         getattr(row, k) != getattr(record, k)
                         for k in (
+                            "package_id", "monthly_recurring", "currency", "revenue_basis",
                             "status",
                             "service_type",
                             "plan",
@@ -194,6 +199,7 @@ def synchronize(db, provider, *, user_id=None):
                 ):
                     row.mapping_state = "review_required"
                 for field in (
+                    "package_id", "monthly_recurring", "currency", "revenue_basis",
                     "service_type",
                     "plan",
                     "download_mbps",
@@ -238,6 +244,12 @@ def synchronize(db, provider, *, user_id=None):
                         row.consent_recorded_at = None
                         row.sms_opt_out = True
                         row.consent_record = None
+            db.flush()
+            for key,row in existing_services.items():
+                before = previous_statuses.get(key)
+                if before != row.status:
+                    db.add(PowercodeServiceHistory(service_id=row.id,previous_status=before,status=row.status,
+                        snapshot_id=batch.snapshot_id,source_updated_at=row.source_updated_at))
             # A complete cursor-contiguous delta verifies unchanged rows too.
             # Materialization timestamps must not falsely go stale while source
             # reconciliation continues successfully with no customer changes.

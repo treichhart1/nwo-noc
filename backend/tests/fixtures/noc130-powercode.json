@@ -1,0 +1,154 @@
+{
+  "schema_version": "noc-powercode-export-v1",
+  "snapshot_id": "SYN-NOC130-FULL",
+  "mode": "full",
+  "complete": true,
+  "as_of": "2026-11-01T00:01:00+00:00",
+  "cursor": "SYN-130-1",
+  "accounts": [
+    {
+      "external_id": "SYN-ACCOUNT-1",
+      "name": "Synthetic household 1",
+      "phone": "+15555550130",
+      "email": "synthetic1@example.com",
+      "updated_at": "2026-11-01T00:00:00+00:00"
+    },
+    {
+      "external_id": "SYN-ACCOUNT-2",
+      "name": "Synthetic household 2",
+      "phone": "+15555550130",
+      "email": "synthetic2@example.com",
+      "updated_at": "2026-11-01T00:00:00+00:00"
+    },
+    {
+      "external_id": "SYN-ACCOUNT-3",
+      "name": "Synthetic household 3",
+      "phone": "+15555550133",
+      "email": "synthetic3@example.com",
+      "updated_at": "2026-11-01T00:00:00+00:00"
+    },
+    {
+      "external_id": "SYN-ACCOUNT-4",
+      "name": "Synthetic household 4",
+      "phone": "+15555550134",
+      "email": "synthetic4@example.com",
+      "updated_at": "2026-11-01T00:00:00+00:00"
+    }
+  ],
+  "services": [
+    {
+      "external_id": "SYN-SERVICE-1",
+      "account_id": "SYN-ACCOUNT-1",
+      "status": "active",
+      "service_type": "wireless",
+      "address": "1 Synthetic Lane, Test OH",
+      "package_id": "SYN-PACKAGE-1",
+      "monthly_recurring": "65.00",
+      "currency": "USD",
+      "revenue_basis": "contracted",
+      "source_refs": {
+        "tower": "SYN-TOWER-130"
+      },
+      "updated_at": "2026-11-01T00:00:00+00:00"
+    },
+    {
+      "external_id": "SYN-SERVICE-2",
+      "account_id": "SYN-ACCOUNT-2",
+      "status": "suspended",
+      "service_type": "fiber",
+      "address": "2 Synthetic Lane, Test OH",
+      "package_id": "SYN-PACKAGE-2",
+      "monthly_recurring": "65.00",
+      "currency": "USD",
+      "revenue_basis": "contracted",
+      "source_refs": {
+        "tower": "SYN-TOWER-130"
+      },
+      "updated_at": "2026-11-01T00:00:00+00:00"
+    },
+    {
+      "external_id": "SYN-SERVICE-3",
+      "account_id": "SYN-ACCOUNT-3",
+      "status": "disconnected",
+      "service_type": "lte",
+      "address": "3 Synthetic Lane, Test OH",
+      "package_id": "SYN-PACKAGE-3",
+      "monthly_recurring": "65.00",
+      "currency": "USD",
+      "revenue_basis": "contracted",
+      "source_refs": {
+        "tower": "SYN-TOWER-130"
+      },
+      "updated_at": "2026-11-01T00:00:00+00:00"
+    },
+    {
+      "external_id": "SYN-SERVICE-4",
+      "account_id": "SYN-ACCOUNT-4",
+      "status": "unknown",
+      "service_type": "5g",
+      "address": "4 Synthetic Lane, Test OH",
+      "package_id": "SYN-PACKAGE-4",
+      "monthly_recurring": "65.00",
+      "currency": "USD",
+      "revenue_basis": "contracted",
+      "source_refs": {
+        "tower": "SYN-TOWER-130"
+      },
+      "updated_at": "2026-11-01T00:00:00+00:00"
+    }
+  ],
+  "packages": [
+    {
+      "external_id": "SYN-PACKAGE-1",
+      "name": "Synthetic wireless configurable package",
+      "technology": "wireless",
+      "audience": "both",
+      "available": true,
+      "currency": "USD",
+      "monthly": "65.00",
+      "installation": "0.00",
+      "download_mbps": "100.00",
+      "upload_mbps": "20.00",
+      "updated_at": "2026-11-01T00:00:00+00:00"
+    },
+    {
+      "external_id": "SYN-PACKAGE-2",
+      "name": "Synthetic fiber configurable package",
+      "technology": "fiber",
+      "audience": "both",
+      "available": true,
+      "currency": "USD",
+      "monthly": "65.00",
+      "installation": "0.00",
+      "download_mbps": "100.00",
+      "upload_mbps": "20.00",
+      "updated_at": "2026-11-01T00:00:00+00:00"
+    },
+    {
+      "external_id": "SYN-PACKAGE-3",
+      "name": "Synthetic lte configurable package",
+      "technology": "lte",
+      "audience": "both",
+      "available": true,
+      "currency": "USD",
+      "monthly": "65.00",
+      "installation": "0.00",
+      "download_mbps": "100.00",
+      "upload_mbps": "20.00",
+      "updated_at": "2026-11-01T00:00:00+00:00"
+    },
+    {
+      "external_id": "SYN-PACKAGE-4",
+      "name": "Synthetic 5g configurable package",
+      "technology": "5g",
+      "audience": "both",
+      "available": true,
+      "currency": "USD",
+      "monthly": "65.00",
+      "installation": "0.00",
+      "download_mbps": "100.00",
+      "upload_mbps": "20.00",
+      "updated_at": "2026-11-01T00:00:00+00:00"
+    }
+  ]
+}
