@@ -776,3 +776,40 @@ def test_restricted_callback_database_role_cannot_restore_consent_or_resend(nati
         x.db.execute(text("RESET ROLE"))
     x.db.refresh(x.account)
     assert x.account.sms_opt_out
+
+
+def test_no_acl_restore_bootstrap_restricts_sms_function_again(postgres_db):
+    """Model pg_restore --no-privileges resetting the function to PUBLIC execute."""
+    import importlib.util
+    import sys
+    from pathlib import Path
+    from sqlalchemy import text
+
+    root = Path(__file__).resolve().parents[2]
+    sys.path.insert(0, str(root / "scripts/release"))
+    spec = importlib.util.spec_from_file_location(
+        "sms_runtime_bootstrap", root / "scripts/release/bootstrap_runtime_db.py"
+    )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    db = postgres_db
+    public_execute = text("""
+        SELECT EXISTS (SELECT 1 FROM pg_proc p,
+          LATERAL aclexplode(COALESCE(p.proacl,acldefault('f',p.proowner))) a
+          WHERE p.oid=to_regprocedure('public.noc_sms_enforce_opt_out(text,timestamptz)')
+          AND a.grantee=0 AND a.privilege_type='EXECUTE')
+    """)
+    db.execute(
+        text(
+            "GRANT EXECUTE ON FUNCTION public.noc_sms_enforce_opt_out(text,timestamptz) TO PUBLIC"
+        )
+    )
+    assert db.scalar(public_execute)
+    for _ in range(2):
+        db.execute(text(module.runtime_role_sql("a" * 48, owner="nwo_noc")))
+        assert not db.scalar(public_execute)
+        assert db.scalar(
+            text(
+                "SELECT has_function_privilege('noc_app','public.noc_sms_enforce_opt_out(text,timestamptz)','EXECUTE')"
+            )
+        )
