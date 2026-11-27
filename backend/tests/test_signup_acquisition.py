@@ -195,10 +195,11 @@ def test_postgres_expired_or_superseded_quotes_are_not_public(signup):
     )["available"]
 
 
-def test_postgres_lte_5g_qualification_is_manual(signup):
+@pytest.mark.parametrize("technology", ["lte", "5g"])
+def test_postgres_lte_5g_qualification_is_manual(signup, technology):
     x = signup
     a = application(x)
-    a.technology = "lte"
+    a.technology = technology
     r = s.qualify(
         x.db,
         x.admin,
@@ -212,6 +213,8 @@ def test_postgres_lte_5g_qualification_is_manual(signup):
         ),
     )
     assert r["snapshot"]["status"] == "manual_review_required"
+    assert "rf_planning" not in r["snapshot"] and "unified_network" not in r["snapshot"]
+    assert r["snapshot"]["signal_estimate"] == "unavailable"
 
 
 def test_postgres_prospect_plan_uses_canonical_queue_and_consent(
@@ -520,9 +523,10 @@ def test_postgres_signup_slack_source_never_exports_applicant_or_financial_data(
     x = signup
     a = application(x)
     a.state = state
+    a.assigned_to = x.admin.id
     x.db.flush()
     result = snapshot(x.db, "signup", str(a.id))
-    assert result["event"] == event
+    assert result["event"] == event and result["technician_id"] is None
     encoded = json.dumps(result)
     assert not any(
         value in encoded
@@ -689,6 +693,9 @@ def test_postgres_complete_acquisition_survey_quote_and_installation_documentati
     state("installed")
     state("activation_pending", acknowledged_no_provisioning=True)
     state("completed", acknowledged_no_provisioning=True)
+    x.db.flush()
+    x.db.refresh(a)
+    x.db.refresh(w)
     assert a.state == "completed" and w.asset_id == spare.id and w.completed_at
     assert (
         x.db.scalar(
@@ -724,3 +731,43 @@ def test_postgres_existing_customer_hold_cannot_be_bypassed_as_prospect(
     x.db.flush()
     with pytest.raises(ValueError, match="hold or suppression"):
         communications.prepare(x.db, x.admin, draft["id"])
+
+
+@pytest.mark.parametrize(
+    "template",
+    [
+        "installation_scheduling",
+        "installation_reminder",
+        "appointment_rescheduled",
+        "installation_completed",
+    ],
+)
+def test_postgres_prospect_preview_uses_actual_message_category_and_segments(
+    signup, tmp_path, monkeypatch, template
+):
+    from app.notifications.sms_service import signup_preview
+    from app.notifications.sms_transport import segments
+    from app.signup.models import NotificationDraft
+
+    x = signup
+    key = tmp_path / "callback.key"
+    key.write_bytes(Fernet.generate_key())
+    key.chmod(0o600)
+    monkeypatch.setattr(settings, "sms_callback_key_file", str(key))
+    a = application(x, preferred_contact="sms", consent_sms=True)
+    draft = s.notification(
+        x.db,
+        x.admin,
+        a,
+        b(NotifyInput, expected_revision=a.revision, template=template, channel="sms"),
+    )
+    prepared = communications.prepare(x.db, x.admin, draft["id"])
+    plan = x.db.get(NotificationPlan, prepared["id"])
+    preview = signup_preview(x.db, draft["id"], x.admin.id)
+    assert (
+        preview["category"] == plan.kind == "installation_scheduling"
+        and preview["eligible_for_review"]
+    )
+    assert segments(plan.message) == segments(
+        communications.rendered_message(x.db.get(NotificationDraft, draft["id"]))
+    )

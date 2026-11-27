@@ -984,12 +984,17 @@ def signup_preview(db, identifier, actor):
         .limit(1)
     ):
         allowed = False
+    from app.signup.communications import contact as prospect_contact, rendered_message
+    try:
+        prospect_contact(db, Recipient(application_id=application.id,customer_id=None,contact_hash=contact_hash(phone)))
+    except ValueError:
+        allowed=False
     category = (
         "installation_scheduling"
-        if draft.template == "installation_scheduling"
+        if draft.template.startswith(("installation", "appointment"))
         else "signup_application"
     )
-    parts = segments(draft.policy["text"])
+    parts = segments(rendered_message(draft))
     previews = []
     for row in db.scalars(select(Provider).order_by(Provider.name)):
         price = row.config.get("price_per_segment_microunits")

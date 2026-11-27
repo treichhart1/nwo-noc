@@ -78,6 +78,14 @@ def contact(db, recipient, *, consent=True):
     return ProspectContact(a.id, phone)
 
 
+def rendered_message(draft):
+    return (
+        "Northwest Ohio Broadband: "
+        + draft.policy["text"].removeprefix("Northwest Ohio Broadband: ")
+        + " Reply STOP to opt out."
+    )
+
+
 def snapshot(db, plan):
     marker = plan.snapshot.get("prospect", {})
     if set(marker) != {"draft_id", "application_id"}:
@@ -101,11 +109,7 @@ def snapshot(db, plan):
     actor = db.get(User, draft.created_by)
     if not actor or not actor.is_active or actor.role not in {"admin", "operator"}:
         raise ValueError("Draft operator unavailable")
-    message = (
-        "Northwest Ohio Broadband: "
-        + draft.policy["text"].removeprefix("Northwest Ohio Broadband: ")
-        + " Reply STOP to opt out."
-    )
+    message = rendered_message(draft)
     if plan.message is not None and plan.message != message:
         raise ValueError("Approved communication content changed")
     return {

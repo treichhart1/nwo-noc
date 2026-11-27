@@ -296,6 +296,7 @@ def install_asset(db, u, a, b):
         b.reason,
         {"work_order_id": w.id, "asset_id": asset.id},
     )
+    db.flush()  # Validate and retain work/inventory revisions in this transaction.
     return {
         "id": a.id,
         "asset_id": asset.id,

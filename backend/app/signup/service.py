@@ -287,7 +287,14 @@ def qualify(db, u, a, b):
         "terrain": "unavailable unless recorded by technician",
         "capacity": "not inferred from proximity or interface throughput",
     }
-    if not coords:
+    if a.technology in {"lte", "5g"}:
+        snapshot["status"] = "manual_review_required"
+        snapshot["uncertainty"].append("Carrier coverage, eligibility and capacity require independently verified evidence; no LTE/5G guarantee")
+        if coords:
+            data["coordinates"]=coords
+            a.pii_ciphertext=crypto.seal(a,data)
+            snapshot["coordinate_source"]=coords["source"]
+    elif not coords:
         snapshot["evidence"].append(
             {
                 "reason": "No validated address coordinates; site survey or approved geocoding required"
@@ -442,10 +449,7 @@ def qualify(db, u, a, b):
             if any(r.technology in {"fiber", "hybrid"} for r in planned)
             else "unknown"
         )
-        if a.technology in {"lte", "5g"}:
-            snapshot["status"] = "manual_review_required"
-            snapshot["uncertainty"].append("Carrier coverage, eligibility and capacity require independently verified evidence; no LTE/5G guarantee")
-        elif active:
+        if active:
             snapshot["status"] = "potentially_serviceable"
         elif planned or candidates:
             snapshot["status"] = "requires_site_survey"
@@ -464,7 +468,7 @@ def qualify(db, u, a, b):
                 "reason": "Nearby/planned fiber does not establish a customer connection, port availability or construction commitment"
             }
         )
-    if coords:
+    if coords and a.technology not in {"lte", "5g"}:
         from app.unified.models import Node as UnifiedNode
 
         if db.scalar(select(UnifiedNode.id).limit(1)):
@@ -473,7 +477,7 @@ def qualify(db, u, a, b):
             snapshot["unified_network"] = unified_qualification(
                 db, coords["latitude"], coords["longitude"], a.technology
             )
-    if coords:
+    if coords and a.technology not in {"lte", "5g"}:
         from app.planning.service import qualification as rf_planning_qualification
         snapshot["rf_planning"] = rf_planning_qualification(db, coords["latitude"], coords["longitude"])
     q = Qualification(application_id=a.id, actor_id=u.id, snapshot=snapshot)
