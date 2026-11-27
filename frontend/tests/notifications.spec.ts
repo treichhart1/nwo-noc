@@ -12,6 +12,8 @@ test('operator approves only simulated notifications and manages maintenance wit
  await expect(native).toContainText('Host transport: disabled')
  await expect(native.getByRole('button',{name:'Authorize configured provider (no message sent)',exact:true})).toBeDisabled()
  await expect(native.getByLabel('Write-only provider credential JSON',{exact:true})).toHaveValue('')
+ await expect(native.getByLabel('Primary SMS provider',{exact:true})).toHaveValue('mock')
+ await expect(native.getByLabel('Secondary SMS provider',{exact:true})).toHaveValue('')
  await native.getByLabel('Native provider',{exact:true}).selectOption('telnyx')
  await expect(native).toContainText('START and HELP never automatically clear opt-outs')
  await page.getByLabel('Source record',{exact:true}).selectOption(String(fixture.incident_id));await page.getByLabel('Network event type',{exact:true}).selectOption('tower_power');await page.getByLabel('Evidence record reference',{exact:true}).fill('SYN-NOC96-BROWSER');await page.getByLabel('Operator confirms customer-impacting evidence',{exact:true}).check();await page.getByRole('button',{name:'Prepare notification preview',exact:true}).click()
