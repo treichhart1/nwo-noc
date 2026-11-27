@@ -165,7 +165,7 @@ def main():
                 "-v",
                 str(ROOT / ("scripts/signup/fixture.py" if signup_mode else "scripts/wordpress/fixture_gateway.py")) + ":/fixture.py:ro",
                 *(["-v",str(ROOT / "examples/signup/public-role.sql")+":/signup-public-role.sql:ro",
-                   "-e","WORDPRESS_ACCEPTANCE=1","-e","APP_ENV=staging","-e","OFFLINE_MODE=true","-e","SYNTHETIC_MONITORING_ENABLED=true",
+                   "-e","PYTHONPATH=/app","-e","WORDPRESS_ACCEPTANCE=1","-e","APP_ENV=staging","-e","OFFLINE_MODE=true","-e","SYNTHETIC_MONITORING_ENABLED=true",
                    "-e","SECRET_KEY=synthetic-noc129-fixture-secret-synthetic","-e","ADMIN_PASSWORD=synthetic-ci-only",
                    "-e","DATABASE_URL=postgresql+psycopg://synthetic:synthetic-ci-only@noc129-postgres:5432/nwo_noc"] if signup_mode else []),
                 *(["-v",str(ROOT / "scripts/signup/quote_fixture.py")+":/quote-fixture.py:ro"] if signup_mode else []),
@@ -176,6 +176,20 @@ def main():
             ],
             stdout=subprocess.DEVNULL,
         )
+        if signup_mode:
+            # A container ID and a frontend health response are not proof that
+            # the actual restricted-role ASGI process migrated and started.
+            for _ in range(90):
+                ready=subprocess.run(["docker","exec","noc128-fixture","python","-c","import urllib.request;urllib.request.urlopen('http://127.0.0.1:8002/public/signup/health',timeout=2)"],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+                if ready.returncode==0:break
+                state=run(["docker","inspect","--format","{{.State.Running}}","noc128-fixture"],capture_output=True).stdout.strip()
+                if state!='true':
+                    # Only synthetic fixtures/credentials exist in this container.
+                    logs=subprocess.run(["docker","logs","noc128-fixture"],capture_output=True,text=True)
+                    print(logs.stderr[-12000:],file=sys.stderr)
+                    raise RuntimeError("Synthetic restricted signup gateway exited before readiness")
+                time.sleep(1)
+            else:raise RuntimeError("Synthetic restricted signup gateway did not become ready")
         run(
             [
                 "docker",
@@ -509,7 +523,7 @@ def main():
             json.dumps(
                 {
                     "targets": versions,
-                    "scope": "actual disposable WordPress; synthetic HTTPS/DNS public feed; no website deployment",
+                    "scope": ("actual disposable WordPress/PHP and restricted PostgreSQL signup ASGI; synthetic same-site HTTPS/DNS; no website deployment" if signup_mode else "actual disposable WordPress; synthetic HTTPS/DNS public feed; no website deployment"),
                 },
                 indent=2,
             )

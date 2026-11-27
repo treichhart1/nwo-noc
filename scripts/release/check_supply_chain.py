@@ -91,6 +91,7 @@ def validate(root=ROOT):
         "deploy/Dockerfile.postgres",
         "deploy/Dockerfile.redis",
         "deploy/Dockerfile.status-proxy",
+        "deploy/Dockerfile.signup",
         "frontend/Dockerfile",
         "docker-compose.yml",
         "deploy/compose.isolated.yml",

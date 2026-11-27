@@ -355,7 +355,7 @@ def test_postgres_prospect_native_contract_rechecks_consent_and_preserves_receip
     # Both fixtures share the canonical network; retain the legacy plan and replace
     # only this synthetic test's active delivery, not any queue architecture.
     legacy = native.delivery
-    legacy.state = "cancelled"
+    legacy.state = "suppressed"
     x.plan = x.db.scalar(
         select(SignupPlan).where(SignupPlan.name == "Synthetic configured plan")
     )
@@ -496,3 +496,225 @@ def test_postgres_install_asset_preserves_canonical_inventory_history(signup):
     )
     with pytest.raises(ValueError):
         install_asset(x.db, x.tech, a, request)
+
+
+@pytest.mark.parametrize(
+    "state,event",
+    [
+        ("submitted", "signup"),
+        ("under_review", "application_review"),
+        ("quote_pending", "quote_approval"),
+        ("installation_scheduled", "installation_scheduled"),
+        ("installed", "installation_completed"),
+    ],
+)
+def test_postgres_signup_slack_source_never_exports_applicant_or_financial_data(
+    signup, state, event
+):
+    from app.notifications.slack_sources import snapshot
+
+    x = signup
+    a = application(x)
+    a.state = state
+    x.db.flush()
+    result = snapshot(x.db, "signup", str(a.id))
+    assert result["event"] == event
+    encoded = json.dumps(result)
+    assert not any(
+        value in encoded
+        for value in [
+            "Synthetic Applicant",
+            "applicant@example.com",
+            "123 Synthetic Road",
+            "+15555550103",
+            "65.00",
+        ]
+    )
+
+
+def test_public_quote_security_schema_requires_explicit_response_and_exposes_no_admin_routes():
+    from app.signup.contracts import PublicQuoteResponse
+    from app.signup.public_app import app
+
+    with pytest.raises(ValueError):
+        PublicQuoteResponse(
+            token="a" * 64,
+            request_key=uuid4(),
+            turnstile_token="synthetic",
+            decision="accepted",
+            acknowledge=False,
+        )
+    with TestClient(app) as client:
+        assert client.get("/api/applications").status_code == 404
+        assert (
+            client.post(
+                "/public/signup/quote-response", json={"decision": "accepted"}
+            ).status_code
+            == 422
+        )
+
+
+def test_postgres_complete_acquisition_survey_quote_and_installation_documentation(
+    signup,
+):
+    from app.signup.contracts import Update, WorkInput, SurveyInput, InstallAssetInput
+    from app.signup.acquisition import install_asset, provision_preview
+    from app.field import service as field_service
+    from app.field.contracts import Update as FieldUpdate
+    from app.field.models import WorkOrder
+    from app.equipment.models import Location
+    from test_equipment import asset as create_asset
+
+    x = signup
+    a = application(x)
+
+    def state(value, **kw):
+        return s.update(
+            x.db,
+            x.admin,
+            a,
+            b(Update, expected_revision=a.revision, state=value, evidence=R, **kw),
+        )
+
+    state("under_review")
+    state("site_survey_required")
+    survey = s.make_work(
+        x.db,
+        x.admin,
+        a,
+        b(
+            WorkInput,
+            expected_revision=a.revision,
+            kind="survey",
+            site_id=x.a.id,
+            technician_id=x.tech.id,
+            scheduled_at=now() + timedelta(days=1),
+        ),
+    )
+    s.survey(
+        x.db,
+        x.tech,
+        a,
+        b(
+            SurveyInput,
+            expected_revision=a.revision,
+            app_work_id=survey["id"],
+            surveyed_at=now(),
+            proposed_site_id=x.a.id,
+            technology="wireless",
+            line_of_sight="Synthetic visual observation only",
+            signal_observation="Synthetic no measured signal; qualified review required",
+            mounting="Synthetic approved mount review",
+            cable_route="Synthetic cable route observation",
+            complexity="Synthetic technician review",
+            outcome="qualified_preliminary",
+        ),
+    )
+    state("qualified", approved_qualification=True, proposed_site_id=x.a.id)
+    q, token = quote(x, a)
+    response = x.db.scalar(
+        text("SELECT public.noc_signup_quote_respond(:hash,:decision)"),
+        {"hash": crypto.digest("quote_access", token), "decision": "accepted"},
+    )
+    assert response["decision"] == "accepted"
+    x.db.refresh(a)
+    s.control(
+        x.db,
+        x.admin,
+        a,
+        b(
+            Control,
+            expected_revision=a.revision,
+            action="prepare_provisioning",
+            evidence=R,
+        ),
+    )
+    assert provision_preview(x.db, x.admin, a)["production_writes"] == 0
+    state("installation_pending")
+    request = b(
+        WorkInput,
+        expected_revision=a.revision,
+        kind="installation",
+        site_id=x.a.id,
+        technician_id=x.tech.id,
+        equipment=["Synthetic approved spare"],
+        scheduled_at=now() + timedelta(days=1),
+    )
+    install = s.make_work(x.db, x.admin, a, request)
+    request.expected_revision = a.revision
+    assert (
+        s.make_work(x.db, x.admin, a, request)["work_order_id"]
+        == install["work_order_id"]
+    )
+    w = x.db.get(WorkOrder, install["work_order_id"])
+    field_service.update_work(
+        x.db,
+        x.tech,
+        w,
+        b(FieldUpdate, expected_revision=w.revision, status="in_progress", notes=R),
+    )
+    spare = create_asset(x)
+    location = Location(
+        code="SYN-129-FLOW",
+        name="Synthetic installation premises",
+        kind="customer_premises",
+    )
+    x.db.add(location)
+    x.db.flush()
+    install_asset(
+        x.db,
+        x.tech,
+        a,
+        b(
+            InstallAssetInput,
+            expected_revision=a.revision,
+            work_order_id=w.id,
+            asset_id=spare.id,
+            asset_revision=spare.revision,
+            customer_location_id=location.id,
+        ),
+    )
+    field_service.update_work(
+        x.db,
+        x.tech,
+        w,
+        b(FieldUpdate, expected_revision=w.revision, status="completed", notes=R),
+    )
+    state("installed")
+    state("activation_pending", acknowledged_no_provisioning=True)
+    state("completed", acknowledged_no_provisioning=True)
+    assert a.state == "completed" and w.asset_id == spare.id and w.completed_at
+    assert (
+        x.db.scalar(
+            select(func.count(QuoteResponse.id)).where(QuoteResponse.quote_id == q.id)
+        )
+        == 1
+    )
+
+
+def test_postgres_existing_customer_hold_cannot_be_bypassed_as_prospect(
+    signup, tmp_path, monkeypatch
+):
+    from app.notifications.models import NotificationSuppression
+
+    x = signup
+    key = tmp_path / "callback.key"
+    key.write_bytes(Fernet.generate_key())
+    key.chmod(0o600)
+    monkeypatch.setattr(settings, "sms_callback_key_file", str(key))
+    a = application(x, phone=x.account.phone, preferred_contact="sms", consent_sms=True)
+    draft = s.notification(
+        x.db,
+        x.admin,
+        a,
+        b(
+            NotifyInput,
+            expected_revision=a.revision,
+            template="application_received",
+            channel="sms",
+        ),
+    )
+    x.db.add(NotificationSuppression(customer_id=x.account.id, reason="compliance"))
+    x.db.flush()
+    with pytest.raises(ValueError, match="hold or suppression"):
+        communications.prepare(x.db, x.admin, draft["id"])

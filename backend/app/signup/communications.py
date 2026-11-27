@@ -10,6 +10,7 @@ from app.notifications.models import (
     NotificationPlan,
     NotificationRecipient,
     NotificationContactSuppression,
+    NotificationSuppression,
 )
 from app.notifications.sms_models import SMSWebhookEvent
 from app.notifications.sms_identity import contact_hash as provider_hash
@@ -55,6 +56,16 @@ def contact(db, recipient, *, consent=True):
             .limit(1)
         ):
             raise ValueError("Imported customer opt-out")
+        if db.scalar(
+            select(NotificationSuppression.customer_id)
+            .join(
+                CustomerAccount,
+                CustomerAccount.id == NotificationSuppression.customer_id,
+            )
+            .where(CustomerAccount.phone == phone)
+            .limit(1)
+        ):
+            raise ValueError("Shared customer contact hold or suppression")
         identity = provider_hash(phone)
         if db.scalar(
             select(SMSWebhookEvent.key)

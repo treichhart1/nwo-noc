@@ -27,6 +27,11 @@ def upgrade():
         "notification_recipients",
         ["plan_id", "application_id"],
     )
+    op.create_index(
+        "ix_notification_recipient_contact",
+        "notification_recipients",
+        ["contact_hash", "id"],
+    )
     op.create_check_constraint(
         "ck_notification_recipient_subject",
         "notification_recipients",

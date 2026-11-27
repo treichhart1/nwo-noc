@@ -98,6 +98,7 @@ class NotificationRecipient(Base):
     __table_args__ = (
         UniqueConstraint("plan_id", "customer_id", name="uq_notification_recipient"),
         UniqueConstraint("plan_id", "application_id", name="uq_notification_prospect"),
+        Index("ix_notification_recipient_contact", "contact_hash", "id"),
         CheckConstraint("(customer_id IS NULL) <> (application_id IS NULL)", name="ck_notification_recipient_subject"),
     )
     id: Mapped[int] = mapped_column(primary_key=True)

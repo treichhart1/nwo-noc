@@ -19,3 +19,7 @@ The required CI retains all eleven original jobs and adds WordPress signup and a
 ## Release decision
 
 NO-GO for production or live-provider activation pending final automated evidence and separately authorized website/provider/equipment/server acceptance. No live integrations were enabled. Vendor-native security disposition, Redis/dependency licensing, trusted production signing/publication, actual VPN/MFA, current malware definitions, off-site recovery and Wave compatibility blockers remain. See [deployment and workflows](OPERATIONS.md), [security and communications](SECURITY.md), and [email gap](EMAIL-PLAN.md).
+
+## Initial acceptance corrections
+
+Initial runs818/819 retained: strict source scanner rejected newly introduced unreviewed Compose image variables; restored the reviewed pinned example and documented a separately approved immutable deployment override. The signup fixture, mounted outside /app, lacked PYTHONPATH and exited before migration; reproduced ModuleNotFoundError locally, added /app explicitly and require actual restricted ASGI readiness before CMS startup. No security gate or assertion was weakened. Local full backend after corrections:1333 passed,1050 skipped (PostgreSQL unavailable locally); final CI remains authoritative.

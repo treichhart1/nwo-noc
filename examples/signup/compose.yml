@@ -4,7 +4,7 @@
 services:
   signup-gateway:
     profiles: [signup]
-    image: ${SIGNUP_BACKEND_IMAGE:?approved immutable backend image digest required}
+    build: ../../backend
     user: "10001:10001"
     cap_drop: [ALL]
     security_opt: [no-new-privileges:true]
@@ -26,12 +26,16 @@ services:
       retries: 5
   signup-web:
     profiles: [signup]
-    image: ${SIGNUP_WEB_IMAGE:?approved immutable signup-only web image digest required}
+    image: nginx:1.30.8-alpine@sha256:8eb04fe3b385090e9aa02961f77398ad09b6bf33ab07f6669a5bb7acce22c0d3
     user: "101:101"
     cap_drop: [ALL]
     security_opt: [no-new-privileges:true]
     read_only: true
     tmpfs: ["/tmp:rw,noexec,nosuid,size=16m", "/var/cache/nginx:rw,noexec,nosuid,size=16m,uid=101,gid=101,mode=0700", "/var/run:rw,noexec,nosuid,size=1m,uid=101,gid=101,mode=0700"]
+    volumes:
+      - ../../frontend/dist-signup:/usr/share/nginx/html:ro
+      - ../../frontend/nginx-main.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
     ports: ["127.0.0.1:18091:8080"]
     depends_on:
       signup-gateway:
