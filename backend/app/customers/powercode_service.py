@@ -646,7 +646,7 @@ def simulated_worker(factory, provider):
                 else ("account_created" if op == "account" else "activation_pending")
             )
         elif result.outcome == "not_accepted":
-            r.status = "failed"
+            r.status = "reconciliation_required" if quarantined else "failed"
             r.error_code = result.error_code or "not_accepted"
         else:
             r.status = "reconciliation_required"

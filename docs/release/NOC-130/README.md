@@ -31,3 +31,5 @@ Local contract tests, type checking/builds and existing suite results are report
 ## Initial validation corrections
 
 Local validation retained an invalid synthetic package timestamp outside its snapshot, a validator name collision, and stale current migration count/parent expectations. These were corrected without changing historical migrations or provenance assertions. A single-branch checkout lacked the original historical replay commit; fetching all existing remote refs restored the required ancestry evidence. The installer static review re-fingerprinted only a LOW finding whose adjacent migration summary changed0032→0033; fixed verify.sh argv and all security gates remain unchanged. Final CI and test evidence belongs in the final PR ledger.
+
+Pre-CI SQL review also identified that immutable-preview tuple comparison must cast JSON attestations to JSONB for PostgreSQL equality. The new0033 guard now uses JSONB comparison; successful approval and rejected preview tampering are both covered by the real PostgreSQL tests. Late provider evidence cannot automatically clear an existing quarantine.
