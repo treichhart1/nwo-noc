@@ -200,3 +200,24 @@ def test_postgres_related_slack_is_draft_and_deduplicated(x):
     again = prepare(x.db, "incident", x.incident.id, x.admin.id)
     assert first.id == again.id and first.status == "draft"
     assert x.db.get(NotificationPlan, first.id).incident_id == x.incident.id
+
+
+def test_canonical_maintenance_slack_draft_invalidates_on_status_change():
+    from app.notifications.slack_sources import snapshot
+
+    row = SimpleNamespace(
+        id=7,
+        revision=1,
+        status="scheduled",
+        target={"site_id": 4},
+        starts_at=NOW,
+        ends_at=NOW + timedelta(hours=1),
+    )
+    db = SimpleNamespace(get=lambda model, identifier: row)
+    first = snapshot(db, "notification_maintenance", 7, NOW)
+    row.revision = 2
+    row.status = "cancelled"
+    later = snapshot(db, "notification_maintenance", 7, NOW)
+    assert first["source_revision"] != later["source_revision"]
+    assert first["event"] == "maintenance" and first["site_id"] == 4
+    assert "title" not in first and "description" not in first

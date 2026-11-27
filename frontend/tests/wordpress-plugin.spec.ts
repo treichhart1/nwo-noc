@@ -1,11 +1,11 @@
 import { test, expect } from '@playwright/test';
 import { execFileSync } from 'node:child_process';
-import { writeFileSync, readFileSync } from 'node:fs';
+import { writeFileSync } from 'node:fs';
 import path from 'node:path';
 
 test.skip(!process.env.WORDPRESS_ACCEPTANCE, 'Dedicated disposable WordPress acceptance job only');
 const evidence = process.env.NOC128_EVIDENCE || '/not-configured';
-const origin = 'http://127.0.0.1:18378';
+const origin = process.env.NOC128_WORDPRESS_ORIGIN || 'http://127.0.0.1:18378';
 const control = (action: string, extra: string[] = []) => execFileSync('docker', ['exec', '-e', `NOC128_ACTION=${action}`, ...extra, 'noc128-wordpress', 'php', '/tests/control.php'], {encoding:'utf8'});
 const mode = (value: string) => { writeFileSync(path.join(evidence, 'fixtures/mode'), value); control('clear'); };
 
@@ -23,7 +23,13 @@ test('installable ZIP, approved public display, failure isolation and safe remov
   await expect(page.getByRole('heading', {name:'NWO Network Status'})).toBeVisible();
   const denied = await request.post(origin + '/wp-admin/admin-post.php', {form:{action:'nwo_status_save'},maxRedirects:0});
   expect([302,400,403]).toContain(denied.status());
-  control('configure');
+  const csrf = await page.request.post(origin + '/wp-admin/admin-post.php', {form:{action:'nwo_status_save'},maxRedirects:0});
+  expect(csrf.status()).toBe(403);
+  await page.getByLabel('Public gateway HTTPS URL').fill('https://status.noc128.test/network-status-api/v2');
+  await page.getByLabel('Enable public retrieval').check();
+  await page.getByLabel('I approve this public gateway URL and its validated public IP addresses').check();
+  await page.getByRole('button',{name:'Save reviewed settings'}).click();
+  await expect(page.getByRole('heading',{name:'NWO Network Status'})).toBeVisible();
   mode('healthy');
   const security = JSON.parse(control('contracts'));
   expect(security.security_contract_assertions).toBe(19);

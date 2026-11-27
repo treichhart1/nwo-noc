@@ -1,5 +1,5 @@
 <?php
-$_SERVER['HTTP_HOST']='127.0.0.1:18378';$_SERVER['REQUEST_METHOD']='GET';
+$_SERVER['HTTP_HOST']='93.184.216.36';$_SERVER['REQUEST_METHOD']='GET';
 require '/var/www/html/wp-load.php';
 $mode=getenv('NOC128_ACTION');
 if ($mode==='clear') { NWO_Network_Status::clear_cache(); }

@@ -13,6 +13,7 @@ import secrets
 import subprocess
 import sys
 import time
+import urllib.request
 
 ROOT = Path(__file__).resolve().parents[2]
 WP_CURRENT = "wordpress:6-php8.3-apache@sha256:5d2c212561c4b5442ebc4d98933a9cbadcf3dee8888ed3fd9ed44667c27cc905"
@@ -115,6 +116,7 @@ def main():
         "MYSQL_PWD": password,
         "WORDPRESS_ACCEPTANCE": "1",
         "NOC128_EVIDENCE": str(evidence),
+        "NOC128_WORDPRESS_ORIGIN": "http://93.184.216.36",
     }
     run(
         [
@@ -214,10 +216,10 @@ def main():
                     "93.184.216.36",
                     "--dns",
                     "93.184.216.34",
-                    "-p",
-                    "127.0.0.1:18378:80",
                     "-e",
                     "NOC128_PASSWORD",
+                    "-e",
+                    "NOC128_WORDPRESS_ORIGIN",
                     "-e",
                     "WORDPRESS_DB_HOST=noc128-db",
                     "-e",
@@ -263,6 +265,30 @@ def main():
                 capture_output=True,
             )
             versions.append(json.loads(result.stdout))
+            opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+            for _ in range(30):
+                try:
+                    with opener.open(
+                        env["NOC128_WORDPRESS_ORIGIN"] + "/wp-login.php", timeout=2
+                    ) as response:
+                        if response.status == 200:
+                            break
+                except OSError:
+                    pass
+                time.sleep(1)
+            else:
+                state = run(
+                    [
+                        "docker",
+                        "inspect",
+                        "--format",
+                        "{{json .State}}",
+                        "noc128-wordpress",
+                    ],
+                    capture_output=True,
+                )
+                raise RuntimeError("Isolated WordPress HTTP not ready: " + state.stdout)
+
             run(
                 [
                     "docker",

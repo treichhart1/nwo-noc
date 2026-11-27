@@ -82,3 +82,6 @@ add_shortcode('nwo_network_status',[NWO_Network_Status::class,'render']);add_act
 add_action('admin_post_nwo_status_save',[NWO_Network_Status::class,'save']);add_action('admin_post_nwo_status_refresh',[NWO_Network_Status::class,'refresh_admin']);
 add_action('admin_menu',static function(){add_options_page('NWO Network Status','NWO Network Status','manage_options','nwo-network-status',[NWO_Network_Status::class,'admin']);});
 add_action('wp_body_open',static function(){NWO_Network_Status::banner('body_open');});add_action('wp_footer',static function(){NWO_Network_Status::banner('footer');});
+
+// Load namespaced styles in the head; render callbacks can run after wp_head.
+add_action('wp_enqueue_scripts',[NWO_Network_Status::class,'assets']);

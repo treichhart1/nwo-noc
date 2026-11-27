@@ -228,6 +228,8 @@ def snapshot(db, kind, identifier, now=None):
             )
             version = [
                 row.id,
+                row.revision,
+                row.status,
                 row.starts_at.isoformat(),
                 row.ends_at.isoformat(),
                 row.target,
