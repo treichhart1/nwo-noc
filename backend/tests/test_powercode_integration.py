@@ -394,6 +394,8 @@ def test_admin_api_and_credentials_are_private(signup, tmp_path, monkeypatch):
         )
         x.other.role = "operator"
         x.db.flush()
+        denied = c.get("/api/customers/powercode", headers=auth(x.other))
+        assert denied.status_code == 403 and "monthly_recurring" not in denied.text
         assert (
             c.post(
                 "/api/customers/powercode/configuration", headers=auth(x.other), json={}

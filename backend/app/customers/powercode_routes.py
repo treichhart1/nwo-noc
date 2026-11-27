@@ -3,6 +3,7 @@
 from fastapi import APIRouter, Depends, Query, Response
 from sqlalchemy import select, func
 from app.api.deps import require_admin
+from app.finance.routes import financial_access
 from app.core.database import get_db
 from app.customers.routes import customer_operator, transaction
 from app.customers.models import (
@@ -57,7 +58,7 @@ def dashboard(
     response: Response,
     offset: int = Query(0, ge=0, le=100000),
     db=Depends(get_db),
-    u=Depends(customer_operator),
+    u=Depends(financial_access),
 ):
     response.headers["Cache-Control"] = "no-store"
 
