@@ -1063,8 +1063,6 @@ jobs:
 
   wordpress-status:
     name: WordPress public status acceptance
-    env:
-      NOC_GUI_OUTPUT: ${{ runner.temp }}/gui-status
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
@@ -1086,6 +1084,8 @@ jobs:
           npm ci --no-audit --no-fund
           npx playwright install --with-deps chromium
       - name: Execute actual disposable WordPress installation and TLS retrieval
+        env:
+          NOC_GUI_OUTPUT: ${{ runner.temp }}/gui-status
         run: python3 scripts/wordpress/acceptance.py "$RUNNER_TEMP/wordpress-evidence"
       - name: Preserve actual public GUI captures
         if: always()
@@ -1110,8 +1110,6 @@ jobs:
 
   signup-acceptance:
     name: WordPress signup and acquisition acceptance
-    env:
-      NOC_GUI_OUTPUT: ${{ runner.temp }}/gui-signup
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
@@ -1134,6 +1132,8 @@ jobs:
           npx playwright install --with-deps chromium
           sudo apt-get install -y --no-install-recommends libnss3-tools
       - name: Execute actual WordPress ZIP and restricted PostgreSQL signup acceptance
+        env:
+          NOC_GUI_OUTPUT: ${{ runner.temp }}/gui-signup
         run: python3 scripts/wordpress/acceptance.py "$RUNNER_TEMP/signup-evidence" --signup
       - name: Preserve actual public GUI captures
         if: always()
@@ -1156,8 +1156,6 @@ jobs:
 
   cancellation-acceptance:
     name: WordPress cancellation and retention acceptance
-    env:
-      NOC_GUI_OUTPUT: ${{ runner.temp }}/gui-cancellation
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
@@ -1180,6 +1178,8 @@ jobs:
           npx playwright install --with-deps chromium
           sudo apt-get install -y --no-install-recommends libnss3-tools
       - name: Execute actual WordPress ZIP and restricted PostgreSQL cancellation acceptance
+        env:
+          NOC_GUI_OUTPUT: ${{ runner.temp }}/gui-cancellation
         run: python3 scripts/wordpress/acceptance.py "$RUNNER_TEMP/cancellation-evidence" --cancellation
       - name: Preserve actual public GUI captures
         if: always()
