@@ -240,6 +240,28 @@ def source_snapshot(db, source, template):
             or purpose not in {"cancellation", "retention"}
         ):
             raise ValueError("Identity-reviewed cancellation required")
+        if template.key == "retention_offer":
+            from app.retention.models import Offer
+            from app.retention.service import offer_context
+            from app.signup import crypto
+
+            offer = db.scalar(
+                select(Offer)
+                .where(
+                    Offer.case_id == c.id,
+                    Offer.status == "approved",
+                    Offer.approved_by.is_not(None),
+                    Offer.expires_at > ns.clock(),
+                )
+                .order_by(Offer.id.desc())
+                .limit(1)
+            )
+            if not offer or crypto.unseal(c, offer.terms_ciphertext).get(
+                "service_evidence"
+            ) != offer_context(db, c):
+                raise ValueError(
+                    "Independent current retention offer approval required"
+                )
         if template.key == "cancellation_completion":
             links = list(
                 db.scalars(select(CaseService).where(CaseService.case_id == c.id))
@@ -529,6 +551,8 @@ def approve(db, identifier, body, actor, *, mock=False, provider=None):
         "provider_revision": p.revision,
         "simulation": mock,
     }
+    d.budget_charge_microunits = p.config.get("estimated_cost_microunits")
+    plan.estimated_cost_microunits = d.budget_charge_microunits
     plan.status = "approved"
     plan.approved_by = actor
     plan.approved_at = ns.clock()

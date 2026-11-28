@@ -10,6 +10,7 @@ from sqlalchemy import (
     Text,
     ForeignKey,
     UniqueConstraint,
+    CheckConstraint,
     Index,
 )
 from sqlalchemy.orm import Mapped, mapped_column
@@ -47,6 +48,10 @@ class EmailPreference(Base):
     __tablename__ = "notification_email_preferences"
     __table_args__ = (
         UniqueConstraint("subject_key", "purpose", name="uq_email_subject_purpose"),
+        CheckConstraint(
+            "(customer_id IS NULL) <> (application_id IS NULL)",
+            name="ck_email_preference_subject",
+        ),
     )
     id: Mapped[int] = mapped_column(primary_key=True)
     subject_key: Mapped[str] = mapped_column(String(60))

@@ -58,11 +58,11 @@
       "justification": "Reviewed NOC123: approved exact clean source/tree and explicit isolated-lab root authorization precede host changes. Fixed git/Docker/openssl/installer/scanner/audit argv, no shell. Work is private root0700, logs0600; no passwords/private key contents in argv or logs. Temporary /tmp references are bounded private container tmpfs with read-only root/cap-drop, not shared host files. Installer alone owns password TTY/stdin and all production signature gates remain unchanged. Evidence/source/image/audit/authorization negatives and dry-run non-mutation tested. Exact statement review only; new/changed/HIGH/stale findings still fail. Docker helpers force the local Unix daemon, discard remote contexts/TLS redirection and use a root-system PATH; no getpass fallback without TTY or explicit private stdin. Build-only resolver TMPDIR is a private512MiB executable container tmpfs required by pinned pip-audit; nosuid/nodev/read-only root/cap-drop retained, no host mounts/secrets, all application noexec/durability controls unchanged."
     },
     {
-      "fingerprint": "5645e8d05f790722dd2bc731a98ac8728cccccb7403bc4563882d8bd78114a14",
+      "fingerprint": "db36c934f6ff26fb0a47c005d73f1dff3b5c6199fd55f63dfb8c47b7818b875d",
       "file": "scripts/host/lab.py",
       "test_id": "B603",
       "severity": "LOW",
-      "justification": "NOC-131 source review: existing shell=False bounded subprocess executes only the reviewed absolute SOURCE/verify.sh with fixed --controlled-test and sanitized environment. Only adjacent migration summary changed from 0033 to 0034; no argv, trust, resource or approval boundary changed. Existing installer tests remain required."
+      "justification": "NOC-132 source review: existing shell=False bounded subprocess executes only reviewed absolute SOURCE/verify.sh with fixed --controlled-test and sanitized environment. Only adjacent migration summary changed from 0034 to 0035; no argv, trust, resource or approval boundary changed. Exact fingerprint enforcement and installer tests remain required."
     },
     {
       "fingerprint": "dc8a1845b21754163ab56e3390d628e851257e04e52aa59b60a82ab41e2b6a80",

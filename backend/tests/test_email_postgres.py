@@ -397,3 +397,384 @@ def test_private_email_routes_require_administrator(email_case):
         assert TestClient(app).get("/api/communications").status_code == 403
     finally:
         app.dependency_overrides.clear()
+
+
+@pytest.mark.parametrize("mode", ["crash", "concurrent"])
+def test_independent_committed_email_claims_before_io(
+    postgres_db, tmp_path, monkeypatch, mode
+):
+    """Dedicated random schema; independent observers see committed outbox intents."""
+    import os, threading
+    from uuid import uuid4
+    from concurrent.futures import ThreadPoolExecutor
+    from sqlalchemy import create_engine
+    from sqlalchemy.engine import make_url
+    from sqlalchemy.orm import sessionmaker
+    from app.core.database import Base
+    from app.models.entities import User
+    from app.customers.models import CustomerAccount
+    from app.notifications.models import NotificationPolicy
+    from app.notifications.contracts import Policy
+    from app.notifications.email_transport import EmailReceipt
+
+    url = os.environ["RF_INTEGRATION_TEST_DATABASE_URL"]
+    parsed = make_url(url)
+    assert (
+        parsed.host in {"localhost", "127.0.0.1", "::1"}
+        and parsed.database == "nwo_noc"
+    )
+    schema = "noc132_" + uuid4().hex
+    owner = create_engine(url)
+    with owner.begin() as conn:
+        conn.exec_driver_sql('CREATE SCHEMA "' + schema + '"')
+    engine = create_engine(
+        url, execution_options={"schema_translate_map": {None: schema}}
+    )
+    Factory = sessionmaker(engine, expire_on_commit=False)
+    key = tmp_path / "durable-email.key"
+    key.write_bytes(Fernet.generate_key())
+    key.chmod(0o600)
+    monkeypatch.setattr(settings, "notifications_vault_key_file", str(key))
+    monkeypatch.setattr(settings, "offline_mode", True)
+    monkeypatch.setattr(settings, "app_env", "staging")
+    now = s.ns.clock()
+    body = {
+        "subject": "Synthetic durable fixture",
+        "text": "Synthetic only",
+        "html": "<p>Synthetic only</p>",
+    }
+    try:
+        Base.metadata.create_all(engine)
+        with Factory() as db:
+            u = User(
+                username="synthetic-email-admin",
+                email="admin@example.invalid",
+                role="admin",
+                is_active=True,
+                password_hash="not-used-for-login",
+            )
+            db.add(u)
+            db.flush()
+            account = CustomerAccount(
+                external_id="synthetic-email",
+                email=DEST,
+                source_updated_at=now,
+                last_synced_at=now,
+            )
+            db.add(account)
+            db.flush()
+            pref = EmailPreference(
+                subject_key="customer:" + str(account.id),
+                customer_id=account.id,
+                purpose="operational",
+                contact_hash=s.identity(DEST),
+                granted=True,
+                reference="synthetic",
+                verified_by=u.id,
+                revision=1,
+            )
+            db.add(pref)
+            t = EmailTemplate(
+                key="network_outage",
+                revision=1,
+                config=EmailTemplateRequest(
+                    key="network_outage",
+                    purpose="operational",
+                    subject="Synthetic network notice",
+                    text="Synthetic durable acceptance only.",
+                ).model_dump(),
+                created_by=u.id,
+            )
+            db.add(t)
+            provider = EmailProvider(
+                name="mock",
+                config=cfg(
+                    enabled=True,
+                    purposes=["operational"],
+                    recipient_hashes=[s.identity(DEST)],
+                ).model_dump(),
+                revision=1,
+            )
+            db.add(provider)
+            db.add(
+                NotificationPolicy(
+                    id=1,
+                    config=Policy(
+                        timezone="UTC",
+                        quiet_start=(now.hour + 12) % 24,
+                        quiet_end=(now.hour + 13) % 24,
+                    ).model_dump(),
+                )
+            )
+            db.flush()
+            p = Plan(
+                dedupe_key=s.ns.digest(schema),
+                kind="email_operational",
+                severity="info",
+                confidence="synthetic",
+                status="approved",
+                target={},
+                evidence={},
+                snapshot={"email": True},
+                fingerprint="a" * 64,
+                created_by=u.id,
+                approved_by=u.id,
+                due_at=now,
+                message="encrypted",
+                slack_payload={},
+            )
+            db.add(p)
+            db.flush()
+            d = Delivery(
+                plan_id=p.id,
+                channel="email",
+                recipient_key=pref.subject_key,
+                state="queued",
+                next_attempt_at=now,
+            )
+            db.add(d)
+            db.flush()
+            db.add(
+                EmailEnvelope(
+                    delivery_id=d.id,
+                    provider="mock",
+                    source={},
+                    template_id=t.id,
+                    preference_id=pref.id,
+                    contact_hash=s.identity(DEST),
+                    ciphertext=s.encrypt({"destination": DEST, "payload": body}),
+                    authorization={"synthetic": True},
+                )
+            )
+            db.commit()
+            did = d.id
+        # Source/permission validation is exercised above; isolate durable claim behavior here.
+        monkeypatch.setattr(
+            s,
+            "validate",
+            lambda db, d, e, **kw: (
+                db.get(EmailProvider, "mock"),
+                {"message": body},
+                DEST,
+            ),
+        )
+        monkeypatch.setattr(s, "validate_pending", lambda *a, **kw: None)
+        entered = threading.Event()
+        release = threading.Event()
+        calls = []
+
+        class Observe:
+            def send(self, **kw):
+                with Factory() as observer:
+                    a = observer.scalar(
+                        select(Attempt).where(Attempt.delivery_id == did)
+                    )
+                    d = observer.get(Delivery, did)
+                    assert a and a.acceptance == "pending" and d.state == "submitting"
+                calls.append(kw["key"])
+                entered.set()
+                if mode == "crash":
+                    raise SystemExit("synthetic worker crash after durable intent")
+                assert release.wait(10)
+                return EmailReceipt("mock-durable-receipt", simulated=True)
+
+        monkeypatch.setattr(s, "MockEmail", Observe)
+        if mode == "crash":
+            with pytest.raises(SystemExit):
+                s.run_batch(Factory, mock=True, limit=1)
+            with Factory() as db:
+                a = db.scalar(select(Attempt).where(Attempt.delivery_id == did))
+                a.lease_expires_at = now - timedelta(seconds=1)
+                db.commit()
+            assert s.run_batch(Factory, mock=True, limit=1)["processed"] == 0
+            with Factory() as db:
+                assert db.get(Delivery, did).state == "reconciliation_required"
+        else:
+            with ThreadPoolExecutor(max_workers=2) as pool:
+                first = pool.submit(s.run_batch, Factory, mock=True, limit=1)
+                assert entered.wait(10)
+                assert (
+                    pool.submit(s.run_batch, Factory, mock=True, limit=1).result(
+                        timeout=10
+                    )["processed"]
+                    == 0
+                )
+                release.set()
+                assert first.result(timeout=10)["processed"] == 1
+            with Factory() as db:
+                assert db.get(Delivery, did).state == "simulated"
+        assert len(calls) == 1
+    finally:
+        engine.dispose()
+        with owner.begin() as conn:
+            conn.exec_driver_sql('DROP SCHEMA "' + schema + '" CASCADE')
+        owner.dispose()
+
+
+# Canonical signup/retention fixture graph, no duplicate applicant/customer registry.
+from test_field import field, auth
+from test_equipment import stock
+from test_retention import cancellation, verify as verify_cancellation
+
+
+def test_signup_email_draft_and_withdrawal(signup, email_case, monkeypatch):
+    from test_signup import application
+    from app.signup import crypto
+
+    # Both canonical fixtures share the rollback-only database graph.
+    x = signup
+    x.account.email = DEST
+    a = application(x, email=DEST)
+    t = EmailTemplate(
+        key="signup_received",
+        revision=1,
+        config=EmailTemplateRequest(
+            key="signup_received",
+            purpose="signup",
+            subject="Application received",
+            text="We received application {reference}; status {status}.",
+        ).model_dump(),
+        created_by=x.admin.id,
+    )
+    x.db.add(t)
+    x.db.flush()
+    s.permission(
+        x.db,
+        EmailPermission(
+            application_id=a.id,
+            purpose="signup",
+            granted=True,
+            verified_address=DEST,
+            reference="synthetic-applicant-identity",
+        ),
+        x.admin.id,
+    )
+    p = s.prepare(
+        x.db,
+        EmailDraftRequest(
+            source_kind="signup", source_id=a.id, application_id=a.id, template_id=t.id
+        ),
+        x.admin.id,
+    )
+    d = x.db.scalar(select(Delivery).where(Delivery.plan_id == p.id))
+    e = x.db.get(EmailEnvelope, d.id)
+    assert s.snapshot(x.db, e)[0]["source"]["kind"] == "signup"
+    pii = crypto.unseal(a, a.pii_ciphertext)
+    pii["consent_email"] = False
+    a.pii_ciphertext = crypto.seal(a, pii)
+    x.db.flush()
+    with pytest.raises(ValueError):
+        s.snapshot(x.db, e)
+
+
+def test_cancellation_email_requires_verification_and_separate_purpose(
+    cancellation, email_case
+):
+    x = cancellation
+    x.account.email = DEST
+    t = EmailTemplate(
+        key="cancellation_received",
+        revision=1,
+        config=EmailTemplateRequest(
+            key="cancellation_received",
+            purpose="cancellation",
+            subject="Cancellation request received",
+            text="Request {reference} requires operator review.",
+        ).model_dump(),
+        created_by=x.admin.id,
+    )
+    x.db.add(t)
+    x.db.flush()
+    s.permission(
+        x.db,
+        EmailPermission(
+            customer_id=x.account.id,
+            purpose="cancellation",
+            granted=True,
+            verified_address=DEST,
+            reference="synthetic-cancellation-email-proof",
+        ),
+        x.admin.id,
+    )
+    body = EmailDraftRequest(
+        source_kind="cancellation",
+        source_id=x.case.id,
+        customer_id=x.account.id,
+        template_id=t.id,
+    )
+    with pytest.raises(ValueError):
+        s.prepare(x.db, body, x.admin.id)
+    verify_cancellation(x)
+    p = s.prepare(x.db, body, x.admin.id)
+    assert p.kind == "email_cancellation" and x.case.status == "verified"
+    assert x.service.status == "active"
+
+
+def test_retention_email_never_issues_an_unapproved_offer(cancellation, email_case):
+    x = cancellation
+    x.account.email = DEST
+    verify_cancellation(x)
+    t = EmailTemplate(
+        key="retention_offer",
+        revision=1,
+        config=EmailTemplateRequest(
+            key="retention_offer",
+            purpose="retention",
+            subject="Retention offer review",
+            text="Contact support to review approved terms for {reference}.",
+        ).model_dump(),
+        created_by=x.admin.id,
+    )
+    x.db.add(t)
+    x.db.flush()
+    s.permission(
+        x.db,
+        EmailPermission(
+            customer_id=x.account.id,
+            purpose="retention",
+            granted=True,
+            verified_address=DEST,
+            reference="synthetic-retention-email-proof",
+        ),
+        x.admin.id,
+    )
+    with pytest.raises(ValueError):
+        s.prepare(
+            x.db,
+            EmailDraftRequest(
+                source_kind="cancellation",
+                source_id=x.case.id,
+                customer_id=x.account.id,
+                template_id=t.id,
+            ),
+            x.admin.id,
+        )
+
+
+def test_restoration_template_cannot_use_outage_source(email_case):
+    x = email_case
+    q = prepare_network(x)
+    t = EmailTemplate(
+        key="verified_restoration",
+        revision=1,
+        config=EmailTemplateRequest(
+            key="verified_restoration",
+            purpose="operational",
+            subject="Recovery verification",
+            text="Service recovery evidence reviewed for {reference}.",
+        ).model_dump(),
+        created_by=x.admin.id,
+    )
+    x.db.add(t)
+    x.db.flush()
+    with pytest.raises(ValueError):
+        s.prepare(
+            x.db,
+            EmailDraftRequest(
+                source_kind="network",
+                source_id=q.source.id,
+                customer_id=x.account.id,
+                template_id=t.id,
+            ),
+            x.admin.id,
+        )

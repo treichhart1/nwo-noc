@@ -61,6 +61,12 @@ def upgrade():
         "CREATE TRIGGER notification_email_events_immutable BEFORE UPDATE OR DELETE ON notification_email_events FOR EACH ROW EXECUTE FUNCTION public.noc_retention_immutable()"
     )
 
+    op.create_check_constraint(
+        "ck_email_preference_subject",
+        "notification_email_preferences",
+        "(customer_id IS NULL) <> (application_id IS NULL)",
+    )
+
 
 def downgrade():
     op.execute("DROP INDEX ix_notification_attempts_email_provider")
