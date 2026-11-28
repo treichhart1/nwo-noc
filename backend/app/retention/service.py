@@ -791,6 +791,8 @@ def historical(db, u, b):
         for n, r in enumerate(reader, 2):
             if len(rows) >= 1000 or None in r:
                 raise ValueError()
+            if any(not isinstance(r.get(v), str) for v in b.columns.values()):
+                raise ValueError()
             x = {k: r[v].strip() for k, v in b.columns.items()}
             if (
                 not x["external_id"]
@@ -862,6 +864,7 @@ def historical(db, u, b):
         "already_imported": bool(old),
         "dry_run": b.dry_run,
     }
+    audit(db, u, "csv_previewed", details={"rows": len(rows), "digest": signature})
     if b.dry_run or old:
         return preview
     if b.expected_digest != signature:

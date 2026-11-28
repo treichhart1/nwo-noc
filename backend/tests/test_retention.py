@@ -905,10 +905,14 @@ def test_cancellation_approval_enqueues_only_mock_safe_sms(cancellation):
             select(NotificationDelivery).where(NotificationDelivery.plan_id == p["id"])
         )
     )
-    assert len(deliveries) == 1 and deliveries[0].channel == "sms"
+    assert len(deliveries) == 2 and {d.channel for d in deliveries} == {
+        "sms",
+        "internal",
+    }
+    sms_delivery = next(d for d in deliveries if d.channel == "sms")
     sms = MockSender()
     run_batch(x.db, sms=sms, slack=MockSlack(), now=s.now())
-    assert deliveries[0].state == "simulated"
+    assert sms_delivery.state == "simulated"
     assert len(sms.calls) == 1
     run_batch(x.db, sms=sms, slack=MockSlack(), now=s.now() + timedelta(seconds=1))
     assert len(sms.calls) == 1
@@ -988,3 +992,17 @@ def test_historical_report_dates_are_separate_from_verified_churn(cancellation):
         report["observed_unique_service_cancellations"] == 0
         and report["customer_churn_rate"] is None
     )
+
+
+def test_csv_missing_cells_are_rejected_atomically(cancellation):
+    x = cancellation
+    before = x.db.scalar(select(func.count()).select_from(Case))
+    body = CSVInput(
+        csv_text="id,date,reason\nSYN131-MISSING,2020-01-01\n",
+        columns={"external_id": "id", "requested_date": "date", "reason": "reason"},
+        dry_run=False,
+        expected_digest="a" * 64,
+    )
+    with pytest.raises(ValueError, match="CSV validation"):
+        s.historical(x.db, x.admin, body)
+    assert x.db.scalar(select(func.count()).select_from(Case)) == before
