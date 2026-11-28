@@ -43,8 +43,13 @@ class Interface(BaseModel):
     tx_drops: int | None = Field(None, ge=0, le=2**64 - 1)
 
 
+from app.integrations.mikrotik_advanced import AdvancedSnapshot
+
+
 class RouterSnapshot(BaseModel):
     model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
+    advanced: AdvancedSnapshot | None = None
+    routeros_version: str | None = Field(None,pattern=r"^[67]\.\d+(?:[^\r\n]{0,80})$")
     cpu_percent: float | None = Field(None, ge=0, le=100)
     ram_percent: float | None = Field(None, ge=0, le=100)
     uptime_seconds: float | None = Field(None, ge=0, le=315360000)
@@ -132,7 +137,7 @@ def synthetic(db, job, now):
             device_id=d.id,
             format="mikrotik",
             sampled_at=at,
-            payload=value.model_dump(mode="json"),
+            payload=value.model_dump(mode="json",exclude={"advanced","routeros_version"}) if isinstance(value,RouterSnapshot) else value.model_dump(mode="json"),
         )
     if vendor in {"ubiquiti", "cambium"}:
         from app.rf_analytics_rehearsal import synthetic_observation
@@ -466,12 +471,15 @@ def collect(db, job, now):
             )
             for n in values["ospf_neighbors"]
         ]
+        if values.get("advanced") is not None:
+            fields["advanced"] = values["advanced"]
+            fields["routeros_version"] = values["routeros_version"]
         snap = RouterSnapshot(**fields)
         return Envelope(
             device_id=d.id,
             format="mikrotik",
             sampled_at=now,
-            payload=snap.model_dump(mode="json"),
+            payload=snap.model_dump(mode="json",exclude={"advanced","routeros_version"} if snap.advanced is None else set()),
         )
     raise IntegrationFailure("unsupported")
 
@@ -506,7 +514,7 @@ def stage(db, device, envelope):
     if existing:
         return existing
     snap = RouterSnapshot(**envelope.payload)
-    values = snap.model_dump()
+    values = snap.model_dump(exclude={"advanced","routeros_version"} if snap.advanced is None else set())
     values["ospf_neighbors"] = [{"state": s} for s in values.pop("ospf_states")]
     before = db.scalar(
         select(TelemetrySample)

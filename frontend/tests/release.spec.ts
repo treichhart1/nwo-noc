@@ -33,6 +33,7 @@ test('RF diagnostics displays synthetic telemetry',async({page})=>{
   await page.locator('nav').getByRole('button',{name:'RF Diagnostics',exact:true}).click()
   await page.getByLabel('Device',{exact:true}).selectOption({label:'NOC84 Synthetic Radio'})
   await expect(page.getByText('3 RF samples in the selected window')).toBeVisible()
+  await expect(page.getByRole('region',{name:'Advanced MikroTik and cellular evidence'})).toContainText('Native LTE monitor is blocked')
   const wave=page.getByRole('region',{name:'Wave monitoring readiness'})
   await expect(wave).toContainText('Native collection blocked')
   await expect(wave).toContainText('No device polling or automatic remediation is enabled')

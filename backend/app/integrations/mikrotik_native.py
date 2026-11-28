@@ -9,14 +9,16 @@ import socket
 import ssl
 import time
 from types import MappingProxyType
-from pydantic import BaseModel, ConfigDict, Field, SecretStr
+from pydantic import BaseModel, ConfigDict, Field, SecretStr, field_validator
+from typing import Literal
+from app.integrations.mikrotik_advanced import ADVANCED_READS, GROUPS, bounded_rows, collect_optional, monitor_sentence
 from app.integrations.read_only import IntegrationFailure
 
 READS = MappingProxyType({
     "resource": ("/system/resource/print", "version,cpu-load,total-memory,free-memory,uptime"),
     "identity": ("/system/identity/print", "name"),
     "interfaces": ("/interface/print", ".id,name,running,disabled,rx-byte,tx-byte,rx-error,tx-error,rx-drop,tx-drop"),
-    "health": ("/system/health/print", "name,value,temperature,cpu-temperature"),
+    "health": ("/system/health/print", "name,value,type,temperature,cpu-temperature"),
     "neighbors": ("/routing/ospf/neighbor/print", "router-id,state"),
 })
 READ_SENTENCES = frozenset((path, "=.proplist=" + props) for path, props in READS.values())
@@ -34,6 +36,17 @@ class NativeConfig(BaseModel):
     timeout_seconds: float = Field(3, ge=.2, le=3, allow_inf_nan=False)
     min_interval_seconds: int = Field(60, ge=60, le=86400)
     collect_ospf: bool = False
+    advanced_groups: tuple[Literal['router', 'switch', 'tunnels', 'ipam'], ...] = Field(default=(), max_length=4)
+    ethernet_monitor_ids: tuple[str, ...] = Field(default=(), max_length=8)
+    poe_monitor_ids: tuple[str, ...] = Field(default=(), max_length=8)
+
+    @field_validator('ethernet_monitor_ids', 'poe_monitor_ids')
+    @classmethod
+    def interface_ids(cls, value):
+        if len(value) != len(set(value)) or any(not re.fullmatch(r'\*[0-9A-Fa-f]{1,8}', v) for v in value):
+            raise ValueError('Explicit bounded RouterOS interface IDs required')
+        return value
+
     # Hardware/API units differ: never guess Celsius from magnitude.
     temperature_unit: str | None = Field(None, pattern=r"^(celsius|decicelsius)$")
 
@@ -156,6 +169,10 @@ class NativeClient:
             allowed = words == ("/login", "=name=" + user, "=password=" + password)
         else:
             allowed = words in READ_SENTENCES
+            enabled = {name for group in self.config.advanced_groups for name in GROUPS[group]}
+            allowed = allowed or any(words == (ADVANCED_READS[name][0], '=.proplist='+ADVANCED_READS[name][1]) for name in enabled)
+            allowed = allowed or any(words == monitor_sentence(kind, ident) for kind, ids in
+                [('ethernet', self.config.ethernet_monitor_ids), ('poe', self.config.poe_monitor_ids)] for ident in ids)
         if not allowed or self._socket is None:
             raise IntegrationFailure("operation_denied")
         self._budget()
@@ -200,6 +217,10 @@ class NativeClient:
         allowed = set(properties.split(","))
         return [{k: v for k, v in row.items() if k in allowed} for row in values]
 
+    def _read_advanced(self, name):
+        path, fields = ADVANCED_READS[name]
+        return bounded_rows(self._exchange((path, '=.proplist='+fields)), set(fields.split(',')), self.credentials.validate_values())
+
     def collect(self):
         address = self.config.validate_connection()
         user, password = self.credentials.validate_values()
@@ -223,7 +244,10 @@ class NativeClient:
                         payload[name] = self._read(name)
                     payload["neighbors"] = self._read("neighbors") if self.config.collect_ospf else []
                     payload["health"] = self._read("health") if self.config.temperature_unit else []
-                    return normalize_native(payload, (user, password), temperature_unit=self.config.temperature_unit)
+                    values = normalize_native(payload, (user, password), temperature_unit=self.config.temperature_unit)
+                    if self.config.advanced_groups or self.config.ethernet_monitor_ids or self.config.poe_monitor_ids:
+                        values['advanced'] = collect_optional(self, values['routeros_version'], payload['neighbors'], payload['health'] if self.config.temperature_unit else None)
+                    return values
         except IntegrationFailure:
             raise
         except (TimeoutError, socket.timeout):

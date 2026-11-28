@@ -481,8 +481,10 @@ def restore(folder, expected):
             from retention_preservation import PROBE
             preservation=h.compose(release,state,'exec','-T','backend','python','-c',PROBE)
             passed('preserved_encrypted_cancellation_and_key',b'Encrypted cancellation record and restored key verified' in preservation.stdout)
+            from cellular_preservation import PROBE as CELLULAR_PROBE
             from email_preservation import PROBE as EMAIL_PROBE
-            email_preservation=h.compose(release,state,'exec','-T','backend','python','-c',EMAIL_PROBE)
+            email_preservation=h.compose(release,state,'exec','-T','backend','python','-c',EMAIL_PROBE+'\n'+CELLULAR_PROBE)
+            passed('preserved_cellular_dataset_and_history',b'Cellular dataset attribution and recorded history preserved' in email_preservation.stdout)
             passed('preserved_encrypted_email_and_suppression',b'Encrypted email evidence and shared suppression preserved' in email_preservation.stdout)
             passed('preserved_document_bytes', (h.lib / 'documents/synthetic-preservation.txt').read_text() == 'synthetic document preservation')
             try: restore(folder, expected)

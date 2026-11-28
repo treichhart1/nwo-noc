@@ -352,7 +352,7 @@ def main():
             "approval_reference": "synthetic-disposable-acceptance",
             "commit": revision,
             "tree": git("rev-parse", "HEAD^{tree}"),
-            "migration_head": "0035_unified_communications",
+            "migration_head": "0036_mikrotik_cellular",
             "upgrade_from": list(previous),
             "images": {
                 "backend": image("backend", revision, bad),
@@ -682,8 +682,9 @@ print(json.dumps({'scheme':pwd_context.identify(hashed),'policy_rounds':pwd_cont
     from retention_preservation import SEED,PROBE
     command([*compose,'exec','-T','backend','python','-c',SEED])
     passed('encrypted_cancellation_seeded',True)
+    from cellular_preservation import SEED as CELLULAR_SEED
     from email_preservation import SEED as EMAIL_SEED
-    command([*compose,'exec','-T','backend','python','-c',EMAIL_SEED])
+    command([*compose,'exec','-T','backend','python','-c',EMAIL_SEED+'\n'+CELLULAR_SEED])
     passed('encrypted_email_suppression_seeded',True)
     if args.pilot_checkpoint:
         command([*compose, 'exec', '-T', 'redis', 'redis-cli', 'SET', 'noc119:preservation', 'synthetic'])
@@ -816,8 +817,9 @@ print(json.dumps({'scheme':pwd_context.identify(hashed),'policy_rounds':pwd_cont
         )
         restored_url = runtime["DATABASE_URL"].rsplit("/", 1)[0] + "/" + restore
         from retention_preservation import PROBE
+        from cellular_preservation import PROBE as CELLULAR_PROBE
         from email_preservation import PROBE as EMAIL_PROBE
-        script = "import asyncio,httpx; from app.main import app; from app.core.database import SessionLocal; from sqlalchemy import text; db=SessionLocal(); assert db.execute(text(\"SELECT count(*) FROM audit_logs WHERE action='installer.synthetic_sentinel'\")).scalar()==1; db.close(); exec(\"async def check():\\n async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app),base_url='http://restored.invalid') as c:\\n  assert (await c.get('/health')).status_code==200\\n\"); asyncio.run(check())" + "\n" + PROBE + "\n" + EMAIL_PROBE
+        script = "import asyncio,httpx; from app.main import app; from app.core.database import SessionLocal; from sqlalchemy import text; db=SessionLocal(); assert db.execute(text(\"SELECT count(*) FROM audit_logs WHERE action='installer.synthetic_sentinel'\")).scalar()==1; db.close(); exec(\"async def check():\\n async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app),base_url='http://restored.invalid') as c:\\n  assert (await c.get('/health')).status_code==200\\n\"); asyncio.run(check())" + "\n" + PROBE + "\n" + EMAIL_PROBE + "\n" + CELLULAR_PROBE
         command(
             [
                 *compose,
