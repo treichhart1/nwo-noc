@@ -193,6 +193,8 @@ class NativeClient:
                 key, value = word[1:].split("=", 1)
                 if not key or key in values:
                     raise IntegrationFailure("invalid_response")
+                if key.casefold() in {"private-key","preshared-key","password","imsi","iccid","imei","pin","sim-pin"}:
+                    raise IntegrationFailure("invalid_response")
                 values[key] = value
             if state == "!done":
                 if "ret" in values:

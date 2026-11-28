@@ -56,7 +56,7 @@ def test_no_dynamic_interface_selection(ident):
 def test_fixed_native_reads_narrow_fields_and_tls_base(group):
     c=NativeClient(config(advanced_groups=(group,)),credentials());c._deadline=10**12
     name={'ipam':'addresses','switch':'vlans','router':'health','tunnels':'wireguard'}[group]
-    c._socket=Stream(encode_sentence(['!re','=private-key=canary'])+encode_sentence(['!done']))
+    c._socket=Stream(encode_sentence(['!re','=unrequested-field=canary'])+encode_sentence(['!done']))
     assert c._read_advanced(name)==[{}]
     for _,props in ADVANCED_READS.values():assert not any(x in props for x in ('private-key','preshared-key','imsi','iccid','password'))
 
@@ -165,3 +165,11 @@ def test_disabled_advanced_synthetic_receipt_preserves_existing_workload(monkeyp
     result=synthetic(db,job,NOW)
     assert set(result.payload)=={'cpu_percent','ram_percent','uptime_seconds','temperature_c','interfaces','ospf_states'}
     assert result.payload['interfaces'][0]['id']=='*1'
+
+
+@pytest.mark.parametrize('field',['private-key','preshared-key','imsi','iccid'])
+def test_unexpected_sensitive_wire_response_aborts_without_retention(field):
+    c=NativeClient(config(advanced_groups=('tunnels',)),credentials());c._deadline=10**12
+    c._socket=Stream(encode_sentence(['!re','='+field+'=canary'])+encode_sentence(['!done']))
+    with pytest.raises(IntegrationFailure,match='invalid_response'):
+        c._read_advanced('wireguard')
