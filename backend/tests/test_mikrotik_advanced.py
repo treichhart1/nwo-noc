@@ -159,6 +159,7 @@ def test_disabled_advanced_synthetic_receipt_preserves_existing_workload(monkeyp
     from app.core.config import settings
     monkeypatch.setattr(settings,'offline_mode',True)
     monkeypatch.setattr(settings,'app_env','staging')
+    monkeypatch.setattr(settings,'synthetic_monitoring_enabled',True)
     db=SimpleNamespace(get=lambda model,ident:SimpleNamespace(id=1,source='synthetic',vendor='MikroTik'))
     job=SimpleNamespace(device_id=1,fixture={'mode':'normal','latency_ms':0})
     result=synthetic(db,job,NOW)
