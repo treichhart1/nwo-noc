@@ -12,8 +12,9 @@ from app.notifications.models import (
 )
 from app.notifications.sms_models import SMSWebhookEvent
 from app.notifications.sms_identity import contact_hash as provider_hash
-from .models import Case, CaseService
+from .models import Case, CaseService, CaseEvent
 from . import service as s
+from app.signup import crypto
 
 TEMPLATES = {
     "request_confirmation": "Your cancellation request has been received for identity verification and operator review. No automatic service or billing change has been made.",
@@ -63,6 +64,29 @@ def snapshot(db, plan):
             "Canonical current SMS consent required; cancellation processing remains available without SMS"
         )
     h = ns.contact_hash(phone)
+    consent = db.scalar(
+        select(CaseEvent)
+        .where(CaseEvent.case_id == c.id, CaseEvent.action == "purpose_sms_consent")
+        .order_by(CaseEvent.id.desc())
+        .limit(1)
+    )
+    submitted = crypto.unseal(c, c.pii_ciphertext)
+    if consent:
+        permitted = (
+            consent.evidence.get("granted") is True
+            and consent.evidence.get("contact_hash") == h
+        )
+    else:
+        permitted = bool(
+            c.verified_by
+            and submitted.get("consent_sms") is True
+            and e164(submitted.get("phone")) == phone
+        )
+    if not permitted:
+        raise ValueError(
+            "Explicit request-scoped SMS permission required; cancellation processing remains available without SMS"
+        )
+
     if db.get(NotificationContactSuppression, h) or db.get(
         NotificationSuppression, account.id
     ):
@@ -130,6 +154,9 @@ def snapshot(db, plan):
         "customer_id": c.customer_id,
         "service_ids": [r.service_id for r in links],
         "recipient_hash": h,
+        "purpose_consent_evidence": consent.id
+        if consent
+        else "identity_verified_submission",
         "policy": ns.policy(db).model_dump(mode="json"),
     }
 

@@ -11,6 +11,7 @@ from . import service as s, analytics
 from .models import Case, Reason, Policy, Competitor, Observation, CaseService
 from .contracts import (
     PolicyInput,
+    PurposeConsent,
     ReasonInput,
     CompetitorInput,
     ObservationInput,
@@ -492,3 +493,10 @@ def retention_profitability(
         }
 
     return run(db, u, load)
+
+
+@router.post("/cases/{id}/sms-consent")
+def purpose_consent(
+    id: int, b: PurposeConsent, db=Depends(get_db), u=Depends(financial_access)
+):
+    return run(db, u, lambda: s.purpose_consent(db, u, id, b))

@@ -257,6 +257,21 @@ def verify(x):
     )
 
 
+def allow_sms(x):
+    return s.purpose_consent(
+        x.db,
+        x.admin,
+        x.case.id,
+        PurposeConsent(
+            expected_revision=x.case.revision,
+            notes="Synthetic explicit permission for this cancellation request",
+            granted=True,
+            phone=x.account.phone,
+            evidence_reference="SYN-PURPOSE-CONSENT",
+        ),
+    )
+
+
 def test_verified_multi_service_request_preserves_other_services(cancellation):
     x = cancellation
     second = CustomerService(
@@ -594,6 +609,7 @@ def test_history_immutability(cancellation):
 def test_sms_canonical_consent_cross_provider_hold_and_changed_source(cancellation):
     x = cancellation
     verify(x)
+    allow_sms(x)
     x.account.sms_consent = "granted"
     x.account.communication_preference = "sms"
     x.account.sms_opt_out = False
@@ -791,6 +807,7 @@ def test_reported_competitor_price_is_not_independent_verification(cancellation)
 def test_cancellation_sms_exact_phase_dedup_and_no_retained_completion(cancellation):
     x = cancellation
     verify(x)
+    allow_sms(x)
     x.account.sms_consent = "granted"
     x.account.communication_preference = "sms"
     x.account.sms_opt_out = False
@@ -891,6 +908,7 @@ def test_cancellation_approval_enqueues_only_mock_safe_sms(cancellation):
 
     x = cancellation
     verify(x)
+    allow_sms(x)
     p = prepare(
         x.db,
         x.admin,
@@ -929,6 +947,7 @@ def test_cancellation_content_native_transports_are_mocked(cancellation, provide
     verify(x)
     x.account.phone = PHONE
     x.db.flush()
+    allow_sms(x)
     p = prepare(
         x.db,
         x.admin,
@@ -1145,3 +1164,68 @@ def test_expired_approved_offer_can_be_replaced_without_rewriting_history(
         and s.offer_view(x.db, x.case, old_record)["expired"] is True
     )
     assert x.db.get(Offer, new["id"]).status == "approved"
+
+
+def test_public_sms_unchecked_does_not_inherit_account_notification_consent(
+    cancellation,
+):
+    x = cancellation
+    verify(x)
+    assert x.account.sms_consent == "granted" and x.body.consent_sms is False
+    with pytest.raises(ValueError, match="request-scoped"):
+        prepare(
+            x.db,
+            x.admin,
+            x.case.id,
+            Communication(
+                expected_revision=x.case.revision,
+                notes=NOTE,
+                template="processing_update",
+            ),
+        )
+    assert not x.db.scalar(
+        select(NotificationPlan.id).where(
+            NotificationPlan.kind == "customer_cancellation"
+        )
+    )
+    s.change(
+        x.db,
+        x.admin,
+        x.case.id,
+        StatusChange(
+            expected_revision=x.case.revision,
+            notes=NOTE,
+            status="cancellation_confirmed",
+        ),
+    )
+    assert x.case.status == "cancellation_confirmed" and x.service.status == "active"
+
+
+def test_case_permission_withdrawal_invalidates_both_provider_source_contracts(
+    cancellation,
+):
+    x = cancellation
+    verify(x)
+    allow_sms(x)
+    p = prepare(
+        x.db,
+        x.admin,
+        x.case.id,
+        Communication(
+            expected_revision=x.case.revision, notes=NOTE, template="processing_update"
+        ),
+    )
+    s.purpose_consent(
+        x.db,
+        x.admin,
+        x.case.id,
+        PurposeConsent(
+            expected_revision=x.case.revision,
+            notes="Synthetic verified permission withdrawal",
+            granted=False,
+            evidence_reference="SYN-WITHDRAWN",
+        ),
+    )
+    with pytest.raises(ValueError):
+        snapshot(x.db, x.db.get(NotificationPlan, p["id"]))
+    assert x.account.sms_consent == "granted" and x.account.sms_opt_out is False

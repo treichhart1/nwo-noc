@@ -325,3 +325,9 @@ class Communication(Change):
 class Review(Change):
     competitor_id: int | None = Field(None, ge=1)
     legal_hold: bool | None = Field(None, strict=True)
+
+
+class PurposeConsent(Change):
+    granted: bool = Field(strict=True)
+    phone: str | None = Field(None, pattern=r"^\+[1-9][0-9]{7,14}$")
+    evidence_reference: str = Field(pattern=r"^[A-Za-z0-9_.:-]{3,120}$")

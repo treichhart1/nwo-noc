@@ -983,3 +983,43 @@ def review(db, u, id, b):
         legal_hold=c.legal_hold,
     )
     return case_view(db, c)
+
+
+def purpose_consent(db, u, id, b):
+    """Purpose-specific permission never changes canonical account/provider opt-outs."""
+    field.admin(u)
+    lock(db)
+    c = get(db, id, b.expected_revision)
+    from app.customers.contracts import e164
+    from app.notifications.service import contact_hash
+
+    account = db.get(CustomerAccount, c.customer_id) if c.customer_id else None
+    phone = e164(account.phone) if account else None
+    if b.granted and (
+        not c.verified_by
+        or not account
+        or account.source_deleted_at
+        or not phone
+        or b.phone != phone
+    ):
+        raise ValueError(
+            "Verified identity and explicit current canonical contact confirmation required"
+        )
+    event(
+        db,
+        c,
+        u,
+        "purpose_sms_consent",
+        b.notes,
+        granted=b.granted,
+        contact_hash=contact_hash(phone) if b.granted else None,
+        evidence_reference=b.evidence_reference,
+        global_opt_out_overridden=False,
+    )
+    return {
+        "case_id": c.id,
+        "revision": c.revision,
+        "request_sms_permission": b.granted,
+        "global_opt_out_overridden": False,
+        "delivery_authorized": False,
+    }
