@@ -83,6 +83,7 @@ class Settings(BaseSettings):
     slack_egress_approved: bool = False
     slack_worker_interval_seconds: int = Field(5, ge=5, le=300)
     sms_callback_key_file: str = Field(default="", repr=False, exclude=True)
+    email_callback_key_file: str = Field(default="",repr=False,exclude=True)
     email_native_transport_enabled: bool = False
     email_native_worker_enabled: bool = False
     email_worker_interval_seconds: int = Field(5, ge=5, le=300)

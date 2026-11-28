@@ -15,6 +15,18 @@ from app.notifications.email_gateway import app
 from app.notifications import email_service as s
 from app.core.config import settings
 
+
+@pytest.fixture(autouse=True)
+def email_identity_key(tmp_path, monkeypatch):
+    from cryptography.fernet import Fernet
+
+    key = tmp_path / "email-identity.key"
+    key.write_bytes(Fernet.generate_key())
+    key.chmod(0o600)
+    monkeypatch.setattr(settings, "email_callback_key_file", str(key))
+    return key
+
+
 DEST = "synthetic@example.com"
 CONFIG = {
     "sender": "cs@example.com",
@@ -657,3 +669,24 @@ def test_valid_long_smtp_message_id_fits_canonical_receipt_storage():
         len(identifier) <= NotificationDelivery.__table__.c.provider_receipt.type.length
     )
     assert conf.sender.endswith(domain)
+
+
+def test_email_identity_survives_jwt_rotation(monkeypatch):
+    original = s.identity(DEST)
+    monkeypatch.setattr(
+        settings, "secret_key", "synthetic-independently-rotated-private-jwt-secret"
+    )
+    assert s.identity(DEST) == original
+
+
+def test_email_identity_missing_or_public_key_fails_closed(
+    email_identity_key, monkeypatch
+):
+    email_identity_key.chmod(0o644)
+    with pytest.raises(ValueError, match="identity key unavailable"):
+        s.identity(DEST)
+    monkeypatch.setattr(
+        settings, "email_callback_key_file", "/nonexistent/synthetic-email-key"
+    )
+    with pytest.raises(ValueError, match="identity key unavailable"):
+        s.identity(DEST)

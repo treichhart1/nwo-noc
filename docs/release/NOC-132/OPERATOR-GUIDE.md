@@ -38,7 +38,7 @@ SMTP250 and SendGrid202 mean accepted, not delivered. Missing callback is not fa
 
 ## Gateway, recovery and rollback
 
-Run the isolated `app.notifications.email_gateway:app` behind a dedicated TLS ingress, **not** the private backend listener. Expose only exact `POST /callbacks/email/sendgrid`; deny all other paths externally. Disable body/access-debug logging, require JSON, cap64KiB, request timeouts/rate limits, verify official timestamped ECDSA signatures. `/health` is process readiness only and may remain private. Set no permissive CORS. Keep the private dashboard and all `/api/*` unreachable. Configure a separate least-privilege database role: read email provider/envelope records, update canonical delivery/attempt outcomes and provider health, insert email events/suppressions/audit plus the existing callback quota table; no access to customer/signup/billing/network tables or provider vault decrypt key. Review exact column grants with deployment security. The receiver uses the existing application keyed identity salt but never needs the credential-vault file; isolate its configuration and network accordingly.
+Run the isolated `app.notifications.email_gateway:app` behind a dedicated TLS ingress, **not** the private backend listener. Expose only exact `POST /callbacks/email/sendgrid`; deny all other paths externally. Disable body/access-debug logging, require JSON, cap64KiB, request timeouts/rate limits, verify official timestamped ECDSA signatures. `/health` is process readiness only and may remain private. Set no permissive CORS. Keep the private dashboard and all `/api/*` unreachable. Configure a separate least-privilege database role: read email provider/envelope records, update canonical delivery/attempt outcomes and provider health, insert email events/suppressions/audit plus the existing callback quota table; no access to customer/signup/billing/network tables or provider vault decrypt key. Review exact column grants with deployment security. The receiver mounts only the dedicated persistent EMAIL_CALLBACK_KEY_FILE. It must NEVER receive the private NOC JWT SECRET_KEY, ADMIN_PASSWORD or outbound credential-vault key. Supply independent random unused SECRET_KEY/ADMIN_PASSWORD values to satisfy the shared settings schema; do not reuse the private backend environment. Use its own restricted database role and isolated container/filesystem/egress. Identity uses domain-separated HKDF/HMAC from the dedicated key, so private JWT rotation cannot bypass shared email suppression.
 
 Enable provider signed Event Webhook for processed/delivered/deferred/dropped/bounce/spamreport/unsubscribe/group unsubscribe; no open/click events. Capture the actual public verification key and confirm account ownership. Replays are deduplicated by authenticated event identity; old signatures, unknown attempt capabilities and mismatched recipients reject. Do not set signed callback key from an unverified source.
 
@@ -49,3 +49,31 @@ Troubleshooting: inspect canonical attempt codes and timestamps, provider health
 ## Reporting denominators
 
 Use Review communication analytics in the private center. Submission success uses accepted/(accepted+proven rejected) attempts; unknown and pending attempts are reported separately rather than counted as failures or successes. Confirmed SendGrid delivery is unique messages with signed delivered evidence / unique accepted messages. Missing callbacks remain unconfirmed, not inferred failures. Bounce/complaint evidence can overlap delivered evidence; event counts are non-additive. SMTP/mock confirmed delivery is unavailable. UTC calendar day/month usage counts submission attempts, while conservative delivery budgets reserve pending/unknown attempts over the configured windows. Currency-specific cost rows retain unknown as null and never combine currencies. Immutable callback kinds/timestamps are shown alongside attempt history, without email addresses or bodies.
+
+## Dedicated email identity key and supported upgrades
+
+Fresh installations provision a private `email-callback` key with the existing installer key mechanism, owner10001 and mode0400. Encrypted backups include it. This key is not a JWT signer and cannot decrypt provider credentials. Keep it stable while suppression/recipient evidence exists; do not silently regenerate it. The actual restore probes recompute a synthetic suppression identity using the restored key.
+
+A NOC131 installation can upgrade with new email flags absent: they remain disabled. Before preparing any email identity/preferences, a separately authorized operator must provision the new private key and add `EMAIL_CALLBACK_KEY_FILE=/run/nwo-noc-keys/email-callback` to protected runtime configuration. Missing, unsafe or unreadable identity keys fail closed. Back up configuration and existing keys using the encrypted procedure first. On the approved empty/new-feature installation only, the following creates a key without printing it or overwriting anything (it does not enable email):
+
+```sh
+sudo python3 - <<'PYKEY'
+import os,base64,secrets
+from pathlib import Path
+p=Path('/etc/nwo-noc/keys/email-callback')
+if not p.parent.is_dir() or p.parent.is_symlink():
+    raise SystemExit('Reviewed existing private key directory required')
+fd=os.open(p,os.O_WRONLY|os.O_CREAT|os.O_EXCL|os.O_NOFOLLOW,0o400)
+try:
+    os.write(fd,base64.urlsafe_b64encode(secrets.token_bytes(32)))
+    os.fchown(fd,10001,10001)
+    os.fsync(fd)
+finally:
+    os.close(fd)
+fd=os.open(p.parent,os.O_RDONLY|os.O_DIRECTORY)
+try: os.fsync(fd)
+finally: os.close(fd)
+PYKEY
+```
+
+Use an approved private configuration editor to add only the key-file path; never paste key bytes into commands or logs. The existing keys-directory read-only container mount supplies the file. Preserve all native email flags false and rerun existing verification. The controlled-test installer continues to reject explicit live email enablement, as it does for SMS/Slack; production activation requires a separately approved release/policy, not bypassing verify.sh. A dedicated receiver deployment needs only an encrypted, authorized copy of this single identity key plus its restricted DB credential and SendGrid public verification key. Never copy the backend's entire runtime.env, keys directory, JWT signer or provider-vault key to a public gateway.

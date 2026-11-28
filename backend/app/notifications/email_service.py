@@ -40,11 +40,9 @@ from app.notifications.controls import require_processing, emergency_disabled
 
 
 def identity(value):
-    return hmac.new(
-        settings.secret_key.encode(),
-        ("email:" + address(value).casefold()).encode(),
-        hashlib.sha256,
-    ).hexdigest()
+    from app.notifications.email_identity import contact_hash
+
+    return contact_hash(value)
 
 
 def encrypt(value):
@@ -139,6 +137,7 @@ def ready(db, name, *, mock=False):
     row = db.get(Provider, name)
     if not row or not row.config.get("enabled"):
         raise ValueError("Email provider disabled")
+    identity(row.config["sender"])  # Require the isolated persistent identity key.
     if mock:
         if name != "mock" or not settings.offline_mode or settings.app_env != "staging":
             raise ValueError("Mock only in offline staging")

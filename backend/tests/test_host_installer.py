@@ -442,8 +442,13 @@ def test_generated_unit_port_and_local_keys_do_not_require_demo_data(
     host_policy.validate_env(env)
     with pytest.raises(ValueError):
         host_policy.validate_env({**env, "UISP_ENABLED": "true"})
-    assert {p.name for p in (host.etc / "keys").iterdir()} == {"signup", "notifications", "sms-callback", "slack-callback", "fiber", "status"}
+    assert {p.name for p in (host.etc / "keys").iterdir()} == {"signup", "notifications", "sms-callback", "slack-callback", "email-callback", "fiber", "status"}
     assert env["SMS_CALLBACK_KEY_FILE"] == "/run/nwo-noc-keys/sms-callback"
+    assert env["EMAIL_CALLBACK_KEY_FILE"] == "/run/nwo-noc-keys/email-callback"
+    assert ((host.etc / "keys/email-callback").stat().st_mode & 0o777)==0o400
+    with pytest.raises(ValueError):host_policy.validate_env({**env,"EMAIL_NATIVE_TRANSPORT_ENABLED":"true"})
+    legacy={k:v for k,v in env.items() if not k.startswith("EMAIL_")}
+    host_policy.validate_env(legacy)  # Supported NOC131 core upgrade: missing new flags stay disabled.
     assert all(env[k] == "false" for k in ("SMS_NATIVE_TRANSPORT_ENABLED", "SMS_NATIVE_WORKER_ENABLED", "SMS_CALLBACK_GATEWAY_ENABLED", "SMS_EGRESS_APPROVED"))
 
 

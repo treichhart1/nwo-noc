@@ -22,7 +22,7 @@ from test_rf_postgres_integration import postgres_db
 from test_powercode_customers import inventory, imported
 from test_notifications import network
 from test_signup import signup
-from test_email_native import cfg, event_fixture, DEST
+from test_email_native import cfg, event_fixture, DEST, email_identity_key
 
 
 @pytest.fixture
