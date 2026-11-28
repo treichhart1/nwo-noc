@@ -1,3 +1,4 @@
+import {capturePublic} from './gui-capture';
 import { test, expect } from '@playwright/test';
 import { execFileSync } from 'node:child_process';
 import { writeFileSync } from 'node:fs';
@@ -47,6 +48,7 @@ test('installable ZIP, approved public display, failure isolation and safe remov
   await mode('outage');await page.reload();
   await expect(page.getByText('Synthetic approved outage',{exact:true})).toBeVisible();
   await expect(page.locator('.nwo-status-summary')).toContainText('Major service interruption');
+ await capturePublic(page,27,'WordPress public network status — approved synthetic outage');
   for (const [state, label] of [['partial','Partial service interruption'],['degraded','Degraded performance'],['maintenance','Maintenance in progress'],['scheduled','Scheduled maintenance'],['recovery','Monitoring recovery'],['resolved','Resolved']]) {
     await mode(state);await page.reload();
     await expect(page.getByText(label,{exact:true}).first()).toBeVisible();
