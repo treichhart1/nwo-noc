@@ -8,8 +8,9 @@
     "failure_cause": "Missing historical git objects in the isolated clone; original remote branch ancestry subsequently fetched"
   },
   "new_contract_tests": {
-    "passed": 17,
-    "postgresql_skipped": 16
+    "passed": 19,
+    "postgresql_skipped": 27,
+    "scope": "Latest targeted test collection; actual PostgreSQL counts verified in CI"
   },
   "private_frontend_typecheck_build": "PASS",
   "public_signup_and_cancellation_typecheck_build": "PASS",
@@ -40,5 +41,16 @@
     "failed": 1,
     "cause": "Manifest reads committed HEAD; new migration was still uncommitted. Recheck required after commit."
   },
-  "offline_migration_sql": "BLOCKED: pre-existing migration0033 requires an online connection (MockConnection.exec_driver_sql unavailable); actual PostgreSQL migration acceptance remains required"
+  "offline_migration_sql": "Not used as acceptance: historical migration0033 requires an online connection. Corrected NOC131 CI runs855/856 completed real PostgreSQL migration and drift acceptance successfully.",
+  "final_local_backend": {
+    "passed": 1380,
+    "skipped": 1101,
+    "failed": 0,
+    "scope": "No disposable local PostgreSQL; actual database results require CI"
+  },
+  "committed_provenance_recheck": {
+    "passed": 38,
+    "skipped": 10,
+    "failed": 0
+  }
 }

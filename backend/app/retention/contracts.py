@@ -165,7 +165,7 @@ class ReturnInput(Change):
     service_id: int = Field(ge=1)
     required: bool = Field(strict=True)
     due: date | None = None
-    returned: bool = Field(False, strict=True)
+    returned: bool | None = Field(None, strict=True)
 
 
 class PolicyInput(SafeModel):
@@ -324,4 +324,4 @@ class Communication(Change):
 
 class Review(Change):
     competitor_id: int | None = Field(None, ge=1)
-    legal_hold: bool = Field(False, strict=True)
+    legal_hold: bool | None = Field(None, strict=True)

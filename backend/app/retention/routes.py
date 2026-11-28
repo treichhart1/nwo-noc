@@ -439,3 +439,56 @@ def geography(
         }
 
     return run(db, u, load)
+
+
+@router.get("/cases/{id}/profitability")
+def retention_profitability(
+    id: int,
+    period_id: int = Query(ge=1),
+    scope_id: int = Query(ge=1),
+    db=Depends(get_db),
+    u=Depends(financial_access),
+):
+    def load():
+        from app.finance.models import Scope, GroupMember
+        from app.finance.service import calculate
+
+        case = s.get(db, id)
+        selected = set(
+            db.scalars(
+                select(CaseService.service_id).where(CaseService.case_id == case.id)
+            )
+        )
+        scope = db.get(Scope, scope_id)
+        covered = (
+            {scope.service_id}
+            if scope and scope.kind == "service"
+            else set(
+                db.scalars(
+                    select(GroupMember.service_id).where(
+                        GroupMember.scope_id == scope_id
+                    )
+                )
+            )
+            if scope and scope.kind == "group"
+            else set()
+        )
+        if not selected or covered != selected:
+            raise ValueError(
+                "Canonical finance service/group scope must match exactly the selected services"
+            )
+        finance = calculate(db, period_id, scope_id)
+        s.audit(db, u, "retention_profitability_viewed", case.id)
+        return {
+            "case_id": case.id,
+            "financial_scope": finance,
+            "estimated_retention_profitability": finance["contribution"]
+            if finance["complete"]
+            else None,
+            "currency": finance["period"]["currency"],
+            "basis": "Canonical contracted revenue and documented operating expenses; not collected cash",
+            "offer_cost_caution": "Offer estimates are not automatically posted; finance completeness must explicitly cover actual offer/labor/shared costs. Do not subtract costs already allocated in this report twice.",
+            "automatic_financial_changes": False,
+        }
+
+    return run(db, u, load)

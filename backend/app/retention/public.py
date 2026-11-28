@@ -110,6 +110,14 @@ def submit(body: PublicInput, request: Request, db=Depends(get_db)):
 
 
 @app.get("/public/cancellation/health")
-def health():
-    enabled()
-    return {"status": "ok", "service": "public cancellation request intake"}
+def health(db=Depends(get_db)):
+    def check():
+        enabled()
+        data = db.scalar(text("SELECT public.noc_cancel_config()"))
+        if not data or not data.get("policy"):
+            raise HTTPException(
+                503, "Cancellation policy is unavailable; contact the office"
+            )
+        return {"status": "ok", "service": "public cancellation request intake"}
+
+    return execute(db, check)

@@ -1,6 +1,7 @@
 """Cancellation evidence and restricted public intake; no billing or service writes."""
 
 from alembic import op
+import sqlalchemy as sa
 
 revision = "0034_customer_retention"
 down_revision = "0033_powercode_integration"
@@ -58,6 +59,15 @@ def upgrade():
     op.execute(
         "CREATE INDEX ix_retention_case_services_service_id ON retention_case_services (service_id)"
     )
+    op.add_column(
+        "retention_cases",
+        sa.Column("reported_disconnected_date", sa.Date(), nullable=True),
+    )
+    op.create_index(
+        "ix_retention_cases_reported_disconnected_date",
+        "retention_cases",
+        ["reported_disconnected_date"],
+    )
     op.execute(
         "CREATE INDEX ix_powercode_history_churn ON powercode_service_history (status,source_updated_at,service_id)"
     )
@@ -86,10 +96,14 @@ BEGIN
  IF TG_TABLE_NAME='retention_policies' THEN
    IF (to_jsonb(NEW)-'active') IS DISTINCT FROM (to_jsonb(OLD)-'active') THEN RAISE EXCEPTION 'Create a new policy version'; END IF;
  ELSIF TG_TABLE_NAME='retention_cases' THEN
-   IF (NEW.reference,NEW.submission_key,NEW.digest,NEW.receipt_hash,NEW.requested_date,NEW.reported_reason,NEW.policy_id,NEW.policy_ack_at,NEW.equipment_ack,NEW.source,NEW.import_key,NEW.created_at) IS DISTINCT FROM (OLD.reference,OLD.submission_key,OLD.digest,OLD.receipt_hash,OLD.requested_date,OLD.reported_reason,OLD.policy_id,OLD.policy_ack_at,OLD.equipment_ack,OLD.source,OLD.import_key,OLD.created_at) THEN RAISE EXCEPTION 'Original request evidence is immutable'; END IF;
+   IF (NEW.reference,NEW.submission_key,NEW.digest,NEW.receipt_hash,NEW.requested_date,NEW.reported_disconnected_date,NEW.reported_reason,NEW.policy_id,NEW.policy_ack_at,NEW.equipment_ack,NEW.source,NEW.import_key,NEW.created_at) IS DISTINCT FROM (OLD.reference,OLD.submission_key,OLD.digest,OLD.receipt_hash,OLD.requested_date,OLD.reported_disconnected_date,OLD.reported_reason,OLD.policy_id,OLD.policy_ack_at,OLD.equipment_ack,OLD.source,OLD.import_key,OLD.created_at) THEN RAISE EXCEPTION 'Original request evidence is immutable'; END IF;
+   IF (NEW.wrapped_key,NEW.pii_ciphertext) IS DISTINCT FROM (OLD.wrapped_key,OLD.pii_ciphertext) AND NOT (
+     NEW.wrapped_key IS NULL AND NEW.pii_ciphertext IS NULL AND OLD.redacted_at IS NULL AND NEW.redacted_at IS NOT NULL AND NEW.status IN ('closed','withdrawn') AND NOT OLD.legal_hold AND clock_timestamp() >= OLD.created_at + (SELECT retention_days FROM public.retention_policies WHERE id=OLD.policy_id)*interval '1 day'
+   ) THEN RAISE EXCEPTION 'Original encrypted submission cannot be rewritten; only eligible cryptographic redaction is allowed'; END IF;
    IF OLD.customer_id IS NOT NULL AND NEW.customer_id IS DISTINCT FROM OLD.customer_id THEN RAISE EXCEPTION 'Verified customer association is immutable'; END IF;
  ELSIF TG_TABLE_NAME='retention_case_services' THEN
    IF (NEW.case_id,NEW.service_id,NEW.snapshot::jsonb) IS DISTINCT FROM (OLD.case_id,OLD.service_id,OLD.snapshot::jsonb) THEN RAISE EXCEPTION 'Verified service snapshot is immutable'; END IF;
+   IF OLD.equipment_returned_at IS NOT NULL AND NEW.equipment_returned_at IS DISTINCT FROM OLD.equipment_returned_at THEN RAISE EXCEPTION 'Observed equipment return is immutable'; END IF;
    IF OLD.source_history_id IS NOT NULL AND (NEW.source_history_id,NEW.actual_disconnected_at) IS DISTINCT FROM (OLD.source_history_id,OLD.actual_disconnected_at) THEN RAISE EXCEPTION 'Observed disconnection evidence is immutable'; END IF;
  ELSIF TG_TABLE_NAME='retention_offers' THEN
    IF (to_jsonb(NEW)-ARRAY['status','approved_by','acceptance_ciphertext']) IS DISTINCT FROM (to_jsonb(OLD)-ARRAY['status','approved_by','acceptance_ciphertext']) OR OLD.acceptance_ciphertext IS NOT NULL THEN RAISE EXCEPTION 'Approved offer evidence is immutable'; END IF;
@@ -119,7 +133,7 @@ DECLARE result jsonb; cid integer;
 BEGIN
  result=public.noc_cancel_replay(p_key,p_digest);
  IF result IS NOT NULL THEN RETURN result; END IF;
- IF p_key !~ '^[a-f0-9-]{36}$' OR p_digest !~ '^[a-f0-9]{64}$' OR p_receipt !~ '^[a-f0-9]{64}$' OR length(p_ref)>45 OR p_ref NOT LIKE 'CAN-%' OR length(p_wrapped)>1000 OR length(p_pii)>24000 OR p_requested<CURRENT_DATE OR p_requested>CURRENT_DATE+366 THEN RAISE EXCEPTION 'Invalid request'; END IF;
+ IF p_key IS NULL OR p_digest IS NULL OR p_receipt IS NULL OR p_wrapped IS NULL OR p_pii IS NULL OR p_requested IS NULL OR p_reason IS NULL OR p_policy IS NULL OR length(p_wrapped)<100 OR length(p_pii)<100 OR p_key !~ '^[a-f0-9-]{36}$' OR p_digest !~ '^[a-f0-9]{64}$' OR p_receipt !~ '^[a-f0-9]{64}$' OR length(p_ref)>45 OR p_ref NOT LIKE 'CAN-%' OR length(p_wrapped)>1000 OR length(p_pii)>24000 OR p_requested<CURRENT_DATE OR p_requested>CURRENT_DATE+366 THEN RAISE EXCEPTION 'Invalid request'; END IF;
  IF NOT EXISTS(SELECT 1 FROM public.retention_policies WHERE id=p_policy AND active) OR NOT EXISTS(SELECT 1 FROM public.retention_reasons WHERE code=p_reason AND active) THEN RAISE EXCEPTION 'Current policy and cancellation reason required'; END IF;
  INSERT INTO public.retention_cases(reference,submission_key,digest,receipt_hash,wrapped_key,pii_ciphertext,requested_date,reported_reason,policy_id,policy_ack_at,equipment_ack,status,retention_state,billing_disposition,revision,source,legal_hold,created_at,updated_at)
  VALUES(p_ref,p_key,p_digest,p_receipt,p_wrapped,p_pii,p_requested,p_reason,p_policy,clock_timestamp(),true,'pending_verification','pending_review','unreviewed',1,'public_request',false,clock_timestamp(),clock_timestamp()) RETURNING id INTO cid;

@@ -198,7 +198,7 @@ def test_installable_plugin_reproducible_and_allowlisted(tmp_path):
 
 
 @pytest.fixture
-def cancellation(signup, monkeypatch, tmp_path):
+def cancellation(signup, monkeypatch, tmp_path, request):
     x = signup
     from cryptography.fernet import Fernet
 
@@ -215,6 +215,7 @@ def cancellation(signup, monkeypatch, tmp_path):
         ),
     )
     b = form()
+    b.update(getattr(request, "param", {}))
     b["policy_id"] = p["id"]
     x.body = PublicInput(**b)
     c = Case(
@@ -725,3 +726,265 @@ def test_retained_revenue_uses_immutable_event_date_and_basis(cancellation):
     assert retained["retained_monthly_snapshot"] == [
         {"currency": "USD", "basis": "contracted_snapshot", "monthly": "65.00"}
     ]
+
+
+def test_canonical_tower_and_retention_finance_incomplete_is_not_profit(cancellation):
+    from app.finance.models import Period, Scope
+    from app.retention.routes import tower, retention_profitability
+
+    x = cancellation
+    verify(x)
+    start = date.today().replace(day=1)
+    end = a.next_month(start)
+    period = Period(
+        code="SYN131-PERIOD",
+        starts_on=start,
+        ends_on=end,
+        currency="USD",
+        created_by=x.admin.id,
+    )
+    scope = Scope(
+        code="SYN131-TOWER",
+        name="Synthetic tower finance",
+        kind="tower",
+        site_id=x.a.id,
+        context={},
+        created_by=x.admin.id,
+    )
+    service_scope = Scope(
+        code="SYN131-SERVICE",
+        name="Synthetic service finance",
+        kind="service",
+        service_id=x.service.id,
+        context={},
+        created_by=x.admin.id,
+    )
+    x.db.add_all([period, scope, service_scope])
+    x.db.flush()
+    r = tower(x.a.id, start.strftime("%Y-%m"), period.id, scope.id, x.db, x.admin)
+    assert (
+        r["profitability"]["complete"] is False
+        and r["profitability"]["contribution"] is None
+    )
+    profit = retention_profitability(
+        x.case.id, period.id, service_scope.id, x.db, x.admin
+    )
+    assert (
+        profit["estimated_retention_profitability"] is None
+        and profit["automatic_financial_changes"] is False
+    )
+
+
+@pytest.mark.parametrize(
+    "cancellation",
+    [{"replacement": {"provider": "Starlink", "monthly": "50.00", "currency": "USD"}}],
+    indirect=True,
+)
+def test_reported_competitor_price_is_not_independent_verification(cancellation):
+    x = cancellation
+    verify(x)
+    row = x.db.scalar(select(Observation).where(Observation.case_id == x.case.id))
+    assert row.source_kind == "customer_reported" and row.verified is False
+    assert row.offer["monthly"] == "50.00" and x.case.competitor_id == row.competitor_id
+
+
+def test_cancellation_sms_exact_phase_dedup_and_no_retained_completion(cancellation):
+    x = cancellation
+    verify(x)
+    x.account.sms_consent = "granted"
+    x.account.communication_preference = "sms"
+    x.account.sms_opt_out = False
+    x.db.flush()
+    first = prepare(
+        x.db,
+        x.admin,
+        x.case.id,
+        Communication(
+            expected_revision=x.case.revision, notes=NOTE, template="processing_update"
+        ),
+    )
+    second = prepare(
+        x.db,
+        x.admin,
+        x.case.id,
+        Communication(
+            expected_revision=x.case.revision, notes=NOTE, template="processing_update"
+        ),
+    )
+    assert first["id"] == second["id"]
+    assert (
+        x.db.scalar(
+            select(func.count())
+            .select_from(NotificationRecipient)
+            .where(NotificationRecipient.plan_id == first["id"])
+        )
+        == 1
+    )
+    x.case.status = "closed"
+    x.db.flush()
+    with pytest.raises(ValueError, match="Observed disconnection"):
+        prepare(
+            x.db,
+            x.admin,
+            x.case.id,
+            Communication(
+                expected_revision=x.case.revision, notes=NOTE, template="completion"
+            ),
+        )
+
+
+def test_original_encrypted_request_cannot_be_rewritten(cancellation):
+    x = cancellation
+    with pytest.raises(DBAPIError), x.db.begin_nested():
+        x.db.execute(
+            text("UPDATE retention_cases SET pii_ciphertext='changed' WHERE id=:id"),
+            {"id": x.case.id},
+        )
+    with pytest.raises(ValueError, match="expired"):
+        s.redact(
+            x.db,
+            x.admin,
+            x.case.id,
+            Change(expected_revision=x.case.revision, notes=NOTE),
+        )
+
+
+def test_generic_status_cannot_bypass_identity_verification(cancellation):
+    x = cancellation
+    with pytest.raises(ValueError, match="identity"):
+        s.change(
+            x.db,
+            x.admin,
+            x.case.id,
+            StatusChange(
+                expected_revision=x.case.revision, notes=NOTE, status="verified"
+            ),
+        )
+    assert x.case.status == "pending_verification" and x.case.customer_id is None
+
+
+def test_unrelated_review_cannot_clear_legal_hold(cancellation):
+    x = cancellation
+    s.review(
+        x.db,
+        x.admin,
+        x.case.id,
+        Review(expected_revision=x.case.revision, notes=NOTE, legal_hold=True),
+    )
+    s.review(
+        x.db,
+        x.admin,
+        x.case.id,
+        Review(
+            expected_revision=x.case.revision,
+            notes="Additional documented review notes",
+        ),
+    )
+    assert x.case.legal_hold is True
+
+
+def test_cancellation_approval_enqueues_only_mock_safe_sms(cancellation):
+    from app.notifications.service import approve
+    from app.notifications.models import NotificationDelivery
+    from app.notifications.worker import run_batch
+    from app.notifications.providers import MockSender, MockSlack
+
+    x = cancellation
+    verify(x)
+    p = prepare(
+        x.db,
+        x.admin,
+        x.case.id,
+        Communication(
+            expected_revision=x.case.revision, notes=NOTE, template="processing_update"
+        ),
+    )
+    approve(x.db, p["id"], x.admin.id, expected_fingerprint=p["fingerprint"])
+    deliveries = list(
+        x.db.scalars(
+            select(NotificationDelivery).where(NotificationDelivery.plan_id == p["id"])
+        )
+    )
+    assert len(deliveries) == 1 and deliveries[0].channel == "sms"
+    sms = MockSender()
+    run_batch(x.db, sms=sms, slack=MockSlack(), now=s.now())
+    assert deliveries[0].state == "simulated"
+    assert len(sms.calls) == 1
+    run_batch(x.db, sms=sms, slack=MockSlack(), now=s.now() + timedelta(seconds=1))
+    assert len(sms.calls) == 1
+
+
+@pytest.mark.parametrize("provider_name", ["twilio", "telnyx"])
+def test_cancellation_content_native_transports_are_mocked(cancellation, provider_name):
+    import httpx
+    from test_sms_providers import config, secrets, response, PHONE
+    from app.notifications.sms_transport import NativeSMS
+    from app.notifications.sms_contracts import ProviderInput
+
+    x = cancellation
+    verify(x)
+    x.account.phone = PHONE
+    x.db.flush()
+    p = prepare(
+        x.db,
+        x.admin,
+        x.case.id,
+        Communication(
+            expected_revision=x.case.revision, notes=NOTE, template="processing_update"
+        ),
+    )
+    plan = x.db.get(NotificationPlan, p["id"])
+    cfg = config(provider_name)
+    assert "customer_cancellation" not in ProviderInput(**cfg).categories
+    cfg["categories"].append("customer_cancellation")
+    assert "customer_cancellation" in ProviderInput(**cfg).categories
+    calls = []
+
+    def transport(request):
+        calls.append(request)
+        return httpx.Response(
+            201 if provider_name == "twilio" else 200,
+            json=response(provider_name, body=plan.message),
+        )
+
+    provider = NativeSMS(
+        provider_name,
+        cfg,
+        secrets(provider_name),
+        transport=httpx.MockTransport(transport),
+    )
+    receipt = provider.submit(
+        destination=PHONE,
+        body=plan.message,
+        key="synthetic-cancellation-" + str(plan.id),
+    )
+    assert receipt.state == "accepted" and len(calls) == 1
+
+
+def test_historical_report_dates_are_separate_from_verified_churn(cancellation):
+    x = cancellation
+    day = date.today().replace(day=1).isoformat()
+    csv = f"id,date,end,reason\nSYN131-REPORTED,{day},{day},moving\n"
+    cols = {
+        "external_id": "id",
+        "requested_date": "date",
+        "disconnected_date": "end",
+        "reason": "reason",
+    }
+    b = CSVInput(csv_text=csv, columns=cols)
+    preview = s.historical(x.db, x.admin, b)
+    s.historical(
+        x.db,
+        x.admin,
+        CSVInput(
+            csv_text=csv, columns=cols, dry_run=False, expected_digest=preview["digest"]
+        ),
+    )
+    report = a.summary(x.db, date.today().strftime("%Y-%m"))
+    assert report["historical_reports"]["reported_record_count"] == 1
+    assert report["historical_reports"]["identity_reviewed_records"] == 0
+    assert report["historical_reports"]["additive_to_verified_cancellations"] is False
+    assert (
+        report["observed_unique_service_cancellations"] == 0
+        and report["customer_churn_rate"] is None
+    )

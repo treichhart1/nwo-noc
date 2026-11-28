@@ -137,6 +137,7 @@ def case_view(db, c, details=False):
             "reference",
             "customer_id",
             "requested_date",
+            "reported_disconnected_date",
             "reported_reason",
             "operator_reason",
             "status",
@@ -321,6 +322,8 @@ def change(db, u, id, b):
     field.admin(u)
     lock(db)
     c = get(db, id, b.expected_revision)
+    if b.status == "verified":
+        raise ValueError("Use documented identity and explicit service verification")
     if b.status not in STATES.get(c.status, set()):
         raise ValueError("Invalid cancellation transition")
     if b.operator_reason and not db.get(Reason, b.operator_reason):
@@ -425,7 +428,12 @@ def returns(db, u, id, b):
         raise ValueError("Selected service and explicit return due date required")
     link.equipment_return_required = b.required
     link.equipment_due = b.due
-    link.equipment_returned_at = now() if b.returned else None
+    if b.returned is False and link.equipment_returned_at is not None:
+        raise ValueError(
+            "Observed equipment return cannot be erased; preserve its history"
+        )
+    if b.returned and link.equipment_returned_at is None:
+        link.equipment_returned_at = now()
     event(db, c, u, "equipment_return_documented", b.notes, service_id=b.service_id)
     return case_view(db, c)
 
@@ -884,6 +892,9 @@ def historical(db, u, b):
             equipment_ack=False,
             status="pending_verification",
             source="historical_report",
+            reported_disconnected_date=date.fromisoformat(x["reported_disconnected"])
+            if x["reported_disconnected"]
+            else None,
             import_key=x["import_key"],
             competitor_id=x["competitor_id"],
         )
@@ -951,8 +962,10 @@ def review(db, u, id, b):
     c = get(db, id, b.expected_revision)
     if b.competitor_id is not None and not db.get(Competitor, b.competitor_id):
         raise ValueError("Known competitor required")
-    c.competitor_id = b.competitor_id
-    c.legal_hold = b.legal_hold
+    if "competitor_id" in b.model_fields_set:
+        c.competitor_id = b.competitor_id
+    if b.legal_hold is not None:
+        c.legal_hold = b.legal_hold
     event(
         db,
         c,

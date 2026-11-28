@@ -107,7 +107,7 @@ def snapshot(db, kind, identifier, now=None):
             sites = {r.snapshot.get('site_id') for r in links if r.snapshot.get('site_id')}
             overdue = any(r.equipment_return_required and r.equipment_due and r.equipment_due < now.date() and not r.equipment_returned_at for r in links)
             unresolved = row.status not in {'withdrawn','closed','disconnected'} and utc(row.created_at) < now - timedelta(days=p.unresolved_days)
-            base.update(event='equipment_return_overdue' if overdue else 'cancellation_unresolved' if unresolved else 'retention_review' if row.retention_state != 'pending_review' else 'cancellation_request', site_id=next(iter(sites)) if len(sites)==1 else None, confidence='Operator-reviewed cancellation workflow; no customer information included')
+            base.update(cancellation_id=row.id,event='equipment_return_overdue' if overdue else 'cancellation_unresolved' if unresolved else 'retention_review' if row.retention_state != 'pending_review' else 'cancellation_request', site_id=next(iter(sites)) if len(sites)==1 else None, confidence='Operator-reviewed cancellation workflow; no customer information included')
             if len(sites)==1:
                 from app.retention.analytics import summary
                 report=summary(db, now.strftime('%Y-%m'), next(iter(sites)))
@@ -361,6 +361,7 @@ def snapshot(db, kind, identifier, now=None):
 def payload(fields, config, *, delivery_id, thread_ts=None):
     names = {
         "incident_id": "Incident",
+        "cancellation_id": "Cancellation request",
         "site_id": "Site",
         "device_id": "Device",
         "link_id": "Link",

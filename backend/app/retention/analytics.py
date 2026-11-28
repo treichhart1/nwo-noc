@@ -184,17 +184,13 @@ def summary(db, month, site_id=None):
         voluntary[reason.voluntary if reason else "unknown"] += 1
         amount = snap.get("monthly_recurring") if snap else sv.monthly_recurring
         currency = snap.get("currency") if snap else sv.currency
-        if amount is None or not currency:
+        basis = (
+            (snap.get("revenue_basis") or "unavailable") if snap else sv.revenue_basis
+        )
+        if amount is None or not currency or basis not in {"contracted", "estimated"}:
             unknown += 1
         else:
-            basis = (
-                (snap.get("revenue_basis") or "unavailable")
-                if snap
-                else sv.revenue_basis
-            )
-            basis = (
-                "contracted_snapshot" if basis == "contracted" else "estimated_snapshot"
-            )
+            basis = basis + "_snapshot"
             for dimension in (
                 "total",
                 "tower",
@@ -248,6 +244,7 @@ def summary(db, month, site_id=None):
         "cohort_caution": "Account loss requires complete all-service membership; observed affected accounts are not account churn",
     }
     # Full opening/closing snapshots support revenue change only when every member has explicit pricing.
+    result["historical_reports"] = historical_reports(db, start, end, site_id)
     result["retention"] = retained(db, lo, hi, site_id)
     money = cohort_revenue(opening, closing)
     result["cohort_revenue"] = money
@@ -329,7 +326,11 @@ def retained(db, lo, hi, site_id=None):
         cases.add(c.id)
         v = r.snapshot.get("monthly_recurring")
         cur = r.snapshot.get("currency")
-        if v is None or not cur:
+        if (
+            v is None
+            or not cur
+            or r.snapshot.get("revenue_basis") not in {"contracted", "estimated"}
+        ):
             unknown += 1
         else:
             amounts[(cur, r.snapshot.get("revenue_basis") or "unavailable")] += Decimal(
@@ -412,3 +413,43 @@ def cohort_revenue(opening, closing):
         }
         for k, v in groups.items()
     ]
+
+
+def historical_reports(db, start, end, site_id=None):
+    filters = [
+        Case.source == "historical_report",
+        Case.reported_disconnected_date >= start,
+        Case.reported_disconnected_date < end,
+    ]
+    if site_id:
+        filters.append(
+            Case.id.in_(
+                select(CaseService.case_id).where(
+                    CaseService.snapshot["site_id"].as_integer() == site_id
+                )
+            )
+        )
+    rows = db.execute(
+        select(
+            Case.reported_reason,
+            Case.competitor_id,
+            func.count(Case.id),
+            func.count(Case.customer_id),
+        )
+        .where(*filters)
+        .group_by(Case.reported_reason, Case.competitor_id)
+        .limit(1001)
+    ).all()
+    if len(rows) > 1000:
+        raise ValueError("Historical report grouping exceeds bound")
+    return {
+        "reported_record_count": sum(r[2] for r in rows),
+        "identity_reviewed_records": sum(r[3] for r in rows),
+        "groups": [
+            {"reported_reason": r[0], "competitor_id": r[1], "records": r[2]}
+            for r in rows
+        ],
+        "basis": "Imported historical reports only; not verified service/account cancellations or a churn denominator",
+        "additive_to_verified_cancellations": False,
+        "unmatched_scope": "Unmatched records appear in network-wide reports only; never invent tower or customer associations",
+    }

@@ -68,6 +68,15 @@ def snapshot(db, plan):
     ):
         raise ValueError("Shared contact hold or opt-out")
     if db.scalar(
+        select(NotificationSuppression.customer_id)
+        .join(
+            CustomerAccount, CustomerAccount.id == NotificationSuppression.customer_id
+        )
+        .where(CustomerAccount.phone == phone)
+        .limit(1)
+    ):
+        raise ValueError("Shared canonical customer contact hold")
+    if db.scalar(
         select(CustomerAccount.id)
         .where(CustomerAccount.phone == phone, CustomerAccount.sms_opt_out.is_(True))
         .limit(1)
@@ -94,6 +103,18 @@ def snapshot(db, plan):
         for r in links
     ):
         raise ValueError("Selected canonical services required")
+    if marker["template"] == "completion" and any(
+        r.actual_disconnected_at is None for r in links
+    ):
+        raise ValueError(
+            "Observed disconnection of selected services required for completion notice"
+        )
+    if marker["template"] == "equipment_return" and not any(
+        r.equipment_return_required for r in links
+    ):
+        raise ValueError(
+            "Documented selected-service equipment return requirement required"
+        )
     message = (
         "Northwest Ohio Broadband: "
         + TEMPLATES[marker["template"]]
@@ -118,6 +139,42 @@ def prepare(db, u, id, b):
     s.lock(db)
     ns.lock(db)
     c = s.get(db, id, b.expected_revision)
+    links = list(
+        db.scalars(
+            select(CaseService)
+            .where(CaseService.case_id == c.id)
+            .order_by(CaseService.service_id)
+        )
+    )
+    key = ns.digest(
+        [
+            "customer_cancellation",
+            c.id,
+            b.template,
+            c.status,
+            c.retention_state,
+            [
+                (
+                    r.service_id,
+                    r.equipment_return_required,
+                    str(r.equipment_due),
+                    str(r.equipment_returned_at),
+                )
+                for r in links
+            ],
+        ]
+    )
+    old = db.scalar(select(NotificationPlan).where(NotificationPlan.dedupe_key == key))
+    if old:
+        snapshot(
+            db, old
+        )  # Recheck current source/consent; never create a duplicate phase notification.
+        return {
+            "id": old.id,
+            "fingerprint": old.fingerprint,
+            "status": old.status,
+            "external_delivery": False,
+        }
     # An audit event changes the source revision before fingerprinting, invalidating older drafts.
     s.event(
         db,
@@ -133,15 +190,6 @@ def prepare(db, u, id, b):
         db,
         NotificationPlan(snapshot={"retention": marker}, kind="customer_cancellation"),
     )
-    key = ns.digest(["customer_cancellation", marker])
-    old = db.scalar(select(NotificationPlan).where(NotificationPlan.dedupe_key == key))
-    if old:
-        return {
-            "id": old.id,
-            "fingerprint": old.fingerprint,
-            "status": old.status,
-            "external_delivery": False,
-        }
     p = ns.policy(db)
     from app.notifications.sms_transport import segments
 

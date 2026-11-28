@@ -60,6 +60,9 @@ class Case(Base):
         ForeignKey("customer_accounts.id"), nullable=True, index=True
     )
     requested_date: Mapped[date] = mapped_column(Date)
+    reported_disconnected_date: Mapped[date | None] = mapped_column(
+        Date, nullable=True, index=True
+    )
     reported_reason: Mapped[str] = mapped_column(ForeignKey("retention_reasons.code"))
     operator_reason: Mapped[str | None] = mapped_column(
         ForeignKey("retention_reasons.code"), nullable=True
