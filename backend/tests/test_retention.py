@@ -1006,3 +1006,91 @@ def test_csv_missing_cells_are_rejected_atomically(cancellation):
     with pytest.raises(ValueError, match="CSV validation"):
         s.historical(x.db, x.admin, body)
     assert x.db.scalar(select(func.count()).select_from(Case)) == before
+
+
+def test_multi_tower_retention_offer_cost_is_not_counted_in_full_at_each_tower(
+    cancellation,
+):
+    x = cancellation
+    second = CustomerService(
+        external_id="SYN131-SECOND-TOWER",
+        customer_id=x.account.id,
+        status="active",
+        service_type="wireless",
+        site_id=x.b.id,
+        monthly_recurring=Decimal("30.00"),
+        currency="USD",
+        revenue_basis="contracted",
+        source_updated_at=s.now(),
+        last_synced_at=s.now(),
+    )
+    x.db.add(second)
+    x.db.flush()
+    s.verify(
+        x.db,
+        x.admin,
+        x.case.id,
+        Verification(
+            expected_revision=x.case.revision,
+            notes=NOTE,
+            customer_id=x.account.id,
+            service_ids=[x.service.id, second.id],
+            identity_verified=True,
+            address_verified=True,
+            evidence_reference="SYN-MULTITOWER",
+        ),
+    )
+    o = s.offer(
+        x.db,
+        x.admin,
+        x.case.id,
+        OfferInput(
+            expected_revision=x.case.revision,
+            notes=NOTE,
+            kind="technical_investigation",
+            terms=NOTE,
+            expires_at=s.now() + timedelta(days=2),
+            eligible=True,
+            evidence_reference="SYN-OFFER",
+            monthly_cost="5.00",
+            one_time_cost="20.00",
+            currency="USD",
+        ),
+    )
+    for action in ["approve", "accepted"]:
+        s.offer_decide(
+            x.db,
+            x.admin,
+            x.case.id,
+            o["id"],
+            OfferDecision(
+                expected_revision=x.case.revision,
+                notes=NOTE,
+                fingerprint=o["fingerprint"],
+                action=action,
+                evidence_reference="SYN-ACCEPTED",
+            ),
+        )
+    s.retention(
+        x.db,
+        x.admin,
+        x.case.id,
+        RetentionChange(
+            expected_revision=x.case.revision,
+            notes=NOTE,
+            state="customer_retained",
+            evidence_reference="SYN-RETAINED",
+        ),
+    )
+    lo = s.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    hi = lo + timedelta(days=32)
+    total = a.retained(x.db, lo, hi)
+    assert total["estimated_offer_costs"] == {
+        "USD": {"monthly": "5.00", "one_time": "20.00"}
+    }
+    for site in [x.a.id, x.b.id]:
+        result = a.retained(x.db, lo, hi, site)
+        assert result["estimated_offer_costs"] == {} and result[
+            "unallocated_offer_case_ids"
+        ] == [x.case.id]
+        assert result["offer_cost_data_complete"] is False

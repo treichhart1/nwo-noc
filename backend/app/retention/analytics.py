@@ -206,7 +206,15 @@ def summary(db, month, site_id=None):
         "month": month,
         "site_id": site_id,
         "observed_unique_service_cancellations": len(lost),
-        "observed_affected_accounts": len({services[s].customer_id for s in lost}),
+        "observed_affected_accounts": len(
+            {
+                contexts[s][1].customer_id if s in contexts else services[s].customer_id
+                for s in lost
+            }
+        ),
+        "association_basis": "Reviewed historical request snapshots; otherwise current canonical association, not verified historic ownership",
+        "tenure_scope": "Selected-service tenure; account inception is not established by a service start date",
+        "average_customer_tenure_days": None,
         "voluntary_service_classification": dict(voluntary),
         "breakdowns": {k: dict(v) for k, v in groups.items()},
         "revenue_loss": [
@@ -350,7 +358,18 @@ def retained(db, lo, hi, site_id=None):
     costs = defaultdict(lambda: {"monthly": Decimal(0), "one_time": Decimal(0)})
     used = set()
     complete = True
+    unallocated = set()
+    case_sites = {}
+    if site_id and cases:
+        for link in db.scalars(
+            select(CaseService).where(CaseService.case_id.in_(cases))
+        ):
+            case_sites.setdefault(link.case_id, set()).add(link.snapshot.get("site_id"))
     for o in offers:
+        if site_id and case_sites.get(o.case_id) != {site_id}:
+            unallocated.add(o.case_id)
+            complete = False
+            continue
         if o.case_id in used:
             continue
         used.add(o.case_id)
@@ -370,6 +389,8 @@ def retained(db, lo, hi, site_id=None):
             k: {kk: str(vv) for kk, vv in v.items()} for k, v in costs.items()
         },
         "offer_cost_data_complete": complete,
+        "unallocated_offer_case_ids": sorted(unallocated),
+        "allocation_caution": "A multi-tower or unknown-site case offer is not assigned in full to each tower; use approved canonical finance allocation",
         "estimated_profitability": None,
         "profitability_limitation": "Cannot infer fully allocated operating expenses or accounting treatment from an offer; use existing finance scope calculation",
         "automatic_billing_changes": False,
