@@ -114,7 +114,7 @@ def distance_bearing(lat,lon,a,b):
     h=math.sin(x/2)**2+math.cos(math.radians(lat))*math.cos(math.radians(a))*math.sin(y/2)**2
     distance=6371000*2*math.atan2(math.sqrt(min(1,h)),math.sqrt(max(0,1-h)))
     bearing=(math.degrees(math.atan2(math.sin(y)*math.cos(math.radians(a)),math.cos(math.radians(lat))*math.sin(math.radians(a))-math.sin(math.radians(lat))*math.cos(math.radians(a))*math.cos(y)))+360)%360
-    return distance,bearing
+    return distance,None if distance < 1 else bearing
 
 
 def correlate(db,evidence,*,latitude=None,longitude=None,now=None):
@@ -191,7 +191,7 @@ def qualification_advisory(db,latitude,longitude,technology,*,now=None):
         distance,bearing=distance_bearing(latitude,longitude,r['latitude'],r['longitude'])
         if distance<=25000:
             candidates.append({'observation_id':r['id'],'dataset_id':r['dataset_id'],'approximate_distance_m':round(distance),
-                'approximate_bearing_degrees':round(bearing,1),'confidence':r['confidence'],'stale':r['stale'],
+                'approximate_bearing_degrees':round(bearing,1) if bearing is not None else None,'confidence':r['confidence'],'stale':r['stale'],
                 'carrier_mcc':r['mcc'],'carrier_mnc':r['mnc'],'carrier_availability_verified':False})
     return {'status':'manual_review_required','survey_required':True,'service_guaranteed':False,'capacity':'unavailable',
         'candidates':sorted(candidates,key=lambda r:r['approximate_distance_m'])[:20],'bounded':data['bounded'],

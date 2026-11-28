@@ -177,3 +177,8 @@ def test_unexpected_sensitive_wire_response_aborts_without_retention(field):
 
 def test_documented_carrier_name_is_not_inferred_or_rejected_for_ampersand():
     assert evidence(carrier="AT&T").carrier=="AT&T"
+
+
+def test_coincident_estimated_coordinates_have_no_antenna_bearing():
+    distance,bearing=distance_bearing(41,-84,41,-84)
+    assert distance==0 and bearing is None
