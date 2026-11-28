@@ -766,8 +766,13 @@ def validate_pending(db, identifier, mock):
     current, email = snapshot(db, e)
     auth = e.authorization or {}
     actor = db.get(User, auth.get("actor")) if auth.get("actor") else None
+    plan = db.get(Plan, d.plan_id)
     if (
-        not actor
+        d.state != "submitting"
+        or not plan
+        or plan.status != "approved"
+        or auth.get("fingerprint") != plan.fingerprint
+        or not actor
         or not actor.is_active
         or actor.role != "admin"
         or auth.get("provider_revision") != p.revision

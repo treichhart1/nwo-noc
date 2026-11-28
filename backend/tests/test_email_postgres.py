@@ -844,6 +844,7 @@ def test_recipient_permission_rechecked_after_queue_approval(email_case):
         x.admin.id,
         mock=True,
     )
+    q.delivery.state = "submitting"
     q.pref.granted = False
     x.db.flush()
     with pytest.raises(ValueError):
@@ -923,3 +924,33 @@ def test_quote_email_reuses_only_current_prepared_access(signup, email_case):
     x.db.flush()
     with pytest.raises(ValueError):
         s.snapshot(x.db, e)
+
+
+def test_plan_cancellation_rechecked_immediately_before_io(email_case):
+    x = email_case
+    q = prepare_network(x)
+    s.approve(
+        x.db,
+        q.delivery.id,
+        EmailApproval(
+            confirm=True,
+            reference="synthetic-last-moment-cancel",
+            fingerprint=q.plan.fingerprint,
+        ),
+        x.admin.id,
+        mock=True,
+    )
+    q.delivery.state = "submitting"
+    x.db.flush()
+    s.validate_pending(x.db, q.delivery.id, True)
+    # Existing canonical cancellation can happen after the committed claim.
+    q.plan.status = "cancelled"
+    x.db.flush()
+    with pytest.raises(ValueError, match="revoked before I/O"):
+        s.validate_pending(x.db, q.delivery.id, True)
+    assert (
+        x.db.scalar(
+            select(func.count(Attempt.id)).where(Attempt.delivery_id == q.delivery.id)
+        )
+        == 0
+    )
