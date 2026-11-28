@@ -182,3 +182,6 @@ def quote_operation(db,request,body,respond):
 def signup_readiness():
     s.enabled()
     return {'status':'ok','service':'signup-only gateway'}
+
+# Separate public request functions only; never import private retention routes.
+from app.retention import public as cancellation_public  # noqa: E402,F401

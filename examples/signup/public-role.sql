@@ -14,3 +14,5 @@ GRANT USAGE, SELECT ON SEQUENCE signup_applications_id_seq, signup_events_id_seq
 
 -- Quote access is capability-based and cannot read private quote/application tables.
 GRANT EXECUTE ON FUNCTION public.noc_signup_quote_read(text), public.noc_signup_quote_respond(text,text) TO noc_signup;
+-- Cancellation intake uses fixed SECURITY DEFINER functions only; no customer/case grants.
+GRANT EXECUTE ON FUNCTION public.noc_cancel_config(), public.noc_cancel_replay(text,text), public.noc_cancel_submit(text,text,text,text,text,text,date,text,integer) TO noc_signup;

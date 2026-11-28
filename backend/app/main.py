@@ -165,3 +165,16 @@ app.include_router(sms_router)
 
 from app.notifications.slack_routes import router as slack_router
 app.include_router(slack_router)
+
+from app.retention.routes import router as retention_router
+app.include_router(retention_router)
+
+@app.middleware('http')
+async def bounded_retention_requests(request,call_next):
+    if request.url.path.startswith('/api/retention/') and request.method=='POST':
+        body=bytearray()
+        async for chunk in request.stream():
+            if len(body)+len(chunk)>1048576:return JSONResponse({'detail':'Retention request exceeds limit'},status_code=413)
+            body.extend(chunk)
+        request._body=bytes(body)
+    return await call_next(request)

@@ -1,0 +1,1 @@
+{"apiVersion":3,"name":"nwo/customer-cancellation","title":"NWO Customer Cancellation","category":"widgets","icon":"forms","description":"Secure form on the approved dedicated signup origin","editorScript":"nwo-cancellation-editor","supports":{"html":false}}

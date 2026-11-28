@@ -478,6 +478,9 @@ def restore(folder, expected):
             sample = h.compose(release,state,'exec','-T','db','psql','-U','postgres','-d','nwo_noc','-t','-A','-c',"SELECT count(*) FROM telemetry_samples t JOIN devices d ON d.id=t.device_id WHERE d.external_id='noc119-recovery';").stdout.strip()
             passed('preserved_actual_telemetry_sample', sample == b'1')
             passed('preserved_redis_queue_state', h.compose(release,state,'exec','-T','redis','redis-cli','GET','noc119:preservation').stdout.strip()==b'synthetic')
+            from retention_preservation import PROBE
+            preservation=h.compose(release,state,'exec','-T','backend','python','-c',PROBE)
+            passed('preserved_encrypted_cancellation_and_key',b'Encrypted cancellation record and restored key verified' in preservation.stdout)
             passed('preserved_document_bytes', (h.lib / 'documents/synthetic-preservation.txt').read_text() == 'synthetic document preservation')
             try: restore(folder, expected)
             except RuntimeError: passed('existing_restored_installation_cannot_be_overwritten')

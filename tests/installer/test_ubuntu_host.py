@@ -352,7 +352,7 @@ def main():
             "approval_reference": "synthetic-disposable-acceptance",
             "commit": revision,
             "tree": git("rev-parse", "HEAD^{tree}"),
-            "migration_head": "0033_powercode_integration",
+            "migration_head": "0034_customer_retention",
             "upgrade_from": list(previous),
             "images": {
                 "backend": image("backend", revision, bad),
@@ -679,6 +679,9 @@ print(json.dumps({'scheme':pwd_context.identify(hashed),'policy_rounds':pwd_cont
     db(
         "INSERT INTO audit_logs(action,entity_type,entity_id,details,created_at) VALUES ('installer.synthetic_sentinel','installation','synthetic','{}',now());"
     )
+    from retention_preservation import SEED,PROBE
+    command([*compose,'exec','-T','backend','python','-c',SEED])
+    passed('encrypted_cancellation_seeded',True)
     if args.pilot_checkpoint:
         command([*compose, 'exec', '-T', 'redis', 'redis-cli', 'SET', 'noc119:preservation', 'synthetic'])
         script = "from app.core.database import SessionLocal; from app.models.entities import Device,TelemetrySample; from datetime import datetime,timezone; db=SessionLocal(); d=Device(source='synthetic',external_id='noc119-recovery',name='Synthetic recovery device'); db.add(d); db.flush(); db.add(TelemetrySample(device_id=d.id,sampled_at=datetime.now(timezone.utc),raw_data={'synthetic_recovery':True})); db.commit(); db.close()"
@@ -809,7 +812,8 @@ print(json.dumps({'scheme':pwd_context.identify(hashed),'policy_rounds':pwd_cont
             for line in (root / "etc/nwo-noc/runtime.env").read_text().splitlines()
         )
         restored_url = runtime["DATABASE_URL"].rsplit("/", 1)[0] + "/" + restore
-        script = "import asyncio,httpx; from app.main import app; from app.core.database import SessionLocal; from sqlalchemy import text; db=SessionLocal(); assert db.execute(text(\"SELECT count(*) FROM audit_logs WHERE action='installer.synthetic_sentinel'\")).scalar()==1; db.close(); exec(\"async def check():\\n async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app),base_url='http://restored.invalid') as c:\\n  assert (await c.get('/health')).status_code==200\\n\"); asyncio.run(check())"
+        from retention_preservation import PROBE
+        script = "import asyncio,httpx; from app.main import app; from app.core.database import SessionLocal; from sqlalchemy import text; db=SessionLocal(); assert db.execute(text(\"SELECT count(*) FROM audit_logs WHERE action='installer.synthetic_sentinel'\")).scalar()==1; db.close(); exec(\"async def check():\\n async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app),base_url='http://restored.invalid') as c:\\n  assert (await c.get('/health')).status_code==200\\n\"); asyncio.run(check())" + "\n" + PROBE
         command(
             [
                 *compose,

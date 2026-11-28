@@ -753,6 +753,11 @@ def decide_message(db, u, m, b):
 
 
 def linked_approval(db, plan, user_id):
+    if plan.snapshot.get("retention"):
+        from app.retention.communications import snapshot as cancellation_snapshot
+        admin(get(db, User, user_id))
+        cancellation_snapshot(db, plan)
+        return
     if plan.snapshot.get("prospect"):
         if plan.incident_id or plan.maintenance_id or plan.kind not in {"signup_application", "installation_scheduling"}:
             raise ValueError("Prospect source cannot replace incident/maintenance approval")

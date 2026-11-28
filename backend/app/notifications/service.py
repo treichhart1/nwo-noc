@@ -759,6 +759,9 @@ def create_plan(db, request, user_id, now=None):
 
 
 def current_snapshot(db, plan, now):
+    if plan.snapshot.get("retention"):
+        from app.retention.communications import snapshot as cancellation_snapshot
+        return cancellation_snapshot(db, plan), None
     if plan.snapshot.get("prospect"):
         from app.signup.communications import snapshot as prospect_snapshot
         return prospect_snapshot(db, plan), None
@@ -835,7 +838,7 @@ def approve(db, ident, user_id, now=None, *, expected_fingerprint=None):
                 ),
             )
         )
-    if not plan.snapshot.get("prospect") and (SEVERITY[plan.severity] >= SEVERITY[p.slack_min_severity] or plan.maintenance_id):
+    if not plan.snapshot.get("prospect") and not plan.snapshot.get("retention") and (SEVERITY[plan.severity] >= SEVERITY[p.slack_min_severity] or plan.maintenance_id):
         db.add(
             NotificationDelivery(
                 plan_id=ident,

@@ -275,6 +275,9 @@ jobs:
             echo "Production environment unexpectedly passed staging gate"
             exit 1
           fi
+      - name: Validate cancellation, consent and historical cohort acceptance
+        working-directory: backend
+        run: python -m pytest -q tests/test_retention.py
       - name: Validate Powercode synthetic approvals and durable provisioning
         working-directory: backend
         run: python -m pytest -q tests/test_powercode_integration.py
@@ -303,7 +306,7 @@ jobs:
             tests/test_mikrotik_native.py \
             tests/test_release_combined_postgres.py \
             tests/test_final_release_security.py \
-            tests/test_powercode_customers.py tests/test_powercode_integration.py \
+            tests/test_powercode_customers.py tests/test_powercode_integration.py tests/test_retention.py \
             tests/test_notifications.py \
             tests/test_notification_expansion.py \
             tests/test_down_detector.py \
@@ -671,6 +674,7 @@ jobs:
       - compose-validation
       - wordpress-status
       - signup-acceptance
+      - cancellation-acceptance
     if: ${{ always() }}
     steps:
       - name: Require all RF release dependencies to pass
@@ -684,10 +688,11 @@ jobs:
           SECURITY_RESULT: ${{ needs.dependency-security.result }}
           RF_RESULT: ${{ needs.rf-postgres-integration.result }}
           WORDPRESS_RESULT: ${{ needs.wordpress-status.result }}
+          CANCELLATION_RESULT: ${{ needs.cancellation-acceptance.result }}
           SIGNUP_RESULT: ${{ needs.signup-acceptance.result }}
           COMPOSE_RESULT: ${{ needs.compose-validation.result }}
         run: |
-          for name in HOST_PACKAGE_RESULT PILOT_VM_RESULT INSTALL_RESULT FRONTEND_RESULT BACKEND_RESULT MIGRATIONS_RESULT RF_RESULT COMPOSE_RESULT SECURITY_RESULT WORDPRESS_RESULT SIGNUP_RESULT; do
+          for name in HOST_PACKAGE_RESULT PILOT_VM_RESULT INSTALL_RESULT FRONTEND_RESULT BACKEND_RESULT MIGRATIONS_RESULT RF_RESULT COMPOSE_RESULT SECURITY_RESULT WORDPRESS_RESULT SIGNUP_RESULT CANCELLATION_RESULT; do
             result="${!name}"
             if [ "$result" != "success" ]; then
               echo "::error::$name is $result, expected success"
@@ -1090,4 +1095,41 @@ jobs:
             ${{ runner.temp }}/signup-evidence/compatibility.json
             ${{ runner.temp }}/signup-evidence/proxy-isolation.json
             ${{ runner.temp }}/signup-image-evidence
+          if-no-files-found: error
+
+  cancellation-acceptance:
+    name: WordPress cancellation and retention acceptance
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Build exact public signup gateway artifacts
+        run: |
+          docker build -t noc128-backend:test backend
+          docker build -t noc129-signup-web:test -f deploy/Dockerfile.signup .
+          docker build -t noc117-postgres:rc -f deploy/Dockerfile.postgres .
+          python3 scripts/release/image_security.py --require-no-high --output "$RUNNER_TEMP/cancellation-image-evidence" noc128-backend:test noc129-signup-web:test noc117-postgres:rc
+      - name: Install locked browser and disposable certificate trust tooling
+        working-directory: frontend
+        run: |
+          npm ci --no-audit --no-fund
+          npx playwright install --with-deps chromium
+          sudo apt-get install -y --no-install-recommends libnss3-tools
+      - name: Execute actual WordPress ZIP and restricted PostgreSQL cancellation acceptance
+        run: python3 scripts/wordpress/acceptance.py "$RUNNER_TEMP/cancellation-evidence" --cancellation
+      - name: Preserve cancellation ZIP checksum, security and compatibility evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: wordpress-cancellation-plugin-and-acceptance
+          path: |
+            ${{ runner.temp }}/cancellation-evidence/plugin
+            ${{ runner.temp }}/cancellation-evidence/compatibility.json
+            ${{ runner.temp }}/cancellation-evidence/proxy-isolation.json
+            ${{ runner.temp }}/cancellation-image-evidence
           if-no-files-found: error

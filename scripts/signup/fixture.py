@@ -63,6 +63,15 @@ def main():
                 equipment=[],
             )
         )
+        if os.environ.get('CANCELLATION_ACCEPTANCE')=='1':
+            from app.models.entities import User
+            from app.retention.models import Policy,Reason
+            from app.retention.contracts import REASONS
+            user=User(username='noc131-fixture-reviewer',email='synthetic-noc131@example.invalid',password_hash='no-login',role='admin',is_active=False)
+            db.add(user);db.flush()
+            db.add(Policy(version=1,text='Synthetic reviewed cancellation policy: after monthly billing the full month may remain payable, subject to operator review. Acknowledgement does not establish debt.',created_by=user.id))
+            for code,label in REASONS.items():db.add(Reason(code=code,label=label,voluntary='unknown'))
+            settings.retention_public_enabled=True
         db.commit()
     # Dedicated actual HTTP role, with the same restricted grants as deployment.
     from sqlalchemy.engine import make_url
