@@ -40,7 +40,7 @@ from fastapi.responses import JSONResponse
 
 @app.exception_handler(RequestValidationError)
 async def private_customer_validation(request, exc):
-    if request.url.path.startswith(('/api/customers','/api/notifications','/api/down-detector','/api/tower-health','/api/ipam','/api/equipment','/api/field','/api/maintenance-ops','/api/applications','/api/unified','/api/planning','/api/fiber-designer','/api/finance','/api/analytics','/api/customer-status')):
+    if request.url.path.startswith(('/api/rf/wave','/api/customers','/api/notifications','/api/down-detector','/api/tower-health','/api/ipam','/api/equipment','/api/field','/api/maintenance-ops','/api/applications','/api/unified','/api/planning','/api/fiber-designer','/api/finance','/api/analytics','/api/customer-status')):
         return JSONResponse(status_code=422, content={'detail':'Invalid customer request; check the documented field types and bounds'})
     return await request_validation_exception_handler(request, exc)
 
@@ -181,3 +181,20 @@ async def bounded_retention_requests(request,call_next):
 
 from app.notifications.email_routes import router as email_router
 app.include_router(email_router)
+
+from app.api.wave_routes import router as wave_router
+app.include_router(wave_router)
+
+@app.middleware('http')
+async def bounded_wave_evidence(request, call_next):
+    if request.url.path.startswith('/api/rf/wave/'):
+        if request.method == 'POST':
+            try:
+                if request.headers.get('transfer-encoding') or not 0 < int(request.headers.get('content-length', '0')) <= 262144:
+                    raise ValueError()
+            except ValueError:
+                return JSONResponse({'detail': 'Bounded Wave evidence request required'}, status_code=413)
+        response = await call_next(request)
+        response.headers['Cache-Control'] = 'no-store'
+        return response
+    return await call_next(request)
