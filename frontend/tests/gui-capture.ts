@@ -24,7 +24,18 @@ export async function capture(page:Page,id:number,title:string,viewport:typeof v
 }
 export async function capturePublic(page:Page,id:number,title:string){
  if(!process.env.NOC_GUI_OUTPUT)return;
- const original=page.viewportSize();
- for(const viewport of viewports){await page.setViewportSize({width:viewport.width,height:viewport.height});await capture(page,id,title,viewport);}
- if(original)await page.setViewportSize(original);await page.evaluate(()=>scrollTo(0,0));
+ const browser=page.context().browser();if(!browser)throw new Error('Real Chromium browser required');
+ const url=page.url(),origin=new URL(url).origin;
+ for(const viewport of viewports){
+  // Public visitors must not inherit the WordPress administrator installation
+  // session. The original acceptance page/cookies remain untouched.
+  const context=await browser.newContext({viewport:{width:viewport.width,height:viewport.height},deviceScaleFactor:1});
+  await context.route('**/*',async route=>{const target=new URL(route.request().url()).origin;if([origin,'https://status.noc128.test'].includes(target))await route.continue();else await route.abort();});
+  const preview=await context.newPage();const errors:string[]=[];preview.on('pageerror',e=>errors.push(e.name));
+  await preview.goto(url);await preview.waitForLoadState('networkidle',{timeout:15000});
+  await expect(preview.locator('#wpadminbar')).toHaveCount(0);
+  if(id===27)await expect(preview.locator('.nwo-status-summary')).toContainText('Major service interruption');
+  else await expect(preview.frameLocator('iframe').getByRole('heading',{name:id===28?'Request internet service':'Request service cancellation',exact:true})).toBeVisible();
+  await capture(preview,id,title,viewport);expect(errors).toEqual([]);await context.close();
+ }
 }
