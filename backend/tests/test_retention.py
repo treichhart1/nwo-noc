@@ -904,7 +904,7 @@ def test_cancellation_approval_enqueues_only_mock_safe_sms(cancellation):
     from app.notifications.service import approve
     from app.notifications.models import NotificationDelivery
     from app.notifications.worker import run_batch
-    from app.notifications.providers import MockSender, MockSlack
+    from app.notifications.providers import MockSender
 
     x = cancellation
     verify(x)
@@ -929,10 +929,10 @@ def test_cancellation_approval_enqueues_only_mock_safe_sms(cancellation):
     }
     sms_delivery = next(d for d in deliveries if d.channel == "sms")
     sms = MockSender()
-    run_batch(x.db, sms=sms, slack=MockSlack(), now=s.now())
+    run_batch(x.db, sms=sms, slack=MockSender(), now=s.now())
     assert sms_delivery.state == "simulated"
     assert len(sms.calls) == 1
-    run_batch(x.db, sms=sms, slack=MockSlack(), now=s.now() + timedelta(seconds=1))
+    run_batch(x.db, sms=sms, slack=MockSender(), now=s.now() + timedelta(seconds=1))
     assert len(sms.calls) == 1
 
 
