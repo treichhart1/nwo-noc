@@ -994,3 +994,55 @@ def test_long_smtp_receipt_preserved_without_truncation(email_case):
     x.db.expire_all()
     assert x.db.get(Delivery, q.delivery.id).provider_receipt == identifier
     assert x.db.get(Attempt, attempt.id).provider_message_id == identifier
+
+
+def test_expired_email_cleanup_honors_canonical_legal_hold(signup, email_case):
+    from test_signup import application
+    from app.notifications.email_routes import redact
+
+    x = signup
+    a = application(x, email=DEST)
+    a.legal_hold = True
+    t = EmailTemplate(
+        key="signup_received",
+        revision=1,
+        config=EmailTemplateRequest(
+            key="signup_received",
+            purpose="signup",
+            subject="Application received",
+            text="Application {reference} was received for review.",
+        ).model_dump(),
+        created_by=x.admin.id,
+    )
+    x.db.add(t)
+    x.db.flush()
+    s.permission(
+        x.db,
+        EmailPermission(
+            application_id=a.id,
+            purpose="signup",
+            granted=True,
+            verified_address=DEST,
+            reference="synthetic-held-applicant",
+        ),
+        x.admin.id,
+    )
+    p = s.prepare(
+        x.db,
+        EmailDraftRequest(
+            source_kind="signup", source_id=a.id, application_id=a.id, template_id=t.id
+        ),
+        x.admin.id,
+    )
+    d = x.db.scalar(select(Delivery).where(Delivery.plan_id == p.id))
+    e = x.db.get(EmailEnvelope, d.id)
+    original = e.ciphertext
+    p.created_at = s.ns.clock() - timedelta(days=366)
+    d.state = "simulated"
+    x.db.flush()
+    assert redact(db=x.db, u=x.admin)["redacted"] == 0
+    assert e.ciphertext == original
+    a.legal_hold = False
+    x.db.flush()
+    assert redact(db=x.db, u=x.admin)["redacted"] == 1
+    assert s.decrypt(e.ciphertext) == {"redacted": True}

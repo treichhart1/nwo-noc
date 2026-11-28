@@ -675,6 +675,20 @@ def redact(db=Depends(get_db), u=Depends(require_admin)):
         )
         n = 0
         for e in rows:
+            # Reuse canonical legal holds; email cleanup cannot erase held source evidence.
+            source = e.source
+            if source.get("source_kind") == "signup":
+                from app.signup.models import Application
+
+                owner = db.get(Application, source.get("source_id"))
+                if owner and owner.legal_hold:
+                    continue
+            elif source.get("source_kind") == "cancellation":
+                from app.retention.models import Case
+
+                owner = db.get(Case, source.get("source_id"))
+                if owner and owner.legal_hold:
+                    continue
             if db.scalar(
                 select(Attempt.id)
                 .where(
