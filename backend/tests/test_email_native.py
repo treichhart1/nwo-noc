@@ -638,3 +638,22 @@ def test_rates_distinguish_unresolved_and_unknown_delivery():
     )
     assert s.rates(5, 0, 0, 1, "smtp")["confirmed_delivery_rate"] is None
     assert s.rates(5, 0, 0, 1, "mock")["confirmed_delivery_rate"] is None
+
+
+def test_valid_long_smtp_message_id_fits_canonical_receipt_storage():
+    from app.notifications.models import NotificationAttempt, NotificationDelivery
+
+    domain = "a" * 40 + ".example.com"
+    conf = cfg(
+        sender="cs@" + domain, reply_to="cs@" + domain, approved_domains=[domain]
+    )
+    identifier = message_id("synthetic-long-domain", domain)
+    assert len(identifier) > 100
+    assert (
+        len(identifier)
+        <= NotificationAttempt.__table__.c.provider_message_id.type.length
+    )
+    assert (
+        len(identifier) <= NotificationDelivery.__table__.c.provider_receipt.type.length
+    )
+    assert conf.sender.endswith(domain)

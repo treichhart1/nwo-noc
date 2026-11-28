@@ -144,7 +144,7 @@ class NotificationDelivery(Base):
     provider_status_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
-    provider_receipt: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    provider_receipt: Mapped[str | None] = mapped_column(String(360), nullable=True)
     budget_charge_microunits: Mapped[int | None] = mapped_column(Integer, nullable=True)
     completed_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
@@ -169,7 +169,7 @@ class NotificationAttempt(Base):
     slack_revision: Mapped[int | None] = mapped_column(Integer, nullable=True)
     provider_name: Mapped[str | None] = mapped_column(String(20), ForeignKey("notification_sms_providers.name"), nullable=True, index=True)
     claim_token: Mapped[str | None] = mapped_column(String(36), nullable=True, unique=True)
-    provider_message_id: Mapped[str | None] = mapped_column(String(100), nullable=True, index=True)
+    provider_message_id: Mapped[str | None] = mapped_column(String(360), nullable=True, index=True)
     provider_error_code: Mapped[str | None] = mapped_column(String(40), nullable=True)
     raw_status: Mapped[str | None] = mapped_column(String(40), nullable=True)
     acceptance: Mapped[str | None] = mapped_column(String(30), nullable=True)

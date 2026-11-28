@@ -972,3 +972,25 @@ def test_private_rates_and_immutable_event_history(email_case):
         and metric["resolved_submission_success_rate"] == 1
     )
     assert attempts(q.delivery.id, db=x.db)["events"][0]["kind"] == "delivered"
+
+
+def test_long_smtp_receipt_preserved_without_truncation(email_case):
+    from app.notifications.email_transport import message_id
+
+    x = email_case
+    q = prepare_network(x)
+    identifier = message_id("synthetic-long-domain", "a" * 40 + ".example.com")
+    q.delivery.provider_receipt = identifier
+    attempt = Attempt(
+        delivery_id=q.delivery.id,
+        attempt=1,
+        email_provider="mock",
+        outcome="synthetic-long-receipt",
+        acceptance="accepted",
+        provider_message_id=identifier,
+    )
+    x.db.add(attempt)
+    x.db.flush()
+    x.db.expire_all()
+    assert x.db.get(Delivery, q.delivery.id).provider_receipt == identifier
+    assert x.db.get(Attempt, attempt.id).provider_message_id == identifier

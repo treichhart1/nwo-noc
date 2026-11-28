@@ -9,6 +9,13 @@ depends_on = None
 
 
 def upgrade():
+    # SMTP Message-ID includes a valid sender domain and can exceed SMS identifiers.
+    op.execute(
+        "ALTER TABLE notification_deliveries ALTER COLUMN provider_receipt TYPE VARCHAR(360)"
+    )
+    op.execute(
+        "ALTER TABLE notification_attempts ALTER COLUMN provider_message_id TYPE VARCHAR(360)"
+    )
     op.execute(
         "\nCREATE TABLE notification_email_providers (\n\tname VARCHAR(20) NOT NULL, \n\tconfig JSON NOT NULL, \n\trevision INTEGER NOT NULL, \n\tlive_authorized BOOLEAN NOT NULL, \n\tauthorization_reference VARCHAR(120), \n\twebhook_public_key TEXT, \n\thealth VARCHAR(40) NOT NULL, \n\tlast_submission_at TIMESTAMP WITH TIME ZONE, \n\tlast_callback_at TIMESTAMP WITH TIME ZONE, \n\tPRIMARY KEY (name)\n)\n\n"
     )
@@ -69,6 +76,18 @@ def upgrade():
 
 
 def downgrade():
+    # Never truncate historical provider evidence to satisfy an older schema.
+    op.execute("""DO $$ BEGIN
+    IF EXISTS (SELECT 1 FROM notification_attempts WHERE length(provider_message_id)>100)
+       OR EXISTS (SELECT 1 FROM notification_deliveries WHERE length(provider_receipt)>100)
+    THEN RAISE EXCEPTION 'Long email identifiers require reviewed export/recovery before downgrade; evidence preserved'; END IF;
+    END $$""")
+    op.execute(
+        "ALTER TABLE notification_attempts ALTER COLUMN provider_message_id TYPE VARCHAR(100)"
+    )
+    op.execute(
+        "ALTER TABLE notification_deliveries ALTER COLUMN provider_receipt TYPE VARCHAR(100)"
+    )
     op.execute("DROP INDEX ix_notification_attempts_email_provider")
     op.execute("ALTER TABLE notification_attempts DROP COLUMN email_provider")
     op.execute("DROP TABLE notification_email_events")
