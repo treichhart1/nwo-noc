@@ -1,3 +1,4 @@
+import {capturePublic} from './gui-capture';
 import {test,expect} from '@playwright/test';
 import {execFileSync} from 'node:child_process';
 import path from 'node:path';
@@ -14,6 +15,7 @@ test('actual installed signup plugin, mobile iframe, restricted submission, quot
  await page.setViewportSize({width:390,height:844});await page.goto(origin+'/?pagename=synthetic-signup');const frame=page.frameLocator('iframe[title="Secure service application"]');await expect(frame.getByRole('heading',{name:'Request internet service'})).toBeVisible();
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBeTruthy();
  await frame.getByLabel('First name',{exact:true}).fill('Synthetic');await frame.getByLabel('Last name',{exact:true}).fill('Signup');await frame.getByLabel('Requested plan',{exact:true}).selectOption({label:'Synthetic configured wireless — USD 65.00/month'});
+ await capturePublic(page,28,'Public customer signup form — actual WordPress plugin');
  for(const [label,value] of Object.entries({'Service address — Street address':'129 Synthetic Road','Service address — City':'Synthetic Town','Service address — ZIP code':'43500','Email':'synthetic-signup@example.com','Phone (international format, e.g. +15555550123)':'+15555550129'}))await frame.getByLabel(label,{exact:true}).fill(value);
  await expect(frame.getByLabel(/I consent to sms contact/)).not.toBeChecked();await frame.getByLabel(/I consent to storage and review/).check();
  let captured:any,csrf='';page.on('request',request=>{if(request.url().endsWith('/public/signup/applications')&&request.method()==='POST'){expect(new URL(request.url()).origin).toBe('https://status.noc128.test');captured=request.postDataJSON();csrf=request.headers()['x-signup-csrf']}});

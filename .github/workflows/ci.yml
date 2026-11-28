@@ -713,11 +713,28 @@ jobs:
             echo "**Scope:** synthetic/disposable CI only. No live UISP/MikroTik integration or staging validation."
             echo "**Release status:** not approved for production."
           } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - name: Collect actual browser captures from this exact workflow
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          pattern: gui-*-part
+          path: ${{ runner.temp }}/gui-parts
+      - name: Validate all requested views and build HTML gallery and ZIP
+        run: |
+          python3 scripts/gui/test_package.py
+          python3 scripts/gui/package.py "$RUNNER_TEMP/gui-parts" "$RUNNER_TEMP/nwo-noc-gui-preview"
+      - name: Publish complete actual GUI evidence for operator approval
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: nwo-noc-gui-preview
+          path: ${{ runner.temp }}/nwo-noc-gui-preview
+          if-no-files-found: error
+          retention-days: 30
 
   clean-install-acceptance:
     name: Ubuntu 24.04 isolated installation and recovery
     runs-on: ubuntu-24.04
-    timeout-minutes: 25
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
@@ -1014,6 +1031,22 @@ jobs:
         env:
           NOC111_AUDIT_BROWSER: "true"
         run: (cd frontend && npx playwright test audit.spec.ts)
+      - name: Capture actual desktop and mobile application GUI with synthetic WISP records
+        env:
+          NOC_PROJECT: noc84-wisp-test
+          NOC_ACCEPTANCE_STATE: ${{ runner.temp }}/noc85-wisp-state
+          NOC_GUI_PREVIEW: "true"
+          NOC_GUI_OUTPUT: ${{ runner.temp }}/gui-private
+        run: |
+          scripts/release/manage.sh "$NOC_ACCEPTANCE_STATE" exec -T backend python < scripts/gui/seed.py > "$NOC_ACCEPTANCE_STATE/gui-fixture.json"
+          (cd frontend && npx playwright test gui-preview.spec.ts)
+      - name: Preserve actual private GUI captures
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: gui-private-part
+          path: ${{ runner.temp }}/gui-private
+          if-no-files-found: error
       - name: Validate immutable old-release upgrade, failed-upgrade rollback and matching restore
         run: scripts/release/rehearse-upgrade.sh "$RUNNER_TEMP/noc93-upgrade-state"
       - name: Stop isolated acceptance services, retain volumes
@@ -1051,7 +1084,16 @@ jobs:
           npm ci --no-audit --no-fund
           npx playwright install --with-deps chromium
       - name: Execute actual disposable WordPress installation and TLS retrieval
+        env:
+          NOC_GUI_OUTPUT: ${{ runner.temp }}/gui-status
         run: python3 scripts/wordpress/acceptance.py "$RUNNER_TEMP/wordpress-evidence"
+      - name: Preserve actual public GUI captures
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: gui-status-part
+          path: ${{ runner.temp }}/gui-status
+          if-no-files-found: error
       - name: Preserve plugin ZIP, checksum and compatibility evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
@@ -1090,7 +1132,16 @@ jobs:
           npx playwright install --with-deps chromium
           sudo apt-get install -y --no-install-recommends libnss3-tools
       - name: Execute actual WordPress ZIP and restricted PostgreSQL signup acceptance
+        env:
+          NOC_GUI_OUTPUT: ${{ runner.temp }}/gui-signup
         run: python3 scripts/wordpress/acceptance.py "$RUNNER_TEMP/signup-evidence" --signup
+      - name: Preserve actual public GUI captures
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: gui-signup-part
+          path: ${{ runner.temp }}/gui-signup
+          if-no-files-found: error
       - name: Preserve signup ZIP checksum, security and compatibility evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
@@ -1127,7 +1178,16 @@ jobs:
           npx playwright install --with-deps chromium
           sudo apt-get install -y --no-install-recommends libnss3-tools
       - name: Execute actual WordPress ZIP and restricted PostgreSQL cancellation acceptance
+        env:
+          NOC_GUI_OUTPUT: ${{ runner.temp }}/gui-cancellation
         run: python3 scripts/wordpress/acceptance.py "$RUNNER_TEMP/cancellation-evidence" --cancellation
+      - name: Preserve actual public GUI captures
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: gui-cancellation-part
+          path: ${{ runner.temp }}/gui-cancellation
+          if-no-files-found: error
       - name: Preserve cancellation ZIP checksum, security and compatibility evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
