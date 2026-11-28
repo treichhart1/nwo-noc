@@ -699,6 +699,10 @@ def run_batch(factory, *, mock=False, transport=None, smtp_factory=None, limit=2
                 d.provider_receipt = result.message_id
                 p.last_submission_at = ns.clock()
                 p.health = "submission_accepted"
+            elif a.acceptance == "accepted":
+                # A signed event may establish acceptance before an ambiguous HTTP response.
+                a.provider_error_code = failure.code
+                a.outcome = "signed_event_before_transport_result"
             else:
                 a.acceptance = failure.acceptance
                 a.outcome = failure.code

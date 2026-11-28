@@ -7,6 +7,7 @@ from app.api.deps import require_admin
 from app.core.database import get_db
 from app.core.config import settings
 from app.notifications.routes import tx
+from app.notifications.email_transport import CAPABILITIES
 from app.notifications.email_contracts import (
     EmailConfig,
     EmailRouting,
@@ -106,6 +107,7 @@ def dashboard(
             ],
             "public_status": "Independent publication approval; /api/customer-status remains authoritative",
             "native_enabled": settings.email_native_transport_enabled,
+            "email_capabilities": CAPABILITIES,
             "email_providers": [
                 {
                     "name": p.name,
@@ -206,11 +208,15 @@ def credentials(
                 if name == "sendgrid"
                 else {"username", "password"}
             )
-            if set(value) != required or any(
-                not isinstance(v, str)
-                or not 1 <= len(v) <= 2048
-                or any(ord(c) < 32 for c in v)
-                for v in value.values()
+            if (
+                not isinstance(value, dict)
+                or set(value) != required
+                or any(
+                    not isinstance(v, str)
+                    or not 1 <= len(v) <= 2048
+                    or any(ord(c) < 32 for c in v)
+                    for v in value.values()
+                )
             ):
                 raise ValueError()
             if name == "sendgrid":

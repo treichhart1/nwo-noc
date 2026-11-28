@@ -399,7 +399,7 @@ def test_private_email_routes_require_administrator(email_case):
         app.dependency_overrides.clear()
 
 
-@pytest.mark.parametrize("mode", ["crash", "concurrent"])
+@pytest.mark.parametrize("mode", ["crash", "concurrent", "callback"])
 def test_independent_committed_email_claims_before_io(
     postgres_db, tmp_path, monkeypatch, mode
 ):
@@ -573,6 +573,16 @@ def test_independent_committed_email_claims_before_io(
                     assert a and a.acceptance == "pending" and d.state == "submitting"
                 calls.append(kw["key"])
                 entered.set()
+                if mode == "callback":
+                    with Factory() as callback:
+                        receipt = callback.scalar(
+                            select(Attempt).where(Attempt.delivery_id == did)
+                        )
+                        receipt.acceptance = "accepted"
+                        receipt.raw_status = "delivered"
+                        callback.get(Delivery, did).state = "delivered"
+                        callback.commit()
+                    raise EmailFailure("timeout")
                 if mode == "crash":
                     raise SystemExit("synthetic worker crash after durable intent")
                 assert release.wait(10)
@@ -589,6 +599,15 @@ def test_independent_committed_email_claims_before_io(
             assert s.run_batch(Factory, mock=True, limit=1)["processed"] == 0
             with Factory() as db:
                 assert db.get(Delivery, did).state == "reconciliation_required"
+        elif mode == "callback":
+            assert s.run_batch(Factory, mock=True, limit=1)["processed"] == 1
+            with Factory() as db:
+                assert db.get(Delivery, did).state == "delivered"
+                result = db.scalar(select(Attempt).where(Attempt.delivery_id == did))
+                assert (
+                    result.acceptance == "accepted"
+                    and result.outcome == "signed_event_before_transport_result"
+                )
         else:
             with ThreadPoolExecutor(max_workers=2) as pool:
                 first = pool.submit(s.run_batch, Factory, mock=True, limit=1)
@@ -778,3 +797,60 @@ def test_restoration_template_cannot_use_outage_source(email_case):
             ),
             x.admin.id,
         )
+
+
+def test_usage_limit_counts_committed_intent(email_case):
+    x = email_case
+    q = prepare_network(x)
+    x.provider.config = x.provider.config | {"daily_messages": 1}
+    x.db.flush()
+    s.approve(
+        x.db,
+        q.delivery.id,
+        EmailApproval(
+            confirm=True,
+            reference="synthetic-budget-review",
+            fingerprint=q.plan.fingerprint,
+        ),
+        x.admin.id,
+        mock=True,
+    )
+    x.db.add(
+        Attempt(
+            delivery_id=q.delivery.id,
+            attempt=1,
+            outcome="intent_committed",
+            email_provider="mock",
+            acceptance="pending",
+            estimated_cost_microunits=1,
+        )
+    )
+    x.db.flush()
+    with pytest.raises(ValueError, match="usage/budget"):
+        s.validate(x.db, q.delivery, q.envelope, mock=True)
+
+
+def test_recipient_permission_rechecked_after_queue_approval(email_case):
+    x = email_case
+    q = prepare_network(x)
+    s.approve(
+        x.db,
+        q.delivery.id,
+        EmailApproval(
+            confirm=True,
+            reference="synthetic-queue-consent",
+            fingerprint=q.plan.fingerprint,
+        ),
+        x.admin.id,
+        mock=True,
+    )
+    q.pref.granted = False
+    x.db.flush()
+    with pytest.raises(ValueError):
+        s.validate_pending(x.db, q.delivery.id, True)
+    assert (
+        x.db.scalar(
+            select(func.count(Attempt.id)).where(Attempt.delivery_id == q.delivery.id)
+        )
+        == 0
+    )

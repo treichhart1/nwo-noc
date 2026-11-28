@@ -460,3 +460,52 @@ def test_real_local_smtp_starttls_auth_and_data(tmp_path, monkeypatch):
     thread.join(6)
     assert not thread.is_alive() and not errors and result.status == "accepted"
     assert seen.index(b"STARTTLS") < seen.index(b"AUTH") < seen.index(b"DATA")
+
+
+@pytest.mark.parametrize(
+    "exception,expected,acceptance",
+    [
+        (
+            smtplib.SMTPAuthenticationError(535, b"synthetic private error"),
+            "authentication_failed",
+            "not_accepted",
+        ),
+        (smtplib.SMTPDataError(451, b"synthetic"), "rate_limited", "not_accepted"),
+        (smtplib.SMTPDataError(550, b"synthetic"), "sender_rejected", "not_accepted"),
+    ],
+)
+def test_smtp_verified_rejections(exception, expected, acceptance):
+    class Reject(SMTPFixture):
+        def send_message(self, *a, **kw):
+            raise exception
+
+    with pytest.raises(EmailFailure) as e:
+        SMTP(
+            cfg().model_dump(), {"username": "u", "password": "secret"}, factory=Reject
+        ).send(key="x", destination=DEST, payload=PAYLOAD, correlation="a" * 64)
+    assert (
+        e.value.code == expected
+        and e.value.acceptance == acceptance
+        and "private" not in str(e.value)
+    )
+
+
+def test_sendgrid_missing_receipt_never_assumed_rejection():
+    r = SendGrid(
+        cfg().model_dump(),
+        {"api_key": "synthetic"},
+        transport=httpx.MockTransport(lambda r: httpx.Response(202)),
+    ).send(key="x", destination=DEST, payload=PAYLOAD, correlation="a" * 64)
+    assert r.message_id is None and r.status == "accepted"
+
+
+def test_sendgrid_invalid_receipt_is_ambiguous():
+    with pytest.raises(EmailFailure) as e:
+        SendGrid(
+            cfg().model_dump(),
+            {"api_key": "synthetic"},
+            transport=httpx.MockTransport(
+                lambda r: httpx.Response(202, headers={"X-Message-Id": "unsafe!!!"})
+            ),
+        ).send(key="x", destination=DEST, payload=PAYLOAD, correlation="a" * 64)
+    assert e.value.acceptance == "unknown"

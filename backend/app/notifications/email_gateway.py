@@ -8,6 +8,9 @@ from app.core.config import settings
 from app.core.database import get_db
 from app.notifications import email_service as service
 from app.notifications.sms_gateway import callback_budget
+from app.notifications.email_models import EmailProvider
+from app.notifications.email_transport import verified_events
+from app.notifications.service import clock
 
 app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None, redirect_slashes=False)
 
@@ -52,8 +55,28 @@ async def callback(request: Request):
         generator = get_db()
         db = next(generator)
         try:
-            # Shared persistent callback quota prevents unbounded DB/crypto work.
-            if not callback_budget(db, "email-sendgrid"):
+            # Unauthenticated traffic cannot consume signed suppression quota.
+            provider = db.get(EmailProvider, "sendgrid")
+            if (
+                not provider
+                or not provider.webhook_public_key
+                or not provider.config.get("callbacks_enabled")
+            ):
+                raise ValueError("Callback not configured")
+            verified = verified_events(
+                body,
+                dict(request.headers),
+                provider.webhook_public_key,
+                int(clock().timestamp()),
+            )
+            priority = any(
+                e["event"]
+                in {"bounce", "spamreport", "unsubscribe", "group_unsubscribe"}
+                for e in verified
+            )
+            if not callback_budget(
+                db, "email-sendgrid-suppression" if priority else "email-sendgrid"
+            ):
                 return JSONResponse(
                     {"detail": "Rate limit"},
                     status_code=429,

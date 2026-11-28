@@ -3,6 +3,8 @@
 import base64
 from dataclasses import dataclass
 from email.message import EmailMessage
+from email.utils import formataddr
+from typing import Protocol
 import hashlib
 import html
 import json
@@ -21,6 +23,34 @@ class EmailReceipt:
     message_id: str | None
     status: str = "accepted"
     simulated: bool = False
+
+
+class EmailSender(Protocol):
+    def send(
+        self, *, key: str, destination: str, payload: dict, correlation: str
+    ) -> EmailReceipt: ...
+
+
+CAPABILITIES = {
+    "mock": {
+        "submission": "simulated",
+        "confirmed_delivery": False,
+        "signed_events": False,
+        "provider_costs": False,
+    },
+    "sendgrid": {
+        "submission": "http_202_acceptance",
+        "confirmed_delivery": "signed_delivered_event",
+        "signed_events": True,
+        "provider_costs": False,
+    },
+    "smtp": {
+        "submission": "smtp_server_acceptance",
+        "confirmed_delivery": False,
+        "signed_events": False,
+        "provider_costs": False,
+    },
+}
 
 
 class EmailFailure(RuntimeError):
@@ -171,7 +201,7 @@ class SMTP:
         context.minimum_version = ssl.TLSVersion.TLSv1_2
         msg = EmailMessage()
         for header, value in [
-            ("From", c["sender"]),
+            ("From", formataddr((c["sender_name"], c["sender"]))),
             ("To", destination),
             ("Reply-To", c["reply_to"]),
             ("Subject", payload["subject"]),
