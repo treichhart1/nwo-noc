@@ -8,7 +8,7 @@ import hashlib
 from datetime import date, timedelta
 from decimal import Decimal
 from uuid import uuid4
-from sqlalchemy import select, func, text
+from sqlalchemy import select, func, text, or_
 from app.models.entities import AuditLog, Incident
 from app.customers.models import CustomerAccount, CustomerService, IncidentCustomer
 from app.customers.powercode_models import PowercodeServiceHistory
@@ -524,7 +524,10 @@ def offer_decide(db, u, id, offer_id, b):
             .where(
                 Offer.case_id == c.id,
                 Offer.id != o.id,
-                Offer.status.in_(["approved", "accepted"]),
+                or_(
+                    Offer.status == "accepted",
+                    (Offer.status == "approved") & (Offer.expires_at > now()),
+                ),
             )
             .limit(1)
         ):
