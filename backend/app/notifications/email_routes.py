@@ -83,6 +83,18 @@ def dashboard(
         rows = list(
             db.execute(q.order_by(Delivery.id.desc()).offset(offset).limit(limit))
         )
+        delivered_evidence = (
+            set(
+                db.scalars(
+                    select(Event.delivery_id).where(
+                        Event.kind == "delivered",
+                        Event.delivery_id.in_([r[0].id for r in rows]),
+                    )
+                )
+            )
+            if rows
+            else set()
+        )
         return {
             "publications": publications,
             "items": [
@@ -103,7 +115,7 @@ def dashboard(
                     "provider_status": d.provider_status,
                     "attempts": d.attempts,
                     "estimated_cost_microunits": d.budget_charge_microunits,
-                    "delivered": d.state == "delivered",
+                    "delivered": d.state == "delivered" or d.id in delivered_evidence,
                     "simulated": d.state == "simulated",
                 }
                 for d, plan, envelope in rows

@@ -1046,3 +1046,73 @@ def test_expired_email_cleanup_honors_canonical_legal_hold(signup, email_case):
     x.db.flush()
     assert redact(db=x.db, u=x.admin)["redacted"] == 1
     assert s.decrypt(e.ciphertext) == {"redacted": True}
+
+
+@pytest.mark.parametrize("kind", ["delivered", "unsubscribe"])
+def test_actual_signed_gateway_uses_no_private_jwt_or_provider_vault(
+    email_case, monkeypatch, kind
+):
+    from fastapi.testclient import TestClient
+    from app.notifications import email_gateway as gateway
+    from app.notifications.sms_models import SMSCallbackBudget
+
+    x = email_case
+    q = prepare_network(x)
+    make = signed(x, q, kind)
+    body, headers = make()
+
+    def receiver_db():
+        yield x.db
+
+    monkeypatch.setattr(gateway, "get_db", receiver_db)
+    monkeypatch.setattr(settings, "email_callback_gateway_enabled", True)
+    monkeypatch.setattr(
+        settings, "secret_key", "unrelated-receiver-settings-placeholder-not-noc-jwt"
+    )
+    monkeypatch.setattr(
+        settings,
+        "notifications_vault_key_file",
+        "/nonexistent/outbound-vault-not-mounted",
+    )
+    client = TestClient(gateway.app)
+    headers = headers | {"content-type": "application/json"}
+    response = client.post("/callbacks/email/sendgrid", content=body, headers=headers)
+    assert response.status_code == 200 and response.json()["processed"] == 1
+    assert (
+        client.post("/callbacks/email/sendgrid", content=body, headers=headers).json()[
+            "processed"
+        ]
+        == 0
+    )
+    assert client.get("/api/communications").status_code == 404
+    assert client.get("/docs").status_code == 404
+    if kind == "unsubscribe":
+        assert x.db.get(EmailSuppression, s.identity(DEST))
+        assert x.account.sms_opt_out is False
+        assert (
+            x.db.scalar(
+                select(func.sum(SMSCallbackBudget.count)).where(
+                    SMSCallbackBudget.provider == "email-sg-hold"
+                )
+            )
+            == 2
+        )
+    else:
+        assert q.delivery.state == "delivered"
+
+
+def test_confirmed_delivery_evidence_survives_later_unsubscribe(email_case):
+    from app.notifications.email_routes import dashboard
+
+    x = email_case
+    q = prepare_network(x)
+    make = signed(x, q)
+    b, h = make("delivered", "delivered-proof")
+    s.apply_events(x.db, b, h)
+    b, h = make("unsubscribe", "later-unsubscribe")
+    s.apply_events(x.db, b, h)
+    x.db.flush()
+    result = dashboard(limit=50, offset=0, channel="email", db=x.db)
+    item = next(i for i in result["items"] if i["id"] == q.delivery.id)
+    assert item["delivered"] is True and item["status"] == "unsubscribed"
+    assert x.db.get(EmailSuppression, s.identity(DEST))

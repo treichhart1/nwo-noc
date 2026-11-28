@@ -12,6 +12,8 @@ from app.notifications.email_models import EmailProvider
 from app.notifications.email_transport import verified_events
 from app.notifications.service import clock
 
+BUDGET_KEYS = ("email-sendgrid", "email-sg-hold")
+
 app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None, redirect_slashes=False)
 
 
@@ -74,9 +76,7 @@ async def callback(request: Request):
                 in {"bounce", "spamreport", "unsubscribe", "group_unsubscribe"}
                 for e in verified
             )
-            if not callback_budget(
-                db, "email-sendgrid-suppression" if priority else "email-sendgrid"
-            ):
+            if not callback_budget(db, BUDGET_KEYS[1] if priority else BUDGET_KEYS[0]):
                 return JSONResponse(
                     {"detail": "Rate limit"},
                     status_code=429,

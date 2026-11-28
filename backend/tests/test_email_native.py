@@ -690,3 +690,14 @@ def test_email_identity_missing_or_public_key_fails_closed(
     )
     with pytest.raises(ValueError, match="identity key unavailable"):
         s.identity(DEST)
+
+
+def test_callback_quota_names_fit_shared_budget_storage():
+    from app.notifications.email_gateway import BUDGET_KEYS
+    from app.notifications.sms_models import SMSCallbackBudget
+
+    assert len(set(BUDGET_KEYS)) == 2
+    assert all(
+        len(key) <= SMSCallbackBudget.__table__.c.provider.type.length
+        for key in BUDGET_KEYS
+    )
