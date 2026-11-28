@@ -1,3 +1,4 @@
+import CellularMap from "./CellularMap"
 import React,{useEffect,useState} from 'react'
 import {request} from './lib/api'
 import './field.css'
@@ -50,5 +51,5 @@ export default function UnifiedNetwork(){
  <details><summary>Reuse documents, work orders and incidents</summary>{['node_id','edge_id','document_id','work_order_id','incident_id'].map(k=><React.Fragment key={k}>{input('Association '+k,assoc,k,setAssoc)}</React.Fragment>)}<button disabled={!safe} onClick={()=>act(()=>post('/associations',numbers(assoc,Object.keys(assoc))))}>Associate existing operational record</button><p>One component and one record per association. Existing document visibility/download and field assignment checks still apply.</p></details>
  <details><summary>Retire or update documented state</summary>{pick('State target type',state,'target',setState,['node','edge','circuit','path','join'])}{input('State target ID',state,'id',setState,'number')}{input('Expected current revision',state,'expected_revision',setState,'number')}{pick('New documented state',state,'state',setState,['planned','installed','reserved','active','out_of_service'])}<button disabled={!safe} onClick={()=>act(()=>post('/state',{...numbers(state,['id','expected_revision']),state:state.target==='join'?null:state.state,active:state.target==='join'?false:null}))}>Record state change or retire join</button></details>
  </section>}
- <section aria-label="Unified change history"><h2>Audit history</h2><button onClick={()=>act(async()=>setEvents(await unifiedAPI('/events')))}>Show latest network history</button><pre>{pretty(events)}</pre></section></main>
+ <section aria-label="Unified change history"><h2>Audit history</h2><button onClick={()=>act(async()=>setEvents(await unifiedAPI('/events')))}>Show latest network history</button><pre>{pretty(events)}</pre></section><CellularMap/></main>
 }

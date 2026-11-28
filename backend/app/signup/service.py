@@ -291,6 +291,8 @@ def qualify(db, u, a, b):
         snapshot["status"] = "manual_review_required"
         snapshot["uncertainty"].append("Carrier coverage, eligibility and capacity require independently verified evidence; no LTE/5G guarantee")
         if coords:
+            from app.cellular.service import qualification_advisory
+            snapshot["cellular_advisory"] = qualification_advisory(db, coords["latitude"], coords["longitude"], a.technology)
             data["coordinates"]=coords
             a.pii_ciphertext=crypto.seal(a,data)
             snapshot["coordinate_source"]=coords["source"]

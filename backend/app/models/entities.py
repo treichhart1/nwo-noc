@@ -501,3 +501,5 @@ from app.customers import powercode_models as _powercode_models  # noqa: E402,F4
 from app.retention import models as retention_models  # noqa: E402,F401
 
 from app.notifications import email_models as email_models  # noqa: E402,F401
+
+from app.cellular import models as cellular_models  # noqa: E402,F401
