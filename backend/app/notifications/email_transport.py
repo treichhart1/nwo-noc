@@ -85,6 +85,8 @@ def message_id(key, domain):
 
 def render(template, fields):
     safe = {k: str(fields[k]) for k in ("reference", "status")}
+    if "quote_token" in fields:
+        safe["quote_token"] = str(fields["quote_token"])
     subject = template["subject"].format(**safe)
     text = template["text"].format(**safe)
     if "\n" in subject or "\r" in subject:
@@ -99,11 +101,24 @@ def render(template, fields):
         + html.escape(template["support"])
         + "</p></main></body></html>"
     )
-    return {
+    if template.get("logo_base64"):
+        from app.notifications.email_contracts import logo_png
+
+        logo_png(template["logo_base64"])
+        markup = markup.replace(
+            "<h1>",
+            '<img src="cid:noc-brand-logo" alt="Company logo" width="128"><h1>',
+            1,
+        )
+    result = {
         "subject": subject,
         "text": text + "\n\n" + template["support"],
         "html": markup,
     }
+
+    if template.get("logo_base64"):
+        result["logo_base64"] = template["logo_base64"]
+    return result
 
 
 class MockEmail:
@@ -144,6 +159,19 @@ class SendGrid:
                 "subscription_tracking": {"enable": False},
             },
         }
+        if payload.get("logo_base64"):
+            from app.notifications.email_contracts import logo_png
+
+            logo_png(payload["logo_base64"])
+            body["attachments"] = [
+                {
+                    "content": payload["logo_base64"],
+                    "type": "image/png",
+                    "filename": "brand.png",
+                    "disposition": "inline",
+                    "content_id": "noc-brand-logo",
+                }
+            ]
         try:
             with httpx.Client(
                 transport=self.transport,
@@ -210,6 +238,18 @@ class SMTP:
             msg[header] = value
         msg.set_content(payload["text"])
         msg.add_alternative(payload["html"], subtype="html")
+        if payload.get("logo_base64"):
+            from app.notifications.email_contracts import logo_png
+
+            logo_png(payload["logo_base64"])
+            msg.get_payload()[1].add_related(
+                base64.b64decode(payload["logo_base64"], validate=True),
+                maintype="image",
+                subtype="png",
+                cid="<noc-brand-logo>",
+                filename="brand.png",
+                disposition="inline",
+            )
         transmitting = False
         client = None
         try:

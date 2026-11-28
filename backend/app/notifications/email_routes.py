@@ -51,7 +51,7 @@ def dashboard(
     db=Depends(get_db),
 ):
     def load():
-        from app.customer_status.models import Publication
+        from app.customer_status.models import Publication, Revision
 
         publications = [
             {
@@ -59,18 +59,28 @@ def dashboard(
                 "incident_id": p.incident_id,
                 "maintenance_id": p.maintenance_id,
                 "published_revision_id": p.published_revision_id,
+                "state": "withdrawn"
+                if revision and revision.withdraw
+                else (revision.state if revision else "not_published"),
                 "channel": "wordpress",
                 "delivery_evidence": "publication only, not recipient delivery",
             }
-            for p in db.scalars(
-                select(Publication).order_by(Publication.id.desc()).limit(50)
+            for p, revision in db.execute(
+                select(Publication, Revision)
+                .outerjoin(Revision, Revision.id == Publication.published_revision_id)
+                .order_by(Publication.id.desc())
+                .limit(50)
             )
         ]
-        q = select(Delivery)
+        q = (
+            select(Delivery, Plan, Envelope)
+            .join(Plan, Plan.id == Delivery.plan_id)
+            .outerjoin(Envelope, Envelope.delivery_id == Delivery.id)
+        )
         if channel:
             q = q.where(Delivery.channel == channel)
         rows = list(
-            db.scalars(q.order_by(Delivery.id.desc()).offset(offset).limit(limit))
+            db.execute(q.order_by(Delivery.id.desc()).offset(offset).limit(limit))
         )
         return {
             "publications": publications,
@@ -79,13 +89,13 @@ def dashboard(
                     "id": d.id,
                     "plan_id": d.plan_id,
                     "channel": d.channel,
-                    "category": db.get(Plan, d.plan_id).kind,
-                    "source": db.get(Plan, d.plan_id).target,
+                    "category": plan.kind,
+                    "source": plan.target,
                     "status": d.state,
-                    "approval": db.get(Plan, d.plan_id).status,
+                    "approval": plan.status,
                     "provider": (
-                        db.get(Envelope, d.id).provider
-                        if d.channel == "email" and db.get(Envelope, d.id)
+                        envelope.provider
+                        if d.channel == "email" and envelope
                         else d.sms_provider
                         or ("slack" if d.channel == "slack" else None)
                     ),
@@ -95,7 +105,7 @@ def dashboard(
                     "delivered": d.state == "delivered",
                     "simulated": d.state == "simulated",
                 }
-                for d in rows
+                for d, plan, envelope in rows
             ],
             "counts": [
                 {"channel": c, "status": state, "count": n}
@@ -333,7 +343,12 @@ def template(body: EmailTemplateRequest, db=Depends(get_db), u=Depends(require_a
             "id": t.id,
             "revision": version,
             "preview": s.render(
-                t.config, {"reference": "synthetic-reference", "status": "under_review"}
+                t.config,
+                {
+                    "reference": "synthetic-reference",
+                    "status": "under_review",
+                    "quote_token": "synthetic-preview-not-a-real-access-token",
+                },
             ),
         }
 

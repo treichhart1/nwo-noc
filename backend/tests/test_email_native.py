@@ -509,3 +509,117 @@ def test_sendgrid_invalid_receipt_is_ambiguous():
             ),
         ).send(key="x", destination=DEST, payload=PAYLOAD, correlation="a" * 64)
     assert e.value.acceptance == "unknown"
+
+
+def synthetic_logo(size=32, metadata=False):
+    import struct, zlib
+
+    def chunk(kind, value):
+        return (
+            struct.pack(">I", len(value))
+            + kind
+            + value
+            + struct.pack(">I", zlib.crc32(kind + value) & 0xFFFFFFFF)
+        )
+
+    raw = b"\x89PNG\r\n\x1a\n" + chunk(
+        b"IHDR", struct.pack(">IIBBBBB", size, size, 8, 2, 0, 0, 0)
+    )
+    if metadata:
+        raw += chunk(b"tEXt", b"unapproved metadata")
+    raw += chunk(
+        b"IDAT", zlib.compress((b"\x00" + b"\x11\x22\x33" * size) * size)
+    ) + chunk(b"IEND", b"")
+    return base64.b64encode(raw).decode()
+
+
+def test_embedded_logo_no_external_resource():
+    logo = synthetic_logo()
+    assert logo_png(logo) == logo
+    t = EmailTemplateRequest(
+        key="signup_received",
+        purpose="signup",
+        subject="Synthetic application",
+        text="Your application {reference} is received.",
+        logo_base64=logo,
+    ).model_dump()
+    p = render(t, {"reference": "SYN", "status": "submitted"})
+    assert (
+        'src="cid:noc-brand-logo"' in p["html"]
+        and "http" not in p["html"]
+        and p["logo_base64"] == logo
+    )
+    called = []
+
+    def respond(r):
+        j = json.loads(r.content)
+        assert j["attachments"][0]["content_id"] == "noc-brand-logo"
+        assert j["attachments"][0]["content"] == logo
+        called.append(True)
+        return httpx.Response(202)
+
+    SendGrid(
+        cfg().model_dump(),
+        {"api_key": "synthetic"},
+        transport=httpx.MockTransport(respond),
+    ).send(key="logo", destination=DEST, payload=p, correlation="a" * 64)
+    smtp = []
+
+    def factory(**kw):
+        obj = SMTPFixture(**kw)
+        smtp.append(obj)
+        return obj
+
+    SMTP(
+        cfg().model_dump(),
+        {"username": "synthetic", "password": "disposable"},
+        factory=factory,
+    ).send(key="logo", destination=DEST, payload=p, correlation="a" * 64)
+    assert called and any(
+        part.get("Content-ID") == "<noc-brand-logo>" for part in smtp[0].msg.walk()
+    )
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        synthetic_logo(1),
+        synthetic_logo(metadata=True),
+        base64.b64encode(b"<svg onload=alert(1)>").decode(),
+        synthetic_logo()[:-8] + "AAAAAAAA",
+    ],
+)
+def test_logo_rejects_pixels_metadata_active_content_or_corruption(value):
+    with pytest.raises(ValueError):
+        logo_png(value)
+
+
+def test_quote_token_body_only_and_never_url():
+    t = EmailTemplateRequest(
+        key="quote_available",
+        purpose="signup",
+        subject="Approved quote {reference}",
+        text="Use this private token in the existing quote form: {quote_token}",
+    )
+    token = "s" * 64
+    p = render(
+        t.model_dump(),
+        {"reference": "SYN", "status": "quote_sent", "quote_token": token},
+    )
+    assert (
+        token in p["text"] and token not in p["subject"] and "https://" not in p["text"]
+    )
+    with pytest.raises(ValidationError):
+        EmailTemplateRequest(
+            key="quote_available",
+            purpose="signup",
+            subject="Quote {quote_token}",
+            text="Private reviewed quote message.",
+        )
+    with pytest.raises(ValidationError):
+        EmailTemplateRequest(
+            key="signup_received",
+            purpose="signup",
+            subject="Application",
+            text="Private token {quote_token}",
+        )

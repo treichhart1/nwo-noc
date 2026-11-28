@@ -854,3 +854,72 @@ def test_recipient_permission_rechecked_after_queue_approval(email_case):
         )
         == 0
     )
+
+
+def test_quote_email_reuses_only_current_prepared_access(signup, email_case):
+    from test_signup import application
+    from app.signup.models import Quote
+    from app.signup import crypto
+    import secrets
+
+    x = signup
+    a = application(x, email=DEST)
+    a.state = "quote_sent"
+    token = secrets.token_urlsafe(48)
+    q = Quote(
+        application_id=a.id,
+        number=1,
+        plan_id=x.plan.id,
+        snapshot={"monthly": "65.00"},
+        expires_at=s.ns.clock() + timedelta(days=1),
+        status="issued",
+        approved_by=x.admin.id,
+        issued_at=s.ns.clock(),
+        access_hash=crypto.digest("quote_access", token),
+        access_ciphertext=crypto.seal(a, {"token": token}),
+    )
+    x.db.add(q)
+    t = EmailTemplate(
+        key="quote_available",
+        revision=1,
+        config=EmailTemplateRequest(
+            key="quote_available",
+            purpose="signup",
+            subject="Quote available",
+            text="Enter this private token in the existing secure quote form: {quote_token}",
+        ).model_dump(),
+        created_by=x.admin.id,
+    )
+    x.db.add(t)
+    x.db.flush()
+    s.permission(
+        x.db,
+        EmailPermission(
+            application_id=a.id,
+            purpose="signup",
+            granted=True,
+            verified_address=DEST,
+            reference="synthetic-quote-recipient",
+        ),
+        x.admin.id,
+    )
+    p = s.prepare(
+        x.db,
+        EmailDraftRequest(
+            source_kind="signup", source_id=a.id, application_id=a.id, template_id=t.id
+        ),
+        x.admin.id,
+    )
+    d = x.db.scalar(select(Delivery).where(Delivery.plan_id == p.id))
+    e = x.db.get(EmailEnvelope, d.id)
+    assert (
+        token not in json.dumps(p.snapshot)
+        and token not in p.message
+        and token not in json.dumps(p.target)
+    )
+    payload = s.decrypt(e.ciphertext)["payload"]
+    assert token in payload["text"] and token not in payload["subject"]
+    q.access_hash = crypto.digest("quote_access", "rotated")
+    x.db.flush()
+    with pytest.raises(ValueError):
+        s.snapshot(x.db, e)

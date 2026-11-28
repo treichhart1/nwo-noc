@@ -138,7 +138,7 @@ async def bounded_analytics_requests(request,call_next):
             if request.headers.get("transfer-encoding") or not 0<int(request.headers.get("content-length","0"))<=65536:raise ValueError()
         except ValueError:return JSONResponse({"detail":"Bounded analytics request required"},status_code=413)
     response=await call_next(request)
-    if request.url.path.startswith(("/api/analytics/","/api/analytics-scrape/","/api/customer-status/")):response.headers["Cache-Control"]="no-store"
+    if request.url.path.startswith(("/api/analytics/","/api/analytics-scrape/","/api/customer-status/","/api/communications")):response.headers["Cache-Control"]="no-store"
     return response
 
 from app.customer_status.routes import router as customer_status_router

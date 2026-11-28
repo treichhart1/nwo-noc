@@ -205,8 +205,8 @@ def source_snapshot(db, source, template):
         if template.key == "quote_available":
             from app.signup.models import Quote
 
-            if not db.scalar(
-                select(Quote.id)
+            quote = db.scalar(
+                select(Quote)
                 .where(
                     Quote.application_id == a.id,
                     Quote.approved_by.is_not(None),
@@ -214,10 +214,15 @@ def source_snapshot(db, source, template):
                     Quote.expires_at > ns.clock(),
                     Quote.status.in_(["issued", "accepted"]),
                 )
+                .order_by(Quote.number.desc())
                 .limit(1)
-            ):
+            )
+            latest = db.scalar(
+                select(func.max(Quote.number)).where(Quote.application_id == a.id)
+            )
+            if not quote or quote.number != latest:
                 raise ValueError("Issued approved unexpired quote required")
-        return {
+        result = {
             "kind": kind,
             "id": a.id,
             "revision": a.revision,
@@ -227,6 +232,25 @@ def source_snapshot(db, source, template):
             else "application-" + str(a.id),
             "status": a.state,
         }
+        if (
+            template.key == "quote_available"
+            and "{quote_token}" in template.config["text"]
+        ):
+            from app.signup import crypto
+            import re
+
+            if not quote.access_ciphertext or not quote.access_hash:
+                raise ValueError("Prepare canonical private quote access first")
+            token = crypto.unseal(a, quote.access_ciphertext).get("token")
+            if (
+                not isinstance(token, str)
+                or not re.fullmatch(r"[A-Za-z0-9_-]{64}", token)
+                or crypto.digest("quote_access", token) != quote.access_hash
+            ):
+                raise ValueError("Current canonical quote token required")
+            # Private body only. No URL, subject, public plan metadata, generic log or Slack.
+            result["quote_token"] = token
+        return result
     if kind == "cancellation":
         from app.retention.models import Case, CaseService
 
@@ -241,6 +265,8 @@ def source_snapshot(db, source, template):
         ):
             raise ValueError("Identity-reviewed cancellation required")
         if template.key == "retention_offer":
+            if c.status not in {"verified", "retention_review"}:
+                raise ValueError("Current retention review required")
             from app.retention.models import Offer
             from app.retention.service import offer_context
             from app.signup import crypto

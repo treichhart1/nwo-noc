@@ -84,6 +84,79 @@ def address(value):
     return local + "@" + domain.lower()
 
 
+def logo_png(value):
+    """Strict small noninterlaced PNG only; no external resources or metadata."""
+    import base64, struct, zlib
+
+    if value is None:
+        return None
+    try:
+        raw = base64.b64decode(value, validate=True)
+        if not 8 < len(raw) <= 16384 or raw[:8] != b"\x89PNG\r\n\x1a\n":
+            raise ValueError()
+        pos = 8
+        parts = []
+        compressed = bytearray()
+        width = height = channels = None
+        while pos < len(raw):
+            if len(parts) >= 16 or pos + 12 > len(raw):
+                raise ValueError()
+            n = struct.unpack(">I", raw[pos : pos + 4])[0]
+            kind = raw[pos + 4 : pos + 8]
+            if n > 16384 or pos + n + 12 > len(raw):
+                raise ValueError()
+            data = raw[pos + 8 : pos + 8 + n]
+            crc = struct.unpack(">I", raw[pos + 8 + n : pos + 12 + n])[0]
+            if zlib.crc32(kind + data) & 0xFFFFFFFF != crc:
+                raise ValueError()
+            if kind == b"IHDR":
+                if parts or n != 13:
+                    raise ValueError()
+                width, height, depth, color, compression, filtering, interlace = (
+                    struct.unpack(">IIBBBBB", data)
+                )
+                if (
+                    not 32 <= width <= 256
+                    or not 32 <= height <= 256
+                    or depth != 8
+                    or color not in (2, 6)
+                    or compression
+                    or filtering
+                    or interlace
+                ):
+                    raise ValueError()
+                channels = 3 if color == 2 else 4
+            elif kind == b"IDAT":
+                if not width:
+                    raise ValueError()
+                compressed.extend(data)
+            elif kind == b"IEND":
+                if n or pos + n + 12 != len(raw):
+                    raise ValueError()
+            else:
+                raise ValueError()
+            parts.append(kind)
+            pos += n + 12
+        if not parts or parts[-1] != b"IEND" or not compressed:
+            raise ValueError()
+        expected = (width * channels + 1) * height
+        decoder = zlib.decompressobj()
+        pixels = decoder.decompress(bytes(compressed), expected + 1)
+        if (
+            len(pixels) != expected
+            or not decoder.eof
+            or decoder.unused_data
+            or decoder.unconsumed_tail
+            or any(pixels[i * (width * channels + 1)] > 4 for i in range(height))
+        ):
+            raise ValueError()
+        return value
+    except (ValueError, TypeError, struct.error, zlib.error):
+        raise ValueError(
+            "Logo must be a metadata-free 32-256px RGB/RGBA PNG under 16KiB"
+        ) from None
+
+
 class EmailConfig(SafeModel):
     enabled: bool = False
     sender: str
@@ -219,6 +292,7 @@ class EmailTemplateRequest(SafeModel):
     brand: str = Field(
         "Northwest Ohio Broadband", min_length=1, max_length=80, pattern=r"^[^<>\r\n]+$"
     )
+    logo_base64: str | None = Field(None, max_length=24576)
     support: str = Field(
         "Contact your usual support channel.", max_length=160, pattern=r"^[^<>\r\n]+$"
     )
@@ -227,7 +301,8 @@ class EmailTemplateRequest(SafeModel):
     def safe(self):
         if TEMPLATE_PURPOSE.get(self.key) != self.purpose:
             raise ValueError("Select a supported source/purpose template category")
-        for s in (self.subject, self.text):
+        logo_png(self.logo_base64)
+        for field_name, s in (("subject", self.subject), ("text", self.text)):
             if (
                 "<" in s
                 or ">" in s
@@ -238,9 +313,15 @@ class EmailTemplateRequest(SafeModel):
                 )
             for _, name, spec, conv in Formatter().parse(s):
                 if name is not None and (
-                    name not in {"reference", "status"} or spec or conv
+                    name not in {"reference", "status", "quote_token"} or spec or conv
                 ):
-                    raise ValueError("Only reference/status placeholders supported")
+                    raise ValueError("Only approved source placeholders supported")
+                if name == "quote_token" and (
+                    field_name == "subject" or self.key != "quote_available"
+                ):
+                    raise ValueError(
+                        "Quote token is allowed only in an approved quote email body"
+                    )
         return self
 
 

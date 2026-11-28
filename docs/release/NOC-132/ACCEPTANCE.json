@@ -4,7 +4,7 @@
   "production": "BLOCKED",
   "local_transport_security": {
     "status": "PASS",
-    "tests": 47,
+    "tests": 53,
     "actual_loopback_tls_smtp": true
   },
   "local_frontend_build": "PASS",
@@ -19,7 +19,6 @@
   "remaining": [
     "Authorized sender/domain/provider validation",
     "SMTP inbound bounce/complaint contract",
-    "Approved remote logo and token-bearing email link contract",
     "Production signature and registry approval",
     "Vendor-native and dependency licensing review",
     "Real VPN/MFA and physical off-site recovery",
@@ -28,8 +27,8 @@
   "all_live_delivery_disabled_by_default": true,
   "local_backend_regression": {
     "status": "PASS",
-    "passed": 1422,
-    "skipped": 1128,
-    "scope": "prior 1de37e3 candidate, before additional five unit and three PostgreSQL regression cases"
+    "passed": 1433,
+    "skipped": 1132,
+    "scope": "final source tree before release-evidence commit; infrastructure-dependent cases remain skipped locally"
   }
 }
