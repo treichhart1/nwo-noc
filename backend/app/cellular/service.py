@@ -98,7 +98,10 @@ def layers(db,*,west,south,east,north,source=None,technology=None,mcc=None,mnc=N
     rows=db.execute(q.order_by(SiteObservation.observed_at.desc(),SiteObservation.id.desc()).limit(limit+1)).all()
     items=[];attributions={}
     for r,d in rows[:limit]:
-        attributions[d.id]={'text':d.attribution,'license':d.license,'source':d.source,'version':d.version,'acquired_at':d.observed_at.isoformat()}
+        attributions[d.id]={'text':d.attribution,'license':d.license,'source':d.source,'version':d.version,'acquired_at':d.observed_at.isoformat(),
+            'source_url':'https://opencellid.org' if d.source=='opencellid' else 'https://www.openstreetmap.org/copyright' if d.source=='osm_reviewed' else None,
+            'license_url':'https://creativecommons.org/licenses/by-sa/4.0/' if d.source=='opencellid' else 'https://opendatacommons.org/licenses/odbl/1-0/' if d.source=='osm_reviewed' else None,
+            'changes':'Regional filtering and normalization; observations remain source estimates'}
         items.append({'id':r.id,'dataset_id':d.id,'kind':r.kind,'latitude':r.latitude,'longitude':r.longitude,
             'technology':r.technology,'mcc':r.mcc,'mnc':r.mnc,'cell':r.cell,'area':r.area,'band':r.band,
             'uncertainty_m':r.uncertainty_m,'confidence':r.confidence,'observed_at':r.observed_at.isoformat(),

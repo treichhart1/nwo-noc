@@ -26,6 +26,7 @@ def test_atomic_dataset_dedupe_attribution_and_bounded_layers(postgres_db):
     assert db.scalar(select(func.count()).select_from(SiteObservation))==1
     result=layers(db,west=-85,south=40,east=-83,north=42,now=NOW)
     assert result['attributions'][0]['license']=='CC-BY-SA-4.0'
+    assert result['attributions'][0]['license_url']=='https://creativecommons.org/licenses/by-sa/4.0/'
     assert result['items'][0]['physical_tower_confirmed'] is False
     from app.cellular.service import qualification_advisory
     q=qualification_advisory(db,41.1,-84.2,'lte',now=NOW)
