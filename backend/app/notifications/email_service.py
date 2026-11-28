@@ -866,3 +866,16 @@ def apply_events(db, body, headers):
         count += 1
         ns.audit(db, None, "email_verified_event", delivery_id=d.id, kind=kind)
     return {"processed": count}
+
+
+def rates(accepted, rejected, uncertain, delivered, provider):
+    """Resolved submission attempts vs unique provider-accepted deliveries are separate."""
+    resolved = accepted + rejected
+    return {
+        "resolved_submission_attempts": resolved,
+        "unresolved_attempts": uncertain,
+        "resolved_submission_success_rate": accepted / resolved if resolved else None,
+        "confirmed_delivery_rate": delivered if provider == "sendgrid" else None,
+        "simulation_only": provider == "mock",
+        "denominators": "submission: resolved attempts; delivery: unique accepted messages; pending/unknown remain unresolved",
+    }

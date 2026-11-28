@@ -623,3 +623,18 @@ def test_quote_token_body_only_and_never_url():
             subject="Application",
             text="Private token {quote_token}",
         )
+
+
+def test_rates_distinguish_unresolved_and_unknown_delivery():
+    r = s.rates(8, 2, 3, 0.75, "sendgrid")
+    assert (
+        r["resolved_submission_success_rate"] == 0.8
+        and r["resolved_submission_attempts"] == 10
+        and r["unresolved_attempts"] == 3
+        and r["confirmed_delivery_rate"] == 0.75
+    )
+    assert (
+        s.rates(0, 0, 0, None, "sendgrid")["resolved_submission_success_rate"] is None
+    )
+    assert s.rates(5, 0, 0, 1, "smtp")["confirmed_delivery_rate"] is None
+    assert s.rates(5, 0, 0, 1, "mock")["confirmed_delivery_rate"] is None

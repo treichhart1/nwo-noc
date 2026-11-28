@@ -4,7 +4,7 @@
   "production": "BLOCKED",
   "local_transport_security": {
     "status": "PASS",
-    "tests": 53,
+    "tests": 54,
     "actual_loopback_tls_smtp": true
   },
   "local_frontend_build": "PASS",
@@ -27,8 +27,8 @@
   "all_live_delivery_disabled_by_default": true,
   "local_backend_regression": {
     "status": "PASS",
-    "passed": 1433,
-    "skipped": 1132,
-    "scope": "final source tree before release-evidence commit; infrastructure-dependent cases remain skipped locally"
+    "passed": 1434,
+    "skipped": 1134,
+    "scope": "final reporting source tree before evidence commit; actual PostgreSQL/VM/benchmark outcomes require final CI"
   }
 }

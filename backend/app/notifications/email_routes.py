@@ -23,6 +23,7 @@ from app.notifications.email_models import (
     EmailPreference as Preference,
     EmailTemplate as Template,
     EmailEnvelope as Envelope,
+    EmailEvent as Event,
 )
 from app.notifications.models import (
     NotificationDelivery as Delivery,
@@ -396,6 +397,19 @@ def attempts(identifier: int, db=Depends(get_db)):
     return tx(
         db,
         lambda: {
+            "events": [
+                {
+                    "kind": e.kind,
+                    "provider_message_id": e.provider_message_id,
+                    "received_at": e.received_at,
+                }
+                for e in db.scalars(
+                    select(Event)
+                    .where(Event.delivery_id == identifier)
+                    .order_by(Event.received_at, Event.key)
+                    .limit(200)
+                )
+            ],
             "items": [
                 {
                     "id": a.id,
@@ -414,7 +428,7 @@ def attempts(identifier: int, db=Depends(get_db)):
                     .where(Attempt.delivery_id == identifier)
                     .order_by(Attempt.id)
                 )
-            ]
+            ],
         },
     )
 
@@ -515,7 +529,99 @@ def analytics(db=Depends(get_db)):
                 Attempt.currency,
             )
         ).all()
+        provider_events = {
+            (name, kind): count
+            for name, kind, count in db.execute(
+                select(
+                    Envelope.provider,
+                    Event.kind,
+                    func.count(func.distinct(Event.delivery_id)),
+                )
+                .join(Envelope, Envelope.delivery_id == Event.delivery_id)
+                .group_by(Envelope.provider, Event.kind)
+            )
+        }
+        metrics = []
+        for name in sorted({r[0] for r in rows}):
+            accepted = sum(r[3] for r in rows if r[0] == name and r[1] == "accepted")
+            rejected = sum(
+                r[3] for r in rows if r[0] == name and r[1] == "not_accepted"
+            )
+            uncertain = sum(
+                r[3]
+                for r in rows
+                if r[0] == name and r[1] not in {"accepted", "not_accepted"}
+            )
+            unique = db.scalar(
+                select(func.count(func.distinct(Attempt.delivery_id))).where(
+                    Attempt.email_provider == name, Attempt.acceptance == "accepted"
+                )
+            )
+            delivered = db.scalar(
+                select(func.count(func.distinct(Event.delivery_id)))
+                .join(Envelope, Envelope.delivery_id == Event.delivery_id)
+                .where(Envelope.provider == name, Event.kind == "delivered")
+            )
+            values = s.rates(
+                accepted,
+                rejected,
+                uncertain,
+                delivered / unique if unique else None,
+                name,
+            )
+            metrics.append(
+                {
+                    "provider": name,
+                    "accepted_unique_messages": unique,
+                    "verified_delivered_messages": delivered
+                    if name == "sendgrid"
+                    else None,
+                    "bounce_rate": provider_events.get((name, "bounce"), 0) / unique
+                    if name == "sendgrid" and unique
+                    else None,
+                    "complaint_rate": provider_events.get((name, "spamreport"), 0)
+                    / unique
+                    if name == "sendgrid" and unique
+                    else None,
+                    **values,
+                }
+            )
+        now = clock()
+        day = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        month = day.replace(day=1)
+        usage = [
+            {"provider": name, "utc_day_attempts": daily, "utc_month_attempts": monthly}
+            for name, daily, monthly in db.execute(
+                select(
+                    Attempt.email_provider,
+                    func.count().filter(Attempt.created_at >= day),
+                    func.count().filter(Attempt.created_at >= month),
+                )
+                .where(Attempt.email_provider.is_not(None))
+                .group_by(Attempt.email_provider)
+            )
+        ]
+        categories = [
+            {"channel": channel, "category": category, "count": count}
+            for channel, category, count in db.execute(
+                select(Delivery.channel, Plan.kind, func.count())
+                .join(Plan, Plan.id == Delivery.plan_id)
+                .group_by(Delivery.channel, Plan.kind)
+            )
+        ]
+        events = [
+            {"kind": kind, "unique_messages": count}
+            for kind, count in db.execute(
+                select(
+                    Event.kind, func.count(func.distinct(Event.delivery_id))
+                ).group_by(Event.kind)
+            )
+        ]
         return {
+            "metrics": metrics,
+            "utc_usage": usage,
+            "channel_categories": categories,
+            "verified_events_nonadditive": events,
             "items": [
                 {
                     "provider": p,

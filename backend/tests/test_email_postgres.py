@@ -954,3 +954,21 @@ def test_plan_cancellation_rechecked_immediately_before_io(email_case):
         )
         == 0
     )
+
+
+def test_private_rates_and_immutable_event_history(email_case):
+    from app.notifications.email_routes import analytics, attempts
+
+    x = email_case
+    q = prepare_network(x)
+    make = signed(x, q)
+    b, h = make()
+    s.apply_events(x.db, b, h)
+    x.db.flush()
+    result = analytics(db=x.db)
+    metric = next(m for m in result["metrics"] if m["provider"] == "sendgrid")
+    assert (
+        metric["confirmed_delivery_rate"] == 1
+        and metric["resolved_submission_success_rate"] == 1
+    )
+    assert attempts(q.delivery.id, db=x.db)["events"][0]["kind"] == "delivered"
