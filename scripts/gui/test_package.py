@@ -24,6 +24,12 @@ class PackageTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError,'resolution'):
                 build(root/'parts',root/'output')
 
+    def test_full_page_preserves_horizontal_overflow(self):
+        with tempfile.TemporaryDirectory() as d:
+            root=Path(d);(root/'parts').mkdir();self.fixture(root/'parts','01-desktop-full.png',2300)
+            with self.assertRaisesRegex(ValueError,'Missing/unexpected'):
+                build(root/'parts',root/'output')
+
     def test_path_traversal_rejected(self):
         with tempfile.TemporaryDirectory() as d:
             root=Path(d);(root/'parts').mkdir();self.fixture(root/'parts','../outside.png')

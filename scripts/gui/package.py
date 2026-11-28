@@ -32,10 +32,12 @@ def build(parts: Path, output: Path):
                 raise ValueError('Not an actual PNG')
             width, height = struct.unpack('>II', data[16:24])
             expected = item['viewport']
-            if width != expected['width'] or height < expected['height']:
-                raise ValueError('Incorrect screenshot resolution')
-            if 'viewport' in name and height != expected['height']:
-                raise ValueError('Incorrect viewport height')
+            if name.endswith('-full.png'):
+                if width < expected['width'] or height < expected['height']:
+                    raise ValueError(f'Incomplete full-page PNG {name}: {width}x{height}')
+            elif width != expected['width'] or height != expected['height']:
+                raise ValueError(f'Incorrect screenshot resolution {name}: {width}x{height}')
+            item.setdefault('png_dimensions', {})[name] = {'width': width, 'height': height}
             shutil.copyfile(source, images / name)
             item.setdefault('sha256', {})[name] = hashlib.sha256(data).hexdigest()
         captures.append(item)
