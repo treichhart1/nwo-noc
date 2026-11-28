@@ -83,6 +83,12 @@ class Settings(BaseSettings):
     slack_egress_approved: bool = False
     slack_worker_interval_seconds: int = Field(5, ge=5, le=300)
     sms_callback_key_file: str = Field(default="", repr=False, exclude=True)
+    email_native_transport_enabled: bool = False
+    email_native_worker_enabled: bool = False
+    email_worker_interval_seconds: int = Field(5, ge=5, le=300)
+    email_egress_approved: bool = False
+    email_callback_gateway_enabled: bool = False
+    email_smtp_allowed_hosts: list[str] = []
     sms_native_transport_enabled: bool = False
     sms_native_worker_enabled: bool = False
     sms_worker_interval_seconds: int = Field(5, ge=5, le=300)
@@ -95,6 +101,10 @@ class Settings(BaseSettings):
 
     @model_validator(mode='after')
     def notification_isolation(self):
+        if self.email_native_transport_enabled and (self.offline_mode or not self.email_egress_approved):
+            raise ValueError("Native email requires explicit online egress approval")
+        if self.email_native_worker_enabled and (not self.email_native_transport_enabled or self.notifications_worker_enabled):
+            raise ValueError("Native email worker requires native transport and excludes legacy mock worker")
         if self.slack_native_transport_enabled and (self.offline_mode or not self.slack_egress_approved):
             raise ValueError("Native Slack requires explicit online egress approval")
         if self.slack_native_worker_enabled and (not self.slack_native_transport_enabled or self.notifications_worker_enabled):

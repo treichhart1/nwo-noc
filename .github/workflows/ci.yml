@@ -244,6 +244,8 @@ jobs:
         run: alembic upgrade head
       - name: Validate native SMS contracts, durable claims and least-privilege callbacks
         run: python -m pytest -q tests/test_sms_providers.py tests/test_sms_postgres.py
+      - name: Validate native email contracts, TLS, scoped permission and canonical durable claims
+        run: python -m pytest -q tests/test_email_native.py tests/test_email_postgres.py
       - name: Validate native Slack contracts, durable claims and isolated interactions
         run: python -m pytest -q tests/test_slack_native.py tests/test_slack_postgres.py
       - name: Deploy actual ClamAV engine with safe test definitions

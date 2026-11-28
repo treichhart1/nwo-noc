@@ -21,7 +21,7 @@ def main():
     runner = Runner(runtime.id)
     legacy = LegacyTasks()
     from concurrent.futures import ThreadPoolExecutor
-    notification_pool = ThreadPoolExecutor(max_workers=1, thread_name_prefix='noc-notifications') if (settings.notifications_worker_enabled or settings.sms_native_worker_enabled or settings.slack_native_worker_enabled) else None
+    notification_pool = ThreadPoolExecutor(max_workers=1, thread_name_prefix='noc-notifications') if (settings.notifications_worker_enabled or settings.sms_native_worker_enabled or settings.slack_native_worker_enabled or settings.email_native_worker_enabled) else None
     notification_future = None
     notification_last = 0.0
     detector_pool = ThreadPoolExecutor(max_workers=1, thread_name_prefix="noc-down-detector") if settings.down_detector_enabled else None
@@ -59,7 +59,7 @@ def main():
                 from app.down_detector.worker import tick as detector_tick
                 detector_future=detector_pool.submit(detector_tick)
                 detector_last=now
-            if notification_pool and (not (settings.sms_native_worker_enabled or settings.slack_native_worker_enabled) or now-notification_last>=min(settings.sms_worker_interval_seconds if settings.sms_native_worker_enabled else 300, settings.slack_worker_interval_seconds if settings.slack_native_worker_enabled else 300)) and (notification_future is None or notification_future.done()):
+            if notification_pool and (not (settings.sms_native_worker_enabled or settings.slack_native_worker_enabled or settings.email_native_worker_enabled) or now-notification_last>=min(settings.sms_worker_interval_seconds if settings.sms_native_worker_enabled else 300, settings.slack_worker_interval_seconds if settings.slack_native_worker_enabled else 300, settings.email_worker_interval_seconds if settings.email_native_worker_enabled else 300)) and (notification_future is None or notification_future.done()):
                 if notification_future is not None:
                     try: notification_future.result()
                     except Exception: log.warning('Notification queue interrupted; durable work retained')

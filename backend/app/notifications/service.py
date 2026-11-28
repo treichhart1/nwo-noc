@@ -759,6 +759,8 @@ def create_plan(db, request, user_id, now=None):
 
 
 def current_snapshot(db, plan, now):
+    if plan.snapshot.get("email"):
+        raise ValueError("Email uses independent source/content approval; SMS/Slack approval cannot authorize it")
     if plan.snapshot.get("retention"):
         from app.retention.communications import snapshot as cancellation_snapshot
         return cancellation_snapshot(db, plan), None

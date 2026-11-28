@@ -178,3 +178,6 @@ async def bounded_retention_requests(request,call_next):
             body.extend(chunk)
         request._body=bytes(body)
     return await call_next(request)
+
+from app.notifications.email_routes import router as email_router
+app.include_router(email_router)

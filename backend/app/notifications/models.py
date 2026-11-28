@@ -160,6 +160,7 @@ class NotificationAttempt(Base):
     )
     attempt: Mapped[int] = mapped_column(Integer)
     outcome: Mapped[str] = mapped_column(String(40))
+    email_provider: Mapped[str | None] = mapped_column(String(20), ForeignKey("notification_email_providers.name"), nullable=True, index=True)
     slack_mode: Mapped[str | None] = mapped_column(String(20), nullable=True, index=True)
     slack_workspace_id: Mapped[str | None] = mapped_column(String(40), nullable=True)
     slack_channel_id: Mapped[str | None] = mapped_column(String(40), nullable=True)

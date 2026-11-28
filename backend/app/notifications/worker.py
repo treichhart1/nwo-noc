@@ -61,6 +61,7 @@ def run_batch(db, *, sms=None, slack=None, now=None, limit=20):
             select(NotificationDelivery)
             .where(
                 NotificationDelivery.state.in_(["queued", "retry"]),
+                NotificationDelivery.channel != "email",
                 NotificationDelivery.sms_authorization.is_(None),
                 NotificationDelivery.slack_authorization.is_(None),
                 NotificationDelivery.next_attempt_at <= now,
@@ -396,7 +397,7 @@ def discover(db, now=None):
 
 
 def tick():
-    if settings.sms_native_worker_enabled or settings.slack_native_worker_enabled:
+    if settings.sms_native_worker_enabled or settings.slack_native_worker_enabled or settings.email_native_worker_enabled:
         if settings.notifications_auto_drafts_enabled:
             with SessionLocal() as db:
                 discover(db)
@@ -406,6 +407,9 @@ def tick():
                 db.commit()
         from app.notifications.sms_service import run_native_batch
         result = {}
+        if settings.email_native_worker_enabled:
+            from app.notifications.email_service import run_batch as email_batch
+            result["email"] = email_batch(SessionLocal)
         if settings.sms_native_worker_enabled:
             result["sms"] = run_native_batch(SessionLocal)
         if settings.slack_native_worker_enabled:
