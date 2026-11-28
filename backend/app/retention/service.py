@@ -454,6 +454,7 @@ def offer_view(db, c, o):
                 "approved_by",
             )
         },
+        "expired": o.status in {"draft", "approved"} and o.expires_at <= now(),
         "terms": crypto.unseal(c, o.terms_ciphertext),
         "decision_evidence": crypto.unseal(c, o.acceptance_ciphertext),
     }

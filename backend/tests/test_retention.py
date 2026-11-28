@@ -1094,3 +1094,54 @@ def test_multi_tower_retention_offer_cost_is_not_counted_in_full_at_each_tower(
             "unallocated_offer_case_ids"
         ] == [x.case.id]
         assert result["offer_cost_data_complete"] is False
+
+
+def test_expired_approved_offer_can_be_replaced_without_rewriting_history(
+    cancellation, monkeypatch
+):
+    x = cancellation
+    verify(x)
+    clock = s.now()
+
+    def draft(expires):
+        return s.offer(
+            x.db,
+            x.admin,
+            x.case.id,
+            OfferInput(
+                expected_revision=x.case.revision,
+                notes=NOTE,
+                kind="technical_investigation",
+                terms=NOTE,
+                expires_at=expires,
+                eligible=True,
+                evidence_reference="SYN-EXPIRY",
+            ),
+        )
+
+    def approve(o):
+        return s.offer_decide(
+            x.db,
+            x.admin,
+            x.case.id,
+            o["id"],
+            OfferDecision(
+                expected_revision=x.case.revision,
+                notes=NOTE,
+                fingerprint=o["fingerprint"],
+                action="approve",
+                evidence_reference="SYN-APPROVAL",
+            ),
+        )
+
+    old = draft(clock + timedelta(days=1))
+    approve(old)
+    monkeypatch.setattr(s, "now", lambda: clock + timedelta(days=2))
+    new = draft(clock + timedelta(days=3))
+    approve(new)
+    old_record = x.db.get(Offer, old["id"])
+    assert (
+        old_record.status == "approved"
+        and s.offer_view(x.db, x.case, old_record)["expired"] is True
+    )
+    assert x.db.get(Offer, new["id"]).status == "approved"
