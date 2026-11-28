@@ -1,0 +1,35 @@
+{
+  "baseline": "4b3184ea91a242bf236453bae9009a39be852554",
+  "migration": "0035_unified_communications",
+  "production": "BLOCKED",
+  "local_transport_security": {
+    "status": "PASS",
+    "tests": 58,
+    "actual_loopback_tls_smtp": true
+  },
+  "local_frontend_build": "PASS",
+  "postgresql_acceptance": {
+    "status": "PASS",
+    "scope": "first candidate 81a8847 focused step in run874; latest expanded cases require final CI"
+  },
+  "final_ci": "NOT TESTED",
+  "durable_benchmarks": "NOT TESTED",
+  "independent_vm_email_recovery": "NOT TESTED",
+  "final_ledger": "Exact final commit results recorded in draft pull request acceptance ledger; do not infer CI outcomes from this pre-CI matrix",
+  "remaining": [
+    "Authorized sender/domain/provider validation",
+    "SMTP inbound bounce/complaint contract",
+    "Production signature and registry approval",
+    "Vendor-native and dependency licensing review",
+    "Real VPN/MFA and physical off-site recovery",
+    "Powercode authoritative native API documentation"
+  ],
+  "all_live_delivery_disabled_by_default": true,
+  "local_backend_regression": {
+    "status": "PASS",
+    "passed": 1438,
+    "skipped": 1139,
+    "scope": "signed gateway quota/evidence source tree; actual PostgreSQL and independent VM tests still require final CI"
+  },
+  "callback_identity": "Dedicated persistent key; private JWT/provider vault excluded from receiver; JWT rotation preserves suppression"
+}

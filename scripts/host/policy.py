@@ -26,6 +26,10 @@ LOCAL_OPTIONS = {
 
 DATA_DIRS = ("monitoring", "documents", "signup", "planning")
 DISABLED = (
+    "EMAIL_NATIVE_TRANSPORT_ENABLED",
+    "EMAIL_NATIVE_WORKER_ENABLED",
+    "EMAIL_CALLBACK_GATEWAY_ENABLED",
+    "EMAIL_EGRESS_APPROVED",
     "SLACK_NATIVE_TRANSPORT_ENABLED",
     "SLACK_NATIVE_WORKER_ENABLED",
     "SLACK_INTERACTION_GATEWAY_ENABLED",
@@ -149,7 +153,7 @@ def validate_env(values):
         raise Reject(
             "Packaged core requires production application mode with external access disabled"
         )
-    if any(values.get(k) != "false" for k in DISABLED if k not in LOCAL_OPTIONS):
+    if any(values.get(k, "false" if k.startswith("EMAIL_") else None) != "false" for k in DISABLED if k not in LOCAL_OPTIONS):
         raise Reject(
             "Optional integrations/jobs must be explicitly disabled for this package"
         )
