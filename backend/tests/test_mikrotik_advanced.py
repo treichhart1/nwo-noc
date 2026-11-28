@@ -173,3 +173,7 @@ def test_unexpected_sensitive_wire_response_aborts_without_retention(field):
     c._socket=Stream(encode_sentence(['!re','='+field+'=canary'])+encode_sentence(['!done']))
     with pytest.raises(IntegrationFailure,match='invalid_response'):
         c._read_advanced('wireguard')
+
+
+def test_documented_carrier_name_is_not_inferred_or_rejected_for_ampersand():
+    assert evidence(carrier="AT&T").carrier=="AT&T"

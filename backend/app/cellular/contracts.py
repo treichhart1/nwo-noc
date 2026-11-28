@@ -27,7 +27,7 @@ class CellularEvidence(Closed):
     evidence_reference: str=Field(pattern=r'^[A-Za-z0-9_.:-]{8,120}$')
     interface_id: str=Field(pattern=r'^\*[0-9A-Fa-f]{1,8}$')
     registration: Literal['registered','not_registered','unknown']='unknown'
-    carrier: str|None=Field(None,max_length=80,pattern=r'^[A-Za-z0-9 ._-]+$')
+    carrier: str|None=Field(None,max_length=80,pattern=r'^[A-Za-z0-9 ._&()+/-]+$')
     technology: Literal['LTE','5G_NSA','5G_SA','unknown']='unknown'
     mcc: int|None=Field(None,ge=1,le=999,strict=True)
     mnc: int|None=Field(None,ge=0,le=999,strict=True)

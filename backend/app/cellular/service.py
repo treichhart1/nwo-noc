@@ -197,3 +197,42 @@ def qualification_advisory(db,latitude,longitude,technology,*,now=None):
         'candidates':sorted(candidates,key=lambda r:r['approximate_distance_m'])[:20],'bounded':data['bounded'],
         'attributions':data['attributions'],'basis':'Open estimated observations are not coverage or a confirmed serving tower',
         'technology':technology,'five_g_dataset_contract':'unverified' if technology=='5g' else None}
+
+
+def map_context(db,*,technology=None,carrier=None,band=None,now=None):
+    """Bounded existing inventory/recorded evidence overlays, never inferred GPS."""
+    from app.signup.models import Area
+    now=now or datetime.now(timezone.utc)
+    q=select(Device,TelemetrySample).join(TelemetrySample,TelemetrySample.device_id==Device.id).where(
+        Device.enabled.is_(True),Device.latitude.between(37.7,42),Device.longitude.between(-88.1,-80.5),
+        TelemetrySample.raw_data[KEY].is_not(None)).distinct(Device.id).order_by(Device.id,TelemetrySample.sampled_at.desc(),TelemetrySample.id.desc()).limit(51)
+    rows=db.execute(q).all();devices=[];serving=[]
+    for d,r in rows[:50]:
+        try:
+            e=CellularEvidence.model_validate(r.raw_data[KEY])
+            if e.device_id!=d.id or e.observed_at!=utc(r.sampled_at):continue
+        except (ValueError,TypeError):continue
+        identity_technology=e.cell_identity_technology
+        if technology and identity_technology!=technology:continue
+        if carrier and (e.carrier or '').casefold()!=carrier.casefold():continue
+        if band and e.band!=band:continue
+        devices.append({'device_id':d.id,'latitude':d.latitude,'longitude':d.longitude,'coordinate_source':'existing_inventory',
+            'technology':e.technology,'cell_identity_technology':identity_technology,'carrier':e.carrier,'band':e.band,
+            'source_kind':e.source_kind,'observed_at':e.observed_at.isoformat(),
+            'fresh':0<=(now-e.observed_at).total_seconds()<=600})
+        result=correlate(db,e,latitude=d.latitude,longitude=d.longitude,now=now)
+        for c in result['candidates']:
+            serving.append({**c,'device_id':d.id,'technology':identity_technology,'correlation':result['status'],
+                'confirmed_serving_tower':False,'source_kind':e.source_kind})
+    areas=[]
+    for area in db.scalars(select(Area).where(Area.status=='active').order_by(Area.id).limit(51)).all()[:50]:
+        polygon=area.polygon
+        if not isinstance(polygon,list) or not 4<=len(polygon)<=500:continue
+        try:
+            valid=polygon[0]==polygon[-1] and all(len(p)==2 and all(isinstance(v,(int,float)) and not isinstance(v,bool) and math.isfinite(v) for v in p) and -180<=p[0]<=180 and -90<=p[1]<=90 for p in polygon)
+            if not valid:continue
+        except (TypeError,ValueError):continue
+        areas.append({'id':area.id,'technology':area.technology,'status':'documented_active','polygon':polygon,
+            'service_guaranteed':False,'source':'existing_reviewed_signup_coverage'})
+    return {'devices':devices,'serving_candidates':serving,'service_areas':areas,'device_query_bounded':len(rows)>50,
+        'scope':'private inventory and recorded evidence; not verified live serving towers','service_guaranteed':False}

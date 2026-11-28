@@ -199,3 +199,10 @@ class Qualification(Closed):
 @router.post('/qualification')
 def qualification(b:Qualification,db=Depends(get_db)):
     return run(db,lambda:s.qualification_advisory(db,b.latitude,b.longitude,b.technology))
+
+
+@router.get('/map-context')
+def map_context(technology:Literal['LTE','NR']|None=None,
+                carrier:str|None=Query(None,max_length=80,pattern=r'^[A-Za-z0-9 ._&()+/-]+$'),
+                band:str|None=Query(None,pattern=r'^(?:B|n)[0-9]{1,3}$'),db=Depends(get_db)):
+    return run(db,lambda:s.map_context(db,technology=technology,carrier=carrier,band=band))

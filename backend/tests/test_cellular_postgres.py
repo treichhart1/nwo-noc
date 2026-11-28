@@ -65,6 +65,13 @@ def test_recorded_history_dedupe_privacy_and_unknown_freshness(postgres_db):
     assert 'rf_metrics_v1' not in row.raw_data
     assert device_history(db,d.id,now=NOW+timedelta(hours=1))['registration']=='unknown'
     assert d.monitor_status=='unknown'
+    from app.cellular.service import map_context
+    d.latitude=41.1;d.longitude=-84.2;db.flush()
+    context=map_context(db,now=changed.observed_at)
+    assert context['devices'][0]['coordinate_source']=='existing_inventory'
+    assert context['devices'][0]['source_kind']=='synthetic'
+    assert not context['service_guaranteed']
+    assert map_context(db,band='B99',now=changed.observed_at)['devices']==[]
     with pytest.raises(ValueError):record_evidence(db,e.model_copy(update={'cell':'9'}),u.id,now=NOW)
 
 
